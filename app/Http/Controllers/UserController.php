@@ -1,0 +1,154 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\AuditLog;
+use App\Models\User;
+use App\Traits\AuditLoggable;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use App\Rules\StrongPassword;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\View\View;
+
+class UserController extends Controller
+{
+    use AuditLoggable;
+    public function index(Request $request): View
+    {
+        $query = User::query();
+
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->latest()->paginate(15)->withQueryString();
+
+        return view('users.index', compact('users'));
+    }
+
+    public function create(): View
+    {
+        return view('users.create');
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name'       => 'required|string|max:255',
+            'email'      => 'required|email|unique:users,email',
+            'password'   => ['required', 'string', 'confirmed', new StrongPassword],
+            'role'       => 'required|in:developer,admin,lawyer,staff,client',
+            'phone'      => 'nullable|string|max:255',
+            'is_active'  => 'boolean',
+        ]);
+
+        $validated['password'] = Hash::make($validated['password']);
+        $validated['is_active'] = $request->boolean('is_active', true);
+
+        $user = User::create($validated);
+
+        $this->logAudit(
+            AuditLog::ACTION_CREATE,
+            User::class,
+            $user->id,
+            null,
+            $user->toArray()
+        );
+
+        return redirect()->route('users.show', $user)
+            ->with('success', 'User created successfully.');
+    }
+
+    public function show(User $user): View
+    {
+        $user->loadCount(['cases', 'tasks', 'documents']);
+
+        return view('users.show', compact('user'));
+    }
+
+    public function edit(User $user): View
+    {
+        return view('users.edit', compact('user'));
+    }
+
+    public function update(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name'       => 'required|string|max:255',
+            'email'      => 'required|email|unique:users,email,' . $user->id,
+            'password'   => ['nullable', 'string', 'confirmed', new StrongPassword],
+            'role'       => 'required|in:developer,admin,lawyer,staff,client',
+            'phone'      => 'nullable|string|max:255',
+            'is_active'  => 'boolean',
+        ]);
+
+        if (!empty($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
+        }
+
+        $validated['is_active'] = $request->boolean('is_active', true);
+
+        $oldValues = $user->toArray();
+        $user->update($validated);
+
+        $this->logAudit(
+            AuditLog::ACTION_UPDATE,
+            User::class,
+            $user->id,
+            $oldValues,
+            $user->toArray()
+        );
+
+        return redirect()->route('users.show', $user)
+            ->with('success', 'User updated successfully.');
+    }
+
+    public function destroy(User $user): RedirectResponse
+    {
+        if ($user->id === auth()->id()) {
+            return redirect()->route('users.index')
+                ->withErrors(['error' => 'You cannot delete your own account.']);
+        }
+
+        if ($user->isAdmin()) {
+            $adminCount = User::where('role', 'admin')->count();
+            if ($adminCount <= 1) {
+                return redirect()->route('users.index')
+                    ->withErrors(['error' => 'Cannot delete the last admin user.']);
+            }
+        }
+
+        if ($user->isDeveloper()) {
+            $devCount = User::where('role', 'developer')->count();
+            if ($devCount <= 1) {
+                return redirect()->route('users.index')
+                    ->withErrors(['error' => 'Cannot delete the last developer.']);
+            }
+        }
+
+        $oldValues = $user->toArray();
+        $user->delete();
+
+        $this->logAudit(
+            AuditLog::ACTION_DELETE,
+            User::class,
+            $user->id,
+            $oldValues,
+            null
+        );
+
+        return redirect()->route('users.index')
+            ->with('success', 'User deleted successfully.');
+    }
+}

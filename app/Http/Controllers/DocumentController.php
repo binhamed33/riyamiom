@@ -1,0 +1,175 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\AuditLog;
+use App\Models\Document;
+use App\Models\LegalCase;
+use App\Traits\AuditLoggable;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+class DocumentController extends Controller
+{
+    use AuditLoggable;
+    private const ALLOWED_TYPES = [
+        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png',
+    ];
+
+    private const MAX_SIZE = 20 * 1024 * 1024;
+
+    public function index(Request $request): View
+    {
+        $query = Document::with(['case', 'uploader']);
+
+        if (auth()->user()->isLawyer()) {
+            $query->where(function ($q) {
+                $q->where('uploaded_by', auth()->id())
+                  ->orWhereHas('case', function ($cq) {
+                      $cq->where('lawyer_id', auth()->id());
+                  });
+            });
+        }
+
+        if ($request->filled('case_id')) {
+            $query->where('case_id', $request->case_id);
+        }
+
+        if ($request->filled('access_level')) {
+            $query->where('access_level', $request->access_level);
+        }
+
+        if ($request->filled('file_type')) {
+            $query->where('file_type', $request->file_type);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('file_type', 'like', "%{$search}%");
+            });
+        }
+
+        $documents = $query->latest()->paginate(15)->withQueryString();
+        $cases = LegalCase::orderBy('title')->get();
+
+        if (auth()->user()->isLawyer()) {
+            $cases = LegalCase::where('lawyer_id', auth()->id())->orderBy('title')->get();
+        }
+
+        return view('documents.index', compact('documents', 'cases'));
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'case_id'      => 'nullable|exists:cases,id',
+            'title'        => 'required|string|max:255',
+            'file'         => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:' . (self::MAX_SIZE / 1024),
+            'access_level' => 'required|in:all,team,private',
+        ]);
+
+        if ($validated['case_id'] && auth()->user()->isLawyer()) {
+            $case = LegalCase::find($validated['case_id']);
+            if ($case && $case->lawyer_id !== auth()->id()) {
+                abort(403);
+            }
+        }
+
+        $file = $request->file('file');
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        if (!in_array($extension, self::ALLOWED_TYPES)) {
+            return back()->withErrors(['file' => 'File type not allowed.']);
+        }
+
+        $path = $file->store('documents', 'private');
+
+        $document = Document::create([
+            'case_id'      => $validated['case_id'] ?? null,
+            'uploaded_by'  => auth()->id(),
+            'title'        => $validated['title'],
+            'file_path'    => $path,
+            'file_type'    => $extension,
+            'file_size'    => $file->getSize(),
+            'access_level' => $validated['access_level'],
+        ]);
+
+        $this->logAudit(
+            AuditLog::ACTION_CREATE,
+            Document::class,
+            $document->id,
+            null,
+            $document->toArray()
+        );
+
+        return redirect()->route('documents.index')
+            ->with('success', 'Document uploaded successfully.');
+    }
+
+    public function destroy(Document $document): RedirectResponse
+    {
+        $user = auth()->user();
+
+        if ($document->access_level === 'private' && $document->uploaded_by !== $user->id) {
+            abort(403, 'Access denied.');
+        }
+
+        if ($document->access_level === 'team') {
+            $isTeam = $user->isAdmin() || $user->isLawyer() || $user->isStaff();
+            if (!$isTeam && $document->uploaded_by !== $user->id) {
+                abort(403, 'Access denied.');
+            }
+        }
+
+        Storage::disk('private')->delete($document->file_path);
+
+        $oldValues = $document->toArray();
+        $document->delete();
+
+        $this->logAudit(
+            AuditLog::ACTION_DELETE,
+            Document::class,
+            $document->id,
+            $oldValues,
+            null
+        );
+
+        return redirect()->route('documents.index')
+            ->with('success', 'Document deleted successfully.');
+    }
+
+    public function download(Document $document): StreamedResponse
+    {
+        $user = auth()->user();
+
+        if ($document->access_level === 'private' && $document->uploaded_by !== $user->id) {
+            abort(403, 'Access denied.');
+        }
+
+        if ($document->access_level === 'team') {
+            $isTeam = $user->isAdmin() || $user->isLawyer() || $user->isStaff();
+            if (!$isTeam && $document->uploaded_by !== $user->id) {
+                abort(403, 'Access denied.');
+            }
+        }
+
+        $this->logAudit(
+            'download',
+            Document::class,
+            $document->id,
+            null,
+            ['file_path' => $document->file_path]
+        );
+
+        return Storage::disk('private')->download(
+            $document->file_path,
+            $document->title . '.' . $document->file_type
+        );
+    }
+
+}
