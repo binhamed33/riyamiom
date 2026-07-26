@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', __('app.page_edit_user'))
 
@@ -121,6 +121,8 @@
                 <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
             @enderror
         </div>
+
+        @include('users._permissions')
 
         <div class="flex items-center gap-4 pt-4 border-t border-ivory/10">
             <button type="submit" class="bg-gold hover:bg-gold-dark text-navy px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.save_changes') }}</button>

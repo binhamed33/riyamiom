@@ -24,5 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->report(function (\Throwable $e) {
+            logger()->error($e->getMessage(), ['exception' => $e]);
+        });
+
+        $exceptions->dontReport(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
+        $exceptions->dontReport(\Illuminate\Auth\AuthenticationException::class);
     })->create();

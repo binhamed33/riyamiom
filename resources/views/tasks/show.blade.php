@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', __('app.page_task_details'))
 
@@ -169,7 +169,7 @@
     @endif
 
     <div class="flex items-center gap-3">
-        <form method="POST" action="{{ route('tasks.destroy', $task) }}" class="contents" onsubmit="return confirm('{{ __("app.confirm_delete_task") }}')">
+        <form method="POST" action="{{ route('tasks.destroy', $task) }}" class="contents" x-data @submit.prevent="if(confirm('{{ __("app.confirm_delete_task") }}')) $el.submit()">
             @csrf
             @method('DELETE')
             <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm">

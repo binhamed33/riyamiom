@@ -1,4 +1,4 @@
-﻿@extends('pdf.layout')
+@extends('pdf.layout')
 
 @section('content')
     {{-- ========== HEADER ========== --}}

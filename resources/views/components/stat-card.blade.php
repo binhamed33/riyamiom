@@ -1,4 +1,4 @@
-﻿@props(['title' => '', 'value' => '', 'icon' => '', 'color' => 'gold'])
+@props(['title' => '', 'value' => '', 'icon' => '', 'color' => 'gold'])
 
 @php
     $colors = [

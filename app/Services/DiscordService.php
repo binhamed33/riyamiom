@@ -14,6 +14,38 @@ class DiscordService
         $this->webhookUrl = config('discord.webhook_url', '');
     }
 
+    public function logException(\Throwable $e): bool
+    {
+        if (empty($this->webhookUrl)) {
+            return false;
+        }
+
+        $payload = [
+            'content' => '',
+            'embeds' => [
+                [
+                    'title' => '🔴 LexPro Exception: ' . class_basename($e),
+                    'color' => 0xFF0000,
+                    'fields' => [
+                        ['name' => 'Message', 'value' => mb_substr($e->getMessage(), 0, 1000), 'inline' => false],
+                        ['name' => 'File', 'value' => $e->getFile() . ':' . $e->getLine(), 'inline' => true],
+                        ['name' => 'Code', 'value' => (string) $e->getCode(), 'inline' => true],
+                    ],
+                    'footer' => ['text' => 'LexPro Error Monitor • ' . now()->format('Y-m-d H:i:s')],
+                    'timestamp' => now()->toIso8601String(),
+                ]
+            ]
+        ];
+
+        try {
+            $response = Http::timeout(10)->post($this->webhookUrl, $payload);
+            return $response->successful();
+        } catch (\Exception $ex) {
+            Log::error('Failed to send exception to Discord: ' . $ex->getMessage());
+            return false;
+        }
+    }
+
     public function serverStatus(array $stats): bool
     {
         if (empty($this->webhookUrl)) {

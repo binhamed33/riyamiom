@@ -42,6 +42,6 @@ class DiscordExceptionHandler
             }
         }
 
-        return !empty(config('discord.log_webhook_url'));
+        return !empty(config('discord.webhook_url'));
     }
 }

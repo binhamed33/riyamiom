@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'discord' => [
+        'log_webhook' => env('DISCORD_LOG_WEBHOOK'),
+        'monitor_webhook' => env('DISCORD_MONITOR_WEBHOOK'),
+    ],
+
 ];

@@ -1,0 +1,97 @@
+<?php
+
+return [
+    'groups' => [
+        'cases' => [
+            'label' => 'app.cases',
+            'permissions' => [
+                'cases.view' => 'عرض القضايا',
+                'cases.create' => 'إضافة قضية',
+                'cases.edit' => 'تعديل القضية',
+                'cases.delete' => 'حذف القضية',
+            ],
+        ],
+        'clients' => [
+            'label' => 'app.clients',
+            'permissions' => [
+                'clients.view' => 'عرض العملاء',
+                'clients.create' => 'إضافة عميل',
+                'clients.edit' => 'تعديل العميل',
+                'clients.delete' => 'حذف العميل',
+            ],
+        ],
+        'sessions' => [
+            'label' => 'app.sessions',
+            'permissions' => [
+                'sessions.view' => 'عرض الجلسات',
+                'sessions.create' => 'إضافة جلسة',
+                'sessions.edit' => 'تعديل الجلسة',
+                'sessions.delete' => 'حذف الجلسة',
+            ],
+        ],
+        'tasks' => [
+            'label' => 'app.tasks',
+            'permissions' => [
+                'tasks.view' => 'عرض المهام',
+                'tasks.create' => 'إضافة مهمة',
+                'tasks.edit' => 'تعديل المهمة',
+                'tasks.delete' => 'حذف المهمة',
+            ],
+        ],
+        'documents' => [
+            'label' => 'app.documents',
+            'permissions' => [
+                'documents.view' => 'عرض المستندات',
+                'documents.create' => 'رفع مستند',
+                'documents.delete' => 'حذف المستند',
+            ],
+        ],
+        'users' => [
+            'label' => 'app.users',
+            'permissions' => [
+                'users.view' => 'عرض المستخدمين',
+                'users.create' => 'إضافة مستخدم',
+                'users.edit' => 'تعديل المستخدم',
+                'users.delete' => 'حذف المستخدم',
+            ],
+        ],
+        'reports' => [
+            'label' => 'التقارير',
+            'permissions' => [
+                'reports.view' => 'عرض التقارير',
+            ],
+        ],
+        'feasibility' => [
+            'label' => 'دراسة الجدوى',
+            'permissions' => [
+                'feasibility.view' => 'عرض دراسة الجدوى',
+            ],
+        ],
+        'settings' => [
+            'label' => 'الإعدادات',
+            'permissions' => [
+                'settings.manage' => 'إدارة الإعدادات',
+            ],
+        ],
+        'backup' => [
+            'label' => 'النسخ الاحتياطي',
+            'permissions' => [
+                'backup.manage' => 'إدارة النسخ الاحتياطي',
+            ],
+        ],
+        'audit_log' => [
+            'label' => 'سجل الحركات',
+            'permissions' => [
+                'audit_log.view' => 'عرض سجل الحركات',
+            ],
+        ],
+    ],
+
+    'role_defaults' => [
+        'developer' => [],
+        'admin' => [],
+        'lawyer' => [],
+        'staff' => [],
+        'client' => [],
+    ],
+];

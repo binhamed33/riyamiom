@@ -46,7 +46,6 @@ return new class extends Migration
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->index('action');
             $table->index('model_type');
-            $table->index('created_at');
             $table->index(['model_type', 'model_id']);
         });
     }
@@ -86,7 +85,6 @@ return new class extends Migration
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->dropIndex(['action']);
             $table->dropIndex(['model_type']);
-            $table->dropIndex(['created_at']);
             $table->dropIndex(['model_type', 'model_id']);
         });
     }

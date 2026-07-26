@@ -60,7 +60,7 @@ class DocumentTest extends TestCase
     public function test_developer_can_view_documents_index()
     {
         $developer = $this->developer();
-        Document::factory()->count(2)->create();
+        Document::factory()->count(2)->create(['access_level' => 'all']);
 
         $response = $this->actingAs($developer)->get('/documents');
 

@@ -1,9 +1,9 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', __('app.page_backup'))
 
 @section('content')
-<div class="space-y-6" dir="rtl">
+<div class="space-y-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -19,6 +19,31 @@
                 </svg>
                 {{ __('app.create_backup') }}
             </button>
+        </form>
+    </div>
+
+    {{-- Upload & Restore --}}
+    <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-4">
+        <form action="{{ route('backup.upload-restore') }}" method="POST" enctype="multipart/form-data" x-data="{ uploading: false }" @submit.prevent="uploading = true; $el.submit()">
+            @csrf
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div class="flex-1">
+                    <label class="block text-white/40 text-xs mb-1.5">{{ __('app.upload_backup_file') }}</label>
+                    <input type="file" name="backup_file" accept=".zip" required
+                           class="w-full text-sm text-white/70 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gold/20 file:text-gold hover:file:bg-gold/30 file:cursor-pointer cursor-pointer bg-white/5 rounded-lg border border-white/10 px-3 py-1.5">
+                </div>
+                <button type="submit" :disabled="uploading"
+                        class="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2 mt-5 sm:mt-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    <span x-show="!uploading">{{ __('app.restore_upload') }}</span>
+                    <span x-show="uploading" x-cloak>{{ __('app.restoring') }}</span>
+                </button>
+            </div>
+            @error('backup_file')
+                <p class="text-red-400 text-xs mt-2">{{ $message }}</p>
+            @enderror
         </form>
     </div>
 
@@ -82,7 +107,7 @@
                                             </svg>
                                             {{ __('app.download') }}
                                         </a>
-                                        <form action="{{ route('backup.restore', $backup['name']) }}" method="POST" class="contents" onsubmit="return confirm('{{ __("app.confirm_restore_backup") }}')">
+                                        <form action="{{ route('backup.restore', $backup['name']) }}" method="POST" class="contents" x-data @submit.prevent="if(confirm('{{ __("app.confirm_restore_backup") }}')) $el.submit()">
                                             @csrf
                                             <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,7 +116,7 @@
                                                 {{ __('app.restore') }}
                                             </button>
                                         </form>
-                                        <form action="{{ route('backup.destroy', $backup['name']) }}" method="POST" class="contents" onsubmit="return confirm('{{ __("app.confirm_delete_backup") }}')">
+                                        <form action="{{ route('backup.destroy', $backup['name']) }}" method="POST" class="contents" x-data @submit.prevent="if(confirm('{{ __("app.confirm_delete_backup") }}')) $el.submit()">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">

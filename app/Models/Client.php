@@ -41,4 +41,9 @@ class Client extends Model
     {
         return $this->hasMany(LegalCase::class);
     }
+
+    public static function getEncryptedFields(): array
+    {
+        return (new static)->encryptable ?? [];
+    }
 }

@@ -226,14 +226,15 @@ class CaseTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_case_validation_case_number_required()
+    public function test_case_validation_case_number_auto_generated()
     {
         $developer = $this->developer();
         $data = $this->caseData(['case_number' => '']);
 
         $response = $this->actingAs($developer)->post('/cases', $data);
 
-        $response->assertSessionHasErrors('case_number');
+        $response->assertRedirect();
+        $this->assertDatabaseHas('cases', ['case_number' => LegalCase::latest()->first()->case_number]);
     }
 
     public function test_case_validation_case_number_unique()

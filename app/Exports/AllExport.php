@@ -15,22 +15,41 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class AllExport implements WithMultipleSheets
 {
+    private $user;
+
+    public function __construct($user)
+    {
+        $this->user = $user;
+    }
+
     public function sheets(): array
     {
+        $user = $this->user;
         return [
-            new CasesSheet(),
-            new SessionsSheet(),
-            new TasksSheet(),
-            new ClientsSheet(),
+            new CasesSheet($user),
+            new SessionsSheet($user),
+            new TasksSheet($user),
+            new ClientsSheet($user),
         ];
     }
 }
 
 class CasesSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, WithStyles, ShouldAutoSize
 {
+    private $user;
+
+    public function __construct($user)
+    {
+        $this->user = $user;
+    }
+
     public function collection()
     {
-        return LegalCase::with(['client', 'lawyer'])->get()->map(fn ($c) => [
+        $query = LegalCase::with(['client', 'lawyer']);
+        if ($this->user->isLawyer()) {
+            $query->where('lawyer_id', $this->user->id);
+        }
+        return $query->get()->map(fn ($c) => [
             $c->case_number ?? '', $c->title ?? '', $c->client?->name ?? '',
             $c->lawyer?->name ?? '', $c->type ?? '', $c->court ?? '',
             $c->opponent ?? '', $c->status ?? '', $c->priority ?? '',
@@ -45,9 +64,20 @@ class CasesSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHead
 
 class SessionsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, WithStyles, ShouldAutoSize
 {
+    private $user;
+
+    public function __construct($user)
+    {
+        $this->user = $user;
+    }
+
     public function collection()
     {
-        return Session::with('case')->get()->map(fn ($s) => [
+        $query = Session::with('case');
+        if ($this->user->isLawyer()) {
+            $query->whereHas('case', fn ($q) => $q->where('lawyer_id', $this->user->id));
+        }
+        return $query->get()->map(fn ($s) => [
             $s->case?->title ?? '', $s->date?->format('Y/m/d H:i') ?? '',
             $s->location ?? '', $s->status ?? '', $s->notes ?? '',
         ]);
@@ -59,9 +89,20 @@ class SessionsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithH
 
 class TasksSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, WithStyles, ShouldAutoSize
 {
+    private $user;
+
+    public function __construct($user)
+    {
+        $this->user = $user;
+    }
+
     public function collection()
     {
-        return Task::with(['assignee', 'case'])->get()->map(fn ($t) => [
+        $query = Task::with(['assignee', 'case']);
+        if ($this->user->isLawyer()) {
+            $query->where('assigned_to', $this->user->id);
+        }
+        return $query->get()->map(fn ($t) => [
             $t->title ?? '', $t->assignee?->name ?? '', $t->case?->title ?? '',
             $t->status ?? '', $t->priority ?? '',
             $t->due_date?->format('Y/m/d') ?? '', $t->completed_at?->format('Y/m/d') ?? '',
@@ -74,9 +115,23 @@ class TasksSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHead
 
 class ClientsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, WithStyles, ShouldAutoSize
 {
+    private $user;
+
+    public function __construct($user)
+    {
+        $this->user = $user;
+    }
+
     public function collection()
     {
-        return Client::with('cases')->get()->map(fn ($c) => [
+        $query = Client::with('cases');
+        if ($this->user->isLawyer()) {
+            $query->where(function ($q) {
+                $q->whereHas('cases', fn ($cq) => $cq->where('lawyer_id', $this->user->id))
+                    ->orWhereDoesntHave('cases');
+            });
+        }
+        return $query->get()->map(fn ($c) => [
             $c->name ?? '', $c->phone ?? '', $c->email ?? '',
             $c->address ?? '', $c->cases->count(), $c->notes ?? '',
         ]);

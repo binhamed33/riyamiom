@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
     <meta charset="UTF-8">
@@ -7,7 +7,7 @@
         @page { margin: 15mm 12mm; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Cairo', sans-serif; direction: rtl; unicode-bidi: bidi-override; color: #1a1a2e; font-size: 11px; line-height: 1.5; }
+        body { font-family: 'cairo', 'dejavusans', sans-serif; direction: rtl; color: #1a1a2e; font-size: 11px; line-height: 1.5; }
 
         /* Header */
         .pdf-header { border-bottom: 4px solid #C9A55A; padding-bottom: 12px; margin-bottom: 18px; }

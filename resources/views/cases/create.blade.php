@@ -1,9 +1,9 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', __('app.page_add_case'))
 
 @section('content')
-<div class="max-w-4xl mx-auto" dir="rtl">
+<div class="max-w-4xl mx-auto" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
     {{-- Header --}}
     <div class="flex items-center justify-between mb-6">
@@ -41,10 +41,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {{-- Case Number --}}
                 <div>
-                    <label for="case_number" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_number') }} <span class="text-red-400">*</span></label>
-                    <input type="text" name="case_number" id="case_number" value="{{ old('case_number') }}" required
+                    <label for="case_number" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_number') }}</label>
+                    <input type="text" name="case_number" id="case_number" value="{{ old('case_number', $generatedNumber) }}"
                         class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('case_number') border-red-500/50 @enderror"
                         placeholder="{{ __('app.case_number_placeholder') }}">
+                    <p class="mt-1 text-xs text-white/30">{{ __('app.case_number_auto') }}</p>
                     @error('case_number')
                         <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
                     @enderror
@@ -105,73 +106,7 @@
                     </label>
                 </div>
                 <template x-if="!manual">
-                    <select name="court" id="court" required
-                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('court') border-red-500/50 @enderror">
-                        <option value="">{{ __('app.choose_court') }}</option>
-                        <optgroup label="المحاكم العليا والاستئناف">
-                            <option value="المحكمة العليا" {{ old('court') === 'المحكمة العليا' ? 'selected' : '' }}>المحكمة العليا</option>
-                            <option value="محكمة استئناف مسقط" {{ old('court') === 'محكمة استئناف مسقط' ? 'selected' : '' }}>محكمة استئناف مسقط</option>
-                            <option value="محكمة استئناف الشمال" {{ old('court') === 'محكمة استئناف الشمال' ? 'selected' : '' }}>محكمة استئناف الشمال</option>
-                            <option value="محكمة استئناف جنوب الباطنة" {{ old('court') === 'محكمة استئناف جنوب الباطنة' ? 'selected' : '' }}>محكمة استئناف جنوب الباطنة</option>
-                            <option value="محكمة استئناف الداخلية" {{ old('court') === 'محكمة استئناف الداخلية' ? 'selected' : '' }}>محكمة استئناف الداخلية</option>
-                            <option value="محكمة استئناف البريمي" {{ old('court') === 'محكمة استئناف البريمي' ? 'selected' : '' }}>محكمة استئناف البريمي</option>
-                            <option value="محكمة استئناف ظفار" {{ old('court') === 'محكمة استئناف ظفار' ? 'selected' : '' }}>محكمة استئناف ظفار</option>
-                            <option value="محكمة استئناف شمال الباطنة" {{ old('court') === 'محكمة استئناف شمال الباطنة' ? 'selected' : '' }}>محكمة استئناف شمال الباطنة</option>
-                            <option value="محكمة استئناف مسندم" {{ old('court') === 'محكمة استئناف مسندم' ? 'selected' : '' }}>محكمة استئناف مسندم</option>
-                            <option value="محكمة استئناف الوسطى" {{ old('court') === 'محكمة استئناف الوسطى' ? 'selected' : '' }}>محكمة استئناف الوسطى</option>
-                            <option value="محكمة استئناف الشرقية" {{ old('court') === 'محكمة استئناف الشرقية' ? 'selected' : '' }}>محكمة استئناف الشرقية</option>
-                            <option value="محكمة استئناف جنوب الشرقية" {{ old('court') === 'محكمة استئناف جنوب الشرقية' ? 'selected' : '' }}>محكمة استئناف جنوب الشرقية</option>
-                            <option value="محكمة استئناف عمان" {{ old('court') === 'محكمة استئناف عمان' ? 'selected' : '' }}>محكمة استئناف عمان</option>
-                        </optgroup>
-                        <optgroup label="المحاكم الابتدائية - مسقط">
-                            <option value="المحكمة الابتدائية بمسقط" {{ old('court') === 'المحكمة الابتدائية بمسقط' ? 'selected' : '' }}>المحكمة الابتدائية بمسقط</option>
-                            <option value="المحكمة الابتدائية بوطيّة" {{ old('court') === 'المحكمة الابتدائية بوطيّة' ? 'selected' : '' }}>المحكمة الابتدائية بوطيّة</option>
-                            <option value="المحكمة الابتدائية بالخوض" {{ old('court') === 'المحكمة الابتدائية بالخوض' ? 'selected' : '' }}>المحكمة الابتدائية بالخوض</option>
-                            <option value="المحكمة الابتدائية بقابس" {{ old('court') === 'المحكمة الابتدائية بقابس' ? 'selected' : '' }}>المحكمة الابتدائية بقابس</option>
-                            <option value="المحكمة الابتدائية بالعامر" {{ old('court') === 'المحكمة الابتدائية بالعامر' ? 'selected' : '' }}>المحكمة الابتدائية بالعامر</option>
-                            <option value="المحكمة الابتدائية بالسيب" {{ old('court') === 'المحكمة الابتدائية بالسيب' ? 'selected' : '' }}>المحكمة الابتدائية بالسيب</option>
-                            <option value="المحكمة الابتدائية ببوشر" {{ old('court') === 'المحكمة الابتدائية ببوشر' ? 'selected' : '' }}>المحكمة الابتدائية ببوشر</option>
-                            <option value="المحكمة الابتدائية بالمكيلة" {{ old('court') === 'المحكمة الابتدائية بالمكيلة' ? 'selected' : '' }}>المحكمة الابتدائية بالمكيلة</option>
-                            <option value="المحكمة الابتدائية بمسقط الجديدة" {{ old('court') === 'المحكمة الابتدائية بمسقط الجديدة' ? 'selected' : '' }}>المحكمة الابتدائية بمسقط الجديدة</option>
-                            <option value="المحكمة الابتدائية بالخابورة" {{ old('court') === 'المحكمة الابتدائية بالخابورة' ? 'selected' : '' }}>المحكمة الابتدائية بالخابورة</option>
-                            <option value="المحكمة الابتدائية بالرستاق" {{ old('court') === 'المحكمة الابتدائية بالرستاق' ? 'selected' : '' }}>المحكمة الابتدائية بالرستاق</option>
-                            <option value="المحكمة الابتدائية بسمائل" {{ old('court') === 'المحكمة الابتدائية بسمائل' ? 'selected' : '' }}>المحكمة الابتدائية بسمائل</option>
-                            <option value="المحكمة الابتدائية ببهلاء" {{ old('court') === 'المحكمة الابتدائية ببهلاء' ? 'selected' : '' }}>المحكمة الابتدائية ببهلاء</option>
-                        </optgroup>
-                        <optgroup label="المحاكم الابتدائية - الشمال">
-                            <option value="المحكمة الابتدائية بالخزارة" {{ old('court') === 'المحكمة الابتدائية بالخزارة' ? 'selected' : '' }}>المحكمة الابتدائية بالخزارة</option>
-                            <option value="المحكمة الابتدائية بالخوير" {{ old('court') === 'المحكمة الابتدائية بالخوير' ? 'selected' : '' }}>المحكمة الابتدائية بالخوير</option>
-                            <option value="المحكمة الابتدائية لوادي عما" {{ old('court') === 'المحكمة الابتدائية لوادي عما' ? 'selected' : '' }}>المحكمة الابتدائية لوادي عما</option>
-                        </optgroup>
-                        <optgroup label="المحاكم الابتدائية - الداخلية">
-                            <option value="المحكمة الابتدائية بنزوى" {{ old('court') === 'المحكمة الابتدائية بنزوى' ? 'selected' : '' }}>المحكمة الابتدائية بنزوى</option>
-                            <option value="المحكمة الابتدائية بعبري" {{ old('court') === 'المحكمة الابتدائية بعبري' ? 'selected' : '' }}>المحكمة الابتدائية بعبري</option>
-                            <option value="المحكمة الابتدائية بالعمارة" {{ old('court') === 'المحكمة الابتدائية بالعمارة' ? 'selected' : '' }}>المحكمة الابتدائية بالعمارة</option>
-                            <option value="المحكمة الابتدائية بالحمراء" {{ old('court') === 'المحكمة الابتدائية بالحمراء' ? 'selected' : '' }}>المحكمة الابتدائية بالحمراء</option>
-                        </optgroup>
-                        <optgroup label="المحاكم الابتدائية - ظفار">
-                            <option value="المحكمة الابتدائية بصلالة" {{ old('court') === 'المحكمة الابتدائية بصلالة' ? 'selected' : '' }}>المحكمة الابتدائية بصلالة</option>
-                            <option value="المحكمة الابتدائية بمزيونة" {{ old('court') === 'المحكمة الابتدائية بمزيونة' ? 'selected' : '' }}>المحكمة الابتدائية بمزيونة</option>
-                            <option value="المحكمة الابتدائية بطاقة" {{ old('court') === 'المحكمة الابتدائية بطاقة' ? 'selected' : '' }}>المحكمة الابتدائية بطاقة</option>
-                        </optgroup>
-                        <optgroup label="المحاكم الابتدائية - الشرقية">
-                            <option value="المحكمة الابتدائية ببركاء" {{ old('court') === 'المحكمة الابتدائية ببركاء' ? 'selected' : '' }}>المحكمة الابتدائية ببركاء</option>
-                            <option value="المحكمة الابتدائية بالعمارة" {{ old('court') === 'المحكمة الابتدائية بالعمارة' ? 'selected' : '' }}>المحكمة الابتدائية بالعمارة</option>
-                            <option value="المحكمة الابتدائية بمحضّة" {{ old('court') === 'المحكمة الابتدائية بمحضّة' ? 'selected' : '' }}>المحكمة الابتدائية بمحضّة</option>
-                            <option value="المحكمة الابتدائية بالصوير" {{ old('court') === 'المحكمة الابتدائية بالصوير' ? 'selected' : '' }}>المحكمة الابتدائية بالصوير</option>
-                            <option value="المحكمة الابتدائية بإيبرا" {{ old('court') === 'المحكمة الابتدائية بإيبرا' ? 'selected' : '' }}>المحكمة الابتدائية بإيبرا</option>
-                        </optgroup>
-                        <optgroup label="المحاكم الابتدائية - البريمي">
-                            <option value="المحكمة الابتدائية بالبريمي" {{ old('court') === 'المحكمة الابتدائية بالبريمي' ? 'selected' : '' }}>المحكمة الابتدائية بالبريمي</option>
-                            <option value="المحكمة الابتدائية بالسويق" {{ old('court') === 'المحكمة الابتدائية بالسويق' ? 'selected' : '' }}>المحكمة الابتدائية بالسويق</option>
-                            <option value="المحكمة الابتدائية بالخزارة (البريمي)" {{ old('court') === 'المحكمة الابتدائية بالخزارة (البريمي)' ? 'selected' : '' }}>المحكمة الابتدائية بالخزارة (البريمي)</option>
-                        </optgroup>
-                        <optgroup label="المحاكم الابتدائية - مسندم">
-                            <option value="المحكمة الابتدائية بخصب" {{ old('court') === 'المحكمة الابتدائية بخصب' ? 'selected' : '' }}>المحكمة الابتدائية بخصب</option>
-                            <option value="المحكمة الابتدائية بالخزارة (مسندم)" {{ old('court') === 'المحكمة الابتدائية بالخزارة (مسندم)' ? 'selected' : '' }}>المحكمة الابتدائية بالخزارة (مسندم)</option>
-                            <option value="المحكمة الابتدائية بدباء" {{ old('court') === 'المحكمة الابتدائية بدباء' ? 'selected' : '' }}>المحكمة الابتدائية بدباء</option>
-                        </optgroup>
-                    </select>
+                    @include('cases._court_select', ['selected' => old('court')])
                 </template>
                 <template x-if="manual">
                     <input type="text" name="court" id="court" value="{{ old('court') }}"
@@ -359,9 +294,9 @@
                     <label for="lawyer_id" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_lawyer') }}</label>
                     <select name="lawyer_id" id="lawyer_id"
                         class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('lawyer_id') border-red-500/50 @enderror">
-                        <option value="">{{ __('app.choose_lawyer') }}</option>
-                        @foreach($lawyers ?? [] as $lawyer)
-                            <option value="{{ $lawyer->id }}" {{ old('lawyer_id') == $lawyer->id ? 'selected' : '' }}>{{ $lawyer->name }}</option>
+                        <option value="">{{ __('app.choose_user') }}</option>
+                        @foreach($users ?? [] as $user)
+                            <option value="{{ $user->id }}" {{ old('lawyer_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
                         @endforeach
                     </select>
                     @error('lawyer_id')

@@ -47,23 +47,27 @@ class CaseController extends Controller
         }
 
         $cases = $query->latest()->paginate(15)->withQueryString();
-        $lawyers = User::where('role', 'lawyer')->get();
+        $users = User::where('is_active', true)->orderBy('name')->get();
 
-        return view('cases.index', compact('cases', 'lawyers'));
+        return view('cases.index', compact('cases', 'users'));
     }
 
     public function create(): View
     {
         $clients = Client::orderBy('name')->get();
-        $lawyers = User::where('role', 'lawyer')->orderBy('name')->get();
+        $users = User::where('is_active', true)->orderBy('name')->get();
 
-        return view('cases.create', compact('clients', 'lawyers'));
+        do {
+            $generatedNumber = (string) random_int(100000, 99999999);
+        } while (LegalCase::where('case_number', $generatedNumber)->exists());
+
+        return view('cases.create', compact('clients', 'users', 'generatedNumber'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'case_number' => 'required|string|unique:cases,case_number',
+            'case_number' => 'nullable|string|unique:cases,case_number',
             'title'       => 'required|string|max:255',
             'description' => 'required|string',
             'type'        => 'required|string|max:255',
@@ -77,6 +81,13 @@ class CaseController extends Controller
             'lawyer_id'   => 'nullable|exists:users,id',
         ]);
 
+        if (empty($validated['case_number'])) {
+            do {
+                $generated = (string) random_int(100000, 99999999);
+            } while (LegalCase::where('case_number', $generated)->exists());
+            $validated['case_number'] = $generated;
+        }
+
         $legalCase = LegalCase::create($validated);
 
         $this->logAudit(
@@ -88,7 +99,8 @@ class CaseController extends Controller
         );
 
         return redirect()->route('cases.show', $legalCase)
-            ->with('success', 'Case created successfully.');
+            ->with('success', 'case_created')
+            ->with('print_url', route('cases.show', $legalCase) . '?print=1');
     }
 
     public function show(LegalCase $case): View
@@ -105,9 +117,9 @@ class CaseController extends Controller
         $this->authorizeCaseAccess($case);
 
         $clients = Client::orderBy('name')->get();
-        $lawyers = User::where('role', 'lawyer')->orderBy('name')->get();
+        $users = User::where('is_active', true)->orderBy('name')->get();
 
-        return view('cases.edit', compact('case', 'clients', 'lawyers'));
+        return view('cases.edit', compact('case', 'clients', 'users'));
     }
 
     public function update(Request $request, LegalCase $case): RedirectResponse

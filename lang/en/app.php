@@ -104,11 +104,13 @@ return [
     'edit_case' => 'Edit Case',
     'delete_case' => 'Delete Case',
     'case_summary' => 'Case Summary',
+    'print' => 'Print',
     'manage_cases' => 'Manage Cases',
     'overdue_report' => 'Overdue Report',
     'add_new_case' => 'Add New Case',
     'basic_info' => 'Basic Information',
     'case_number_placeholder' => 'e.g. 2026/1234',
+    'case_number_auto' => 'A random number will be generated if left empty',
     'case_title_placeholder' => 'Case title',
     'case_type_placeholder' => 'e.g. Civil, Criminal, Commercial',
     'opponent_name_placeholder' => 'Opponent name',
@@ -215,7 +217,9 @@ return [
     'table_access' => 'Access',
     'table_uploaded' => 'Uploaded',
     'download' => 'Download',
+    'preview' => 'Preview',
     'no_documents' => 'No documents.',
+    'file_not_found' => 'File not found on server.',
 
     // Clients
     'client_name' => 'Client Name',
@@ -376,6 +380,9 @@ return [
     'auto_backup_schedule' => 'A backup is created automatically daily at 3:00 AM — Last 30 backups kept',
     'backup_count' => 'backups',
     'backup_auto_keep_30' => 'Keeps last 30 backups automatically',
+    'upload_backup_file' => 'Choose a backup file from your computer',
+    'restore_upload' => 'Restore from file',
+    'restoring' => 'Restoring...',
 
     // Auth
     'login_title' => 'Login',

@@ -1,9 +1,67 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', __('app.page_case_details') . ' - ' . $case->case_number)
 
+@push('styles')
+<script nonce="{{ $cspNonce }}">
+document.addEventListener('alpine:init', () => {
+    Alpine.data('caseDetail', () => ({
+        activeTab: 'sessions',
+        showSummary: false,
+        copySummary() {
+            const el = document.querySelector('.summary-body');
+            if (el) {
+                navigator.clipboard.writeText(el.innerText).then(() => {
+                    alert('{{ __("app.summary_copied") }}');
+                });
+            }
+        },
+        printSummary() {
+            const el = document.querySelector('.summary-body');
+            if (!el) return;
+            const printContent = el.cloneNode(true);
+            printContent.querySelectorAll('button, .no-print').forEach(b => b.remove());
+            const win = window.open('', '_blank');
+            if (!win) return;
+            win.document.write('<html><head><title>{{ __("app.case_summary") }} - {{ $case->case_number }}</title>');
+            win.document.write('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap">');
+            win.document.write('</head><body>');
+            win.document.write('<div style="max-width:700px;margin:30px auto;font-family:Tajawal,Cairo,sans-serif;direction:rtl;padding:20px;color:#333;">');
+            win.document.write('<h2 style="color:#C9A55A;border-bottom:2px solid #C9A55A;padding-bottom:10px;">{{ __("app.case_summary") }} - {{ $case->case_number }}</h2>');
+            win.document.write(printContent.innerHTML);
+            win.document.write('</div></body></html>');
+            win.document.close();
+            setTimeout(() => win.print(), 300);
+        }
+    }));
+});
+</script>
+<style>
+    @media print {
+        @page { margin: 10mm; size: A4; }
+        body { background: white !important; color: black !important; }
+        aside, header, footer, form, [x-cloak] { display: none !important; }
+        .no-print { display: none !important; }
+        [dir="rtl"] .content-area { margin: 0 !important; }
+        [dir="ltr"] .content-area { margin: 0 !important; }
+        main { padding: 0 !important; }
+        * { box-shadow: none !important; text-shadow: none !important; }
+        .print-header { border-bottom: 2px solid #C9A55A; padding-bottom: 10px; margin-bottom: 20px; }
+        .print-footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 5px; }
+    }
+    .print-only { display: none; }
+    @media print { .print-only { display: block !important; } }
+</style>
+@endpush
+
 @section('content')
-<div class="space-y-6" dir="rtl" x-data="caseDetail()">
+<div class="space-y-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}" x-data="caseDetail">
+
+    {{-- Print Header (visible only in print) --}}
+    <div class="print-only print-header">
+        <h1 style="font-size:20px;color:#C9A55A;margin:0;">{{ $case->title }}</h1>
+        <p style="color:#666;font-size:12px;margin:2px 0;">{{ __('app.case_number') }}: {{ $case->case_number }} | {{ $case->created_at->format('Y-m-d') }}</p>
+    </div>
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -19,6 +77,13 @@
                 </svg>
                 {{ __('app.case_summary') }}
             </button>
+            {{-- Print Button --}}
+            <button @click="window.print()" class="bg-white/10 hover:bg-white/20 text-white/70 px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 no-print">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                {{ __('app.print') }}
+            </button>
             {{-- Download PDF Button --}}
             <a href="{{ route('cases.file', $case) }}" class="bg-gold hover:bg-gold-dark text-navy px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,7 +94,7 @@
             <a href="{{ route('cases.edit', $case->id) }}" class="bg-gold hover:bg-gold-dark text-navy px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                 {{ __('app.edit') }}
             </a>
-            <form action="{{ route('cases.destroy', $case->id) }}" method="POST" class="contents" onsubmit="return confirm('{{ __('app.confirm_delete_case_full') }}')">
+            <form action="{{ route('cases.destroy', $case->id) }}" method="POST" class="contents" x-data @submit.prevent="if(confirm('{{ __('app.confirm_delete_case_full') }}')) $el.submit()">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm">
@@ -268,11 +333,18 @@
                                     <p class="text-white/50 text-xs">{{ $document->created_at?->format('Y/m/d') ?? '' }}</p>
                                 </div>
                                 @if(isset($document->file_path))
+                                    @php $canView = in_array(strtolower($document->file_type ?? ''), ['pdf', 'jpg', 'jpeg', 'png']) @endphp
+                                    @if($canView)
+                                    <a href="{{ route('documents.preview', $document) }}" target="_blank"
+                                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors flex-shrink-0"
+                                        title="{{ __('app.preview') }}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    </a>
+                                    @endif
                                     <a href="{{ route('documents.download', $document) }}" target="_blank"
-                                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors flex-shrink-0">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                        </svg>
+                                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors flex-shrink-0"
+                                        title="{{ __('app.download') }}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                     </a>
                                 @endif
                             </div>
@@ -312,7 +384,7 @@
             </div>
 
             {{-- Body --}}
-            <div class="summary-body px-6 py-5 overflow-y-auto flex-1 space-y-4" dir="rtl">
+            <div class="summary-body px-6 py-5 overflow-y-auto flex-1 space-y-4" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
                 {{-- Status & Priority --}}
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-white/[0.03] rounded-xl p-3 border border-white/5">
@@ -419,34 +491,9 @@
 </div>
 
 @push('scripts')
-<script>
-    function caseDetail() {
-        return {
-            activeTab: 'sessions',
-            showSummary: false,
-            init() {},
-            copySummary() {
-                const el = document.querySelector('.summary-body');
-                if (el) {
-                    navigator.clipboard.writeText(el.innerText).then(() => {
-                        alert('{{ __("app.summary_copied") }}');
-                    });
-                }
-            },
-            printSummary() {
-                const el = document.querySelector('.summary-body');
-                if (!el) return;
-                const win = window.open('', '_blank');
-                win.document.write('<html><head><title>{{ __("app.case_summary") }}</title><style>body{font-family:Cairo,Tajawal,sans-serif;padding:30px;direction:rtl;color:#333}h2{color:#C9A55A;border-bottom:2px solid #C9A55A;padding-bottom:10px}.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee}.label{color:#888}.value{font-weight:bold}</style></head><body>');
-                win.document.write('<h2>{{ __("app.case_summary") }} - {{ $case->case_number }}</h2>');
-                win.document.write(el.innerText);
-                win.document.write('</body></html>');
-                win.document.close();
-                win.print();
-            }
-        };
-    }
-</script>
+@if(request()->has('print'))
+<script nonce="{{ $cspNonce }}">window.onload = function() { window.print(); }</script>
+@endif
 @endpush
 
 <style>

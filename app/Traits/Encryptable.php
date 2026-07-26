@@ -60,8 +60,5 @@ trait Encryptable
         return $value;
     }
 
-    public function scopeSearchEncrypted($query, string $column, string $search)
-    {
-        return $query->where($column, 'LIKE', "%{$search}%");
-    }
+
 }

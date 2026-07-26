@@ -104,11 +104,13 @@ return [
     'edit_case' => 'تعديل القضية',
     'delete_case' => 'حذف القضية',
     'case_summary' => 'ملخص القضية',
+    'print' => 'طباعة',
     'manage_cases' => 'إدارة القضايا',
     'overdue_report' => 'كشف المتأخرة',
     'add_new_case' => 'إضافة قضية جديدة',
     'basic_info' => 'المعلومات الأساسية',
     'case_number_placeholder' => 'مثال: 2026/1234',
+    'case_number_auto' => 'سيتم إنشاء رقم تلقائي إذا تركته فارغاً',
     'case_title_placeholder' => 'عنوان القضية',
     'case_type_placeholder' => 'مثال: مدنية، جزائية، تجارية',
     'opponent_name_placeholder' => 'اسم الطرف المقابل',
@@ -215,7 +217,9 @@ return [
     'table_access' => 'الوصول',
     'table_uploaded' => 'تاريخ الرفع',
     'download' => 'تحميل',
+    'preview' => 'معاينة',
     'no_documents' => 'لا توجد مستندات.',
+    'file_not_found' => 'الملف غير موجود على الخادم.',
 
     // Clients
     'client_name' => 'اسم العميل',
@@ -376,6 +380,9 @@ return [
     'auto_backup_schedule' => 'يتم إنشاء نسخة احتياطية تلقائياً يومياً الساعة 3:00 صباحاً — آخر 30 نسخة محفوظة',
     'backup_count' => 'نسخة',
     'backup_auto_keep_30' => 'يحتفظ بآخر 30 نسخة تلقائياً',
+    'upload_backup_file' => 'اختر ملف النسخة الاحتياطية من جهازك',
+    'restore_upload' => 'استرجاع من ملف',
+    'restoring' => 'جارٍ الاسترجاع...',
 
     // Auth
     'login_title' => 'تسجيل الدخول',

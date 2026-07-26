@@ -23,31 +23,18 @@ class CaseFileController extends Controller
 
             $mpdf = new Mpdf([
                 'mode' => 'utf-8',
-                'direction' => 'rtl',
-                'default_font' => 'Amiri',
+                'format' => 'A4',
+                'default_font' => 'cairo',
                 'fontDir' => [$fontDir],
                 'fontdata' => [
-                    'amiri' => [
-                        'R' => 'Amiri-Regular.ttf',
-                        'B' => 'Amiri-Bold.ttf',
-                    ],
                     'cairo' => [
                         'R' => 'Cairo-Regular.ttf',
                         'B' => 'Cairo-Bold.ttf',
+                        'useOTL' => 0xFF,
+                        'useKashida' => 75,
                     ],
                 ],
-                'config_font_variables' => [
-                    'amiri' => [
-                        'R' => 'Amiri-Regular.ttf',
-                        'B' => 'Amiri-Bold.ttf',
-                    ],
-                    'cairo' => [
-                        'R' => 'Cairo-Regular.ttf',
-                        'B' => 'Cairo-Bold.ttf',
-                    ],
-                ],
-                'abicorrect' => 1,
-                'autoArabic' => true,
+                'biDirectional' => true,
                 'margin_header' => 10,
                 'margin_footer' => 10,
                 'margin_left' => 12,
@@ -56,16 +43,23 @@ class CaseFileController extends Controller
                 'margin_bottom' => 15,
             ]);
 
-            $mpdf->SetFont('amiri');
+            $mpdf->autoArabic = true;
 
-            $html = view('pdf.case-file', compact('case'))->render();
+            $mpdf->SetDirectionality('rtl');
+            $mpdf->useSubstitutions = true;
+
+            $html = view('pdf.case-file', ['case' => $case, 'title' => 'ملف القضية - ' . $case->case_number])->render();
+            $html = preg_replace('/^\xEF\xBB\xBF|\xEF\xBB\xBF$/', '', $html);
             $mpdf->WriteHTML($html);
 
             $fileName = 'case-file-' . str_replace('/', '-', $case->case_number) . '-' . date('Y-m-d') . '.pdf';
 
-            return response($mpdf->Output($fileName, 'I'), 200, [
+            $pdfContent = $mpdf->Output($fileName, 'S');
+
+            return response($pdfContent, 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+                'Content-Length' => strlen($pdfContent),
             ]);
         } catch (MpdfException $e) {
             abort(500, 'فشل إنشاء ملف PDF: ' . $e->getMessage());

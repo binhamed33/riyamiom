@@ -33,36 +33,36 @@ class ExportController extends Controller
 
     public function cases()
     {
-        $count = LegalCase::count();
-        $this->logAudit(AuditLog::ACTION_CREATE, null, null, null, ['action' => 'export', 'type' => 'cases', 'count' => $count]);
-        return Excel::download(new CasesExport, 'cases_' . now()->format('Y-m-d') . '.xlsx');
+        $user = auth()->user();
+        $this->logAudit(AuditLog::ACTION_CREATE, null, null, null, ['action' => 'export', 'type' => 'cases']);
+        return Excel::download(new CasesExport($user), 'cases_' . now()->format('Y-m-d') . '.xlsx');
     }
 
     public function sessions()
     {
-        $count = Session::count();
-        $this->logAudit(AuditLog::ACTION_CREATE, null, null, null, ['action' => 'export', 'type' => 'sessions', 'count' => $count]);
-        return Excel::download(new SessionsExport, 'sessions_' . now()->format('Y-m-d') . '.xlsx');
+        $user = auth()->user();
+        $this->logAudit(AuditLog::ACTION_CREATE, null, null, null, ['action' => 'export', 'type' => 'sessions']);
+        return Excel::download(new SessionsExport($user), 'sessions_' . now()->format('Y-m-d') . '.xlsx');
     }
 
     public function tasks()
     {
-        $count = Task::count();
-        $this->logAudit(AuditLog::ACTION_CREATE, null, null, null, ['action' => 'export', 'type' => 'tasks', 'count' => $count]);
-        return Excel::download(new TasksExport, 'tasks_' . now()->format('Y-m-d') . '.xlsx');
+        $user = auth()->user();
+        $this->logAudit(AuditLog::ACTION_CREATE, null, null, null, ['action' => 'export', 'type' => 'tasks']);
+        return Excel::download(new TasksExport($user), 'tasks_' . now()->format('Y-m-d') . '.xlsx');
     }
 
     public function clients()
     {
-        $count = Client::count();
-        $this->logAudit(AuditLog::ACTION_CREATE, null, null, null, ['action' => 'export', 'type' => 'clients', 'count' => $count]);
-        return Excel::download(new ClientsExport, 'clients_' . now()->format('Y-m-d') . '.xlsx');
+        $user = auth()->user();
+        $this->logAudit(AuditLog::ACTION_CREATE, null, null, null, ['action' => 'export', 'type' => 'clients']);
+        return Excel::download(new ClientsExport($user), 'clients_' . now()->format('Y-m-d') . '.xlsx');
     }
 
     public function all()
     {
-        $total = LegalCase::count() + Session::count() + Task::count() + Client::count();
+        $user = auth()->user();
         $this->logAudit(AuditLog::ACTION_CREATE, null, null, null, ['action' => 'export', 'type' => 'all']);
-        return Excel::download(new AllExport, 'law_office_export_' . now()->format('Y-m-d') . '.xlsx');
+        return Excel::download(new AllExport($user), 'law_office_export_' . now()->format('Y-m-d') . '.xlsx');
     }
 }

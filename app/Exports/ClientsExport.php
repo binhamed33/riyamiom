@@ -11,9 +11,23 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class ClientsExport implements FromCollection, WithHeadings, WithStyles, ShouldAutoSize
 {
+    private $user;
+
+    public function __construct($user)
+    {
+        $this->user = $user;
+    }
+
     public function collection()
     {
-        return Client::with('cases')->get()->map(function ($client) {
+        $query = Client::with('cases');
+        if ($this->user->isLawyer()) {
+            $query->where(function ($q) {
+                $q->whereHas('cases', fn ($cq) => $cq->where('lawyer_id', $this->user->id))
+                    ->orWhereDoesntHave('cases');
+            });
+        }
+        return $query->get()->map(function ($client) {
             return [
                 $client->name ?? '',
                 $client->phone ?? '',

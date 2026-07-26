@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RoleMiddleware
 {
-    public function handle(Request $request, Closure $next, ...$roles): Response
+    public function handle(Request $request, Closure $next, ...$params): Response
     {
         if (!auth()->check()) {
             return redirect()->route('login');
@@ -19,14 +19,31 @@ class RoleMiddleware
             return redirect()->route('login')->with('error', 'تم تعطيل حسابك');
         }
 
-        if (auth()->user()->isDeveloper()) {
+        $user = auth()->user();
+
+        if ($user->isDeveloper()) {
             return $next($request);
         }
 
-        if (!in_array(auth()->user()->role, $roles)) {
-            abort(403, 'غير مصرح لك بالوصول');
+        $roles = [];
+        $permission = null;
+
+        foreach ($params as $p) {
+            if (str_starts_with($p, 'permission:')) {
+                $permission = substr($p, 11);
+            } else {
+                $roles[] = $p;
+            }
         }
 
-        return $next($request);
+        if (!empty($roles) && in_array($user->role, $roles)) {
+            return $next($request);
+        }
+
+        if ($permission && $user->hasPermission($permission)) {
+            return $next($request);
+        }
+
+        abort(403, 'غير مصرح لك بالوصول');
     }
 }

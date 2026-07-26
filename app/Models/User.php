@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, Encryptable;
@@ -92,5 +93,34 @@ class User extends Authenticatable
     public function isClient(): bool
     {
         return $this->role === 'client';
+    }
+
+    public function permissions(): HasMany
+    {
+        return $this->hasMany(UserPermission::class);
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->isDeveloper()) return true;
+        return $this->permissions()->where('permission', $permission)->exists();
+    }
+
+    public function givePermission(string $permission): void
+    {
+        $this->permissions()->firstOrCreate(['permission' => $permission]);
+    }
+
+    public function syncPermissions(array $permissions): void
+    {
+        $this->permissions()->whereNotIn('permission', $permissions)->delete();
+        foreach ($permissions as $perm) {
+            $this->permissions()->firstOrCreate(['permission' => $perm]);
+        }
+    }
+
+    public function permissionNames(): array
+    {
+        return $this->permissions()->pluck('permission')->toArray();
     }
 }

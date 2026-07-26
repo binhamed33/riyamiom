@@ -54,8 +54,15 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => explode(',', (string) env('LOG_STACK', 'single,discord')),
             'ignore_exceptions' => false,
+        ],
+
+        'discord' => [
+            'driver' => 'custom',
+            'via' => App\Logging\CreateDiscordLogger::class,
+            'url' => env('DISCORD_LOG_WEBHOOK'),
+            'level' => env('LOG_LEVEL', 'error'),
         ],
 
         'single' => [

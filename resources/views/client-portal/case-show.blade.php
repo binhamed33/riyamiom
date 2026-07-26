@@ -1,9 +1,9 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', __('app.page_my_case_details') . ': ' . $case->title)
 
 @section('content')
-<div class="space-y-6" dir="rtl">
+<div class="space-y-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">

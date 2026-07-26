@@ -2,75 +2,150 @@
 
 namespace App\Console\Commands;
 
-use App\Models\LegalCase;
-use App\Models\Task;
-use App\Models\User;
-use App\Services\DiscordService;
+use App\Services\DiscordWebhook;
+use App\Services\ServerMonitor;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
 
 class DiscordStatus extends Command
 {
     protected $signature = 'discord:status';
-    protected $description = 'Send server status to Discord webhook';
+    protected $description = 'Send/update server monitoring embed on Discord (edits same message)';
 
-    public function handle(DiscordService $discord): int
+    public function handle(ServerMonitor $monitor, DiscordWebhook $webhook): int
     {
-        $laravelRunning = true;
-        $responseTime = 0;
+        $hookUrl = config('services.discord.monitor_webhook');
 
-        try {
-            $start = microtime(true);
-            Artisan::call('about', [], $output = new \Symfony\Component\Console\Output\BufferedOutput);
-            $responseTime = round((microtime(true) - $start) * 1000);
-        } catch (\Exception $e) {
-            $laravelRunning = false;
+        if (!$hookUrl) {
+            $this->error('DISCORD_MONITOR_WEBHOOK not set in .env');
+            return Command::FAILURE;
         }
 
-        $memoryUsed = round(memory_get_usage(true) / 1024 / 1024);
-        $memoryTotal = round(memory_get_peak_usage(true) / 1024 / 1024);
-        if ($memoryTotal < 512) $memoryTotal = 512;
+        $data = $monitor->gather();
+        $embed = $this->buildEmbed($data);
 
-        $diskPath = getenv('SystemDrive') ?: 'C:';
-        $diskFree = @round(disk_free_space($diskPath) / 1073741824, 1) ?: 0;
-        $diskTotal = @round(disk_total_space($diskPath) / 1073741824, 1) ?: 1;
-        $diskUsed = round($diskTotal - $diskFree, 1);
+        $webhook->sendOrUpdate($hookUrl, $embed);
 
-        $dbPath = database_path('database.sqlite');
-        $dbSize = file_exists($dbPath) ? round(filesize($dbPath) / 1024 / 1024, 2) : 0;
+        $this->info('Server status embed updated on Discord.');
+        return Command::SUCCESS;
+    }
 
-        $backupDir = storage_path('app/backups');
-        $backupFiles = is_dir($backupDir) ? glob($backupDir . '/*.zip') : [];
-        $backupCount = count($backupFiles);
-        $backupSize = 0;
-        foreach ($backupFiles as $f) {
-            $backupSize += filesize($f);
-        }
-        $backupSize = round($backupSize / 1024 / 1024, 1);
+    protected function buildEmbed(array $d): array
+    {
+        $allGreen = $d['database']['connected'];
+        $color = $allGreen ? 0x00FF00 : 0xFF0000;
+        $mp = $d['memory'];
 
-        $loadAvg = function_exists('sys_getloadavg') ? (float) sys_getloadavg()[0] : 0.0;
+        $fields = [];
 
-        $stats = [
-            'uptime' => $loadAvg,
-            'response_time' => $responseTime,
-            'memory_used' => $memoryUsed,
-            'memory_total' => $memoryTotal,
-            'disk_used' => $diskUsed,
-            'disk_total' => $diskTotal,
-            'db_size' => $dbSize,
-            'backup_count' => $backupCount,
-            'backup_size' => $backupSize,
-            'total_users' => User::count(),
-            'active_users' => User::where('is_active', true)->count(),
-            'total_cases' => LegalCase::count(),
-            'active_cases' => LegalCase::where('status', 'active')->count(),
-            'total_tasks' => Task::count(),
-            'pending_tasks' => Task::where('status', '!=', 'completed')->count(),
-            'laravel_running' => $laravelRunning,
+        $fields[] = [
+            'name' => '🖥️ Server',
+            'value' => sprintf(
+                "**Hostname:** `%s`\n**OS:** %s\n**Boot:** %s\n**Uptime:** %s",
+                $d['system']['hostname'],
+                $d['system']['os'],
+                $d['system']['boot_time'],
+                $d['system']['uptime']
+            ),
+            'inline' => false,
         ];
 
-        $discord->serverStatus($stats);
-        $this->info('Status sent to Discord');
-        return 0;
+        $cpuVal = $d['cpu']['usage'] ?? 'N/A';
+        if (isset($d['cpu']['load_1'])) {
+            $cpuVal = sprintf('%s (load: %s / %s / %s)', $d['cpu']['usage'], $d['cpu']['load_1'], $d['cpu']['load_5'], $d['cpu']['load_15']);
+        }
+        $memPct = $mp['pct'] ?? 0;
+        $memEmoji = $memPct > 85 ? '🔴' : ($memPct > 70 ? '🟡' : '🟢');
+        $cpuEmoji = $memPct > 85 ? '🔴' : ($memPct > 70 ? '🟡' : '🟢');
+        $fields[] = [
+            'name' => '⚙️ Resources',
+            'value' => sprintf(
+                "%s **CPU:** %s (%s cores)\n%s **RAM:** %s MB / %s MB (**%s%%**)\n💾 **Free RAM:** %s MB",
+                $cpuEmoji, $cpuVal, $d['cpu']['cores'] ?? 'N/A',
+                $memEmoji, $mp['used'] ?? 'N/A', $mp['total'] ?? 'N/A', $memPct,
+                $mp['free'] ?? 'N/A'
+            ),
+            'inline' => false,
+        ];
+
+        $diskParts = [];
+        foreach ($d['disk'] as $disk) {
+            $pctEmoji = $disk['pct'] > 85 ? '🔴' : ($disk['pct'] > 70 ? '🟡' : '🟢');
+            $diskParts[] = sprintf("%s `%s` %s GB / %s GB (%s%%)", $pctEmoji, $disk['mount'], $disk['used'], $disk['total'], $disk['pct']);
+        }
+        $fields[] = [
+            'name' => '💾 Disk',
+            'value' => $diskParts ? implode("\n", $diskParts) : 'N/A',
+            'inline' => false,
+        ];
+
+        $dbEmoji = $d['database']['connected'] ? '🟢' : '🔴';
+        $fields[] = [
+            'name' => '🗄️ Database',
+            'value' => sprintf(
+                "%s **%s** v%s\n**Host:** `%s` **DB:** `%s`\n**Size:** %s | **Connections:** %s",
+                $dbEmoji,
+                strtoupper($d['database']['driver']),
+                $d['database']['version'] ?? 'N/A',
+                $d['database']['host'] ?? 'N/A',
+                $d['database']['dbName'] ?? 'N/A',
+                $d['database']['size'],
+                $d['database']['connections'] ?? 'N/A'
+            ),
+            'inline' => false,
+        ];
+
+        $app = $d['application'];
+        $lar = $d['laravel'];
+        $appEmoji = $d['application']['debug'] ? '⚠️' : '🔒';
+        $fields[] = [
+            'name' => '🚀 Application',
+            'value' => sprintf(
+                "%s **Laravel v%s** | `%s`\n**URL:** %s\n**Queue:** %s | **Storage:** %s\n**Cache:** cfg=%s rte=%s | **Driver:** %s",
+                $appEmoji, $lar['version'], $app['env'],
+                $app['url'],
+                $app['queue_worker'], $app['storage_link'] ? '✅' : '❌',
+                $app['config_cached'] ? '✅' : '❌', $app['route_cached'] ? '✅' : '❌',
+                $lar['cache_driver']
+            ),
+            'inline' => false,
+        ];
+
+        $fields[] = [
+            'name' => '📊 Stats',
+            'value' => sprintf(
+                "👥 **Users:** %s (%s active)\n⚖️ **Cases:** %s (%s active)\n📦 **Backups:** %s | **Last:** %s\n🕐 **Last Migration:** %s",
+                $app['total_users'], $app['active_users'],
+                $app['total_cases'], $app['active_cases'],
+                $app['backup_count'], $app['last_backup'],
+                $lar['last_migration']
+            ),
+            'inline' => false,
+        ];
+
+        $fields[] = [
+            'name' => '🔧 PHP',
+            'value' => sprintf(
+                "**v%s** | Timezone: %s | Locale: %s\n**Extensions:** %s",
+                $d['system']['php'],
+                $lar['timezone'],
+                $lar['locale'],
+                $d['system']['php_exts']
+            ),
+            'inline' => false,
+        ];
+
+        return [
+            'title' => '📊 Server Monitor — ' . $d['system']['hostname'],
+            'description' => sprintf(
+                '%s · `%s`\n🕐 **آخر تحديث:** %s',
+                strtoupper($app['env']),
+                $d['system']['hostname'],
+                now()->format('Y-m-d H:i:s')
+            ),
+            'color' => $color,
+            'timestamp' => $d['timestamp'],
+            'footer' => ['text' => 'يتجدد كل 5 دقائق · نفس الرسالة تتعدل'],
+            'fields' => $fields,
+        ];
     }
 }

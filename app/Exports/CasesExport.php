@@ -11,9 +11,20 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class CasesExport implements FromCollection, WithHeadings, WithStyles, ShouldAutoSize
 {
+    private $user;
+
+    public function __construct($user)
+    {
+        $this->user = $user;
+    }
+
     public function collection()
     {
-        return LegalCase::with(['client', 'lawyer'])->get()->map(function ($case) {
+        $query = LegalCase::with(['client', 'lawyer']);
+        if ($this->user->isLawyer()) {
+            $query->where('lawyer_id', $this->user->id);
+        }
+        return $query->get()->map(function ($case) {
             return [
                 $case->case_number ?? '',
                 $case->title ?? '',

@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', __('app.page_audit_log'))
 
@@ -111,9 +111,17 @@
                             <td class="px-6 py-4 text-ivory/70 text-sm">{{ class_basename($log->model_type ?? '') ?: '—' }}</td>
                             <td class="px-6 py-4 text-ivory/50 text-sm max-w-xs truncate">
                                 @if($log->new_values)
-                                    @foreach($log->new_values as $k => $v)
-                                        <span class="text-ivory/40">{{ $k }}:</span> {{ is_array($v) ? json_encode($v, JSON_UNESCAPED_UNICODE) : $v }}@if(!$loop->last), @endif
-                                    @endforeach
+                                    @php
+                                        $details = '';
+                                        try {
+                                            $details = collect($log->new_values)->map(function ($v, $k) {
+                                                return '<span class="text-ivory/40">' . e($k) . ':</span> ' . (is_array($v) ? e(json_encode($v, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) : e($v));
+                                            })->implode(', ');
+                                        } catch (\Throwable $e) {
+                                            $details = '— (decode error)';
+                                        }
+                                    @endphp
+                                    {!! $details !!}
                                 @else
                                     —
                                 @endif

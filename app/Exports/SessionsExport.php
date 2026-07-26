@@ -11,9 +11,20 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class SessionsExport implements FromCollection, WithHeadings, WithStyles, ShouldAutoSize
 {
+    private $user;
+
+    public function __construct($user)
+    {
+        $this->user = $user;
+    }
+
     public function collection()
     {
-        return Session::with('case')->get()->map(function ($session) {
+        $query = Session::with('case');
+        if ($this->user->isLawyer()) {
+            $query->whereHas('case', fn ($q) => $q->where('lawyer_id', $this->user->id));
+        }
+        return $query->get()->map(function ($session) {
             return [
                 $session->case?->title ?? '',
                 $session->date?->format('Y/m/d H:i') ?? '',

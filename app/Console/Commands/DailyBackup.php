@@ -15,7 +15,7 @@ class DailyBackup extends Command
     {
         $backupDir = storage_path('app/backups');
         if (!is_dir($backupDir)) {
-            mkdir($backupDir, 0755, true);
+            mkdir($backupDir, 0700, true);
         }
 
         $filename = 'backup-' . date('Y-m-d-His') . '.zip';
@@ -27,9 +27,39 @@ class DailyBackup extends Command
             return 1;
         }
 
-        $dbPath = database_path('database.sqlite');
-        if (file_exists($dbPath)) {
-            $zip->addFile($dbPath, 'database/database.sqlite');
+        // MySQL dump
+        $sqlFile = tempnam(sys_get_temp_dir(), 'backup') . '.sql';
+        $host = config('database.connections.mysql.host');
+        $port = config('database.connections.mysql.port');
+        $db = config('database.connections.mysql.database');
+        $user = config('database.connections.mysql.username');
+        $pass = config('database.connections.mysql.password');
+
+        $mysqldump = PHP_OS_FAMILY === 'Windows'
+            ? '"C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqldump.exe"'
+            : 'mysqldump';
+
+        // Use temp config file for mysqldump to avoid shell escaping issues
+        $configFile = tempnam(sys_get_temp_dir(), 'my') . '.cnf';
+        file_put_contents($configFile, "[client]\nhost={$host}\nport={$port}\nuser={$user}\npassword={$pass}\n");
+
+        $command = sprintf(
+            '%s --defaults-extra-file=%s --no-tablespaces --single-transaction --routines --triggers %s > %s',
+            $mysqldump,
+            escapeshellarg($configFile),
+            escapeshellarg($db),
+            escapeshellarg($sqlFile)
+        );
+        exec($command, $output, $exitCode);
+
+        if ($exitCode === 0 && file_exists($sqlFile) && filesize($sqlFile) > 0) {
+            $zip->addFile($sqlFile, 'database/backup.sql');
+        } else {
+            $this->warn('MySQL dump failed, trying fallback...');
+            $dbPath = database_path('database.sqlite');
+            if (file_exists($dbPath)) {
+                $zip->addFile($dbPath, 'database/database.sqlite');
+            }
         }
 
         $storagePath = storage_path('app/private');
@@ -39,10 +69,24 @@ class DailyBackup extends Command
 
         $zip->close();
 
+        @unlink($sqlFile);
+        @unlink($configFile);
+        chmod($filepath, 0600);
+
         $size = round(filesize($filepath) / 1024 / 1024, 2);
         $this->info("Backup created: {$filename} ({$size} MB)");
 
-        // Keep only last 60 backups (~20 days at 8-hour intervals)
+        \App\Models\AuditLog::create([
+            'user_id' => null,
+            'action' => 'backup_created',
+            'model_type' => 'System',
+            'model_id' => null,
+            'old_values' => null,
+            'new_values' => json_encode(['filename' => $filename, 'size_mb' => $size]),
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'System',
+        ]);
+
         $this->cleanupOldBackups($backupDir, 60);
 
         return 0;

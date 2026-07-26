@@ -11,9 +11,20 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class TasksExport implements FromCollection, WithHeadings, WithStyles, ShouldAutoSize
 {
+    private $user;
+
+    public function __construct($user)
+    {
+        $this->user = $user;
+    }
+
     public function collection()
     {
-        return Task::with(['assignee', 'case'])->get()->map(function ($task) {
+        $query = Task::with(['assignee', 'case']);
+        if ($this->user->isLawyer()) {
+            $query->where('assigned_to', $this->user->id);
+        }
+        return $query->get()->map(function ($task) {
             return [
                 $task->title ?? '',
                 $task->assignee?->name ?? '',

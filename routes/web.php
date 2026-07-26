@@ -13,6 +13,9 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\FeasibilityController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\HealthController;
+
+Route::get('/health', HealthController::class)->name('health');
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ProfileController;
@@ -152,6 +155,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
         Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
         Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+        Route::get('/documents/{document}/preview', [DocumentController::class, 'preview'])->name('documents.preview');
     });
 
     // Reports & Export - developer, admin, lawyer, staff
@@ -172,21 +176,20 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::resource('clients', ClientController::class);
     });
     
-    // Users & Admin - developer, admin
-    Route::middleware('role:developer,admin')->group(function () {
-        Route::resource('users', UserController::class);
-        Route::get('/feasibility', [FeasibilityController::class, 'index'])->name('feasibility.index');
-        Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
-        Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
-        Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+    // Users & Admin - developer, admin (أو بصلاحية محددة)
+    Route::resource('users', UserController::class)->middleware('role:developer,admin,permission:users.view');
+    Route::get('/feasibility', [FeasibilityController::class, 'index'])->middleware('role:developer,admin,permission:feasibility.view')->name('feasibility.index');
+    Route::get('/audit-log', [AuditLogController::class, 'index'])->middleware('role:developer,admin,permission:audit_log.view')->name('audit-log.index');
+    Route::get('/settings', [SettingController::class, 'index'])->middleware('role:developer,admin,permission:settings.manage')->name('settings.index');
+    Route::put('/settings', [SettingController::class, 'update'])->middleware('role:developer,admin,permission:settings.manage')->name('settings.update');
 
-        // Backup - developer, admin (with stricter rate limit)
-        Route::get('/backup', [BackupController::class, 'index'])->name('backup.index');
-        Route::post('/backup/create', [BackupController::class, 'create'])->middleware('throttle:3,10')->name('backup.create');
-        Route::get('/backup/{filename}/download', [BackupController::class, 'download'])->name('backup.download');
-        Route::post('/backup/{filename}/restore', [BackupController::class, 'restore'])->middleware('throttle:3,30')->name('backup.restore');
-        Route::delete('/backup/{filename}', [BackupController::class, 'destroy'])->name('backup.destroy');
-    });
+    // Backup - developer, admin (أو بصلاحية backup.manage)
+    Route::get('/backup', [BackupController::class, 'index'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.index');
+    Route::post('/backup/create', [BackupController::class, 'create'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:3,10')->name('backup.create');
+    Route::get('/backup/{filename}/download', [BackupController::class, 'download'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.download');
+    Route::post('/backup/upload-restore', [BackupController::class, 'uploadRestore'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:10,60')->name('backup.upload-restore');
+    Route::post('/backup/{filename}/restore', [BackupController::class, 'restore'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:10,60')->name('backup.restore');
+    Route::delete('/backup/{filename}', [BackupController::class, 'destroy'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.destroy');
 
     // Client portal - client role
     Route::middleware('role:client')->prefix('my')->group(function () {

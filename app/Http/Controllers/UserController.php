@@ -49,12 +49,18 @@ class UserController extends Controller
             'role'       => 'required|in:developer,admin,lawyer,staff,client',
             'phone'      => 'nullable|string|max:255',
             'is_active'  => 'boolean',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'string',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
         $validated['is_active'] = $request->boolean('is_active', true);
 
         $user = User::create($validated);
+
+        if ($request->has('_permissions')) {
+            $user->syncPermissions($request->permissions ?? []);
+        }
 
         $this->logAudit(
             AuditLog::ACTION_CREATE,
@@ -89,6 +95,8 @@ class UserController extends Controller
             'role'       => 'required|in:developer,admin,lawyer,staff,client',
             'phone'      => 'nullable|string|max:255',
             'is_active'  => 'boolean',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'string',
         ]);
 
         if (!empty($validated['password'])) {
@@ -101,6 +109,10 @@ class UserController extends Controller
 
         $oldValues = $user->toArray();
         $user->update($validated);
+
+        if ($request->has('_permissions')) {
+            $user->syncPermissions($request->permissions ?? []);
+        }
 
         $this->logAudit(
             AuditLog::ACTION_UPDATE,

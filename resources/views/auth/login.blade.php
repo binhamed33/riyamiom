@@ -1,4 +1,4 @@
-﻿@php
+@php
     $officeName = \App\Models\Setting::get('office_name', 'LexPro');
 @endphp
 <!DOCTYPE html>
@@ -16,13 +16,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
+    <script nonce="{{ $cspNonce }}" src="https://cdn.tailwindcss.com"></script>
+    <script nonce="{{ $cspNonce }}">
         tailwind.config = {
             theme: { extend: { colors: { navy: { DEFAULT: '#0D1321', light: '#1A2744', dark: '#090E18' }, gold: { DEFAULT: '#C9A55A', light: '#E0C878', dark: '#A8903E' } } } }
         }
     </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script nonce="{{ $cspNonce }}" defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
         * { font-family: 'Tajawal', sans-serif; }
@@ -117,7 +117,7 @@
                 <a href="{{ url('/portfolio') }}" target="_blank" class="inline-flex items-center gap-1.5 text-white/40 hover:text-gold/60 transition-all duration-300 text-xs font-mono tracking-[0.15em] uppercase mb-12 group">
                     <span>Powered by</span>
                     <span class="text-gold/60 group-hover:text-gold">LexPro</span>
-                    <svg class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                    <svg class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8l-4 4m0 0l4 4m-4-4H21"/></svg>
                 </a>
 
                 <div class="space-y-3">
@@ -255,7 +255,7 @@
                                     class="btn-login w-full py-4 px-6 text-[#0A0F1E] font-bold text-base rounded-2xl relative" style="font-family:'Cairo',sans-serif;">
                                     <span id="btnText" class="relative z-10 flex items-center justify-center gap-2.5">
                                         {{ __('app.login_button') }}
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8l-4 4m0 0l4 4m-4-4H21"/></svg>
                                     </span>
                                     <span id="btnSpinner" class="relative z-10 hidden items-center justify-center gap-2">
                                         <div class="spinner"></div>
@@ -279,7 +279,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ $cspNonce }}">
         document.addEventListener('DOMContentLoaded', function() {
             const c = document.getElementById('particles'); if (!c) return;
             for (let i = 0; i < 20; i++) { const p = document.createElement('div'); p.className = 'particle'; const s = Math.random() * 3 + 1; p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;background:rgba(201,165,90,${Math.random()*0.25+0.08});animation-duration:${Math.random()*20+15}s;animation-delay:${Math.random()*15}s;`; c.appendChild(p); }

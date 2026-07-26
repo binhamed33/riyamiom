@@ -3,7 +3,7 @@
 @section('title', __('app.reports'))
 
 @section('content')
-<div class="max-w-4xl mx-auto space-y-6" dir="rtl">
+<div class="max-w-4xl mx-auto space-y-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
     {{-- Header --}}
     <div class="flex items-center gap-3">

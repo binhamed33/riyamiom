@@ -1,8 +1,9 @@
-﻿@php
+@php
     $officeName = \App\Models\Setting::get('office_name', 'LexPro');
+    $isRtl = app()->getLocale() === 'ar';
 @endphp
 <!DOCTYPE html>
-<html dir="rtl" lang="{{ app()->getLocale() }}">
+<html dir="{{ $isRtl ? 'rtl' : 'ltr' }}" lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,16 +17,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
+    <script nonce="{{ $cspNonce }}" src="https://cdn.tailwindcss.com"></script>
+    <script nonce="{{ $cspNonce }}">
         if (localStorage.getItem('theme') === 'light') {
             document.documentElement.classList.add('light-theme');
         }
     </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script nonce="{{ $cspNonce }}" defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <script>
+    <script nonce="{{ $cspNonce }}">
         tailwind.config = {
             theme: {
                 extend: {
@@ -65,7 +66,6 @@
         .sidebar-link.active::before {
             content: '';
             position: absolute;
-            right: -2px;
             top: 50%;
             transform: translateY(-50%);
             width: 3px;
@@ -73,6 +73,8 @@
             background: #C9A55A;
             border-radius: 3px;
         }
+        [dir="rtl"] .sidebar-link.active::before { right: -2px; }
+        [dir="ltr"] .sidebar-link.active::before { left: -2px; }
 
         .sb-closed .sidebar-link span,
         .sb-closed .sidebar-section-title,
@@ -81,13 +83,15 @@
         .sb-closed .sidebar-link { justify-content: center; padding-left: 0; padding-right: 0; }
         .sb-closed .sidebar-link svg { margin: 0; }
 
-        .content-area { transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .content-area { transition: margin-inline-start 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 
         /* Sidebar width toggles (not reliant on Tailwind CDN JIT) */
         .sb-open { width: 16rem; }
         .sb-closed { width: 72px; }
-        .ct-open { margin-right: 16rem; }
-        .ct-closed { margin-right: 72px; }
+        [dir="rtl"] .ct-open { margin-right: 16rem; }
+        [dir="ltr"] .ct-open { margin-left: 16rem; }
+        [dir="rtl"] .ct-closed { margin-right: 72px; }
+        [dir="ltr"] .ct-closed { margin-left: 72px; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.2s ease-out; }
@@ -482,12 +486,12 @@
 
     {{-- Sidebar --}}
     <aside
-        class="fixed top-0 right-0 h-full z-50 flex flex-col transition-all duration-300 ease-in-out"
+        class="fixed top-0 {{ $isRtl ? 'right-0' : 'left-0' }} h-full z-50 flex flex-col transition-all duration-300 ease-in-out"
         :class="[
             sidebarOpen ? 'sb-open' : 'sb-closed',
-            mobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+            mobileOpen ? 'translate-x-0' : '{{ $isRtl ? 'translate-x-full' : '-translate-x-full' }} lg:translate-x-0'
         ]"
-        style="background: linear-gradient(180deg, #111B2E 0%, #060A14 100%); border-left: 1px solid rgba(201,165,90,0.06);"
+        style="background: linear-gradient(180deg, #111B2E 0%, #060A14 100%); {{ $isRtl ? 'border-left' : 'border-right' }}: 1px solid rgba(201,165,90,0.06);"
     >
         {{-- Logo --}}
         <div class="flex items-center justify-between h-16 px-4" style="border-bottom: 1px solid rgba(201,165,90,0.06);">
@@ -497,7 +501,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                     </svg>
                 </div>
-                <span class="sidebar-logo-text text-white font-heading font-bold text-lg whitespace-nowrap" style="background: linear-gradient(135deg, #C9A55A, #E0C878); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $officeName }}</span>
+                <span class="sidebar-logo-text text-white font-heading font-bold text-xs whitespace-nowrap truncate max-w-[140px]" style="background: linear-gradient(135deg, #C9A55A, #E0C878); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $officeName }}</span>
             </div>
             <button @click="mobileOpen = false" class="lg:hidden text-white/40 hover:text-white/80 transition">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -551,32 +555,42 @@
             </a>
 
             {{-- Admin Section --}}
-            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'developer']))
+            @php
+                $adminRole = Auth::check() && (in_array(Auth::user()->role, ['admin', 'developer']) || Auth::user()->hasPermission('users.view') || Auth::user()->hasPermission('feasibility.view') || Auth::user()->hasPermission('audit_log.view') || Auth::user()->hasPermission('settings.manage') || Auth::user()->hasPermission('backup.manage'));
+            @endphp
+            @if($adminRole)
                 <div class="pt-5 pb-2">
                     <p class="sidebar-section-title text-[11px] font-bold text-white/20 uppercase tracking-wider px-3 mb-3">{{ __('app.admin_section') }}</p>
                 </div>
 
+                @if(Auth::user()->hasPermission('users.view') || in_array(Auth::user()->role, ['admin', 'developer']))
                 <a href="{{ route('users.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 text-sm {{ request()->routeIs('users.*') ? 'active' : '' }}">
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                     <span>{{ __('app.users') }}</span>
                 </a>
+                @endif
 
+                @if(Auth::user()->hasPermission('feasibility.view') || in_array(Auth::user()->role, ['admin', 'developer']))
                 <a href="{{ route('feasibility.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 text-sm {{ request()->routeIs('feasibility.*') ? 'active' : '' }}">
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                     <span>{{ __('app.feasibility_study') }}</span>
                 </a>
+                @endif
 
+                @if(Auth::user()->hasPermission('audit_log.view') || in_array(Auth::user()->role, ['admin', 'developer']))
                 <a href="{{ route('audit-log.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 text-sm {{ request()->routeIs('audit-log.*') ? 'active' : '' }}">
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                     </svg>
                     <span>{{ __('app.audit_log') }}</span>
                 </a>
+                @endif
 
+                @if(Auth::user()->hasPermission('settings.manage') || in_array(Auth::user()->role, ['admin', 'developer']))
                 <a href="{{ route('settings.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 text-sm {{ request()->routeIs('settings.*') ? 'active' : '' }}">
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -584,20 +598,25 @@
                     </svg>
                     <span>{{ __('app.settings') }}</span>
                 </a>
+                @endif
 
+                @if(Auth::user()->hasPermission('backup.manage') || in_array(Auth::user()->role, ['admin', 'developer']))
                 <a href="{{ route('backup.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 text-sm {{ request()->routeIs('backup.*') ? 'active' : '' }}">
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
                     </svg>
                     <span>{{ __('app.backup') }}</span>
                 </a>
+                @endif
 
+                @if(in_array(Auth::user()->role, ['admin', 'developer', 'lawyer', 'staff']))
                 <a href="{{ route('reports.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 text-sm {{ request()->routeIs('reports.*') ? 'active' : '' }}">
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     <span>{{ __('app.reports') }}</span>
                 </a>
+                @endif
             @endif
         </nav>
 
@@ -644,10 +663,10 @@
                     </button>
                     <button @click="sidebarOpen = !sidebarOpen" class="hidden lg:inline-flex p-2 rounded-xl text-white/40 hover:text-white/80 transition">
                         <svg x-show="sidebarOpen" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="{{ $isRtl ? 'M13 5l7 7-7 7M5 5l7 7-7 7' : 'M11 19l-7-7 7-7m8 14l-7-7 7-7' }}"/>
                         </svg>
                         <svg x-show="!sidebarOpen" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="{{ $isRtl ? 'M11 19l-7-7 7-7m8 14l-7-7 7-7' : 'M13 5l7 7-7 7M5 5l7 7-7 7' }}"/>
                         </svg>
                     </button>
                     @yield('breadcrumb')
@@ -656,8 +675,8 @@
                 {{-- Global Search --}}
                 <div x-data="{ open: false, query: '', results: [], searching: false }" class="relative mx-2 flex-1 max-w-md">
                     <div class="relative">
-                        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        <input x-ref="searchInput" x-model="query" @input.debounce.300ms="if(query.length > 1) { searching = true; fetch('{{ route('search') }}?q=' + encodeURIComponent(query), { headers: {'Accept': 'application/json'} }).then(r => r.json()).then(d => { results = d; searching = false; }).catch(() => { results = []; searching = false; }) } else { results = [] }" @focus="open = query.length > 1" @click.away="open = false" @keydown.escape="open = false" @keydown.enter="if(results.length) window.location = results[0].url" type="text" placeholder="{{ __('app.search') }}..." class="w-full bg-white/5 border border-white/10 rounded-xl px-9 py-2 text-sm text-white/70 placeholder-white/30 focus:outline-none focus:border-[#C9A55A]/50 focus:bg-white/10 transition-all">
+                        <svg class="absolute {{ $isRtl ? 'right-3' : 'left-3' }} top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <input x-ref="searchInput" x-model="query" @input.debounce.300ms="..." @focus="open = query.length > 1" @click.away="open = false" @keydown.escape="open = false" @keydown.enter="if(results.length) window.location = results[0].url" type="text" placeholder="{{ __('app.search') }}..." class="w-full bg-white/5 border border-white/10 rounded-xl {{ $isRtl ? 'pr-9 pl-4' : 'pl-9 pr-4' }} py-2 text-sm text-white/70 placeholder-white/30 focus:outline-none focus:border-[#C9A55A]/50 focus:bg-white/10 transition-all">
                     </div>
                     <div x-show="open && results.length > 0" x-cloak class="absolute top-full right-0 left-0 mt-2 bg-navy-light border border-[#C9A55A]/20 rounded-xl shadow-xl overflow-hidden z-50 max-h-80 overflow-y-auto">
                         <template x-for="r in results" :key="r.url">
@@ -846,7 +865,7 @@
     </div>
     @endauth
 
-    <script>
+    <script nonce="{{ $cspNonce }}">
     (function() {
         var timer = null;
         var countdownTimer = null;
@@ -901,7 +920,7 @@
     </script>
 
     @auth
-    <script>
+    <script nonce="{{ $cspNonce }}">
     (function() {
         var POLL_INTERVAL = 30000;
         var lastUpdated = '{{ now()->toDateTimeString() }}';

@@ -24,12 +24,25 @@ class DocumentController extends Controller
     public function index(Request $request): View
     {
         $query = Document::with(['case', 'uploader']);
+        $user = auth()->user();
 
-        if (auth()->user()->isLawyer()) {
-            $query->where(function ($q) {
-                $q->where('uploaded_by', auth()->id())
-                  ->orWhereHas('case', function ($cq) {
-                      $cq->where('lawyer_id', auth()->id());
+        $query->where(function ($q) use ($user) {
+            $q->where(function ($qq) {
+                $qq->where('access_level', 'all')->orWhereNull('access_level');
+            });
+            if ($user->isAdmin() || $user->isDeveloper() || $user->isLawyer() || $user->isStaff()) {
+                $q->orWhere('access_level', 'team');
+            }
+            $q->orWhere(function ($qq) use ($user) {
+                $qq->where('access_level', 'private')->where('uploaded_by', $user->id);
+            });
+        });
+
+        if ($user->isLawyer()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('uploaded_by', $user->id)
+                  ->orWhereHas('case', function ($cq) use ($user) {
+                      $cq->where('lawyer_id', $user->id);
                   });
             });
         }
@@ -57,8 +70,8 @@ class DocumentController extends Controller
         $documents = $query->latest()->paginate(15)->withQueryString();
         $cases = LegalCase::orderBy('title')->get();
 
-        if (auth()->user()->isLawyer()) {
-            $cases = LegalCase::where('lawyer_id', auth()->id())->orderBy('title')->get();
+        if ($user->isLawyer()) {
+            $cases = LegalCase::where('lawyer_id', $user->id)->orderBy('title')->get();
         }
 
         return view('documents.index', compact('documents', 'cases'));
@@ -143,7 +156,7 @@ class DocumentController extends Controller
             ->with('success', 'Document deleted successfully.');
     }
 
-    public function download(Document $document): StreamedResponse
+    public function download(Document $document): StreamedResponse|RedirectResponse
     {
         $user = auth()->user();
 
@@ -158,6 +171,11 @@ class DocumentController extends Controller
             }
         }
 
+        if (!Storage::disk('private')->exists($document->file_path)) {
+            return redirect()->route('documents.index')
+                ->with('error', __('app.file_not_found'));
+        }
+
         $this->logAudit(
             'download',
             Document::class,
@@ -167,6 +185,40 @@ class DocumentController extends Controller
         );
 
         return Storage::disk('private')->download(
+            $document->file_path,
+            $document->title . '.' . $document->file_type
+        );
+    }
+
+    public function preview(Document $document): StreamedResponse|RedirectResponse
+    {
+        $user = auth()->user();
+
+        if ($document->access_level === 'private' && $document->uploaded_by !== $user->id) {
+            abort(403, 'Access denied.');
+        }
+
+        if ($document->access_level === 'team') {
+            $isTeam = $user->isAdmin() || $user->isLawyer() || $user->isStaff();
+            if (!$isTeam && $document->uploaded_by !== $user->id) {
+                abort(403, 'Access denied.');
+            }
+        }
+
+        if (!Storage::disk('private')->exists($document->file_path)) {
+            return redirect()->route('documents.index')
+                ->with('error', __('app.file_not_found'));
+        }
+
+        $this->logAudit(
+            'preview',
+            Document::class,
+            $document->id,
+            null,
+            ['file_path' => $document->file_path]
+        );
+
+        return Storage::disk('private')->response(
             $document->file_path,
             $document->title . '.' . $document->file_type
         );

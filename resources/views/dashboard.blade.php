@@ -1,13 +1,15 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', __('app.page_dashboard'))
 
 @section('content')
-<div class="space-y-6" dir="rtl">
+<div class="space-y-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
-    {{-- Row 1: Key Metrics --}}
+@php $isMgmt = auth()->user()->isAdmin() || auth()->user()->isDeveloper() || auth()->user()->hasPermission('users.view') || auth()->user()->hasPermission('feasibility.view') || auth()->user()->hasPermission('audit_log.view') || auth()->user()->hasPermission('settings.manage') || auth()->user()->hasPermission('backup.manage'); @endphp
+
+@if($isMgmt)
+    {{-- Row 1: Key Metrics (Management only) --}}
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {{-- Total Cases --}}
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-4 hover:border-[#C9A55A]/50 transition-colors">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-lg bg-[#C9A55A]/15 flex items-center justify-center flex-shrink-0">
@@ -20,7 +22,6 @@
             </div>
         </div>
 
-        {{-- Active Cases --}}
         <div class="bg-navy rounded-xl border border-green-500/20 p-4 hover:border-green-500/50 transition-colors">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-lg bg-green-500/15 flex items-center justify-center flex-shrink-0">
@@ -33,7 +34,6 @@
             </div>
         </div>
 
-        {{-- Win Rate --}}
         <div class="bg-navy rounded-xl border border-blue-500/20 p-4 hover:border-blue-500/50 transition-colors">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-lg bg-blue-500/15 flex items-center justify-center flex-shrink-0">
@@ -46,7 +46,6 @@
             </div>
         </div>
 
-        {{-- Task Completion --}}
         <div class="bg-navy rounded-xl border border-purple-500/20 p-4 hover:border-purple-500/50 transition-colors">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-lg bg-purple-500/15 flex items-center justify-center flex-shrink-0">
@@ -59,7 +58,6 @@
             </div>
         </div>
 
-        {{-- Overdue --}}
         <div class="bg-navy rounded-xl border border-red-500/20 p-4 hover:border-red-500/50 transition-colors">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-lg bg-red-500/15 flex items-center justify-center flex-shrink-0">
@@ -72,7 +70,6 @@
             </div>
         </div>
 
-        {{-- Clients --}}
         <div class="bg-navy rounded-xl border border-amber-500/20 p-4 hover:border-amber-500/50 transition-colors">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0">
@@ -88,7 +85,6 @@
 
     {{-- Row 2: Monthly Comparison + Today's Sessions --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {{-- New This Month --}}
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-5">
             <p class="text-white/40 text-xs mb-2">{{ __('app.new_this_month') }}</p>
             <div class="flex items-end gap-2">
@@ -111,7 +107,6 @@
             </div>
         </div>
 
-        {{-- Today's Sessions --}}
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-5">
             <p class="text-white/40 text-xs mb-2">{{ __('app.today_sessions') }}</p>
             @if($todaySessions->count() > 0)
@@ -127,7 +122,6 @@
             @endif
         </div>
 
-        {{-- Weekly Progress --}}
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-5">
             <p class="text-white/40 text-xs mb-2">{{ __('app.tasks_completed_week') }}</p>
             <div class="flex items-end gap-2">
@@ -142,7 +136,6 @@
 
     {{-- Row 3: Charts --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {{-- Cases by Status (Doughnut) --}}
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6">
             <h2 class="text-sm font-bold text-[#C9A55A] mb-4">{{ __('app.cases_by_status') }}</h2>
             <div class="flex justify-center" style="height: 240px;">
@@ -150,7 +143,6 @@
             </div>
         </div>
 
-        {{-- Monthly Trend (Bar) --}}
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6">
             <h2 class="text-sm font-bold text-[#C9A55A] mb-4">{{ __('app.monthly_trend') }}</h2>
             <div style="height: 240px;">
@@ -158,7 +150,6 @@
             </div>
         </div>
 
-        {{-- Cases by Lawyer (Bar) --}}
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6">
             <h2 class="text-sm font-bold text-[#C9A55A] mb-4">{{ __('app.cases_by_lawyer') }}</h2>
             <div style="height: 240px;">
@@ -169,7 +160,6 @@
 
     {{-- Row 4: Priority Distribution + Cases Summary --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Priority Distribution --}}
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6">
             <h2 class="text-sm font-bold text-[#C9A55A] mb-4">{{ __('app.cases_by_priority') }}</h2>
             <div class="space-y-3">
@@ -191,7 +181,6 @@
             </div>
         </div>
 
-        {{-- Quick Stats --}}
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6">
             <h2 class="text-sm font-bold text-[#C9A55A] mb-4">{{ __('app.office_overview') }}</h2>
             <div class="grid grid-cols-2 gap-4">
@@ -214,6 +203,44 @@
             </div>
         </div>
     </div>
+@else
+    {{-- Lawyer/Staff/Client: Personal Dashboard --}}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-[#C9A55A]/15 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-[#C9A55A]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                </div>
+                <div>
+                    <p class="text-white/40 text-xs">{{ __('app.total_cases') }}</p>
+                    <p class="text-xl font-bold text-white">{{ $totalCases }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-navy rounded-xl border border-purple-500/20 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-500/15 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                </div>
+                <div>
+                    <p class="text-white/40 text-xs">{{ __('app.pending_tasks') }}</p>
+                    <p class="text-xl font-bold text-purple-400">{{ $pendingTasks + $inProgressTasks }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-navy rounded-xl border border-green-500/20 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-green-500/15 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <p class="text-white/40 text-xs">{{ __('app.upcoming_sessions') }}</p>
+                    <p class="text-xl font-bold text-green-400">{{ $upcomingSessions->count() }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 
     {{-- Row 5: Overdue Tasks + Upcoming Sessions + Pending Tasks --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -351,9 +378,10 @@
     </div>
 </div>
 
+@if($isMgmt)
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
+<script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
     const goldColor = '#C9A55A';
     const bgColor = '#111B2E';
@@ -480,5 +508,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endpush
+@endif
 
 @endsection

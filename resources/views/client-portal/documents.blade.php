@@ -1,9 +1,9 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', __('app.page_my_documents'))
 
 @section('content')
-<div class="space-y-6" dir="rtl">
+<div class="space-y-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
     <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold text-[#C9A55A]">{{ __('app.my_documents') }}</h1>
