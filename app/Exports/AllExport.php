@@ -6,12 +6,19 @@ use App\Models\LegalCase;
 use App\Models\Session;
 use App\Models\Task;
 use App\Models\Client;
+use App\Models\FinanceTransaction;
+use App\Models\FinanceInvoice;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Sheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class AllExport implements WithMultipleSheets
 {
@@ -26,6 +33,7 @@ class AllExport implements WithMultipleSheets
     {
         $user = $this->user;
         return [
+            new SummarySheet($user),
             new CasesSheet($user),
             new SessionsSheet($user),
             new TasksSheet($user),
@@ -34,109 +42,276 @@ class AllExport implements WithMultipleSheets
     }
 }
 
-class CasesSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, WithStyles, ShouldAutoSize
+// ─── Summary Sheet ────────────────────────────────────────────────
+
+class SummarySheet implements FromArray, WithHeadings, ShouldAutoSize, WithEvents
 {
     private $user;
+    public function __construct($user) { $this->user = $user; }
 
-    public function __construct($user)
+    public function array(): array
     {
-        $this->user = $user;
+        $totalCases = LegalCase::count();
+        $activeCases = LegalCase::where('status', 'active')->count();
+        $overdueCases = LegalCase::where('status', 'overdue')->count();
+        $closedCases = LegalCase::whereIn('status', ['closed', 'won', 'lost'])->count();
+        $totalClients = Client::count();
+        $totalTasks = Task::count();
+        $pendingTasks = Task::where('status', 'pending')->count();
+        $totalSessions = Session::count();
+        $income = FinanceTransaction::where('type', 'income')->sum('amount');
+        $expense = FinanceTransaction::where('type', 'expense')->sum('amount');
+        $unpaidInvoices = FinanceInvoice::whereIn('status', ['unpaid', 'partial'])->count();
+
+        return [
+            ['', ''],
+            ['ملخص إحصائي', ''],
+            ['', ''],
+            ['البيان', 'القيمة'],
+            ['إجمالي القضايا', $totalCases],
+            ['  القضايا النشطة', $activeCases],
+            ['  القضايا المتأخرة', $overdueCases],
+            ['  القضايا المغلقة', $closedCases],
+            ['إجمالي العملاء', $totalClients],
+            ['إجمالي المهام', $totalTasks],
+            ['  المهام المعلقة', $pendingTasks],
+            ['إجمالي الجلسات', $totalSessions],
+            ['إجمالي الدخل', number_format($income, 2) . ' ر.ع'],
+            ['إجمالي المصروفات', number_format($expense, 2) . ' ر.ع'],
+            ['الرصيد', number_format($income - $expense, 2) . ' ر.ع'],
+            ['الفواتير غير المسددة', $unpaidInvoices],
+        ];
     }
+
+    public function headings(): array
+    {
+        return [];
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                $sheet->setRightToLeft(true);
+                $sheet->mergeCells('A1:B1');
+                $sheet->mergeCells('A2:B2');
+
+                $titleCell = $sheet->getStyle('A2');
+                $titleCell->getFont()->setBold(true)->setSize(16);
+                $titleCell->getFont()->getColor()->setARGB('C9A55A');
+
+                $headerStyle = $sheet->getStyle('A4:B4');
+                $headerStyle->getFont()->setBold(true)->setSize(12);
+                $headerStyle->getFont()->getColor()->setARGB('FFFFFF');
+                $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('C9A55A');
+                $headerStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getRowDimension(4)->setRowHeight(28);
+
+                for ($row = 5; $row <= 20; $row++) {
+                    $range = "A{$row}:B{$row}";
+                    if ($row % 2 === 0) {
+                        $sheet->getStyle($range)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('1A2D4A');
+                    }
+                    $sheet->getStyle($range)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                    $sheet->getStyle($range)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('2A3D5A');
+                }
+
+                $sheet->getStyle('A5:B20')->getFont()->setSize(11)->getColor()->setARGB('FFFFFF');
+                $sheet->getColumnDimension('A')->setAutoSize(true);
+                $sheet->getColumnDimension('B')->setAutoSize(true);
+            },
+        ];
+    }
+}
+
+// ─── Cases Sheet ──────────────────────────────────────────────────
+
+class CasesSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, ShouldAutoSize, WithEvents, WithMapping
+{
+    private $user;
+    public function __construct($user) { $this->user = $user; }
 
     public function collection()
     {
         $query = LegalCase::with(['client', 'lawyer']);
-        if ($this->user->isLawyer()) {
-            $query->where('lawyer_id', $this->user->id);
-        }
-        return $query->get()->map(fn ($c) => [
-            $c->case_number ?? '', $c->title ?? '', $c->client?->name ?? '',
-            $c->lawyer?->name ?? '', $c->type ?? '', $c->court ?? '',
-            $c->opponent ?? '', $c->status ?? '', $c->priority ?? '',
-            $c->opened_at?->format('Y/m/d') ?? '', $c->next_date?->format('Y/m/d') ?? '',
-            $c->notes ?? '',
-        ]);
+        if ($this->user->isLawyer()) $query->where('lawyer_id', $this->user->id);
+        return $query->get();
     }
+
+    public function map($case): array
+    {
+        return [
+            $case->case_number ?? '', $case->title ?? '', $case->client?->name ?? '',
+            $case->lawyer?->name ?? '', $case->type ?? '', $case->court ?? '',
+            $case->opponent ?? '', $case->status ?? '', $case->priority ?? '',
+            $case->opened_at?->format('Y/m/d') ?? '', $case->next_date?->format('Y/m/d') ?? '',
+            $case->notes ?? '',
+        ];
+    }
+
     public function headings(): array { return ['رقم القضية', 'العنوان', 'العميل', 'المحامي', 'النوع', 'المحكمة', 'الخصم', 'الحالة', 'الأولوية', 'تاريخ الفتح', 'الموعد القادم', 'ملاحظات']; }
     public function title(): string { return 'القضايا'; }
-    public function styles(Worksheet $sheet): array { return [1 => ['font' => ['bold' => true, 'size' => 12]]]; }
+
+    public function registerEvents(): array
+    {
+        return [AfterSheet::class => function (AfterSheet $event) {
+            $s = $event->sheet->getDelegate(); $c = $s->getHighestColumn(); $r = $s->getHighestRow();
+            $s->setRightToLeft(true); $s->freezePane('A2');
+            $h = "A1:{$c}1";
+            $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
+            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('C9A55A');
+            $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $s->getRowDimension(1)->setRowHeight(32);
+            $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');
+            for ($i = 2; $i <= $r; $i++) { $rg = "A{$i}:{$c}{$i}";
+                if ($i % 2 === 0) $s->getStyle($rg)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('1A2D4A');
+                $s->getStyle($rg)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                $s->getStyle($rg)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('2A3D5A'); }
+            $s->getStyle("A1:{$c}{$r}")->getFont()->setSize(11)->getColor()->setARGB('FFFFFF');
+        },];
+    }
 }
 
-class SessionsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, WithStyles, ShouldAutoSize
+// ─── Sessions Sheet ──────────────────────────────────────────────
+
+class SessionsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, ShouldAutoSize, WithEvents, WithMapping
 {
     private $user;
-
-    public function __construct($user)
-    {
-        $this->user = $user;
-    }
+    public function __construct($user) { $this->user = $user; }
 
     public function collection()
     {
         $query = Session::with('case');
-        if ($this->user->isLawyer()) {
-            $query->whereHas('case', fn ($q) => $q->where('lawyer_id', $this->user->id));
-        }
-        return $query->get()->map(fn ($s) => [
-            $s->case?->title ?? '', $s->date?->format('Y/m/d H:i') ?? '',
-            $s->location ?? '', $s->status ?? '', $s->notes ?? '',
-        ]);
+        if ($this->user->isLawyer()) $query->whereHas('case', fn($q) => $q->where('lawyer_id', $this->user->id));
+        return $query->get();
     }
-    public function headings(): array { return ['القضية', 'التاريخ', 'الموقع', 'الحالة', 'ملاحظات']; }
+
+    public function map($session): array
+    {
+        return [
+            $session->case?->case_number ?? '', $session->case?->title ?? '',
+            $session->date?->format('Y/m/d H:i') ?? '', $session->location ?? '',
+            $session->status ?? '', $session->notes ?? '',
+        ];
+    }
+
+    public function headings(): array { return ['رقم القضية', 'القضية', 'التاريخ', 'الموقع', 'الحالة', 'ملاحظات']; }
     public function title(): string { return 'الجلسات'; }
-    public function styles(Worksheet $sheet): array { return [1 => ['font' => ['bold' => true, 'size' => 12]]]; }
+
+    public function registerEvents(): array
+    {
+        return [AfterSheet::class => function (AfterSheet $event) {
+            $s = $event->sheet->getDelegate(); $c = $s->getHighestColumn(); $r = $s->getHighestRow();
+            $s->setRightToLeft(true); $s->freezePane('A2');
+            $h = "A1:{$c}1";
+            $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
+            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('C9A55A');
+            $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $s->getRowDimension(1)->setRowHeight(32);
+            $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');
+            for ($i = 2; $i <= $r; $i++) { $rg = "A{$i}:{$c}{$i}";
+                if ($i % 2 === 0) $s->getStyle($rg)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('1A2D4A');
+                $s->getStyle($rg)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                $s->getStyle($rg)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('2A3D5A'); }
+            $s->getStyle("A1:{$c}{$r}")->getFont()->setSize(11)->getColor()->setARGB('FFFFFF');
+        },];
+    }
 }
 
-class TasksSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, WithStyles, ShouldAutoSize
+// ─── Tasks Sheet ─────────────────────────────────────────────────
+
+class TasksSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, ShouldAutoSize, WithEvents, WithMapping
 {
     private $user;
-
-    public function __construct($user)
-    {
-        $this->user = $user;
-    }
+    public function __construct($user) { $this->user = $user; }
 
     public function collection()
     {
         $query = Task::with(['assignee', 'case']);
-        if ($this->user->isLawyer()) {
-            $query->where('assigned_to', $this->user->id);
-        }
-        return $query->get()->map(fn ($t) => [
-            $t->title ?? '', $t->assignee?->name ?? '', $t->case?->title ?? '',
-            $t->status ?? '', $t->priority ?? '',
-            $t->due_date?->format('Y/m/d') ?? '', $t->completed_at?->format('Y/m/d') ?? '',
-        ]);
+        if ($this->user->isLawyer()) $query->where('assigned_to', $this->user->id);
+        return $query->get();
     }
-    public function headings(): array { return ['المهمة', 'المحامي المسؤول', 'القضية', 'الحالة', 'الأولوية', 'تاريخ الاستحقاق', 'تاريخ الإنجاز']; }
+
+    public function map($task): array
+    {
+        return [
+            $task->title ?? '', $task->assignee?->name ?? '', $task->case?->case_number ?? '',
+            $task->case?->title ?? '', $task->status ?? '', $task->priority ?? '',
+            $task->due_date?->format('Y/m/d') ?? '', $task->completed_at?->format('Y/m/d') ?? '',
+        ];
+    }
+
+    public function headings(): array { return ['المهمة', 'المحامي المسؤول', 'رقم القضية', 'القضية', 'الحالة', 'الأولوية', 'تاريخ الاستحقاق', 'تاريخ الإنجاز']; }
     public function title(): string { return 'المهام'; }
-    public function styles(Worksheet $sheet): array { return [1 => ['font' => ['bold' => true, 'size' => 12]]]; }
+
+    public function registerEvents(): array
+    {
+        return [AfterSheet::class => function (AfterSheet $event) {
+            $s = $event->sheet->getDelegate(); $c = $s->getHighestColumn(); $r = $s->getHighestRow();
+            $s->setRightToLeft(true); $s->freezePane('A2');
+            $h = "A1:{$c}1";
+            $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
+            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('C9A55A');
+            $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $s->getRowDimension(1)->setRowHeight(32);
+            $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');
+            for ($i = 2; $i <= $r; $i++) { $rg = "A{$i}:{$c}{$i}";
+                if ($i % 2 === 0) $s->getStyle($rg)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('1A2D4A');
+                $s->getStyle($rg)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                $s->getStyle($rg)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('2A3D5A'); }
+            $s->getStyle("A1:{$c}{$r}")->getFont()->setSize(11)->getColor()->setARGB('FFFFFF');
+        },];
+    }
 }
 
-class ClientsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, WithStyles, ShouldAutoSize
+// ─── Clients Sheet ───────────────────────────────────────────────
+
+class ClientsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, ShouldAutoSize, WithEvents, WithMapping
 {
     private $user;
-
-    public function __construct($user)
-    {
-        $this->user = $user;
-    }
+    public function __construct($user) { $this->user = $user; }
 
     public function collection()
     {
         $query = Client::with('cases');
         if ($this->user->isLawyer()) {
             $query->where(function ($q) {
-                $q->whereHas('cases', fn ($cq) => $cq->where('lawyer_id', $this->user->id))
+                $q->whereHas('cases', fn($cq) => $cq->where('lawyer_id', $this->user->id))
                     ->orWhereDoesntHave('cases');
             });
         }
-        return $query->get()->map(fn ($c) => [
-            $c->name ?? '', $c->phone ?? '', $c->email ?? '',
-            $c->address ?? '', $c->cases->count(), $c->notes ?? '',
-        ]);
+        return $query->get();
     }
-    public function headings(): array { return ['الاسم', 'الهاتف', 'البريد الإلكتروني', 'العنوان', 'عدد القضايا', 'ملاحظات']; }
+
+    public function map($client): array
+    {
+        return [
+            $client->name ?? '', $client->phone ?? '', $client->email ?? '',
+            $client->address ?? '', $client->cases->count(),
+            $client->cases->where('status', 'active')->count(), $client->notes ?? '',
+        ];
+    }
+
+    public function headings(): array { return ['الاسم', 'الهاتف', 'البريد الإلكتروني', 'العنوان', 'عدد القضايا', 'القضايا النشطة', 'ملاحظات']; }
     public function title(): string { return 'العملاء'; }
-    public function styles(Worksheet $sheet): array { return [1 => ['font' => ['bold' => true, 'size' => 12]]]; }
+
+    public function registerEvents(): array
+    {
+        return [AfterSheet::class => function (AfterSheet $event) {
+            $s = $event->sheet->getDelegate(); $c = $s->getHighestColumn(); $r = $s->getHighestRow();
+            $s->setRightToLeft(true); $s->freezePane('A2');
+            $h = "A1:{$c}1";
+            $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
+            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('C9A55A');
+            $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $s->getRowDimension(1)->setRowHeight(32);
+            $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');
+            for ($i = 2; $i <= $r; $i++) { $rg = "A{$i}:{$c}{$i}";
+                if ($i % 2 === 0) $s->getStyle($rg)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('1A2D4A');
+                $s->getStyle($rg)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                $s->getStyle($rg)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('2A3D5A'); }
+            $s->getStyle("A1:{$c}{$r}")->getFont()->setSize(11)->getColor()->setARGB('FFFFFF');
+        },];
+    }
 }
