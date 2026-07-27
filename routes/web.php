@@ -203,13 +203,13 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/backup/{filename}/restore', [BackupController::class, 'restore'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:10,60')->name('backup.restore');
     Route::delete('/backup/{filename}', [BackupController::class, 'destroy'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.destroy');
 
-    // HR - all employees can view & submit leaves; admin-only for management
-    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+    // HR - all authenticated users (controller handles per-role logic)
+    Route::middleware('auth')->group(function () {
         Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
         Route::post('/hr/leaves', [HrController::class, 'storeLeave'])->name('hr.leaves.store');
     });
     // HR admin actions
-    Route::middleware('role:developer,admin')->group(function () {
+    Route::middleware('auth')->group(function () {
         Route::post('/hr/performance', [HrController::class, 'storePerformance'])->name('hr.performance.store');
         Route::delete('/hr/performance/{performance}', [HrController::class, 'destroyPerformance'])->name('hr.performance.destroy');
         Route::post('/hr/bonuses', [HrController::class, 'storeBonus'])->name('hr.bonuses.store');
@@ -221,24 +221,27 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::delete('/hr/leaves/{leave}', [HrController::class, 'destroyLeave'])->name('hr.leaves.destroy');
     });
 
-    // Finance - developer, admin
-    Route::middleware('role:developer,admin')->group(function () {
+    // Finance - view: all employees; manage: admin only
+    Route::middleware('auth')->group(function () {
         Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
-        Route::post('/finance/transactions', [FinanceController::class, 'storeTransaction'])->name('finance.transactions.store');
-        Route::put('/finance/transactions/{transaction}', [FinanceController::class, 'updateTransaction'])->name('finance.transactions.update');
         Route::get('/finance/transactions/{transaction}', [FinanceController::class, 'showTransaction'])->name('finance.transactions.show');
         Route::get('/finance/transactions/{transaction}/print', [FinanceController::class, 'printTransaction'])->name('finance.transactions.print');
+        Route::get('/finance/invoices/{invoice}', [FinanceController::class, 'showInvoice'])->name('finance.invoices.show');
+        Route::get('/finance/invoices/{invoice}/print', [FinanceController::class, 'printInvoice'])->name('finance.invoices.print');
+        Route::get('/finance/fees/{fee}', [FinanceController::class, 'showFee'])->name('finance.fees.show');
+        Route::get('/finance/fees/{fee}/print', [FinanceController::class, 'printFee'])->name('finance.fees.print');
+    });
+    // Finance admin/developer actions
+    Route::middleware('auth')->group(function () {
+        Route::post('/finance/transactions', [FinanceController::class, 'storeTransaction'])->name('finance.transactions.store');
+        Route::put('/finance/transactions/{transaction}', [FinanceController::class, 'updateTransaction'])->name('finance.transactions.update');
         Route::delete('/finance/transactions/{transaction}', [FinanceController::class, 'destroyTransaction'])->name('finance.transactions.destroy');
         Route::post('/finance/invoices', [FinanceController::class, 'storeInvoice'])->name('finance.invoices.store');
         Route::put('/finance/invoices/{invoice}', [FinanceController::class, 'updateInvoice'])->name('finance.invoices.update');
-        Route::get('/finance/invoices/{invoice}', [FinanceController::class, 'showInvoice'])->name('finance.invoices.show');
-        Route::get('/finance/invoices/{invoice}/print', [FinanceController::class, 'printInvoice'])->name('finance.invoices.print');
         Route::post('/finance/invoices/{invoice}/pay', [FinanceController::class, 'payInvoice'])->name('finance.invoices.pay');
         Route::delete('/finance/invoices/{invoice}', [FinanceController::class, 'destroyInvoice'])->name('finance.invoices.destroy');
         Route::post('/finance/fees', [FinanceController::class, 'storeFee'])->name('finance.fees.store');
         Route::put('/finance/fees/{fee}', [FinanceController::class, 'updateFee'])->name('finance.fees.update');
-        Route::get('/finance/fees/{fee}', [FinanceController::class, 'showFee'])->name('finance.fees.show');
-        Route::get('/finance/fees/{fee}/print', [FinanceController::class, 'printFee'])->name('finance.fees.print');
         Route::delete('/finance/fees/{fee}', [FinanceController::class, 'destroyFee'])->name('finance.fees.destroy');
     });
 

@@ -3,6 +3,7 @@
 @section('title', __('app.finance'))
 
 @section('content')
+@php $isFinAdmin = in_array(auth()->user()->role, ['developer', 'admin']); @endphp
 <div class="">
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-[#C9A55A]">{{ __('app.finance') }}</h1>
@@ -40,7 +41,7 @@
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 overflow-hidden">
             <div class="p-4 border-b border-white/10 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-[#C9A55A]">المعاملات المالية</h2>
-                <button @click="$dispatch('open-modal', 'txModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ معاملة</button>
+                @if($isFinAdmin)<button @click="$dispatch('open-modal', 'txModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ معاملة</button>@endif
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -56,8 +57,8 @@
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-center gap-1">
                                         <a href="{{ route('finance.transactions.show', $tx) }}" class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></a>
-                                        <button @click="$dispatch('open-modal', 'txEditModal'); $dispatch('set-tx', {!! $tx->toJson() !!})" class="w-8 h-8 rounded-lg bg-[#C9A55A]/10 text-[#C9A55A] hover:bg-[#C9A55A]/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
-                                        <form method="POST" action="{{ route('finance.transactions.destroy', $tx) }}" onsubmit="return confirm('حذف المعاملة؟')" class="inline">@csrf @method('DELETE')<button class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></form>
+                                        @if($isFinAdmin)<button @click="$dispatch('open-modal', 'txEditModal'); $dispatch('set-tx', {!! $tx->toJson() !!})" class="w-8 h-8 rounded-lg bg-[#C9A55A]/10 text-[#C9A55A] hover:bg-[#C9A55A]/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>@endif
+                                        @if($isFinAdmin)<form method="POST" action="{{ route('finance.transactions.destroy', $tx) }}" onsubmit="return confirm('حذف المعاملة؟')" class="inline">@csrf @method('DELETE')<button class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></form>@endif
                                     </div>
                                 </td>
                             </tr>
@@ -75,7 +76,7 @@
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 overflow-hidden">
             <div class="p-4 border-b border-white/10 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-[#C9A55A]">الفواتير</h2>
-                <button @click="$dispatch('open-modal', 'invModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ فاتورة</button>
+                @if($isFinAdmin)<button @click="$dispatch('open-modal', 'invModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ فاتورة</button>@endif
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -92,9 +93,9 @@
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-center gap-1">
                                         <a href="{{ route('finance.invoices.show', $inv) }}" class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></a>
-                                        <button @click="$dispatch('open-modal', 'invEditModal'); $dispatch('set-inv', {!! $inv->toJson() !!})" class="w-8 h-8 rounded-lg bg-[#C9A55A]/10 text-[#C9A55A] hover:bg-[#C9A55A]/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
-                                        @if($inv->status !== 'paid' && $inv->status !== 'cancelled')<form method="POST" action="{{ route('finance.invoices.pay', $inv) }}" class="inline">@csrf<button class="w-8 h-8 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors flex items-center justify-center" title="تسديد"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button></form>@endif
-                                        <form method="POST" action="{{ route('finance.invoices.destroy', $inv) }}" onsubmit="return confirm('حذف الفاتورة؟')" class="inline">@csrf @method('DELETE')<button class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></form>
+                                        @if($isFinAdmin)<button @click="$dispatch('open-modal', 'invEditModal'); $dispatch('set-inv', {!! $inv->toJson() !!})" class="w-8 h-8 rounded-lg bg-[#C9A55A]/10 text-[#C9A55A] hover:bg-[#C9A55A]/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>@endif
+                                        @if($isFinAdmin && $inv->status !== 'paid' && $inv->status !== 'cancelled')<form method="POST" action="{{ route('finance.invoices.pay', $inv) }}" class="inline">@csrf<button class="w-8 h-8 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors flex items-center justify-center" title="تسديد"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button></form>@endif
+                                        @if($isFinAdmin)<form method="POST" action="{{ route('finance.invoices.destroy', $inv) }}" onsubmit="return confirm('حذف الفاتورة؟')" class="inline">@csrf @method('DELETE')<button class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></form>@endif
                                     </div>
                                 </td>
                             </tr>
@@ -111,7 +112,7 @@
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 overflow-hidden">
             <div class="p-4 border-b border-white/10 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-[#C9A55A]">رسوم القضايا</h2>
-                <button @click="$dispatch('open-modal', 'feeModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ رسم</button>
+                @if($isFinAdmin)<button @click="$dispatch('open-modal', 'feeModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ رسم</button>@endif
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -127,8 +128,8 @@
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-center gap-1">
                                         <a href="{{ route('finance.fees.show', $fee) }}" class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></a>
-                                        <button @click="$dispatch('open-modal', 'feeEditModal'); $dispatch('set-fee', {!! $fee->toJson() !!})" class="w-8 h-8 rounded-lg bg-[#C9A55A]/10 text-[#C9A55A] hover:bg-[#C9A55A]/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
-                                        <form method="POST" action="{{ route('finance.fees.destroy', $fee) }}" onsubmit="return confirm('حذف الرسم؟')" class="inline">@csrf @method('DELETE')<button class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></form>
+                                        @if($isFinAdmin)<button @click="$dispatch('open-modal', 'feeEditModal'); $dispatch('set-fee', {!! $fee->toJson() !!})" class="w-8 h-8 rounded-lg bg-[#C9A55A]/10 text-[#C9A55A] hover:bg-[#C9A55A]/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>@endif
+                                        @if($isFinAdmin)<form method="POST" action="{{ route('finance.fees.destroy', $fee) }}" onsubmit="return confirm('حذف الرسم؟')" class="inline">@csrf @method('DELETE')<button class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></form>@endif
                                     </div>
                                 </td>
                             </tr>
@@ -144,6 +145,7 @@
     @endif
 </div>
 
+@if($isFinAdmin)
 {{-- Add Transaction Modal --}}
 <div id="txModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'txModal') open = true" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
@@ -195,7 +197,9 @@
         </form>
     </div>
 </div>
+@endif
 
+@if($isFinAdmin)
 {{-- Edit Transaction Modal --}}
 <div id="txEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, tx: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'txEditModal') open = true" x-on:set-tx.window="tx = $event.detail" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
@@ -248,7 +252,9 @@
         </form>
     </div>
 </div>
+@endif
 
+@if($isFinAdmin)
 {{-- Add Invoice Modal --}}
 <div id="invModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'invModal') open = true" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
@@ -300,7 +306,9 @@
         </form>
     </div>
 </div>
+@endif
 
+@if($isFinAdmin)
 {{-- Edit Invoice Modal --}}
 <div id="invEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, inv: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'invEditModal') open = true" x-on:set-inv.window="inv = $event.detail" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
@@ -349,7 +357,9 @@
         </form>
     </div>
 </div>
+@endif
 
+@if($isFinAdmin)
 {{-- Add Fee Modal --}}
 <div id="feeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'feeModal') open = true" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
@@ -393,7 +403,9 @@
         </form>
     </div>
 </div>
+@endif
 
+@if($isFinAdmin)
 {{-- Edit Fee Modal --}}
 <div id="feeEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, fee: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'feeEditModal') open = true" x-on:set-fee.window="fee = $event.detail" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
@@ -438,4 +450,5 @@
         </form>
     </div>
 </div>
+@endif
 @endsection

@@ -14,6 +14,11 @@ use Illuminate\View\View;
 
 class FinanceController extends Controller
 {
+    protected function isAdmin(): bool
+    {
+        return in_array(auth()->user()->role, ['developer', 'admin']);
+    }
+
     public function index(Request $request): View
     {
         $tab = $request->get('tab', 'transactions');
@@ -44,6 +49,7 @@ class FinanceController extends Controller
 
     public function storeTransaction(Request $request)
     {
+        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'type' => 'required|in:income,expense',
             'category' => 'required|string',
@@ -68,6 +74,7 @@ class FinanceController extends Controller
 
     public function updateTransaction(Request $request, FinanceTransaction $transaction)
     {
+        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'type' => 'required|in:income,expense',
             'category' => 'required|string',
@@ -92,6 +99,7 @@ class FinanceController extends Controller
 
     public function storeInvoice(Request $request)
     {
+        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'invoice_number' => 'required|string|unique:finance_invoices,invoice_number',
             'client_id' => 'nullable|exists:clients,id',
@@ -118,6 +126,7 @@ class FinanceController extends Controller
 
     public function updateInvoice(Request $request, FinanceInvoice $invoice)
     {
+        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'invoice_number' => 'required|string|unique:finance_invoices,invoice_number,' . $invoice->id,
             'client_id' => 'nullable|exists:clients,id',
@@ -144,6 +153,7 @@ class FinanceController extends Controller
 
     public function storeFee(Request $request)
     {
+        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'case_id' => 'required|exists:cases,id',
             'fee_type' => 'required|string',
@@ -159,6 +169,7 @@ class FinanceController extends Controller
 
     public function updateFee(Request $request, FinanceFee $fee)
     {
+        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'case_id' => 'required|exists:cases,id',
             'fee_type' => 'required|string',
@@ -203,6 +214,7 @@ class FinanceController extends Controller
 
     public function destroyTransaction(FinanceTransaction $transaction)
     {
+        abort_unless($this->isAdmin(), 403);
         if ($transaction->attachment_path) Storage::disk('public')->delete($transaction->attachment_path);
         $transaction->delete();
         return redirect()->route('finance.index', ['tab' => 'transactions'])->with('success', 'تم حذف المعاملة');
@@ -210,6 +222,7 @@ class FinanceController extends Controller
 
     public function destroyInvoice(FinanceInvoice $invoice)
     {
+        abort_unless($this->isAdmin(), 403);
         if ($invoice->attachment_path) Storage::disk('public')->delete($invoice->attachment_path);
         $invoice->delete();
         return redirect()->route('finance.index', ['tab' => 'invoices'])->with('success', 'تم حذف الفاتورة');
@@ -217,12 +230,14 @@ class FinanceController extends Controller
 
     public function destroyFee(FinanceFee $fee)
     {
+        abort_unless($this->isAdmin(), 403);
         $fee->delete();
         return redirect()->route('finance.index', ['tab' => 'fees'])->with('success', 'تم حذف الرسم');
     }
 
     public function payInvoice(FinanceInvoice $invoice)
     {
+        abort_unless($this->isAdmin(), 403);
         $invoice->update(['status' => 'paid', 'paid_amount' => $invoice->amount]);
         return redirect()->route('finance.index', ['tab' => 'invoices'])->with('success', 'تم تسديد الفاتورة');
     }
