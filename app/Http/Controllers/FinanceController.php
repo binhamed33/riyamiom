@@ -25,6 +25,8 @@ class FinanceController extends Controller
         $isFinAdmin = $this->isAdmin();
         $userId = auth()->id();
 
+        $userCaseIds = LegalCase::where('lawyer_id', $userId)->pluck('id');
+
         $transactions = FinanceTransaction::with('user')
             ->when(!$isFinAdmin, fn($q) => $q->where('user_id', $userId))
             ->latest()->paginate(20);
@@ -32,28 +34,32 @@ class FinanceController extends Controller
             ->when(!$isFinAdmin, fn($q) => $q->where('user_id', $userId))
             ->latest()->paginate(20);
         $fees = FinanceFee::with(['case', 'user'])
-            ->when(!$isFinAdmin, fn($q) => $q->where('user_id', $userId))
+            ->when(!$isFinAdmin, fn($q) => $q->whereIn('case_id', $userCaseIds))
             ->latest()->paginate(20);
 
         $clients = Client::orderBy('name')->get();
         $cases = LegalCase::orderBy('case_number')->get();
 
-        $baseTx = FinanceTransaction::query()->when(!$isFinAdmin, fn($q) => $q->where('user_id', $userId));
-        $baseInv = FinanceInvoice::query()->when(!$isFinAdmin, fn($q) => $q->where('user_id', $userId));
+        $stats = [];
+        $incomeByCategory = collect();
+        $expenseByCategory = collect();
+        $monthlyIncome = collect();
+        $monthlyExpense = collect();
 
-        $stats = [
-            'total_income' => (clone $baseTx)->where('type', 'income')->sum('amount'),
-            'total_expense' => (clone $baseTx)->where('type', 'expense')->sum('amount'),
-            'balance' => (clone $baseTx)->where('type', 'income')->sum('amount') - (clone $baseTx)->where('type', 'expense')->sum('amount'),
-            'pending_invoices' => (clone $baseInv)->whereIn('status', ['unpaid', 'partial'])->count(),
-            'unpaid_invoices_amount' => (clone $baseInv)->whereIn('status', ['unpaid', 'partial'])->selectRaw('sum(amount - paid_amount) as total')->value('total') ?? 0,
-        ];
+        if ($isFinAdmin) {
+            $stats = [
+                'total_income' => FinanceTransaction::where('type', 'income')->sum('amount'),
+                'total_expense' => FinanceTransaction::where('type', 'expense')->sum('amount'),
+                'balance' => FinanceTransaction::where('type', 'income')->sum('amount') - FinanceTransaction::where('type', 'expense')->sum('amount'),
+                'pending_invoices' => FinanceInvoice::whereIn('status', ['unpaid', 'partial'])->count(),
+                'unpaid_invoices_amount' => FinanceInvoice::whereIn('status', ['unpaid', 'partial'])->selectRaw('sum(amount - paid_amount) as total')->value('total') ?? 0,
+            ];
 
-        // Chart data
-        $incomeByCategory = (clone $baseTx)->where('type', 'income')->selectRaw('category, sum(amount) as total')->groupBy('category')->pluck('total', 'category');
-        $expenseByCategory = (clone $baseTx)->where('type', 'expense')->selectRaw('category, sum(amount) as total')->groupBy('category')->pluck('total', 'category');
-        $monthlyIncome = (clone $baseTx)->where('type', 'income')->selectRaw("DATE_FORMAT(date, '%Y-%m') as month, sum(amount) as total")->groupBy('month')->orderBy('month')->pluck('total', 'month');
-        $monthlyExpense = (clone $baseTx)->where('type', 'expense')->selectRaw("DATE_FORMAT(date, '%Y-%m') as month, sum(amount) as total")->groupBy('month')->orderBy('month')->pluck('total', 'month');
+            $incomeByCategory = FinanceTransaction::where('type', 'income')->selectRaw('category, sum(amount) as total')->groupBy('category')->pluck('total', 'category');
+            $expenseByCategory = FinanceTransaction::where('type', 'expense')->selectRaw('category, sum(amount) as total')->groupBy('category')->pluck('total', 'category');
+            $monthlyIncome = FinanceTransaction::where('type', 'income')->selectRaw("DATE_FORMAT(date, '%Y-%m') as month, sum(amount) as total")->groupBy('month')->orderBy('month')->pluck('total', 'month');
+            $monthlyExpense = FinanceTransaction::where('type', 'expense')->selectRaw("DATE_FORMAT(date, '%Y-%m') as month, sum(amount) as total")->groupBy('month')->orderBy('month')->pluck('total', 'month');
+        }
 
         return view('finance.index', compact('tab', 'transactions', 'invoices', 'fees', 'clients', 'cases', 'stats', 'incomeByCategory', 'expenseByCategory', 'monthlyIncome', 'monthlyExpense', 'isFinAdmin'));
     }

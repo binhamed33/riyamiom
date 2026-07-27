@@ -9,6 +9,7 @@
         <h1 class="text-2xl font-bold text-[#C9A55A]">{{ __('app.finance') }}</h1>
     </div>
 
+    @if($isFinAdmin)
     {{-- Stats --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-5">
@@ -28,6 +29,7 @@
             <p class="text-2xl font-bold text-yellow-400">{{ number_format($stats['unpaid_invoices_amount'], 2) }} ر.ع</p>
         </div>
     </div>
+    @endif
 
     {{-- Tabs --}}
     <div class="mb-6 border-b border-white/10 flex gap-1 overflow-x-auto">
