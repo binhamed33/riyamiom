@@ -166,6 +166,7 @@ class ChatController extends Controller
                 'user_id' => $participant->id,
                 'title' => 'رسالة جديدة من ' . $sender->name,
                 'message' => substr($message, 0, 100),
+                'type' => \App\Models\Notification::TYPE_CHAT,
                 'is_read' => false,
             ]);
         }

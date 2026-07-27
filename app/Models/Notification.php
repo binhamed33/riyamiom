@@ -16,6 +16,7 @@ class Notification extends Model
     const TYPE_WARNING = 'warning';
     const TYPE_SUCCESS = 'success';
     const TYPE_ERROR = 'error';
+    const TYPE_CHAT = 'chat';
 
     protected $fillable = [
         'user_id',
