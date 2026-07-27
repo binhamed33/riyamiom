@@ -579,6 +579,9 @@ return [
     'export_excel' => 'Export Excel',
     'export_all' => 'Export All',
     'export_all_desc' => 'Download all data (Cases + Sessions + Tasks + Clients) in one file',
+    // HR & Finance
+    'hr' => 'HR',
+    'finance' => 'Finance',
     // Session warnings
     'session_warning_title' => 'Session Expiring',
     'session_warning_message' => 'Your session will expire automatically in',

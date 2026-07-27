@@ -579,6 +579,9 @@ return [
     'export_excel' => 'تصدير Excel',
     'export_all' => 'تصدير الكل',
     'export_all_desc' => 'تحميل جميع البيانات (قضايا + جلسات + مهام + عملاء) في ملف واحد',
+    // HR & Finance
+    'hr' => 'الموارد البشرية',
+    'finance' => 'الإدارة المالية',
     // Session warnings
     'session_warning_title' => 'تنبيه انتهاء الجلسة',
     'session_warning_message' => 'ستنتهي جلستك تلقائياً خلال',

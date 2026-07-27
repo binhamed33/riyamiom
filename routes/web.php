@@ -23,6 +23,8 @@ use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\CaseFileController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\HrController;
+use App\Http\Controllers\FinanceController;
 
 // Language switch (public)
 Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
@@ -200,6 +202,29 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/backup/upload-restore', [BackupController::class, 'uploadRestore'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:10,60')->name('backup.upload-restore');
     Route::post('/backup/{filename}/restore', [BackupController::class, 'restore'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:10,60')->name('backup.restore');
     Route::delete('/backup/{filename}', [BackupController::class, 'destroy'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.destroy');
+
+    // HR - developer, admin
+    Route::middleware('role:developer,admin')->group(function () {
+        Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
+        Route::post('/hr/performance', [HrController::class, 'storePerformance'])->name('hr.performance.store');
+        Route::delete('/hr/performance/{performance}', [HrController::class, 'destroyPerformance'])->name('hr.performance.destroy');
+        Route::post('/hr/bonuses', [HrController::class, 'storeBonus'])->name('hr.bonuses.store');
+        Route::delete('/hr/bonuses/{bonus}', [HrController::class, 'destroyBonus'])->name('hr.bonuses.destroy');
+        Route::post('/hr/penalties', [HrController::class, 'storePenalty'])->name('hr.penalties.store');
+        Route::delete('/hr/penalties/{penalty}', [HrController::class, 'destroyPenalty'])->name('hr.penalties.destroy');
+    });
+
+    // Finance - developer, admin
+    Route::middleware('role:developer,admin')->group(function () {
+        Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
+        Route::post('/finance/transactions', [FinanceController::class, 'storeTransaction'])->name('finance.transactions.store');
+        Route::delete('/finance/transactions/{transaction}', [FinanceController::class, 'destroyTransaction'])->name('finance.transactions.destroy');
+        Route::post('/finance/invoices', [FinanceController::class, 'storeInvoice'])->name('finance.invoices.store');
+        Route::post('/finance/invoices/{invoice}/pay', [FinanceController::class, 'payInvoice'])->name('finance.invoices.pay');
+        Route::delete('/finance/invoices/{invoice}', [FinanceController::class, 'destroyInvoice'])->name('finance.invoices.destroy');
+        Route::post('/finance/fees', [FinanceController::class, 'storeFee'])->name('finance.fees.store');
+        Route::delete('/finance/fees/{fee}', [FinanceController::class, 'destroyFee'])->name('finance.fees.destroy');
+    });
 
     // Client portal - client role
     Route::middleware('role:client')->prefix('my')->group(function () {
