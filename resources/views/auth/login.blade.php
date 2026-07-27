@@ -186,14 +186,14 @@
                         </div>
 
                         @if($errors->any())
-                            <div class="mb-6 p-4 rounded-2xl border border-red-500/15 bg-red-500/[0.03] shake anim-scale d3">
+                            <div class="mb-6 p-4 rounded-2xl border border-red-500/40 bg-red-500/10" style="opacity:1;visibility:visible;">
                                 <div class="flex items-start gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                                         <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     </div>
                                     <div>
                                         @foreach($errors->all() as $error)
-                                            <p class="text-sm text-red-400">{{ $error }}</p>
+                                            <p class="text-sm text-red-400 font-medium">{{ $error }}</p>
                                         @endforeach
                                     </div>
                                 </div>
