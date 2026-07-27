@@ -27,9 +27,7 @@ class LoginController extends Controller
         $lockKey = 'login_lock_' . md5($email);
 
         if (Cache::has($lockKey)) {
-            return back()->withErrors([
-                'email' => 'تم قفل الحساب مؤقتاً بسبب محاولات دخول كثيرة. حاول مرة أخرى بعد 15 دقيقة.',
-            ])->withInput($request->only('email'));
+            return redirect()->route('login')->with('login_error', 'تم قفل الحساب مؤقتاً بسبب محاولات دخول كثيرة. حاول مرة أخرى بعد 15 دقيقة.');
         }
 
         $attemptsKey = 'login_attempts_' . md5($email);
@@ -54,16 +52,12 @@ class LoginController extends Controller
                 ]);
 
 
-                return back()->withErrors([
-                    'email' => 'تم قفل الحساب مؤقتاً بسبب محاولات دخول كثيرة. حاول مرة أخرى بعد 15 دقيقة.',
-                ])->withInput($request->only('email'));
+                return redirect()->route('login')->with('login_error', 'تم قفل الحساب مؤقتاً بسبب محاولات دخول كثيرة. حاول مرة أخرى بعد 15 دقيقة.');
             }
 
             Cache::put($attemptsKey, $attempts, now()->addMinutes(15));
 
-            return back()->withErrors([
-                'email' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
-            ])->withInput($request->only('email'));
+            return redirect()->route('login')->with('login_error', 'البريد الإلكتروني أو كلمة المرور غير صحيحة.');
         }
 
         Cache::forget($attemptsKey);

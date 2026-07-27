@@ -185,13 +185,17 @@
                             <p class="text-white/45 text-sm anim-up d5">{{ __('app.login_subtitle') ?? 'أدخل بياناتك للوصول إلى النظام' }}</p>
                         </div>
 
-                        @if($errors->any())
-                            <div class="mb-6 p-4 rounded-2xl border border-red-500/40 bg-red-500/10" style="opacity:1;visibility:visible;">
+                        @php $loginError = session('login_error'); @endphp
+                        @if($errors->any() || $loginError)
+                            <div class="mb-6 p-4 rounded-2xl border border-red-500/40 bg-red-500/10" style="opacity:1 !important;visibility:visible !important;">
                                 <div class="flex items-start gap-3">
                                     <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                                         <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     </div>
                                     <div>
+                                        @if($loginError)
+                                            <p class="text-sm text-red-400 font-medium">{{ $loginError }}</p>
+                                        @endif
                                         @foreach($errors->all() as $error)
                                             <p class="text-sm text-red-400 font-medium">{{ $error }}</p>
                                         @endforeach
