@@ -2,11 +2,14 @@
 
 @section('title', __('app.hr'))
 
+@php $isAdmin = in_array(auth()->user()->role, ['developer', 'admin']); @endphp
+
 @section('content')
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-heading font-bold text-white">{{ __('app.hr') }}</h1>
 </div>
 
+@if($isAdmin)
 {{-- Stats --}}
 <div class="grid grid-cols-5 gap-4 mb-6">
     <div class="stat-card rounded-xl px-5 py-4">
@@ -41,10 +44,13 @@
     </div>
 </div>
 @endif
+@endif
 
 {{-- Tabs --}}
 <div class="mb-6 border-b border-ivory/5 flex gap-1 overflow-x-auto">
+    @if($isAdmin)
     <a href="{{ route('hr.index', ['tab' => 'employees']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'employees' ? 'text-gold bg-gold/5 border-b-2 border-gold' : 'text-white/50 hover:text-white/70' }}">الموظفون</a>
+    @endif
     <a href="{{ route('hr.index', ['tab' => 'performance']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'performance' ? 'text-gold bg-gold/5 border-b-2 border-gold' : 'text-white/50 hover:text-white/70' }}">التقييمات</a>
     <a href="{{ route('hr.index', ['tab' => 'bonuses']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'bonuses' ? 'text-gold bg-gold/5 border-b-2 border-gold' : 'text-white/50 hover:text-white/70' }}">المكافآت</a>
     <a href="{{ route('hr.index', ['tab' => 'penalties']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'penalties' ? 'text-gold bg-gold/5 border-b-2 border-gold' : 'text-white/50 hover:text-white/70' }}">الجزاءات</a>
@@ -53,7 +59,7 @@
 
 {{-- Tab Content --}}
 <div class="card-premium rounded-xl">
-    @if($tab === 'employees')
+    @if($tab === 'employees' && $isAdmin)
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead><tr class="border-b border-ivory/5"><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الاسم</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">البريد</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الدور</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">قضايا</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">مهام</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">التقييم</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الحالة</th></tr></thead>
@@ -75,7 +81,7 @@
         </div>
 
     @elseif($tab === 'performance')
-        @php $showPerfForm = false; @endphp
+        @if($isAdmin)
         <div class="p-4 border-b border-ivory/5" x-data="{ open: false }">
             <button @click="open = !open" class="btn-gold px-4 py-2 rounded-xl text-sm font-bold" x-text="open ? 'إلغاء' : '+ إضافة تقييم'"></button>
             <form x-show="open" x-cloak method="POST" action="{{ route('hr.performance.store') }}" class="mt-4 p-4 bg-white/5 rounded-xl">
@@ -89,9 +95,10 @@
                 <textarea name="notes" rows="2" placeholder="ملاحظات..." class="mt-3 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white"></textarea>
             </form>
         </div>
+        @endif
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead><tr class="border-b border-ivory/5"><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الموظف</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">التاريخ</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">التقييم</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">المقيم</th><th></th></tr></thead>
+                <thead><tr class="border-b border-ivory/5"><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الموظف</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">التاريخ</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">التقييم</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">المقيم</th>@if($isAdmin)<th></th>@endif</tr></thead>
                 <tbody>
                     @foreach($performances as $p)
                         <tr class="border-b border-ivory/5 hover:bg-white/[0.02]">
@@ -99,9 +106,11 @@
                             <td class="px-4 py-3 text-sm text-white/50">{{ $p->review_date->format('Y-m-d') }}</td>
                             <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-bold {{ $p->rating >= 4 ? 'bg-green-500/10 text-green-400' : ($p->rating >= 3 ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400') }}">{{ $p->rating }}/5</span></td>
                             <td class="px-4 py-3 text-sm text-white/50">{{ $p->reviewer->name }}</td>
+                            @if($isAdmin)
                             <td class="px-4 py-3"><form method="POST" action="{{ route('hr.performance.destroy', $p) }}" onsubmit="return confirm('حذف؟')">@csrf @method('DELETE')<button class="text-red-400 hover:text-red-300 text-xs">حذف</button></form></td>
+                            @endif
                         </tr>
-                        @if($p->notes)<tr class="border-b border-ivory/5"><td colspan="5" class="px-4 pb-3 text-xs text-white/30">{{ $p->notes }}</td></tr>@endif
+                        @if($p->notes)<tr class="border-b border-ivory/5"><td colspan="{{ $isAdmin ? 5 : 4 }}" class="px-4 pb-3 text-xs text-white/30">{{ $p->notes }}</td></tr>@endif
                     @endforeach
                 </tbody>
             </table>
@@ -109,6 +118,7 @@
         <div class="p-4">{{ $performances->appends(['tab' => 'performance'])->links() }}</div>
 
     @elseif($tab === 'bonuses')
+        @if($isAdmin)
         <div class="p-4 border-b border-ivory/5" x-data="{ open: false }">
             <button @click="open = !open" class="btn-gold px-4 py-2 rounded-xl text-sm font-bold" x-text="open ? 'إلغاء' : '+ إضافة مكافأة'"></button>
             <form x-show="open" x-cloak method="POST" action="{{ route('hr.bonuses.store') }}" class="mt-4 p-4 bg-white/5 rounded-xl">
@@ -122,9 +132,10 @@
                 <input type="text" name="reason" placeholder="السبب" class="mt-3 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
             </form>
         </div>
+        @endif
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead><tr class="border-b border-ivory/5"><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الموظف</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">المبلغ</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">السبب</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">التاريخ</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">بواسطة</th><th></th></tr></thead>
+                <thead><tr class="border-b border-ivory/5"><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الموظف</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">المبلغ</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">السبب</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">التاريخ</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">بواسطة</th>@if($isAdmin)<th></th>@endif</tr></thead>
                 <tbody>
                     @foreach($bonuses as $b)
                         <tr class="border-b border-ivory/5 hover:bg-white/[0.02]">
@@ -133,7 +144,9 @@
                             <td class="px-4 py-3 text-sm text-white/50">{{ $b->reason }}</td>
                             <td class="px-4 py-3 text-sm text-white/50">{{ $b->date->format('Y-m-d') }}</td>
                             <td class="px-4 py-3 text-sm text-white/50">{{ $b->giver->name }}</td>
+                            @if($isAdmin)
                             <td class="px-4 py-3"><form method="POST" action="{{ route('hr.bonuses.destroy', $b) }}" onsubmit="return confirm('حذف؟')">@csrf @method('DELETE')<button class="text-red-400 hover:text-red-300 text-xs">حذف</button></form></td>
+                            @endif
                         </tr>
                     @endforeach
                 </tbody>
@@ -142,6 +155,7 @@
         <div class="p-4">{{ $bonuses->appends(['tab' => 'bonuses'])->links() }}</div>
 
     @elseif($tab === 'penalties')
+        @if($isAdmin)
         <div class="p-4 border-b border-ivory/5" x-data="{ open: false }">
             <button @click="open = !open" class="btn-gold px-4 py-2 rounded-xl text-sm font-bold" x-text="open ? 'إلغاء' : '+ إضافة جزاء'"></button>
             <form x-show="open" x-cloak method="POST" action="{{ route('hr.penalties.store') }}" class="mt-4 p-4 bg-white/5 rounded-xl">
@@ -155,9 +169,10 @@
                 <input type="text" name="reason" placeholder="السبب" class="mt-3 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
             </form>
         </div>
+        @endif
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead><tr class="border-b border-ivory/5"><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الموظف</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">المبلغ</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">السبب</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">التاريخ</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">بواسطة</th><th></th></tr></thead>
+                <thead><tr class="border-b border-ivory/5"><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الموظف</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">المبلغ</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">السبب</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">التاريخ</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">بواسطة</th>@if($isAdmin)<th></th>@endif</tr></thead>
                 <tbody>
                     @foreach($penalties as $p)
                         <tr class="border-b border-ivory/5 hover:bg-white/[0.02]">
@@ -166,7 +181,9 @@
                             <td class="px-4 py-3 text-sm text-white/50">{{ $p->reason }}</td>
                             <td class="px-4 py-3 text-sm text-white/50">{{ $p->date->format('Y-m-d') }}</td>
                             <td class="px-4 py-3 text-sm text-white/50">{{ $p->giver->name }}</td>
+                            @if($isAdmin)
                             <td class="px-4 py-3"><form method="POST" action="{{ route('hr.penalties.destroy', $p) }}" onsubmit="return confirm('حذف؟')">@csrf @method('DELETE')<button class="text-red-400 hover:text-red-300 text-xs">حذف</button></form></td>
+                            @endif
                         </tr>
                     @endforeach
                 </tbody>
@@ -179,8 +196,12 @@
             <button @click="open = !open" class="btn-gold px-4 py-2 rounded-xl text-sm font-bold" x-text="open ? 'إلغاء' : '+ طلب إجازة'"></button>
             <form x-show="open" x-cloak method="POST" action="{{ route('hr.leaves.store') }}" class="mt-4 p-4 bg-white/5 rounded-xl">
                 @csrf
-                <div class="grid grid-cols-4 gap-4">
+                <div class="grid grid-cols-{{ $isAdmin ? 4 : 3 }} gap-4">
+                    @if($isAdmin)
                     <select name="employee_id" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required><option value="">الموظف</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
+                    @else
+                    <input type="hidden" name="employee_id" value="{{ auth()->id() }}">
+                    @endif
                     <select name="type" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required><option value="">النوع</option><option value="annual">سنوية</option><option value="sick">مرضية</option><option value="emergency">طارئة</option><option value="maternity">أمومة</option><option value="unpaid">بدون راتب</option><option value="other">أخرى</option></select>
                     <input type="date" name="start_date" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
                     <input type="date" name="end_date" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
@@ -193,7 +214,7 @@
         </div>
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead><tr class="border-b border-ivory/5"><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الموظف</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">النوع</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">من</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">إلى</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الحالة</th><th></th></tr></thead>
+                <thead><tr class="border-b border-ivory/5"><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الموظف</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">النوع</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">من</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">إلى</th><th class="text-right px-4 py-3 text-xs font-bold text-white/40">الحالة</th>@if($isAdmin)<th></th>@endif</tr></thead>
                 <tbody>
                     @foreach($leaves as $l)
                         <tr class="border-b border-ivory/5 hover:bg-white/[0.02]">
@@ -202,6 +223,7 @@
                             <td class="px-4 py-3 text-sm text-white/50">{{ $l->start_date->format('Y-m-d') }}</td>
                             <td class="px-4 py-3 text-sm text-white/50">{{ $l->end_date->format('Y-m-d') }}</td>
                             <td class="px-4 py-3"><span class="text-xs px-2 py-1 rounded-full {{ $l->status === 'approved' ? 'bg-green-500/10 text-green-400' : ($l->status === 'rejected' ? 'bg-red-500/10 text-red-400' : 'bg-yellow-500/10 text-yellow-400') }}">{{ $l->status === 'approved' ? 'معتمدة' : ($l->status === 'rejected' ? 'مرفوضة' : 'قيد الانتظار') }}</span></td>
+                            @if($isAdmin)
                             <td class="px-4 py-3 flex gap-2">
                                 @if($l->status === 'pending')
                                     <form method="POST" action="{{ route('hr.leaves.approve', $l) }}" class="inline">@csrf<button class="text-green-400 hover:text-green-300 text-xs">موافقة</button></form>
@@ -209,8 +231,9 @@
                                 @endif
                                 <form method="POST" action="{{ route('hr.leaves.destroy', $l) }}" onsubmit="return confirm('حذف؟')">@csrf @method('DELETE')<button class="text-white/30 hover:text-red-400 text-xs">حذف</button></form>
                             </td>
+                            @endif
                         </tr>
-                        @if($l->reason)<tr><td colspan="6" class="px-4 pb-3 text-xs text-white/30">{{ $l->reason }}</td></tr>@endif
+                        @if($l->reason)<tr><td colspan="{{ $isAdmin ? 6 : 5 }}" class="px-4 pb-3 text-xs text-white/30">{{ $l->reason }}</td></tr>@endif
                     @endforeach
                 </tbody>
             </table>
@@ -221,7 +244,7 @@
 @endsection
 
 @push('scripts')
-@if($tab === 'employees' && count($chartData) > 0)
+@if($tab === 'employees' && $isAdmin && count($chartData) > 0)
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function() {
     const names = {!! json_encode(array_column($chartData, 'name')) !!};

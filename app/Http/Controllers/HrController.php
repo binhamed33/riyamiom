@@ -80,6 +80,7 @@ class HrController extends Controller
 
     public function storePerformance(Request $request)
     {
+        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'employee_id' => 'required|exists:users,id',
             'review_date' => 'required|date',
@@ -93,6 +94,7 @@ class HrController extends Controller
 
     public function storeBonus(Request $request)
     {
+        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'employee_id' => 'required|exists:users,id',
             'amount' => 'required|numeric|min:0',
@@ -106,6 +108,7 @@ class HrController extends Controller
 
     public function storePenalty(Request $request)
     {
+        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'employee_id' => 'required|exists:users,id',
             'amount' => 'nullable|numeric|min:0',
@@ -119,15 +122,23 @@ class HrController extends Controller
 
     public function storeLeave(Request $request)
     {
+        $user = auth()->user();
+        $isAdmin = $this->isAdmin();
+
         $data = $request->validate([
-            'employee_id' => 'required|exists:users,id',
+            'employee_id' => $isAdmin ? 'required|exists:users,id' : 'nullable',
             'type' => 'required|in:annual,sick,emergency,maternity,unpaid,other',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'reason' => 'nullable|string',
         ]);
+
+        $data['employee_id'] = $isAdmin ? $data['employee_id'] : $user->id;
         $data['status'] = 'pending';
         $leave = HrLeave::create($data);
+
+        // Reload to get employee relationship
+        $leave->load('employee');
 
         // Notify all admins
         $admins = User::whereIn('role', ['developer', 'admin'])->get();
@@ -147,6 +158,7 @@ class HrController extends Controller
 
     public function approveLeave(HrLeave $leave)
     {
+        abort_unless($this->isAdmin(), 403);
         $leave->update(['status' => 'approved', 'approved_by' => auth()->id()]);
 
         Notification::create([
@@ -163,6 +175,7 @@ class HrController extends Controller
 
     public function rejectLeave(HrLeave $leave)
     {
+        abort_unless($this->isAdmin(), 403);
         $leave->update(['status' => 'rejected', 'approved_by' => auth()->id()]);
 
         Notification::create([
@@ -179,24 +192,28 @@ class HrController extends Controller
 
     public function destroyPerformance(HrPerformance $performance)
     {
+        abort_unless($this->isAdmin(), 403);
         $performance->delete();
         return redirect()->route('hr.index', ['tab' => 'performance'])->with('success', 'تم حذف التقييم');
     }
 
     public function destroyBonus(HrBonus $bonus)
     {
+        abort_unless($this->isAdmin(), 403);
         $bonus->delete();
         return redirect()->route('hr.index', ['tab' => 'bonuses'])->with('success', 'تم حذف المكافأة');
     }
 
     public function destroyPenalty(HrPenalty $penalty)
     {
+        abort_unless($this->isAdmin(), 403);
         $penalty->delete();
         return redirect()->route('hr.index', ['tab' => 'penalties'])->with('success', 'تم حذف الجزاء');
     }
 
     public function destroyLeave(HrLeave $leave)
     {
+        abort_unless($this->isAdmin(), 403);
         $leave->delete();
         return redirect()->route('hr.index', ['tab' => 'leaves'])->with('success', 'تم حذف الإجازة');
     }
