@@ -52,10 +52,14 @@
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 overflow-hidden">
             @if(count($chartData) > 0)
             <div class="p-5 border-b border-white/10">
-                <h3 class="text-sm font-bold text-[#C9A55A] mb-4">تحليل أداء الموظفين</h3>
-                <div class="grid grid-cols-2 gap-6 max-h-64">
-                    <div><canvas id="hrCasesChart"></canvas></div>
-                    <div><canvas id="hrRatingChart"></canvas></div>
+                <h3 class="text-sm font-bold text-[#C9A55A] mb-4">توزيع التقييمات</h3>
+                <div class="flex items-center gap-8">
+                    <div class="w-48 h-48"><canvas id="hrRatingChart"></canvas></div>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-green-400"></span><span class="text-sm text-white/70">ممتاز (4-5): <strong class="text-white">{{ $ratingDistribution['excellent'] }}</strong></span></div>
+                        <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-yellow-400"></span><span class="text-sm text-white/70">جيد (3-4): <strong class="text-white">{{ $ratingDistribution['good'] }}</strong></span></div>
+                        <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-red-400"></span><span class="text-sm text-white/70">ضعيف (>3): <strong class="text-white">{{ $ratingDistribution['poor'] }}</strong></span></div>
+                    </div>
                 </div>
             </div>
             @endif
@@ -382,30 +386,30 @@
 @if($tab === 'employees' && $isAdmin && count($chartData) > 0)
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function() {
-    const names = {!! json_encode(array_column($chartData, 'name')) !!};
-    const cases = {!! json_encode(array_column($chartData, 'cases')) !!};
-    const tasks = {!! json_encode(array_column($chartData, 'tasks')) !!};
-    const ratings = {!! json_encode(array_column($chartData, 'rating')) !!};
-
-    new Chart(document.getElementById('hrCasesChart'), {
-        type: 'bar',
-        data: {
-            labels: names,
-            datasets: [
-                { label: 'قضايا', data: cases, backgroundColor: '#C9A55A', borderRadius: 4 },
-                { label: 'مهام', data: tasks, backgroundColor: '#60A5FA', borderRadius: 4 }
-            ]
-        },
-        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#fff', font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { color: '#fff' } }, x: { ticks: { color: '#fff', font: { size: 9 } } } } }
-    });
-
     new Chart(document.getElementById('hrRatingChart'), {
-        type: 'radar',
+        type: 'doughnut',
         data: {
-            labels: names,
-            datasets: [{ label: 'التقييم', data: ratings, backgroundColor: 'rgba(201,165,90,0.2)', borderColor: '#C9A55A', pointBackgroundColor: '#C9A55A' }]
+            labels: ['ممتاز (4-5)', 'جيد (3-4)', 'ضعيف (>3)'],
+            datasets: [{
+                data: [{{ $ratingDistribution['excellent'] }}, {{ $ratingDistribution['good'] }}, {{ $ratingDistribution['poor'] }}],
+                backgroundColor: ['#4ADE80', '#FBBF24', '#F87171'],
+                borderColor: '#0D1321',
+                borderWidth: 3
+            }]
         },
-        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#fff', font: { size: 10 } } } }, scales: { r: { beginAtZero: true, max: 5, ticks: { color: '#fff', font: { size: 9 }, stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { color: '#fff', font: { size: 9 } } } } }
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            cutout: '65%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) { return ctx.parsed + ' موظف'; }
+                    }
+                }
+            }
+        }
     });
 });
 </script>

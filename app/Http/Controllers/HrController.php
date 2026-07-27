@@ -57,25 +57,21 @@ class HrController extends Controller
         ];
 
         $chartData = [];
+        $ratingDistribution = ['excellent' => 0, 'good' => 0, 'poor' => 0];
         if ($isAdmin) {
             foreach ($employees as $emp) {
-                $casesCount = LegalCase::where('lawyer_id', $emp->id)->count();
-                $tasksCount = Task::where('assigned_to', $emp->id)->count();
-                $tasksDone = Task::where('assigned_to', $emp->id)->where('status', 'completed')->count();
                 $avgRating = HrPerformance::where('employee_id', $emp->id)->avg('rating');
-                $bonusTotal = HrBonus::where('employee_id', $emp->id)->sum('amount');
                 $chartData[] = [
                     'name' => $emp->name,
-                    'cases' => $casesCount,
-                    'tasks' => $tasksCount,
-                    'tasks_done' => $tasksDone,
                     'rating' => round($avgRating ?? 0, 1),
-                    'bonuses' => round($bonusTotal, 2),
                 ];
+                if ($avgRating >= 4) $ratingDistribution['excellent']++;
+                elseif ($avgRating >= 3) $ratingDistribution['good']++;
+                else $ratingDistribution['poor']++;
             }
         }
 
-        return view('hr.index', compact('tab', 'employees', 'performances', 'bonuses', 'penalties', 'leaves', 'stats', 'chartData'));
+        return view('hr.index', compact('tab', 'employees', 'performances', 'bonuses', 'penalties', 'leaves', 'stats', 'chartData', 'ratingDistribution'));
     }
 
     public function storePerformance(Request $request)
