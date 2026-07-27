@@ -212,6 +212,10 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::delete('/hr/bonuses/{bonus}', [HrController::class, 'destroyBonus'])->name('hr.bonuses.destroy');
         Route::post('/hr/penalties', [HrController::class, 'storePenalty'])->name('hr.penalties.store');
         Route::delete('/hr/penalties/{penalty}', [HrController::class, 'destroyPenalty'])->name('hr.penalties.destroy');
+        Route::post('/hr/leaves', [HrController::class, 'storeLeave'])->name('hr.leaves.store');
+        Route::post('/hr/leaves/{leave}/approve', [HrController::class, 'approveLeave'])->name('hr.leaves.approve');
+        Route::post('/hr/leaves/{leave}/reject', [HrController::class, 'rejectLeave'])->name('hr.leaves.reject');
+        Route::delete('/hr/leaves/{leave}', [HrController::class, 'destroyLeave'])->name('hr.leaves.destroy');
     });
 
     // Finance - developer, admin

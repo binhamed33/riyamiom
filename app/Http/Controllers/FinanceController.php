@@ -8,6 +8,7 @@ use App\Models\FinanceTransaction;
 use App\Models\Client;
 use App\Models\LegalCase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class FinanceController extends Controller
@@ -28,10 +29,16 @@ class FinanceController extends Controller
             'total_expense' => FinanceTransaction::where('type', 'expense')->sum('amount'),
             'balance' => FinanceTransaction::where('type', 'income')->sum('amount') - FinanceTransaction::where('type', 'expense')->sum('amount'),
             'pending_invoices' => FinanceInvoice::whereIn('status', ['unpaid', 'partial'])->count(),
-            'unpaid_invoices_amount' => FinanceInvoice::whereIn('status', ['unpaid', 'partial'])->sum(FinanceInvoice::raw('amount - paid_amount')),
+            'unpaid_invoices_amount' => FinanceInvoice::whereIn('status', ['unpaid', 'partial'])->selectRaw('sum(amount - paid_amount) as total')->value('total') ?? 0,
         ];
 
-        return view('finance.index', compact('tab', 'transactions', 'invoices', 'fees', 'clients', 'cases', 'stats'));
+        // Chart data
+        $incomeByCategory = FinanceTransaction::where('type', 'income')->selectRaw('category, sum(amount) as total')->groupBy('category')->pluck('total', 'category');
+        $expenseByCategory = FinanceTransaction::where('type', 'expense')->selectRaw('category, sum(amount) as total')->groupBy('category')->pluck('total', 'category');
+        $monthlyIncome = FinanceTransaction::where('type', 'income')->selectRaw("DATE_FORMAT(date, '%Y-%m') as month, sum(amount) as total")->groupBy('month')->orderBy('month')->pluck('total', 'month');
+        $monthlyExpense = FinanceTransaction::where('type', 'expense')->selectRaw("DATE_FORMAT(date, '%Y-%m') as month, sum(amount) as total")->groupBy('month')->orderBy('month')->pluck('total', 'month');
+
+        return view('finance.index', compact('tab', 'transactions', 'invoices', 'fees', 'clients', 'cases', 'stats', 'incomeByCategory', 'expenseByCategory', 'monthlyIncome', 'monthlyExpense'));
     }
 
     public function storeTransaction(Request $request)

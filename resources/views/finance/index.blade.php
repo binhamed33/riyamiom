@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
-@section('title', 'الإدارة المالية')
+@section('title', __('app.finance'))
 
 @section('content')
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-heading font-bold text-white">الإدارة المالية</h1>
+    <h1 class="text-2xl font-heading font-bold text-white">{{ __('app.finance') }}</h1>
 </div>
 
 {{-- Stats --}}
@@ -27,6 +27,17 @@
     </div>
 </div>
 
+{{-- Chart --}}
+@if($tab === 'transactions')
+<div class="card-premium rounded-xl p-6 mb-6">
+    <h3 class="text-sm font-bold text-gold mb-4">تحليل مالي</h3>
+    <div class="grid grid-cols-2 gap-6">
+        <div><canvas id="finPieChart"></canvas></div>
+        <div><canvas id="finBarChart"></canvas></div>
+    </div>
+</div>
+@endif
+
 {{-- Tabs --}}
 <div class="mb-6 border-b border-ivory/5 flex gap-1">
     <a href="{{ route('finance.index', ['tab' => 'transactions']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg {{ $tab === 'transactions' ? 'text-gold bg-gold/5 border-b-2 border-gold' : 'text-white/50 hover:text-white/70' }}">المعاملات</a>
@@ -37,25 +48,22 @@
 {{-- Tab Content --}}
 <div class="card-premium rounded-xl">
     @if($tab === 'transactions')
-        <div class="p-4 border-b border-ivory/5">
-            <button onclick="document.getElementById('txForm').classList.toggle('hidden')" class="btn-gold px-4 py-2 rounded-xl text-sm font-bold">+ إضافة معاملة</button>
-            <form id="txForm" method="POST" action="{{ route('finance.transactions.store') }}" class="hidden mt-4 p-4 bg-white/5 rounded-xl">
+        <div class="p-4 border-b border-ivory/5" x-data="{ open: false }">
+            <button @click="open = !open" class="btn-gold px-4 py-2 rounded-xl text-sm font-bold" x-text="open ? 'إلغاء' : '+ إضافة معاملة'"></button>
+            <form x-show="open" x-cloak method="POST" action="{{ route('finance.transactions.store') }}" class="mt-4 p-4 bg-white/5 rounded-xl">
                 @csrf
                 <div class="grid grid-cols-4 gap-4">
-                    <select name="type" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
-                        <option value="income">دخل</option>
-                        <option value="expense">مصروف</option>
-                    </select>
-                    <input type="text" name="category" placeholder="التصنيف" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
-                    <input type="number" step="0.001" name="amount" placeholder="المبلغ" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
-                    <input type="date" name="date" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
+                    <select name="type" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required><option value="income">دخل</option><option value="expense">مصروف</option></select>
+                    <input type="text" name="category" placeholder="التصنيف" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
+                    <input type="number" step="0.001" name="amount" placeholder="المبلغ" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
+                    <input type="date" name="date" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
                 </div>
                 <div class="grid grid-cols-3 gap-4 mt-3">
-                    <input type="text" name="payment_method" placeholder="طريقة الدفع" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white">
-                    <input type="text" name="reference" placeholder="المرجع" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white">
+                    <input type="text" name="payment_method" placeholder="طريقة الدفع" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white">
+                    <input type="text" name="reference" placeholder="المرجع" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white">
                     <button type="submit" class="btn-gold rounded-xl text-sm font-bold">حفظ</button>
                 </div>
-                <textarea name="description" rows="2" placeholder="الوصف..." class="mt-3 w-full form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white"></textarea>
+                <textarea name="description" rows="2" placeholder="الوصف..." class="mt-3 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white"></textarea>
             </form>
         </div>
         <div class="overflow-x-auto">
@@ -71,9 +79,7 @@
                             <td class="px-4 py-3 text-sm text-white/50">{{ $tx->payment_method ?? '-' }}</td>
                             <td class="px-4 py-3"><form method="POST" action="{{ route('finance.transactions.destroy', $tx) }}" onsubmit="return confirm('حذف؟')">@csrf @method('DELETE')<button class="text-red-400 hover:text-red-300 text-xs">حذف</button></form></td>
                         </tr>
-                        @if($tx->description)
-                            <tr><td colspan="6" class="px-4 pb-3 text-xs text-white/30">{{ $tx->description }}</td></tr>
-                        @endif
+                        @if($tx->description)<tr><td colspan="6" class="px-4 pb-3 text-xs text-white/30">{{ $tx->description }}</td></tr>@endif
                     @endforeach
                 </tbody>
             </table>
@@ -81,32 +87,22 @@
         <div class="p-4">{{ $transactions->appends(['tab' => 'transactions'])->links() }}</div>
 
     @elseif($tab === 'invoices')
-        <div class="p-4 border-b border-ivory/5">
-            <button onclick="document.getElementById('invForm').classList.toggle('hidden')" class="btn-gold px-4 py-2 rounded-xl text-sm font-bold">+ إضافة فاتورة</button>
-            <form id="invForm" method="POST" action="{{ route('finance.invoices.store') }}" class="hidden mt-4 p-4 bg-white/5 rounded-xl">
+        <div class="p-4 border-b border-ivory/5" x-data="{ open: false }">
+            <button @click="open = !open" class="btn-gold px-4 py-2 rounded-xl text-sm font-bold" x-text="open ? 'إلغاء' : '+ إضافة فاتورة'"></button>
+            <form x-show="open" x-cloak method="POST" action="{{ route('finance.invoices.store') }}" class="mt-4 p-4 bg-white/5 rounded-xl">
                 @csrf
                 <div class="grid grid-cols-4 gap-4">
-                    <input type="text" name="invoice_number" placeholder="رقم الفاتورة" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
-                    <select name="client_id" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white">
-                        <option value="">العميل (اختياري)</option>
-                        @foreach($clients as $c)
-                            <option value="{{ $c->id }}">{{ $c->name }}</option>
-                        @endforeach
-                    </select>
-                    <input type="number" step="0.001" name="amount" placeholder="المبلغ" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
-                    <select name="status" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
-                        <option value="unpaid">غير مدفوعة</option>
-                        <option value="paid">مدفوعة</option>
-                        <option value="partial">مدفوعة جزئياً</option>
-                        <option value="cancelled">ملغية</option>
-                    </select>
+                    <input type="text" name="invoice_number" placeholder="رقم الفاتورة" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
+                    <select name="client_id" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white"><option value="">العميل (اختياري)</option>@foreach($clients as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select>
+                    <input type="number" step="0.001" name="amount" placeholder="المبلغ" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
+                    <select name="status" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required><option value="unpaid">غير مدفوعة</option><option value="paid">مدفوعة</option><option value="partial">مدفوعة جزئياً</option><option value="cancelled">ملغية</option></select>
                 </div>
                 <div class="grid grid-cols-3 gap-4 mt-3">
-                    <input type="date" name="issue_date" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
-                    <input type="date" name="due_date" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white">
+                    <input type="date" name="issue_date" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
+                    <input type="date" name="due_date" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white">
                     <button type="submit" class="btn-gold rounded-xl text-sm font-bold">حفظ</button>
                 </div>
-                <textarea name="description" rows="2" placeholder="الوصف..." class="mt-3 w-full form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white"></textarea>
+                <textarea name="description" rows="2" placeholder="الوصف..." class="mt-3 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white"></textarea>
             </form>
         </div>
         <div class="overflow-x-auto">
@@ -123,9 +119,7 @@
                             <td class="px-4 py-3"><span class="text-xs px-2 py-1 rounded-full {{ $inv->status === 'paid' ? 'bg-green-500/10 text-green-400' : ($inv->status === 'partial' ? 'bg-yellow-500/10 text-yellow-400' : ($inv->status === 'cancelled' ? 'bg-white/10 text-white/40' : 'bg-red-500/10 text-red-400')) }}">{{ $inv->status === 'paid' ? 'مدفوعة' : ($inv->status === 'partial' ? 'جزئي' : ($inv->status === 'cancelled' ? 'ملغية' : 'غير مدفوعة')) }}</span></td>
                             <td class="px-4 py-3 text-sm text-white/50">{{ $inv->issue_date->format('Y-m-d') }}</td>
                             <td class="px-4 py-3 flex gap-2">
-                                @if($inv->status !== 'paid' && $inv->status !== 'cancelled')
-                                    <form method="POST" action="{{ route('finance.invoices.pay', $inv) }}" class="inline">@csrf<button class="text-green-400 hover:text-green-300 text-xs">تسديد</button></form>
-                                @endif
+                                @if($inv->status !== 'paid' && $inv->status !== 'cancelled')<form method="POST" action="{{ route('finance.invoices.pay', $inv) }}" class="inline">@csrf<button class="text-green-400 hover:text-green-300 text-xs">تسديد</button></form>@endif
                                 <form method="POST" action="{{ route('finance.invoices.destroy', $inv) }}" onsubmit="return confirm('حذف؟')">@csrf @method('DELETE')<button class="text-red-400 hover:text-red-300 text-xs">حذف</button></form>
                             </td>
                         </tr>
@@ -136,29 +130,21 @@
         <div class="p-4">{{ $invoices->appends(['tab' => 'invoices'])->links() }}</div>
 
     @elseif($tab === 'fees')
-        <div class="p-4 border-b border-ivory/5">
-            <button onclick="document.getElementById('feeForm').classList.toggle('hidden')" class="btn-gold px-4 py-2 rounded-xl text-sm font-bold">+ إضافة رسم</button>
-            <form id="feeForm" method="POST" action="{{ route('finance.fees.store') }}" class="hidden mt-4 p-4 bg-white/5 rounded-xl">
+        <div class="p-4 border-b border-ivory/5" x-data="{ open: false }">
+            <button @click="open = !open" class="btn-gold px-4 py-2 rounded-xl text-sm font-bold" x-text="open ? 'إلغاء' : '+ إضافة رسم'"></button>
+            <form x-show="open" x-cloak method="POST" action="{{ route('finance.fees.store') }}" class="mt-4 p-4 bg-white/5 rounded-xl">
                 @csrf
                 <div class="grid grid-cols-4 gap-4">
-                    <select name="case_id" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
-                        <option value="">القضية</option>
-                        @foreach($cases as $case)
-                            <option value="{{ $case->id }}">{{ $case->case_number }} - {{ $case->title }}</option>
-                        @endforeach
-                    </select>
-                    <input type="text" name="fee_type" placeholder="نوع الرسم" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
-                    <input type="number" step="0.001" name="amount" placeholder="المبلغ" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
-                    <select name="status" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
-                        <option value="unpaid">غير مدفوعة</option>
-                        <option value="paid">مدفوعة</option>
-                    </select>
+                    <select name="case_id" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required><option value="">القضية</option>@foreach($cases as $case)<option value="{{ $case->id }}">{{ $case->case_number }} - {{ $case->title }}</option>@endforeach</select>
+                    <input type="text" name="fee_type" placeholder="نوع الرسم" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
+                    <input type="number" step="0.001" name="amount" placeholder="المبلغ" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
+                    <select name="status" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required><option value="unpaid">غير مدفوعة</option><option value="paid">مدفوعة</option></select>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mt-3">
-                    <input type="date" name="date" class="form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
+                    <input type="date" name="date" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white" required>
                     <button type="submit" class="btn-gold rounded-xl text-sm font-bold">حفظ</button>
                 </div>
-                <textarea name="description" rows="2" placeholder="الوصف..." class="mt-3 w-full form-input bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white"></textarea>
+                <textarea name="description" rows="2" placeholder="الوصف..." class="mt-3 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white"></textarea>
             </form>
         </div>
         <div class="overflow-x-auto">
@@ -174,9 +160,7 @@
                             <td class="px-4 py-3 text-sm text-white/50">{{ $fee->date->format('Y-m-d') }}</td>
                             <td class="px-4 py-3"><form method="POST" action="{{ route('finance.fees.destroy', $fee) }}" onsubmit="return confirm('حذف؟')">@csrf @method('DELETE')<button class="text-red-400 hover:text-red-300 text-xs">حذف</button></form></td>
                         </tr>
-                        @if($fee->description)
-                            <tr><td colspan="6" class="px-4 pb-3 text-xs text-white/30">{{ $fee->description }}</td></tr>
-                        @endif
+                        @if($fee->description)<tr><td colspan="6" class="px-4 pb-3 text-xs text-white/30">{{ $fee->description }}</td></tr>@endif
                     @endforeach
                 </tbody>
             </table>
@@ -185,3 +169,35 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+@if($tab === 'transactions')
+<script nonce="{{ $cspNonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+    new Chart(document.getElementById('finPieChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {!! json_encode($incomeByCategory->keys()->merge($expenseByCategory->keys())->unique()->values()) !!},
+            datasets: [{
+                data: {!! json_encode($incomeByCategory->values()->merge($expenseByCategory->values())->values()) !!},
+                backgroundColor: ['#C9A55A', '#60A5FA', '#34D399', '#F87171', '#A78BFA', '#FBBF24']
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { labels: { color: '#fff' } } } }
+    });
+
+    new Chart(document.getElementById('finBarChart'), {
+        type: 'line',
+        data: {
+            labels: {!! json_encode($monthlyIncome->keys()->union($monthlyExpense->keys())->sort()->values()) !!},
+            datasets: [
+                { label: 'دخل', data: {!! json_encode($monthlyIncome->values()) !!}, borderColor: '#34D399', backgroundColor: 'rgba(52,211,153,0.1)', fill: true, tension: 0.3 },
+                { label: 'مصروفات', data: {!! json_encode($monthlyExpense->values()) !!}, borderColor: '#F87171', backgroundColor: 'rgba(248,113,113,0.1)', fill: true, tension: 0.3 }
+            ]
+        },
+        options: { responsive: true, plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { beginAtZero: true, ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } }
+    });
+});
+</script>
+@endif
+@endpush
