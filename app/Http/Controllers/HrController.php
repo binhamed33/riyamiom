@@ -64,6 +64,9 @@ class HrController extends Controller
                 $chartData[] = [
                     'name' => $emp->name,
                     'rating' => round($avgRating ?? 0, 1),
+                    'cases' => LegalCase::where('lawyer_id', $emp->id)->count(),
+                    'tasks' => Task::where('assigned_to', $emp->id)->count(),
+                    'tasks_done' => Task::where('assigned_to', $emp->id)->where('status', 'completed')->count(),
                 ];
                 if ($avgRating >= 4) $ratingDistribution['excellent']++;
                 elseif ($avgRating >= 3) $ratingDistribution['good']++;
