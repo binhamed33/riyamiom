@@ -410,6 +410,24 @@
                 <span id="chatUnreadBadge" class="hidden mr-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none" style="line-height:14px;">0</span>
             </a>
 
+            @if(!Auth::user()->isClient())
+            <div class="pt-5 pb-2">
+                <p class="sidebar-section-title text-[11px] font-bold text-white/20 uppercase tracking-wider px-3 mb-3">الشؤون الإدارية</p>
+            </div>
+            <a href="{{ route('hr.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 text-sm {{ request()->routeIs('hr.*') ? 'active' : '' }}">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span>{{ __('app.hr') }}</span>
+            </a>
+            <a href="{{ route('finance.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 text-sm {{ request()->routeIs('finance.*') ? 'active' : '' }}">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>{{ __('app.finance') }}</span>
+            </a>
+            @endif
+
             {{-- Admin Section --}}
             @php
                 $adminRole = Auth::check() && (in_array(Auth::user()->role, ['admin', 'developer']) || Auth::user()->hasPermission('users.view') || Auth::user()->hasPermission('feasibility.view') || Auth::user()->hasPermission('audit_log.view') || Auth::user()->hasPermission('settings.manage') || Auth::user()->hasPermission('backup.manage'));
@@ -462,22 +480,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
                     </svg>
                     <span>{{ __('app.backup') }}</span>
-                </a>
-                @endif
-
-                @if(!Auth::user()->isClient())
-                <a href="{{ route('hr.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 text-sm {{ request()->routeIs('hr.*') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    <span>{{ __('app.hr') }}</span>
-                </a>
-
-                <a href="{{ route('finance.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 text-sm {{ request()->routeIs('finance.*') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span>{{ __('app.finance') }}</span>
                 </a>
                 @endif
 
