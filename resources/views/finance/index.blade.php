@@ -43,7 +43,7 @@
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 overflow-hidden">
             <div class="p-4 border-b border-white/10 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-[#C9A55A]">المعاملات المالية</h2>
-                @if($isFinAdmin)<button @click="$dispatch('open-modal', 'txModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ معاملة</button>@endif
+                <button @click="$dispatch('open-modal', 'txModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ معاملة</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -78,7 +78,7 @@
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 overflow-hidden">
             <div class="p-4 border-b border-white/10 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-[#C9A55A]">الفواتير</h2>
-                @if($isFinAdmin)<button @click="$dispatch('open-modal', 'invModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ فاتورة</button>@endif
+                <button @click="$dispatch('open-modal', 'invModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ فاتورة</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -114,7 +114,7 @@
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 overflow-hidden">
             <div class="p-4 border-b border-white/10 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-[#C9A55A]">رسوم القضايا</h2>
-                @if($isFinAdmin)<button @click="$dispatch('open-modal', 'feeModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ رسم</button>@endif
+                <button @click="$dispatch('open-modal', 'feeModal')" class="bg-gold hover:bg-gold-dark text-navy px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ رسم</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -147,7 +147,6 @@
     @endif
 </div>
 
-@if($isFinAdmin)
 {{-- Add Transaction Modal --}}
 <div id="txModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'txModal') open = true" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
@@ -199,7 +198,6 @@
         </form>
     </div>
 </div>
-@endif
 
 @if($isFinAdmin)
 {{-- Edit Transaction Modal --}}
@@ -256,7 +254,6 @@
 </div>
 @endif
 
-@if($isFinAdmin)
 {{-- Add Invoice Modal --}}
 <div id="invModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'invModal') open = true" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
@@ -308,7 +305,6 @@
         </form>
     </div>
 </div>
-@endif
 
 @if($isFinAdmin)
 {{-- Edit Invoice Modal --}}
@@ -361,7 +357,6 @@
 </div>
 @endif
 
-@if($isFinAdmin)
 {{-- Add Fee Modal --}}
 <div id="feeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'feeModal') open = true" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
@@ -405,7 +400,6 @@
         </form>
     </div>
 </div>
-@endif
 
 @if($isFinAdmin)
 {{-- Edit Fee Modal --}}

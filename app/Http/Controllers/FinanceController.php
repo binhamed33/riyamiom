@@ -38,7 +38,7 @@ class FinanceController extends Controller
             ->latest()->paginate(20);
 
         $clients = Client::orderBy('name')->get();
-        $cases = LegalCase::orderBy('case_number')->get();
+        $cases = LegalCase::when(!$isFinAdmin, fn($q) => $q->where('lawyer_id', $userId))->orderBy('case_number')->get();
 
         $stats = [];
         $incomeByCategory = collect();
@@ -66,7 +66,6 @@ class FinanceController extends Controller
 
     public function storeTransaction(Request $request)
     {
-        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'type' => 'required|in:income,expense',
             'category' => 'required|string',
@@ -116,7 +115,6 @@ class FinanceController extends Controller
 
     public function storeInvoice(Request $request)
     {
-        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'invoice_number' => 'required|string|unique:finance_invoices,invoice_number',
             'client_id' => 'nullable|exists:clients,id',
@@ -170,7 +168,6 @@ class FinanceController extends Controller
 
     public function storeFee(Request $request)
     {
-        abort_unless($this->isAdmin(), 403);
         $data = $request->validate([
             'case_id' => 'required|exists:cases,id',
             'fee_type' => 'required|string',
@@ -179,6 +176,8 @@ class FinanceController extends Controller
             'date' => 'required|date',
             'description' => 'nullable|string',
         ]);
+        $case = LegalCase::findOrFail($data['case_id']);
+        abort_unless($this->isAdmin() || $case->lawyer_id === auth()->id(), 403);
         $data['user_id'] = auth()->id();
         FinanceFee::create($data);
         return redirect()->route('finance.index', ['tab' => 'fees'])->with('success', 'تم إضافة الرسم');
