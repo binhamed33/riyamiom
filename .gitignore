@@ -54,3 +54,6 @@ coverage/
 # Misc
 *.orig
 *.bak
+
+# Vite dev
+/public/hot
