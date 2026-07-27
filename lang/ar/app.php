@@ -9,6 +9,8 @@ return [
     'tasks' => 'المهام',
     'documents' => 'المستندات',
     'clients' => 'العملاء',
+    'chat' => 'المحادثات',
+    'chat_users' => 'الموظفون',
     'users' => 'المستخدمون',
     'settings' => 'الإعدادات',
     'audit_log' => 'سجل التدقيق',

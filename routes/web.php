@@ -183,6 +183,16 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/settings', [SettingController::class, 'index'])->middleware('role:developer,admin,permission:settings.manage')->name('settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->middleware('role:developer,admin,permission:settings.manage')->name('settings.update');
 
+    // Chat - developer, admin, lawyer, staff
+    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+        Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+        Route::get('/chat/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
+        Route::post('/chat', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
+        Route::post('/chat/{conversation}/messages', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.messages.send');
+        Route::get('/chat/{conversation}/messages', [App\Http\Controllers\ChatController::class, 'fetchMessages'])->name('chat.messages.fetch');
+        Route::get('/chat/unread/count', [App\Http\Controllers\ChatController::class, 'unreadCount'])->name('chat.unread');
+    });
+
     // Backup - developer, admin (أو بصلاحية backup.manage)
     Route::get('/backup', [BackupController::class, 'index'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.index');
     Route::post('/backup/create', [BackupController::class, 'create'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:3,10')->name('backup.create');

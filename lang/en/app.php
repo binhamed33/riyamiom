@@ -9,6 +9,8 @@ return [
     'tasks' => 'Tasks',
     'documents' => 'Documents',
     'clients' => 'Clients',
+    'chat' => 'Chat',
+    'chat_users' => 'Employees',
     'users' => 'Users',
     'settings' => 'Settings',
     'audit_log' => 'Audit Log',
