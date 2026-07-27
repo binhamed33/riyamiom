@@ -203,13 +203,10 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/backup/{filename}/restore', [BackupController::class, 'restore'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:10,60')->name('backup.restore');
     Route::delete('/backup/{filename}', [BackupController::class, 'destroy'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.destroy');
 
-    // HR - all authenticated users (controller handles per-role logic)
-    Route::middleware('auth')->group(function () {
+    // HR - all authenticated non-client users (controller handles per-role logic)
+    Route::middleware(['auth', 'active', 'role:developer,admin,lawyer,staff'])->group(function () {
         Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
         Route::post('/hr/leaves', [HrController::class, 'storeLeave'])->name('hr.leaves.store');
-    });
-    // HR admin actions
-    Route::middleware('auth')->group(function () {
         Route::post('/hr/performance', [HrController::class, 'storePerformance'])->name('hr.performance.store');
         Route::delete('/hr/performance/{performance}', [HrController::class, 'destroyPerformance'])->name('hr.performance.destroy');
         Route::post('/hr/bonuses', [HrController::class, 'storeBonus'])->name('hr.bonuses.store');
@@ -221,8 +218,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::delete('/hr/leaves/{leave}', [HrController::class, 'destroyLeave'])->name('hr.leaves.destroy');
     });
 
-    // Finance - view: all employees; manage: admin only
-    Route::middleware('auth')->group(function () {
+    // Finance - all authenticated non-client users (controller handles per-role logic)
+    Route::middleware(['auth', 'active', 'role:developer,admin,lawyer,staff'])->group(function () {
         Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
         Route::get('/finance/transactions/{transaction}', [FinanceController::class, 'showTransaction'])->name('finance.transactions.show');
         Route::get('/finance/transactions/{transaction}/print', [FinanceController::class, 'printTransaction'])->name('finance.transactions.print');
@@ -230,9 +227,6 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/finance/invoices/{invoice}/print', [FinanceController::class, 'printInvoice'])->name('finance.invoices.print');
         Route::get('/finance/fees/{fee}', [FinanceController::class, 'showFee'])->name('finance.fees.show');
         Route::get('/finance/fees/{fee}/print', [FinanceController::class, 'printFee'])->name('finance.fees.print');
-    });
-    // Finance admin/developer actions
-    Route::middleware('auth')->group(function () {
         Route::post('/finance/transactions', [FinanceController::class, 'storeTransaction'])->name('finance.transactions.store');
         Route::put('/finance/transactions/{transaction}', [FinanceController::class, 'updateTransaction'])->name('finance.transactions.update');
         Route::delete('/finance/transactions/{transaction}', [FinanceController::class, 'destroyTransaction'])->name('finance.transactions.destroy');

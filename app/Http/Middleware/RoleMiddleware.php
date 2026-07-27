@@ -21,7 +21,7 @@ class RoleMiddleware
 
         $user = auth()->user();
 
-        if ($user->isDeveloper()) {
+        if ($user->isDeveloper() || $user->isAdmin()) {
             return $next($request);
         }
 
