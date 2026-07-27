@@ -80,17 +80,16 @@
                             @endif
                             @if($msg->attachment_path)
                                 @if($msg->is_image)
-                                    <div class="mt-2 rounded-xl overflow-hidden border border-white/10">
-                                        <img src="{{ $msg->attachment_url }}" alt="{{ $msg->attachment_name }}" class="max-w-full h-auto cursor-pointer" onclick="window.open(this.src, '_blank')">
-                                    </div>
-                                @else
-                                    <div class="mt-2">
-                                        <a href="{{ $msg->attachment_url }}" target="_blank" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition text-xs text-white/60">
-                                            <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"/></svg>
-                                            <span class="truncate">{{ $msg->attachment_name }}</span>
-                                        </a>
+                                    <div class="mt-2 rounded-xl overflow-hidden border border-white/10 bg-black/20">
+                                        <img src="{{ $msg->attachment_url }}" alt="{{ $msg->attachment_name }}" class="max-w-full h-auto">
                                     </div>
                                 @endif
+                                <div class="mt-2">
+                                    <a href="{{ $msg->attachment_url }}" download="{{ $msg->attachment_name }}" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-gold/10 hover:bg-gold/20 transition text-xs text-gold">
+                                        <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span class="truncate">{{ $msg->attachment_name }}</span>
+                                    </a>
+                                </div>
                             @endif
                             <p class="text-[10px] text-white/30 mt-1 text-left">{{ $msg->created_at->diffForHumans() }}</p>
                         </div>
@@ -240,17 +239,16 @@ document.addEventListener('DOMContentLoaded', function() {
         let attachmentHtml = '';
         if (data.attachment_url) {
             if (data.is_image) {
-                attachmentHtml = `<div class="mt-2 rounded-xl overflow-hidden border border-white/10">
-                    <img src="${data.attachment_url}" alt="${data.attachment_name || ''}" class="max-w-full h-auto cursor-pointer" onclick="window.open(this.src, '_blank')">
-                </div>`;
-            } else {
-                attachmentHtml = `<div class="mt-2">
-                    <a href="${data.attachment_url}" target="_blank" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition text-xs text-white/60">
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"/></svg>
-                        <span class="truncate">${data.attachment_name || 'ملف مرفق'}</span>
-                    </a>
+                attachmentHtml += `<div class="mt-2 rounded-xl overflow-hidden border border-white/10 bg-black/20">
+                    <img src="${data.attachment_url}" alt="${data.attachment_name || ''}" class="max-w-full h-auto">
                 </div>`;
             }
+            attachmentHtml += `<div class="mt-2">
+                <a href="${data.attachment_url}" download="${data.attachment_name || 'download'}" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-gold/10 hover:bg-gold/20 transition text-xs text-gold">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span class="truncate">${data.attachment_name || 'ملف مرفق'}</span>
+                </a>
+            </div>`;
         }
 
         div.innerHTML = `<div class="max-w-[75%] ${isOwn ? 'bg-gold/15 border-gold/20' : 'bg-white/5 border-white/10'} rounded-2xl px-4 py-2.5 border">
