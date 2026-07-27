@@ -17,7 +17,7 @@ class HrController extends Controller
 {
     protected function isAdmin(): bool
     {
-        return in_array(auth()->user()->role, ['developer', 'admin']);
+        return in_array(auth()->user()->role, ['developer', 'admin', 'lawyer', 'staff']);
     }
 
     public function index(Request $request): View
