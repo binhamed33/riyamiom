@@ -137,6 +137,8 @@ class HrController extends Controller
                 'title' => 'طلب إجازة جديد',
                 'message' => 'قدم ' . ($leave->employee->name ?? 'موظف') . ' طلب إجازة ' . __('hr_leave_type_' . $leave->type),
                 'type' => Notification::TYPE_INFO,
+                'notifiable_type' => 'App\\Models\\HrLeave',
+                'notifiable_id' => $leave->id,
             ]);
         }
 
@@ -152,6 +154,8 @@ class HrController extends Controller
             'title' => 'تم الموافقة على الإجازة',
             'message' => 'تمت الموافقة على طلب إجازتك (' . __('hr_leave_type_' . $leave->type) . ')',
             'type' => Notification::TYPE_SUCCESS,
+            'notifiable_type' => 'App\\Models\\HrLeave',
+            'notifiable_id' => $leave->id,
         ]);
 
         return redirect()->route('hr.index', ['tab' => 'leaves'])->with('success', 'تم الموافقة على الإجازة');
@@ -166,6 +170,8 @@ class HrController extends Controller
             'title' => 'تم رفض الإجازة',
             'message' => 'تم رفض طلب إجازتك (' . __('hr_leave_type_' . $leave->type) . ')',
             'type' => Notification::TYPE_WARNING,
+            'notifiable_type' => 'App\\Models\\HrLeave',
+            'notifiable_id' => $leave->id,
         ]);
 
         return redirect()->route('hr.index', ['tab' => 'leaves'])->with('success', 'تم رفض الإجازة');
