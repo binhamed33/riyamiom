@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ChatController extends Controller
@@ -58,7 +59,7 @@ class ChatController extends Controller
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'message' => 'required|string',
+            'message' => 'nullable|string',
         ]);
 
         $user = auth()->user();
@@ -79,19 +80,22 @@ class ChatController extends Controller
         Message::create([
             'conversation_id' => $conversation->id,
             'user_id' => $user->id,
-            'message' => $request->message,
+            'message' => $request->message ?? '',
         ]);
 
         $conversation->touch();
 
-        $this->notifyParticipants($conversation, $user, $request->message);
+        $this->notifyParticipants($conversation, $user, $request->message ?? 'بدء محادثة');
 
         return redirect()->route('chat.show', $conversation);
     }
 
     public function sendMessage(Request $request, Conversation $conversation): JsonResponse
     {
-        $request->validate(['message' => 'required|string|max:5000']);
+        $request->validate([
+            'message' => 'nullable|string|max:5000',
+            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,zip,rar',
+        ]);
 
         $user = auth()->user();
 
@@ -99,15 +103,26 @@ class ChatController extends Controller
             abort(403);
         }
 
-        $message = Message::create([
+        $data = [
             'conversation_id' => $conversation->id,
             'user_id' => $user->id,
-            'message' => $request->message,
-        ]);
+            'message' => $request->message ?? '',
+        ];
+
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $path = $file->store('chat-attachments', 'public');
+            $data['attachment_path'] = $path;
+            $data['attachment_name'] = $file->getClientOriginalName();
+            $data['attachment_type'] = $file->getMimeType();
+            $data['attachment_size'] = $file->getSize();
+        }
+
+        $message = Message::create($data);
 
         $conversation->touch();
 
-        $this->notifyParticipants($conversation, $user, $request->message);
+        $this->notifyParticipants($conversation, $user, $request->message ?? $file->getClientOriginalName() ?? 'مرفق');
 
         return response()->json([
             'id' => $message->id,
@@ -115,6 +130,10 @@ class ChatController extends Controller
             'user_id' => $message->user_id,
             'user_name' => $user->name,
             'created_at' => $message->created_at->diffForHumans(),
+            'attachment_url' => $message->attachment_url,
+            'attachment_name' => $message->attachment_name,
+            'attachment_type' => $message->attachment_type,
+            'is_image' => $message->is_image,
         ]);
     }
 
@@ -142,6 +161,10 @@ class ChatController extends Controller
             'user_id' => $m->user_id,
             'user_name' => $m->user->name,
             'created_at' => $m->created_at->diffForHumans(),
+            'attachment_url' => $m->attachment_url,
+            'attachment_name' => $m->attachment_name,
+            'attachment_type' => $m->attachment_type,
+            'is_image' => $m->is_image,
         ]));
     }
 

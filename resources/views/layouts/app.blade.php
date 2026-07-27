@@ -609,8 +609,14 @@
                             </div>
                             <div class="max-h-80 overflow-y-auto">
                                 @forelse($recentNotifications as $notification)
+                                    @php
+                                        $notifTitle = $notification->title ?? ($notification->type === 'chat' ? 'رسالة جديدة' : null);
+                                    @endphp
                                     @if($notification->is_read)
                                         <div class="block px-4 py-3 transition" style="border-bottom: 1px solid rgba(201,165,90,0.04);">
+                                            @if($notifTitle)
+                                                <p class="text-sm font-medium text-white/50">{{ $notifTitle }}</p>
+                                            @endif
                                             <p class="text-sm text-white/40">{{ $notification->message }}</p>
                                             <p class="text-xs text-white/20 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
                                         </div>
@@ -618,6 +624,9 @@
                                         <form method="POST" action="{{ route('notifications.read', $notification->id) }}" class="block transition hover:bg-white/[0.03]" style="border-bottom: 1px solid rgba(201,165,90,0.04);">
                                             @csrf
                                             <button type="submit" class="w-full text-right px-4 py-3">
+                                                @if($notifTitle)
+                                                    <p class="text-sm font-medium text-white">{{ $notifTitle }}</p>
+                                                @endif
                                                 <p class="text-sm text-white/70">{{ $notification->message }}</p>
                                                 <p class="text-xs text-white/30 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
                                             </button>
