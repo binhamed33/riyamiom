@@ -753,10 +753,20 @@
                             </div>
                             <div class="max-h-80 overflow-y-auto">
                                 @forelse($recentNotifications as $notification)
-                                    <a href="{{ $notification->is_read ? '#' : route('notifications.read', $notification->id) }}" class="block px-4 py-3 transition hover:bg-white/[0.03]" style="border-bottom: 1px solid rgba(201,165,90,0.04);">
-                                        <p class="text-sm text-white/70">{{ $notification->message }}</p>
-                                        <p class="text-xs text-white/30 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
-                                    </a>
+                                    @if($notification->is_read)
+                                        <div class="block px-4 py-3 transition" style="border-bottom: 1px solid rgba(201,165,90,0.04);">
+                                            <p class="text-sm text-white/40">{{ $notification->message }}</p>
+                                            <p class="text-xs text-white/20 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
+                                        </div>
+                                    @else
+                                        <form method="POST" action="{{ route('notifications.read', $notification->id) }}" class="block transition hover:bg-white/[0.03]" style="border-bottom: 1px solid rgba(201,165,90,0.04);">
+                                            @csrf
+                                            <button type="submit" class="w-full text-right px-4 py-3">
+                                                <p class="text-sm text-white/70">{{ $notification->message }}</p>
+                                                <p class="text-xs text-white/30 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
+                                            </button>
+                                        </form>
+                                    @endif
                                 @empty
                                     <div class="p-8 text-center text-white/30 text-sm">
                                         <svg class="w-10 h-10 mx-auto mb-2 text-white/10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
