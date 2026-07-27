@@ -77,15 +77,15 @@ class ChatController extends Controller
             $conversation->participants()->attach([$user->id, $targetUser]);
         }
 
-        Message::create([
-            'conversation_id' => $conversation->id,
-            'user_id' => $user->id,
-            'message' => $request->message ?? '',
-        ]);
-
-        $conversation->touch();
-
-        $this->notifyParticipants($conversation, $user, $request->message ?? 'بدء محادثة');
+        if ($request->filled('message')) {
+            Message::create([
+                'conversation_id' => $conversation->id,
+                'user_id' => $user->id,
+                'message' => $request->message,
+            ]);
+            $conversation->touch();
+            $this->notifyParticipants($conversation, $user, $request->message);
+        }
 
         return redirect()->route('chat.show', $conversation);
     }

@@ -149,7 +149,6 @@
                 <form method="POST" action="{{ route('chat.store') }}" class="block">
                     @csrf
                     <input type="hidden" name="user_id" value="{{ $user->id }}">
-                    <input type="hidden" name="message" value="مرحباً">
                     <button type="submit" class="w-full text-right px-4 py-3 border-b border-ivory/5 hover:bg-white/[0.02] transition flex items-center gap-3">
                         <div class="w-9 h-9 rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center text-navy font-bold text-sm flex-shrink-0">
                             {{ $user->name[0] }}
