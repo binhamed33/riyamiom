@@ -50,10 +50,10 @@ class HrController extends Controller
 
         $stats = [
             'total_employees' => User::whereIn('role', ['admin', 'lawyer', 'staff'])->count(),
-            'avg_rating' => HrPerformance::avg('rating'),
-            'total_bonuses' => HrBonus::sum('amount'),
-            'total_penalties' => HrPenalty::sum('amount'),
-            'pending_leaves' => HrLeave::where('status', 'pending')->count(),
+            'avg_rating' => HrPerformance::when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))->avg('rating'),
+            'total_bonuses' => HrBonus::when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))->sum('amount'),
+            'total_penalties' => HrPenalty::when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))->sum('amount'),
+            'pending_leaves' => HrLeave::where('status', 'pending')->when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))->count(),
         ];
 
         $chartData = [];
