@@ -213,7 +213,7 @@ class FinanceController extends Controller
 
     public function showFee(FinanceFee $fee)
     {
-        abort_unless($this->isAdmin() || $fee->user_id === auth()->id(), 403);
+        abort_unless($this->isAdmin() || $fee->user_id === auth()->id() || $fee->case->lawyer_id === auth()->id(), 403);
         return view('finance.show', compact('fee'));
     }
 
@@ -231,7 +231,7 @@ class FinanceController extends Controller
 
     public function printFee(FinanceFee $fee)
     {
-        abort_unless($this->isAdmin() || $fee->user_id === auth()->id(), 403);
+        abort_unless($this->isAdmin() || $fee->user_id === auth()->id() || $fee->case->lawyer_id === auth()->id(), 403);
         return view('finance.print', ['item' => $fee, 'type' => 'fee']);
     }
 
