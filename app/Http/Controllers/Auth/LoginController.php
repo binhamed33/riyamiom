@@ -7,7 +7,9 @@ use App\Models\AuditLog;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class LoginController extends Controller
 {
@@ -51,6 +53,7 @@ class LoginController extends Controller
                     'user_agent' => $request->userAgent(),
                 ]);
 
+                $this->sendLockAlert($email, $request->ip(), $request->userAgent());
 
                 return redirect()->route('login')->with('login_error', 'تم قفل الحساب مؤقتاً بسبب محاولات دخول كثيرة. حاول مرة أخرى بعد 15 دقيقة.');
             }
@@ -82,6 +85,34 @@ class LoginController extends Controller
 
 
         return redirect()->intended(route('dashboard'));
+    }
+
+    private function sendLockAlert(string $email, string $ip, ?string $userAgent): void
+    {
+        $webhook = config('services.discord.log_webhook');
+        if (!$webhook) {
+            return;
+        }
+
+        try {
+            Http::timeout(5)->post($webhook, [
+                'content' => null,
+                'embeds' => [[
+                    'title' => '🔒 تم قفل حساب',
+                    'color' => 0xE74C3C,
+                    'fields' => [
+                        ['name' => 'البريد', 'value' => $email, 'inline' => true],
+                        ['name' => 'IP', 'value' => $ip, 'inline' => true],
+                        ['name' => 'الجهاز', 'value' => $userAgent ?? 'غير معروف', 'inline' => false],
+                        ['name' => 'الوقت', 'value' => now()->format('Y-m-d H:i:s'), 'inline' => true],
+                    ],
+                    'footer' => ['text' => 'LexPro - نظام الإنذار'],
+                    'timestamp' => now()->toIso8601String(),
+                ]],
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Discord webhook failed', ['error' => $e->getMessage()]);
+        }
     }
 
     public function logout(Request $request)
