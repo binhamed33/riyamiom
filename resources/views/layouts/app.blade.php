@@ -614,9 +614,12 @@
                                     @endphp
                                     @if($notification->is_read)
                                         <div class="block px-4 py-3 transition" style="border-bottom: 1px solid rgba(201,165,90,0.04);">
-                                            @if($notifTitle)
+                                            <div class="flex items-center justify-between">
                                                 <p class="text-sm font-medium text-white/50">{{ $notifTitle }}</p>
-                                            @endif
+                                                @if($notification->message_count > 1)
+                                                    <span class="text-[10px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded-full">{{ $notification->message_count }}</span>
+                                                @endif
+                                            </div>
                                             <p class="text-sm text-white/40">{{ $notification->message }}</p>
                                             <p class="text-xs text-white/20 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
                                         </div>
@@ -624,9 +627,12 @@
                                         <form method="POST" action="{{ route('notifications.read', $notification->id) }}" class="block transition hover:bg-white/[0.03]" style="border-bottom: 1px solid rgba(201,165,90,0.04);">
                                             @csrf
                                             <button type="submit" class="w-full text-right px-4 py-3">
-                                                @if($notifTitle)
+                                                <div class="flex items-center justify-between">
                                                     <p class="text-sm font-medium text-white">{{ $notifTitle }}</p>
-                                                @endif
+                                                    @if($notification->message_count > 1)
+                                                        <span class="text-[10px] text-gold bg-gold/10 px-1.5 py-0.5 rounded-full">{{ $notification->message_count }}</span>
+                                                    @endif
+                                                </div>
                                                 <p class="text-sm text-white/70">{{ $notification->message }}</p>
                                                 <p class="text-xs text-white/30 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
                                             </button>

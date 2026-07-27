@@ -26,6 +26,7 @@ class Notification extends Model
         'is_read',
         'notifiable_type',
         'notifiable_id',
+        'message_count',
     ];
 
     protected function casts(): array

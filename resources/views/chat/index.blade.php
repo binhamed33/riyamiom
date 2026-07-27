@@ -217,7 +217,10 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
             body: formData
-        }).then(r => r.json()).then(data => {
+        }).then(r => {
+            if (!r.ok) { throw new Error('فشل الإرسال'); }
+            return r.json();
+        }).then(data => {
             input.value = '';
             selectedFile = null;
             fileInput.value = '';
@@ -225,7 +228,9 @@ document.addEventListener('DOMContentLoaded', function() {
             appendMessage(data, true);
             lastMessageId = data.id;
             scrollToBottom();
-        }).catch(() => {});
+        }).catch(e => {
+            alert('حدث خطأ أثناء الإرسال. تأكد من حجم الملف لا يتجاوز 20MB.');
+        });
     });
 
     function appendMessage(data, isOwn) {
@@ -266,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 scrollToBottom();
             }
         }).catch(() => {});
-    }, 3000);
+    }, 5000);
 });
 </script>
 @endif

@@ -94,7 +94,7 @@ class ChatController extends Controller
     {
         $request->validate([
             'message' => 'nullable|string|max:5000',
-            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,zip,rar',
+            'attachment' => 'nullable|file|max:20480|mimes:jpg,jpeg,png,gif,webp,svg,pdf,doc,docx,xls,xlsx,txt,zip,rar,mp3,mp4,mov',
         ]);
 
         $user = auth()->user();
@@ -122,7 +122,8 @@ class ChatController extends Controller
 
         $conversation->touch();
 
-        $this->notifyParticipants($conversation, $user, $request->message ?? $file->getClientOriginalName() ?? 'مرفق');
+        $notifyText = $request->message ?: ($request->hasFile('attachment') ? $file->getClientOriginalName() : 'مرفق');
+        $this->notifyParticipants($conversation, $user, $notifyText);
 
         return response()->json([
             'id' => $message->id,
@@ -185,15 +186,28 @@ class ChatController extends Controller
         $participants = $conversation->participants()->where('user_id', '!=', $sender->id)->get();
 
         foreach ($participants as $participant) {
-            \App\Models\Notification::create([
-                'user_id' => $participant->id,
-                'title' => 'رسالة جديدة من ' . $sender->name,
-                'message' => substr($message, 0, 100),
-                'type' => \App\Models\Notification::TYPE_CHAT,
-                'notifiable_type' => \App\Models\Conversation::class,
-                'notifiable_id' => $conversation->id,
-                'is_read' => false,
-            ]);
+            $existing = \App\Models\Notification::where('user_id', $participant->id)
+                ->where('type', \App\Models\Notification::TYPE_CHAT)
+                ->where('notifiable_id', $conversation->id)
+                ->where('notifiable_type', \App\Models\Conversation::class)
+                ->where('is_read', false)
+                ->first();
+
+            if ($existing) {
+                $existing->increment('message_count');
+                $existing->touch();
+            } else {
+                \App\Models\Notification::create([
+                    'user_id' => $participant->id,
+                    'title' => $sender->name . ' أرسل لك',
+                    'message' => substr($message, 0, 100),
+                    'type' => \App\Models\Notification::TYPE_CHAT,
+                    'notifiable_type' => \App\Models\Conversation::class,
+                    'notifiable_id' => $conversation->id,
+                    'is_read' => false,
+                    'message_count' => 1,
+                ]);
+            }
         }
     }
 }
