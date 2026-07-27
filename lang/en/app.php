@@ -582,6 +582,12 @@ return [
     // HR & Finance
     'hr' => 'HR',
     'finance' => 'Finance',
+    'hr_leave_type_annual' => 'Annual',
+    'hr_leave_type_sick' => 'Sick',
+    'hr_leave_type_emergency' => 'Emergency',
+    'hr_leave_type_maternity' => 'Maternity',
+    'hr_leave_type_unpaid' => 'Unpaid',
+    'hr_leave_type_other' => 'Other',
     // Session warnings
     'session_warning_title' => 'Session Expiring',
     'session_warning_message' => 'Your session will expire automatically in',

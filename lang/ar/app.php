@@ -582,6 +582,12 @@ return [
     // HR & Finance
     'hr' => 'الموارد البشرية',
     'finance' => 'الإدارة المالية',
+    'hr_leave_type_annual' => 'سنوية',
+    'hr_leave_type_sick' => 'مرضية',
+    'hr_leave_type_emergency' => 'طارئة',
+    'hr_leave_type_maternity' => 'أمومة',
+    'hr_leave_type_unpaid' => 'بدون راتب',
+    'hr_leave_type_other' => 'أخرى',
     // Session warnings
     'session_warning_title' => 'تنبيه انتهاء الجلسة',
     'session_warning_message' => 'ستنتهي جلستك تلقائياً خلال',

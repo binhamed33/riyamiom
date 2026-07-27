@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\LegalCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class FinanceController extends Controller
@@ -51,10 +52,42 @@ class FinanceController extends Controller
             'date' => 'required|date',
             'payment_method' => 'nullable|string',
             'reference' => 'nullable|string',
+            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt',
         ]);
         $data['user_id'] = auth()->id();
+
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $data['attachment_path'] = $file->store('finance-attachments', 'public');
+            $data['attachment_name'] = $file->getClientOriginalName();
+        }
+
         FinanceTransaction::create($data);
         return redirect()->route('finance.index', ['tab' => 'transactions'])->with('success', 'تم إضافة المعاملة');
+    }
+
+    public function updateTransaction(Request $request, FinanceTransaction $transaction)
+    {
+        $data = $request->validate([
+            'type' => 'required|in:income,expense',
+            'category' => 'required|string',
+            'amount' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'date' => 'required|date',
+            'payment_method' => 'nullable|string',
+            'reference' => 'nullable|string',
+            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt',
+        ]);
+
+        if ($request->hasFile('attachment')) {
+            if ($transaction->attachment_path) Storage::disk('public')->delete($transaction->attachment_path);
+            $file = $request->file('attachment');
+            $data['attachment_path'] = $file->store('finance-attachments', 'public');
+            $data['attachment_name'] = $file->getClientOriginalName();
+        }
+
+        $transaction->update($data);
+        return redirect()->route('finance.index', ['tab' => 'transactions'])->with('success', 'تم تحديث المعاملة');
     }
 
     public function storeInvoice(Request $request)
@@ -63,15 +96,50 @@ class FinanceController extends Controller
             'invoice_number' => 'required|string|unique:finance_invoices,invoice_number',
             'client_id' => 'nullable|exists:clients,id',
             'amount' => 'required|numeric|min:0',
+            'paid_amount' => 'nullable|numeric|min:0',
             'status' => 'required|in:paid,unpaid,partial,cancelled',
             'issue_date' => 'required|date',
             'due_date' => 'nullable|date',
             'description' => 'nullable|string',
+            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt',
         ]);
-        $data['paid_amount'] = $data['status'] === 'paid' ? $data['amount'] : 0;
+        $data['paid_amount'] = $data['paid_amount'] ?? ($data['status'] === 'paid' ? $data['amount'] : 0);
         $data['user_id'] = auth()->id();
+
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $data['attachment_path'] = $file->store('finance-attachments', 'public');
+            $data['attachment_name'] = $file->getClientOriginalName();
+        }
+
         FinanceInvoice::create($data);
         return redirect()->route('finance.index', ['tab' => 'invoices'])->with('success', 'تم إضافة الفاتورة');
+    }
+
+    public function updateInvoice(Request $request, FinanceInvoice $invoice)
+    {
+        $data = $request->validate([
+            'invoice_number' => 'required|string|unique:finance_invoices,invoice_number,' . $invoice->id,
+            'client_id' => 'nullable|exists:clients,id',
+            'amount' => 'required|numeric|min:0',
+            'paid_amount' => 'nullable|numeric|min:0',
+            'status' => 'required|in:paid,unpaid,partial,cancelled',
+            'issue_date' => 'required|date',
+            'due_date' => 'nullable|date',
+            'description' => 'nullable|string',
+            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt',
+        ]);
+        $data['paid_amount'] = $data['paid_amount'] ?? ($data['status'] === 'paid' ? $data['amount'] : 0);
+
+        if ($request->hasFile('attachment')) {
+            if ($invoice->attachment_path) Storage::disk('public')->delete($invoice->attachment_path);
+            $file = $request->file('attachment');
+            $data['attachment_path'] = $file->store('finance-attachments', 'public');
+            $data['attachment_name'] = $file->getClientOriginalName();
+        }
+
+        $invoice->update($data);
+        return redirect()->route('finance.index', ['tab' => 'invoices'])->with('success', 'تم تحديث الفاتورة');
     }
 
     public function storeFee(Request $request)
@@ -89,14 +157,60 @@ class FinanceController extends Controller
         return redirect()->route('finance.index', ['tab' => 'fees'])->with('success', 'تم إضافة الرسم');
     }
 
+    public function updateFee(Request $request, FinanceFee $fee)
+    {
+        $data = $request->validate([
+            'case_id' => 'required|exists:cases,id',
+            'fee_type' => 'required|string',
+            'amount' => 'required|numeric|min:0',
+            'status' => 'required|in:paid,unpaid',
+            'date' => 'required|date',
+            'description' => 'nullable|string',
+        ]);
+        $fee->update($data);
+        return redirect()->route('finance.index', ['tab' => 'fees'])->with('success', 'تم تحديث الرسم');
+    }
+
+    public function showTransaction(FinanceTransaction $transaction)
+    {
+        return view('finance.show', compact('transaction'));
+    }
+
+    public function showInvoice(FinanceInvoice $invoice)
+    {
+        return view('finance.show', compact('invoice'));
+    }
+
+    public function showFee(FinanceFee $fee)
+    {
+        return view('finance.show', compact('fee'));
+    }
+
+    public function printTransaction(FinanceTransaction $transaction)
+    {
+        return view('finance.print', ['item' => $transaction, 'type' => 'transaction']);
+    }
+
+    public function printInvoice(FinanceInvoice $invoice)
+    {
+        return view('finance.print', ['item' => $invoice, 'type' => 'invoice']);
+    }
+
+    public function printFee(FinanceFee $fee)
+    {
+        return view('finance.print', ['item' => $fee, 'type' => 'fee']);
+    }
+
     public function destroyTransaction(FinanceTransaction $transaction)
     {
+        if ($transaction->attachment_path) Storage::disk('public')->delete($transaction->attachment_path);
         $transaction->delete();
         return redirect()->route('finance.index', ['tab' => 'transactions'])->with('success', 'تم حذف المعاملة');
     }
 
     public function destroyInvoice(FinanceInvoice $invoice)
     {
+        if ($invoice->attachment_path) Storage::disk('public')->delete($invoice->attachment_path);
         $invoice->delete();
         return redirect()->route('finance.index', ['tab' => 'invoices'])->with('success', 'تم حذف الفاتورة');
     }

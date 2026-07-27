@@ -6,6 +6,7 @@ use App\Models\HrBonus;
 use App\Models\HrLeave;
 use App\Models\HrPenalty;
 use App\Models\HrPerformance;
+use App\Models\Notification;
 use App\Models\User;
 use App\Models\LegalCase;
 use App\Models\Task;
@@ -14,40 +15,64 @@ use Illuminate\View\View;
 
 class HrController extends Controller
 {
+    protected function isAdmin(): bool
+    {
+        return in_array(auth()->user()->role, ['developer', 'admin']);
+    }
+
     public function index(Request $request): View
     {
         $tab = $request->get('tab', 'employees');
-        $employees = User::whereIn('role', ['admin', 'lawyer', 'staff'])->get();
+        $user = auth()->user();
+        $isAdmin = $this->isAdmin();
 
-        $performances = HrPerformance::with(['employee', 'reviewer'])->latest()->paginate(20);
-        $bonuses = HrBonus::with(['employee', 'giver'])->latest()->paginate(20);
-        $penalties = HrPenalty::with(['employee', 'giver'])->latest()->paginate(20);
-        $leaves = HrLeave::with(['employee', 'approver'])->latest()->paginate(20);
+        if ($isAdmin) {
+            $employees = User::whereIn('role', ['admin', 'lawyer', 'staff'])->get();
+        } else {
+            $employees = User::where('id', $user->id)->get();
+        }
+
+        $performances = HrPerformance::with(['employee', 'reviewer'])
+            ->when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))
+            ->latest()->paginate(20);
+
+        $bonuses = HrBonus::with(['employee', 'giver'])
+            ->when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))
+            ->latest()->paginate(20);
+
+        $penalties = HrPenalty::with(['employee', 'giver'])
+            ->when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))
+            ->latest()->paginate(20);
+
+        $leaves = HrLeave::with(['employee', 'approver'])
+            ->when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))
+            ->latest()->paginate(20);
 
         $stats = [
-            'total_employees' => $employees->count(),
+            'total_employees' => User::whereIn('role', ['admin', 'lawyer', 'staff'])->count(),
             'avg_rating' => HrPerformance::avg('rating'),
             'total_bonuses' => HrBonus::sum('amount'),
             'total_penalties' => HrPenalty::sum('amount'),
             'pending_leaves' => HrLeave::where('status', 'pending')->count(),
         ];
 
-        // Chart data: employee performance vs cases
         $chartData = [];
-        foreach ($employees as $emp) {
-            $casesCount = LegalCase::where('lawyer_id', $emp->id)->count();
-            $tasksCount = Task::where('assigned_to', $emp->id)->count();
-            $tasksDone = Task::where('assigned_to', $emp->id)->where('status', 'completed')->count();
-            $avgRating = HrPerformance::where('employee_id', $emp->id)->avg('rating');
-            $bonusTotal = HrBonus::where('employee_id', $emp->id)->sum('amount');
-            $chartData[] = [
-                'name' => $emp->name,
-                'cases' => $casesCount,
-                'tasks' => $tasksCount,
-                'tasks_done' => $tasksDone,
-                'rating' => round($avgRating ?? 0, 1),
-                'bonuses' => round($bonusTotal, 2),
-            ];
+        if ($isAdmin) {
+            foreach ($employees as $emp) {
+                $casesCount = LegalCase::where('lawyer_id', $emp->id)->count();
+                $tasksCount = Task::where('assigned_to', $emp->id)->count();
+                $tasksDone = Task::where('assigned_to', $emp->id)->where('status', 'completed')->count();
+                $avgRating = HrPerformance::where('employee_id', $emp->id)->avg('rating');
+                $bonusTotal = HrBonus::where('employee_id', $emp->id)->sum('amount');
+                $chartData[] = [
+                    'name' => $emp->name,
+                    'cases' => $casesCount,
+                    'tasks' => $tasksCount,
+                    'tasks_done' => $tasksDone,
+                    'rating' => round($avgRating ?? 0, 1),
+                    'bonuses' => round($bonusTotal, 2),
+                ];
+            }
         }
 
         return view('hr.index', compact('tab', 'employees', 'performances', 'bonuses', 'penalties', 'leaves', 'stats', 'chartData'));
@@ -102,19 +127,47 @@ class HrController extends Controller
             'reason' => 'nullable|string',
         ]);
         $data['status'] = 'pending';
-        HrLeave::create($data);
+        $leave = HrLeave::create($data);
+
+        // Notify all admins
+        $admins = User::whereIn('role', ['developer', 'admin'])->get();
+        foreach ($admins as $admin) {
+            Notification::create([
+                'user_id' => $admin->id,
+                'title' => 'طلب إجازة جديد',
+                'message' => 'قدم ' . ($leave->employee->name ?? 'موظف') . ' طلب إجازة ' . __('hr_leave_type_' . $leave->type),
+                'type' => Notification::TYPE_INFO,
+            ]);
+        }
+
         return redirect()->route('hr.index', ['tab' => 'leaves'])->with('success', 'تم تقديم طلب الإجازة');
     }
 
     public function approveLeave(HrLeave $leave)
     {
         $leave->update(['status' => 'approved', 'approved_by' => auth()->id()]);
+
+        Notification::create([
+            'user_id' => $leave->employee_id,
+            'title' => 'تم الموافقة على الإجازة',
+            'message' => 'تمت الموافقة على طلب إجازتك (' . __('hr_leave_type_' . $leave->type) . ')',
+            'type' => Notification::TYPE_SUCCESS,
+        ]);
+
         return redirect()->route('hr.index', ['tab' => 'leaves'])->with('success', 'تم الموافقة على الإجازة');
     }
 
     public function rejectLeave(HrLeave $leave)
     {
         $leave->update(['status' => 'rejected', 'approved_by' => auth()->id()]);
+
+        Notification::create([
+            'user_id' => $leave->employee_id,
+            'title' => 'تم رفض الإجازة',
+            'message' => 'تم رفض طلب إجازتك (' . __('hr_leave_type_' . $leave->type) . ')',
+            'type' => Notification::TYPE_WARNING,
+        ]);
+
         return redirect()->route('hr.index', ['tab' => 'leaves'])->with('success', 'تم رفض الإجازة');
     }
 

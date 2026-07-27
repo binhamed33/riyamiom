@@ -9,7 +9,14 @@ class FinanceInvoice extends Model
 {
     protected $table = 'finance_invoices';
 
-    protected $fillable = ['invoice_number', 'client_id', 'amount', 'paid_amount', 'status', 'issue_date', 'due_date', 'description', 'user_id'];
+    protected $fillable = ['invoice_number', 'client_id', 'amount', 'paid_amount', 'status', 'issue_date', 'due_date', 'description', 'user_id', 'attachment_path', 'attachment_name'];
+
+    protected $appends = ['attachment_url'];
+
+    public function getAttachmentUrlAttribute(): ?string
+    {
+        return $this->attachment_path ? \Illuminate\Support\Facades\Storage::url($this->attachment_path) : null;
+    }
 
     protected function casts(): array
     {
