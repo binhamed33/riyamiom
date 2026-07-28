@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Rules\StrongPassword;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -28,7 +27,7 @@ class ProfileController extends Controller
             'email'             => 'required|email|unique:users,email,' . $user->id,
             'phone'             => 'nullable|string|max:255',
             'current_password'  => 'required_with:password|current_password',
-            'password'          => ['nullable', 'string', 'confirmed', new StrongPassword],
+            'password'          => ['nullable', 'string', 'confirmed', 'min:6'],
         ]);
 
         $oldValues = $user->toArray();
