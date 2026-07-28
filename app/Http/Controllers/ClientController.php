@@ -78,6 +78,8 @@ class ClientController extends Controller
         ]);
 
         $validated['type'] = 'individual';
+        $validated['phone'] = $validated['phone'] ?? '';
+        $validated['email'] = $validated['email'] ?? '';
 
         $client = Client::create($validated);
 
