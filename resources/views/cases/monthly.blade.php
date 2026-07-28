@@ -22,29 +22,25 @@
     </div>
 
     {{-- Month/Year Panel --}}
-    <div class="bg-navy rounded-xl border border-gold/20 p-5 print:hidden" x-data="{ yearOpen: false }">
-        {{-- Year Bar --}}
-        <div class="flex items-center gap-2 mb-4 pb-4 border-b border-ivory/5">
-            <span class="text-ivory/50 text-xs font-bold uppercase tracking-wider ml-3">السنة</span>
-            <div class="flex flex-wrap gap-1.5">
-                <template x-for="y in years" :key="y">
-                    <button @click="year = y; fetchData()"
-                        class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-150"
-                        :class="year === y ? 'bg-gold text-navy-darkest shadow-lg shadow-gold/20' : 'bg-white/5 text-ivory/60 hover:bg-white/10 hover:text-ivory'"
-                        x-text="y">
-                    </button>
-                </template>
+    <div class="bg-navy rounded-xl border border-gold/20 p-5 print:hidden">
+        <div class="flex flex-wrap items-end gap-6">
+            <div class="flex-1 min-w-[160px]">
+                <label class="block text-gold text-xs font-bold uppercase tracking-wider mb-2">الشهر</label>
+                <select x-model="month" @change="fetchData" class="w-full rounded-xl bg-navy-darker border-2 border-gold/30 px-4 py-3 text-white text-base font-medium focus:ring-2 focus:ring-gold focus:border-gold appearance-none cursor-pointer hover:border-gold/60 transition">
+                    <template x-for="(name, num) in monthNames" :key="num">
+                        <option :value="num" x-text="name" :selected="month == num"></option>
+                    </template>
+                </select>
             </div>
-        </div>
-        {{-- Month Grid --}}
-        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-            <template x-for="(name, num) in monthNames" :key="num">
-                <button @click="month = num; fetchData()"
-                    class="px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150 text-center"
-                    :class="month == num ? 'bg-gold text-navy-darkest shadow-lg shadow-gold/20 ring-2 ring-gold/50' : 'bg-white/5 text-ivory/60 hover:bg-white/10 hover:text-ivory hover:shadow-md'"
-                    x-text="name">
-                </button>
-            </template>
+            <div class="flex-1 min-w-[120px]">
+                <label class="block text-gold text-xs font-bold uppercase tracking-wider mb-2">السنة</label>
+                <select x-model="year" @change="fetchData" class="w-full rounded-xl bg-navy-darker border-2 border-gold/30 px-4 py-3 text-white text-base font-medium focus:ring-2 focus:ring-gold focus:border-gold appearance-none cursor-pointer hover:border-gold/60 transition">
+                    <template x-for="y in years" :key="y">
+                        <option :value="y" x-text="y" :selected="year == y"></option>
+                    </template>
+                </select>
+            </div>
+            <div x-show="loading" class="text-gold text-sm font-medium">جارٍ التحميل...</div>
         </div>
     </div>
 
