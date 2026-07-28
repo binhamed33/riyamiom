@@ -253,7 +253,54 @@ class CaseController extends Controller
             'pending' => $cases->where('status', 'pending')->count(),
         ];
 
-        return view('cases.monthly', compact('cases', 'month', 'year', 'monthName', 'years', 'months', 'summary'));
+        $casesJson = $cases->map(fn($c) => [
+            'id' => $c->id,
+            'case_number' => $c->case_number,
+            'title' => $c->title,
+            'client_name' => $c->client?->name,
+            'client_url' => $c->client ? route('clients.show', $c->client) : null,
+            'court' => $c->court,
+            'status' => $c->status,
+            'opened_at' => $c->opened_at?->format('Y-m-d'),
+            'show_url' => route('cases.show', $c),
+        ])->values();
+
+        $summaryJson = $summary;
+
+        return view('cases.monthly', compact('cases', 'month', 'year', 'monthName', 'years', 'months', 'summary', 'casesJson', 'summaryJson'));
+    }
+
+    public function monthlyData(Request $request): JsonResponse
+    {
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
+
+        $cases = LegalCase::with(['client', 'lawyer'])
+            ->whereYear('opened_at', $year)
+            ->whereMonth('opened_at', $month)
+            ->latest('opened_at')
+            ->get();
+
+        $summary = [
+            'total' => $cases->count(),
+            'active' => $cases->where('status', 'active')->count(),
+            'closed' => $cases->whereIn('status', ['closed', 'won', 'lost'])->count(),
+            'pending' => $cases->where('status', 'pending')->count(),
+        ];
+
+        $casesData = $cases->map(fn($c) => [
+            'id' => $c->id,
+            'case_number' => $c->case_number,
+            'title' => $c->title,
+            'client_name' => $c->client?->name,
+            'client_url' => $c->client ? route('clients.show', $c->client) : null,
+            'court' => $c->court,
+            'status' => $c->status,
+            'opened_at' => $c->opened_at?->format('Y-m-d'),
+            'show_url' => route('cases.show', $c),
+        ])->values();
+
+        return response()->json(['cases' => $casesData, 'summary' => $summary]);
     }
 
     public function restore(int $id): RedirectResponse

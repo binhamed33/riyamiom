@@ -3,11 +3,11 @@
 @section('title', "قضايا $monthName $year")
 
 @section('content')
-<div class="space-y-6" dir="rtl">
+<div class="space-y-6" dir="rtl" x-data="monthlyCases()" x-init="init()">
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
-        <h1 class="text-2xl font-bold text-gold">📋 قضايا {{ $monthName }} {{ $year }}</h1>
+        <h1 class="text-2xl font-bold text-gold">📋 قضايا <span x-text="monthNames[month]"></span> <span x-text="year"></span></h1>
         <div class="flex items-center gap-3">
             <button id="printBtn" class="bg-gold hover:bg-gold-dark text-navy px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,46 +22,44 @@
     </div>
 
     {{-- Month Selector --}}
-    <form method="GET" action="{{ route('cases.monthly') }}" class="bg-navy rounded-xl border border-gold/20 p-4 print:hidden">
+    <div class="bg-navy rounded-xl border border-gold/20 p-4 print:hidden">
         <div class="flex flex-wrap items-end gap-4">
             <div>
                 <label class="block text-ivory/60 text-xs mb-1.5">الشهر</label>
-                <select name="month" class="rounded-lg bg-navy-darker border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-gold focus:border-gold">
-                    @foreach($months as $num => $name)
-                        <option value="{{ $num }}" {{ (int)$month === $num ? 'selected' : '' }}>{{ $name }}</option>
-                    @endforeach
+                <select x-model="month" @change="fetchData" class="rounded-lg bg-navy-darker border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-gold focus:border-gold">
+                    <template x-for="(name, num) in monthNames" :key="num">
+                        <option :value="num" x-text="name"></option>
+                    </template>
                 </select>
             </div>
             <div>
                 <label class="block text-ivory/60 text-xs mb-1.5">السنة</label>
-                <select name="year" class="rounded-lg bg-navy-darker border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-gold focus:border-gold">
-                    @foreach($years as $y)
-                        <option value="{{ $y }}" {{ (int)$year === $y ? 'selected' : '' }}>{{ $y }}</option>
-                    @endforeach
+                <select x-model="year" @change="fetchData" class="rounded-lg bg-navy-darker border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-gold focus:border-gold">
+                    <template x-for="y in years" :key="y">
+                        <option :value="y" x-text="y"></option>
+                    </template>
                 </select>
             </div>
-            <button type="submit" class="bg-gold hover:bg-gold-dark text-navy px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
-                عرض
-            </button>
+            <div x-show="loading" class="text-gold text-sm">جارٍ التحميل...</div>
         </div>
-    </form>
+    </div>
 
     {{-- Summary Cards --}}
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 print:gap-3">
         <div class="bg-navy-light rounded-xl border border-ivory/10 p-4 text-center">
-            <p class="text-2xl font-bold text-gold">{{ $summary['total'] }}</p>
+            <p class="text-2xl font-bold text-gold" x-text="summary.total">0</p>
             <p class="text-ivory/50 text-sm mt-1">إجمالي القضايا</p>
         </div>
         <div class="bg-navy-light rounded-xl border border-ivory/10 p-4 text-center">
-            <p class="text-2xl font-bold text-green-400">{{ $summary['active'] }}</p>
+            <p class="text-2xl font-bold text-green-400" x-text="summary.active">0</p>
             <p class="text-ivory/50 text-sm mt-1">نشطة</p>
         </div>
         <div class="bg-navy-light rounded-xl border border-ivory/10 p-4 text-center">
-            <p class="text-2xl font-bold text-blue-400">{{ $summary['pending'] }}</p>
+            <p class="text-2xl font-bold text-blue-400" x-text="summary.pending">0</p>
             <p class="text-ivory/50 text-sm mt-1">معلقة</p>
         </div>
         <div class="bg-navy-light rounded-xl border border-ivory/10 p-4 text-center">
-            <p class="text-2xl font-bold text-ivory/60">{{ $summary['closed'] }}</p>
+            <p class="text-2xl font-bold text-ivory/60" x-text="summary.closed">0</p>
             <p class="text-ivory/50 text-sm mt-1">منتهية</p>
         </div>
     </div>
@@ -82,60 +80,36 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($cases as $case)
+                    <template x-for="(caseItem, idx) in cases" :key="caseItem.id">
                         <tr class="border-b border-ivory/5 hover:bg-gold/5 transition">
-                            <td class="px-4 py-3 text-ivory/50">{{ $loop->iteration }}</td>
+                            <td class="px-4 py-3 text-ivory/50" x-text="idx + 1"></td>
                             <td class="px-4 py-3">
-                                <a href="{{ route('cases.show', $case) }}" class="text-gold hover:text-gold-light font-medium">
-                                    {{ $case->case_number }}
-                                </a>
+                                <a :href="caseItem.show_url" class="text-gold hover:text-gold-light font-medium" x-text="caseItem.case_number"></a>
                             </td>
-                            <td class="px-4 py-3 text-ivory/80 max-w-[200px] truncate">{{ $case->title }}</td>
+                            <td class="px-4 py-3 text-ivory/80 max-w-[200px] truncate" x-text="caseItem.title"></td>
                             <td class="px-4 py-3 text-ivory/70">
-                                @if($case->client)
-                                    <a href="{{ route('clients.show', $case->client) }}" class="hover:text-gold transition">
-                                        {{ $case->client->name }}
-                                    </a>
-                                @else
+                                <template x-if="caseItem.client_name">
+                                    <a :href="caseItem.client_url" class="hover:text-gold transition" x-text="caseItem.client_name"></a>
+                                </template>
+                                <template x-if="!caseItem.client_name">
                                     <span class="text-ivory/30">—</span>
-                                @endif
+                                </template>
                             </td>
-                            <td class="px-4 py-3 text-ivory/70">{{ $case->court ?? '—' }}</td>
+                            <td class="px-4 py-3 text-ivory/70" x-text="caseItem.court || '—'"></td>
                             <td class="px-4 py-3">
-                                @php
-                                    $statusColors = [
-                                        'active' => 'bg-green-500/15 text-green-400',
-                                        'pending' => 'bg-yellow-500/15 text-yellow-400',
-                                        'overdue' => 'bg-red-500/15 text-red-400',
-                                        'closed' => 'bg-gray-500/15 text-gray-400',
-                                        'won' => 'bg-emerald-500/15 text-emerald-400',
-                                        'lost' => 'bg-red-500/15 text-red-400',
-                                    ];
-                                    $statusLabels = [
-                                        'active' => 'نشطة', 'pending' => 'معلقة', 'overdue' => 'متأخرة',
-                                        'closed' => 'مغلقة', 'won' => 'مربوحة', 'lost' => 'خاسرة',
-                                    ];
-                                    $color = $statusColors[$case->status] ?? 'bg-white/10 text-ivory/60';
-                                    $label = $statusLabels[$case->status] ?? $case->status;
-                                @endphp
-                                <span class="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold {{ $color }}">
-                                    {{ $label }}
-                                </span>
+                                <span class="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold" :class="statusColors[caseItem.status]" x-text="statusLabels[caseItem.status] || caseItem.status"></span>
                             </td>
-                            <td class="px-4 py-3 text-ivory/50 text-xs">
-                                {{ $case->opened_at ? $case->opened_at->format('Y-m-d') : '—' }}
-                            </td>
+                            <td class="px-4 py-3 text-ivory/50 text-xs" x-text="caseItem.opened_at || '—'"></td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-4 py-16 text-center text-ivory/30">
-                                <svg class="w-12 h-12 mx-auto mb-3 text-ivory/10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                                </svg>
-                                <p>لا توجد قضايا في {{ $monthName }} {{ $year }}</p>
-                            </td>
-                        </tr>
-                    @endforelse
+                    </template>
+                    <tr x-show="cases.length === 0 && !loading">
+                        <td colspan="7" class="px-4 py-16 text-center text-ivory/30">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-ivory/10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                            </svg>
+                            <p x-text="'لا توجد قضايا في ' + monthNames[month] + ' ' + year"></p>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -143,7 +117,7 @@
 
     {{-- Footer for print --}}
     <div class="text-center text-ivory/30 text-xs pt-4 hidden print:block">
-        <p>تم الإنشاء في {{ now()->format('Y-m-d H:i') }} — قضايا {{ $monthName }} {{ $year }}</p>
+        <p>تم الإنشاء في {{ now()->format('Y-m-d H:i') }}</p>
     </div>
 </div>
 
@@ -163,12 +137,50 @@
 }
 </style>
 @endpush
-@endsection
 
 @push('scripts')
 <script nonce="{{ $cspNonce }}">
 document.getElementById('printBtn')?.addEventListener('click', function() {
     window.print();
 });
+
+function monthlyCases() {
+    return {
+        month: {{ $month }},
+        year: {{ $year }},
+        loading: false,
+        cases: JSON.parse('{!! json_encode($casesJson) !!}'),
+        summary: JSON.parse('{!! json_encode($summaryJson) !!}'),
+        monthNames: {!! json_encode($months) !!},
+        years: {!! json_encode($years) !!},
+        statusColors: {
+            active: 'bg-green-500/15 text-green-400',
+            pending: 'bg-yellow-500/15 text-yellow-400',
+            overdue: 'bg-red-500/15 text-red-400',
+            closed: 'bg-gray-500/15 text-gray-400',
+            won: 'bg-emerald-500/15 text-emerald-400',
+            lost: 'bg-red-500/15 text-red-400',
+        },
+        statusLabels: {
+            active: 'نشطة', pending: 'معلقة', overdue: 'متأخرة',
+            closed: 'مغلقة', won: 'مربوحة', lost: 'خاسرة',
+        },
+        init() {},
+        fetchData() {
+            this.loading = true;
+            fetch('/cases/monthly/data?month=' + this.month + '&year=' + this.year, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                this.cases = data.cases;
+                this.summary = data.summary;
+                this.loading = false;
+            })
+            .catch(() => { this.loading = false; });
+        }
+    }
+}
 </script>
 @endpush
+@endsection
