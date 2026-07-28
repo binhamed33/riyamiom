@@ -69,6 +69,11 @@ Route::middleware(['auth', 'active'])->group(function () {
     
     // Dashboard - all roles
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // User Guide
+    Route::get('/guide', function () {
+        return view('guide.index');
+    })->name('guide');
     
     // Global Search API
     Route::get('/search', function (\Illuminate\Http\Request $request) {
