@@ -21,26 +21,30 @@
         </div>
     </div>
 
-    {{-- Month Selector --}}
-    <div class="bg-navy rounded-xl border border-gold/20 p-4 print:hidden">
-        <div class="flex flex-wrap items-end gap-4">
-            <div>
-                <label class="block text-ivory/60 text-xs mb-1.5">الشهر</label>
-                <select x-model="month" @change="fetchData" class="rounded-lg bg-navy-darker border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-gold focus:border-gold">
-                    <template x-for="(name, num) in monthNames" :key="num">
-                        <option :value="num" x-text="name"></option>
-                    </template>
-                </select>
+    {{-- Month/Year Panel --}}
+    <div class="bg-navy rounded-xl border border-gold/20 p-5 print:hidden" x-data="{ yearOpen: false }">
+        {{-- Year Bar --}}
+        <div class="flex items-center gap-2 mb-4 pb-4 border-b border-ivory/5">
+            <span class="text-ivory/50 text-xs font-bold uppercase tracking-wider ml-3">السنة</span>
+            <div class="flex flex-wrap gap-1.5">
+                <template x-for="y in years" :key="y">
+                    <button @click="year = y; fetchData()"
+                        class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-150"
+                        :class="year === y ? 'bg-gold text-navy-darkest shadow-lg shadow-gold/20' : 'bg-white/5 text-ivory/60 hover:bg-white/10 hover:text-ivory'"
+                        x-text="y">
+                    </button>
+                </template>
             </div>
-            <div>
-                <label class="block text-ivory/60 text-xs mb-1.5">السنة</label>
-                <select x-model="year" @change="fetchData" class="rounded-lg bg-navy-darker border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-gold focus:border-gold">
-                    <template x-for="y in years" :key="y">
-                        <option :value="y" x-text="y"></option>
-                    </template>
-                </select>
-            </div>
-            <div x-show="loading" class="text-gold text-sm">جارٍ التحميل...</div>
+        </div>
+        {{-- Month Grid --}}
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            <template x-for="(name, num) in monthNames" :key="num">
+                <button @click="month = num; fetchData()"
+                    class="px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150 text-center"
+                    :class="month == num ? 'bg-gold text-navy-darkest shadow-lg shadow-gold/20 ring-2 ring-gold/50' : 'bg-white/5 text-ivory/60 hover:bg-white/10 hover:text-ivory hover:shadow-md'"
+                    x-text="name">
+                </button>
+            </template>
         </div>
     </div>
 
