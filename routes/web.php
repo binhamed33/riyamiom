@@ -172,8 +172,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::resource('clients', ClientController::class);
     });
     
-    // Users & Admin - developer, admin (أو بصلاحية محددة)
-    Route::resource('users', UserController::class)->middleware('role:developer,admin,permission:users.view');
+    // Users & Admin - all team roles
+    Route::resource('users', UserController::class)->middleware('role:developer,admin,lawyer,staff,permission:users.view');
     Route::get('/feasibility', [FeasibilityController::class, 'index'])->middleware('role:developer,admin,permission:feasibility.view')->name('feasibility.index');
     Route::get('/audit-log', [AuditLogController::class, 'index'])->middleware('role:developer,admin,permission:audit_log.view')->name('audit-log.index');
     Route::get('/settings', [SettingController::class, 'index'])->middleware('role:developer,admin,permission:settings.manage')->name('settings.index');
