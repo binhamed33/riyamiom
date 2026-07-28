@@ -898,6 +898,23 @@
 
     @stack('scripts')
 
+    <script nonce="{{ $cspNonce }}">
+    document.addEventListener('click', function(e) {
+        var el = e.target.closest('.__cf_email__');
+        if (el) {
+            e.preventDefault();
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;background:rgba(201,165,90,0.95);color:#0A0F1E;padding:16px 24px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,0.4);max-width:400px;text-align:center;direction:rtl;';
+            toast.textContent = '🔐 هذا البريد الإلكتروني وجميع البيانات في الموقع مشفرة للحماية. للتواصل يرجى مراسلة المطور.';
+            document.body.appendChild(toast);
+            setTimeout(function() {
+                toast.style.transition = 'opacity 0.5s';
+                toast.style.opacity = '0';
+                setTimeout(function() { toast.remove(); }, 500);
+            }, 4000);
+        }
+    });
+    </script>
 
 </body>
 </html>
