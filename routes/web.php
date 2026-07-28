@@ -83,17 +83,11 @@ Route::middleware(['auth', 'active'])->group(function () {
             $cases = \App\Models\LegalCase::where(function ($q) use ($query) {
                 $q->where('case_number', 'like', "%{$query}%")->orWhere('title', 'like', "%{$query}%");
             });
-            if ($user->isLawyer()) $cases->where('lawyer_id', $user->id);
             $cases->limit(5)->get()->each(function ($c) use ($results) {
                 $results->push(['type' => 'case', 'label' => $c->case_number . ' - ' . $c->title, 'url' => route('cases.show', $c)]);
             });
 
             $clients = \App\Models\Client::where('name', 'like', "%{$query}%");
-            if ($user->isLawyer()) {
-                $clients->where(function ($q) use ($user) {
-                    $q->whereHas('cases', fn($cq) => $cq->where('lawyer_id', $user->id))->orWhereDoesntHave('cases');
-                });
-            }
             $clients->limit(5)->get()->each(function ($c) use ($results) {
                 $results->push(['type' => 'client', 'label' => '👤 ' . $c->name, 'url' => route('clients.show', $c)]);
             });

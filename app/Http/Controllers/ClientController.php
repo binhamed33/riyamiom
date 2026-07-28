@@ -17,14 +17,6 @@ class ClientController extends Controller
     {
         $query = Client::withCount('cases');
 
-        if (auth()->user()->isLawyer()) {
-            $query->where(function ($q) {
-                $q->whereHas('cases', function ($cq) {
-                    $cq->where('lawyer_id', auth()->id());
-                })->orWhereDoesntHave('cases');
-            });
-        }
-
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where('name', 'like', "%{$search}%");
@@ -162,14 +154,6 @@ class ClientController extends Controller
     {
         $query = Client::onlyTrashed()->withCount('cases');
 
-        if (auth()->user()->isLawyer()) {
-            $query->where(function ($q) {
-                $q->whereHas('cases', function ($cq) {
-                    $cq->where('lawyer_id', auth()->id());
-                })->orWhereDoesntHave('cases');
-            });
-        }
-
         $clients = $query->latest('deleted_at')->paginate(15);
         return view('clients.trashed', compact('clients'));
     }
@@ -178,27 +162,12 @@ class ClientController extends Controller
     {
         $client = Client::onlyTrashed()->findOrFail($id);
 
-        $user = auth()->user();
-        if ($user->isLawyer()) {
-            $hasAccess = $client->cases()->where('lawyer_id', $user->id)->exists();
-            if (!$hasAccess) {
-                abort(403);
-            }
-        }
-
         $client->restore();
         return redirect()->route('clients.index')->with('success', 'تم استرجاع العميل بنجاح');
     }
 
     private function authorizeClientAccess(Client $client): void
     {
-        $user = auth()->user();
-        if (!$user->isLawyer()) return;
-
-        $hasAccess = $client->cases()->where('lawyer_id', $user->id)->exists()
-            || $client->cases()->count() === 0;
-        if (!$hasAccess) {
-            abort(403);
-        }
+        // All team members can access any client
     }
 }

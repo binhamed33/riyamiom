@@ -19,16 +19,6 @@ class TaskController extends Controller
     {
         $query = Task::with(['assignee', 'creator', 'case']);
 
-        if (auth()->user()->isLawyer()) {
-            $query->where(function ($q) {
-                $q->where('assigned_to', auth()->id())
-                  ->orWhere('created_by', auth()->id())
-                  ->orWhereHas('case', function ($cq) {
-                      $cq->where('lawyer_id', auth()->id());
-                  });
-            });
-        }
-
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -192,16 +182,7 @@ class TaskController extends Controller
 
     private function authorizeTaskAccess(Task $task): void
     {
-        $user = auth()->user();
-        if (!$user->isLawyer()) return;
-
-        $hasAccess = $task->assigned_to === $user->id
-            || $task->created_by === $user->id
-            || ($task->case && $task->case->lawyer_id === $user->id);
-
-        if (!$hasAccess) {
-            abort(403);
-        }
+        // All team members can access any task
     }
 
 }

@@ -21,7 +21,6 @@ class DashboardController extends Controller
         $startOfMonth = $now->copy()->startOfMonth();
         $lastMonth = $now->copy()->subMonth();
         $user = auth()->user();
-        $isLawyer = $user->isLawyer();
 
         $caseBase = LegalCase::query();
         $clientBase = Client::query();
@@ -29,22 +28,8 @@ class DashboardController extends Controller
         $sessionBase = Session::query();
         $documentBase = Document::query();
 
-        if ($isLawyer) {
-            $caseBase->where('lawyer_id', $user->id);
-            $clientBase->where(function ($q) use ($user) {
-                $q->whereHas('cases', fn($cq) => $cq->where('lawyer_id', $user->id))
-                    ->orWhereDoesntHave('cases');
-            });
-            $taskBase->where('assigned_to', $user->id);
-            $sessionBase->whereHas('case', fn($cq) => $cq->where('lawyer_id', $user->id));
-            $documentBase->where(function ($q) use ($user) {
-                $q->where('uploaded_by', $user->id)
-                    ->orWhereHas('case', fn($cq) => $cq->where('lawyer_id', $user->id));
-            });
-        }
-
         // === Case Statistics (cached 5 min) ===
-        $caseStats = Cache::remember('dashboard_case_stats' . ($isLawyer ? '_lawyer_' . $user->id : ''), 300, fn () => [
+        $caseStats = Cache::remember('dashboard_case_stats', 300, fn () => [
             'total' => (clone $caseBase)->count(),
             'active' => (clone $caseBase)->where('status', 'active')->count(),
             'overdue' => (clone $caseBase)->where('status', 'overdue')->count(),
@@ -113,7 +98,7 @@ class DashboardController extends Controller
         $activeLawyers = User::where('role', 'lawyer')->where('is_active', true)->count();
 
         // === Charts Data (cached 5 min) ===
-        $cacheSuffix = $isLawyer ? '_lawyer_' . $user->id : '';
+        $cacheSuffix = '';
         $casesByStatus = Cache::remember('dashboard_cases_by_status' . $cacheSuffix, 300, fn () =>
             (clone $caseBase)->selectRaw('status, count(*) as count')
                 ->groupBy('status')
@@ -235,13 +220,13 @@ class DashboardController extends Controller
             ->get();
 
         // === Top performing lawyer (cached 5 min) ===
-        $topLawyer = !$isLawyer ? Cache::remember('dashboard_top_lawyer', 300, fn () =>
+        $topLawyer = Cache::remember('dashboard_top_lawyer', 300, fn () =>
             LegalCase::where('status', 'won')
                 ->selectRaw('lawyer_id, count(*) as wins')
                 ->groupBy('lawyer_id')
                 ->orderByDesc('wins')
                 ->first()
-        ) : null;
+        );
 
         return view('dashboard', compact(
             'totalCases',

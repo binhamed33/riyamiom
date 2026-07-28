@@ -12,9 +12,6 @@ class CaseFileController extends Controller
     public function download(LegalCase $case): Response
     {
         $user = auth()->user();
-        if ($user->isLawyer() && $case->lawyer_id !== null && $case->lawyer_id !== $user->id) {
-            abort(403);
-        }
 
         $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader']);
 

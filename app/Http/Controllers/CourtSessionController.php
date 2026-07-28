@@ -20,12 +20,6 @@ class CourtSessionController extends Controller
     {
         $query = Session::with(['case.client', 'case.lawyer']);
 
-        if (auth()->user()->isLawyer()) {
-            $query->whereHas('case', function ($q) {
-                $q->where('lawyer_id', auth()->id());
-            });
-        }
-
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -51,10 +45,6 @@ class CourtSessionController extends Controller
     {
         $cases = LegalCase::orderBy('title')->get();
 
-        if (auth()->user()->isLawyer()) {
-            $cases = LegalCase::where('lawyer_id', auth()->id())->orderBy('title')->get();
-        }
-
         return view('sessions.create', compact('cases'));
     }
 
@@ -69,9 +59,6 @@ class CourtSessionController extends Controller
         ]);
 
         $case = LegalCase::findOrFail($validated['case_id']);
-        if (auth()->user()->isLawyer() && $case->lawyer_id !== auth()->id()) {
-            abort(403);
-        }
 
         $session = Session::create($validated);
 
@@ -166,10 +153,7 @@ class CourtSessionController extends Controller
 
     private function authorizeSessionAccess(Session $session): void
     {
-        $user = auth()->user();
-        if ($user->isLawyer() && $session->case->lawyer_id !== $user->id) {
-            abort(403);
-        }
+        // All team members can access any session
     }
 
     public function today(): View
@@ -178,12 +162,6 @@ class CourtSessionController extends Controller
             ->whereDate('date', Carbon::today())
             ->where('status', 'upcoming')
             ->orderBy('date');
-
-        if (auth()->user()->isLawyer()) {
-            $query->whereHas('case', function ($q) {
-                $q->where('lawyer_id', auth()->id());
-            });
-        }
 
         $sessions = $query->paginate(15);
 

@@ -23,10 +23,6 @@ class CaseController extends Controller
     {
         $query = LegalCase::with(['client', 'lawyer']);
 
-        if (auth()->user()->isLawyer()) {
-            $query->where('lawyer_id', auth()->id());
-        }
-
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -214,10 +210,6 @@ class CaseController extends Controller
 
     public function autoDetectOverdue(): RedirectResponse
     {
-        if (auth()->user()->isLawyer()) {
-            abort(403);
-        }
-
         $updated = LegalCase::where('status', 'active')
             ->where('next_date', '<', now()->toDateString())
             ->update(['status' => 'overdue']);
@@ -230,10 +222,6 @@ class CaseController extends Controller
     {
         $query = LegalCase::onlyTrashed()->with(['client', 'lawyer']);
 
-        if (auth()->user()->isLawyer()) {
-            $query->where('lawyer_id', auth()->id());
-        }
-
         $cases = $query->latest('deleted_at')->paginate(15);
         return view('cases.trashed', compact('cases'));
     }
@@ -242,21 +230,13 @@ class CaseController extends Controller
     {
         $case = LegalCase::onlyTrashed()->findOrFail($id);
 
-        $user = auth()->user();
-        if ($user->isLawyer() && $case->lawyer_id !== null && $case->lawyer_id !== $user->id) {
-            abort(403);
-        }
-
         $case->restore();
         return redirect()->route('cases.index')->with('success', 'تم استرجاع القضية بنجاح');
     }
 
     private function authorizeCaseAccess(LegalCase $case): void
     {
-        $user = auth()->user();
-        if ($user->isLawyer() && $case->lawyer_id !== null && $case->lawyer_id !== $user->id) {
-            abort(403);
-        }
+        // All team members can access any case
     }
 
 }

@@ -38,15 +38,6 @@ class DocumentController extends Controller
             });
         });
 
-        if ($user->isLawyer()) {
-            $query->where(function ($q) use ($user) {
-                $q->where('uploaded_by', $user->id)
-                  ->orWhereHas('case', function ($cq) use ($user) {
-                      $cq->where('lawyer_id', $user->id);
-                  });
-            });
-        }
-
         if ($request->filled('case_id')) {
             $query->where('case_id', $request->case_id);
         }
@@ -70,10 +61,6 @@ class DocumentController extends Controller
         $documents = $query->latest()->paginate(15)->withQueryString();
         $cases = LegalCase::orderBy('title')->get();
 
-        if ($user->isLawyer()) {
-            $cases = LegalCase::where('lawyer_id', $user->id)->orderBy('title')->get();
-        }
-
         return view('documents.index', compact('documents', 'cases'));
     }
 
@@ -86,11 +73,8 @@ class DocumentController extends Controller
             'access_level' => 'required|in:all,team,private',
         ]);
 
-        if ($validated['case_id'] && auth()->user()->isLawyer()) {
+        if ($validated['case_id']) {
             $case = LegalCase::find($validated['case_id']);
-            if ($case && $case->lawyer_id !== auth()->id()) {
-                abort(403);
-            }
         }
 
         $file = $request->file('file');
