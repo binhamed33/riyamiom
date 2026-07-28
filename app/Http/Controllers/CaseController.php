@@ -12,6 +12,7 @@ use App\Traits\AuditLoggable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CaseController extends Controller
@@ -57,9 +58,8 @@ class CaseController extends Controller
         $clients = Client::orderBy('name')->get();
         $users = User::where('is_active', true)->orderBy('name')->get();
 
-        do {
-            $generatedNumber = (string) random_int(100000, 99999999);
-        } while (LegalCase::where('case_number', $generatedNumber)->exists());
+        $maxNum = LegalCase::whereRaw('case_number REGEXP "^[0-9]+$"')->max(DB::raw('CAST(case_number AS UNSIGNED)'));
+        $generatedNumber = (string) (($maxNum ?: 0) + 1);
 
         return view('cases.create', compact('clients', 'users', 'generatedNumber'));
     }
@@ -82,10 +82,8 @@ class CaseController extends Controller
         ]);
 
         if (empty($validated['case_number'])) {
-            do {
-                $generated = (string) random_int(100000, 99999999);
-            } while (LegalCase::where('case_number', $generated)->exists());
-            $validated['case_number'] = $generated;
+            $maxNum = LegalCase::whereRaw('case_number REGEXP "^[0-9]+$"')->max(DB::raw('CAST(case_number AS UNSIGNED)'));
+            $validated['case_number'] = (string) (($maxNum ?: 0) + 1);
         }
 
         if (auth()->user()->isLawyer() && empty($validated['lawyer_id'])) {
