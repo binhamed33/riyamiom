@@ -249,5 +249,15 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/documents', [ClientPortalController::class, 'documents'])->name('client.documents');
     });
 
+    // Developer Panel - developer only
+    Route::prefix('developer')->middleware('role:developer')->group(function () {
+        Route::get('/', [App\Http\Controllers\DeveloperController::class, 'index'])->name('developer.index');
+        Route::post('/cache-clear', [App\Http\Controllers\DeveloperController::class, 'clearCache'])->name('developer.cache-clear');
+        Route::post('/cache-all', [App\Http\Controllers\DeveloperController::class, 'cacheAll'])->name('developer.cache-all');
+        Route::post('/optimize', [App\Http\Controllers\DeveloperController::class, 'optimize'])->name('developer.optimize');
+        Route::post('/migrate', [App\Http\Controllers\DeveloperController::class, 'migrate'])->name('developer.migrate');
+        Route::post('/storage-link', [App\Http\Controllers\DeveloperController::class, 'storageLink'])->name('developer.storage-link');
+    });
+
     }); // end throttle group
 });
