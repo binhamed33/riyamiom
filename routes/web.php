@@ -118,6 +118,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
     Route::get('/notifications/count', [NotificationController::class, 'count'])->name('notifications.count');
+    Route::get('/notifications/latest', [NotificationController::class, 'latest'])->name('notifications.latest');
     
     // Profile - all roles
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

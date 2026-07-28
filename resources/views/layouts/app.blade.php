@@ -929,5 +929,64 @@
     });
     </script>
 
+    @auth
+    <script nonce="{{ $cspNonce }}">
+    var lastNotifId = 0;
+    function notifSound() {
+        try {
+            var ctx = new (window.AudioContext || window.webkitAudioContext)();
+            var notes = [660, 880, 1100];
+            notes.forEach(function(freq, i) {
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                var t = ctx.currentTime + i * 0.08;
+                gain.gain.setValueAtTime(0.12, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+                osc.start(t);
+                osc.stop(t + 0.12);
+            });
+        } catch(_) {}
+    }
+    function showNotifToast(title, msg) {
+        var existing = document.getElementById('notifToast');
+        if (existing) { existing.remove(); }
+        var t = document.createElement('div');
+        t.id = 'notifToast';
+        t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:99998;background:linear-gradient(135deg,rgba(10,15,30,0.95),rgba(20,30,55,0.95));backdrop-filter:blur(12px);border:1px solid rgba(201,165,90,0.3);color:#F4E8C1;padding:16px 24px;border-radius:16px;font-size:14px;font-weight:500;box-shadow:0 12px 48px rgba(0,0,0,0.6);max-width:420px;text-align:center;direction:rtl;opacity:0;transition:all 0.4s cubic-bezier(0.22,1,0.36,1);';
+        t.innerHTML = '<div style="display:flex;align-items:center;gap:12px"><div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#C9A55A,#E8C87A);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(201,165,90,0.3)">🔔</div><div style="flex:1;text-align:right"><div style="font-weight:700;color:#E8C87A;margin-bottom:4px">' + title + '</div><div style="font-size:12px;color:#C9A55A/80">' + msg + '</div></div></div>';
+        document.body.appendChild(t);
+        requestAnimationFrame(function() {
+            t.style.transform = 'translateX(-50%) translateY(0)';
+            t.style.opacity = '1';
+        });
+        setTimeout(function() {
+            t.style.transform = 'translateX(-50%) translateY(-20px)';
+            t.style.opacity = '0';
+            setTimeout(function() { t.remove(); }, 500);
+        }, 5000);
+    }
+    function pollNotif() {
+        fetch('{{ route("notifications.latest") }}', {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin'
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.has_new && data.notification && data.notification.id !== lastNotifId) {
+                lastNotifId = data.notification.id;
+                notifSound();
+                showNotifToast(data.notification.title || 'إشعار جديد', data.notification.message || '');
+            }
+        })
+        .catch(function() {});
+    }
+    setInterval(pollNotif, 15000);
+    </script>
+    @endauth
+
 </body>
 </html>

@@ -51,4 +51,22 @@ class NotificationController extends Controller
 
         return response()->json(['count' => $count]);
     }
+
+    public function latest(): JsonResponse
+    {
+        $latest = Notification::where('user_id', auth()->id())
+            ->where('is_read', false)
+            ->latest()
+            ->first();
+
+        return response()->json([
+            'has_new' => $latest && $latest->created_at->gt(now()->subSeconds(30)),
+            'notification' => $latest ? [
+                'id' => $latest->id,
+                'title' => $latest->title,
+                'message' => $latest->message,
+                'created_at' => $latest->created_at->diffForHumans(),
+            ] : null,
+        ]);
+    }
 }
