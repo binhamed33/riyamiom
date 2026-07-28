@@ -360,7 +360,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                     </svg>
                 </div>
-                <span class="sidebar-logo-text text-white font-heading font-bold text-xs whitespace-nowrap truncate max-w-[140px]" style="background: linear-gradient(135deg, #C9A55A, #E0C878); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $officeName }}</span>
+                <span class="sidebar-logo-text text-white font-heading font-bold text-[10px] leading-tight whitespace-normal max-w-[160px]" style="background: linear-gradient(135deg, #C9A55A, #E0C878); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $officeName }}</span>
             </div>
             <button @click="mobileOpen = false" class="lg:hidden text-white/40 hover:text-white/80 transition">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
