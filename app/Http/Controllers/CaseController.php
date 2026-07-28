@@ -226,6 +226,36 @@ class CaseController extends Controller
         return view('cases.trashed', compact('cases'));
     }
 
+    public function monthly(Request $request): View
+    {
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
+
+        $cases = LegalCase::with(['client', 'lawyer'])
+            ->whereYear('opened_at', $year)
+            ->whereMonth('opened_at', $month)
+            ->latest('opened_at')
+            ->get();
+
+        $months = [
+            1 => 'يناير', 2 => 'فبراير', 3 => 'مارس', 4 => 'إبريل',
+            5 => 'مايو', 6 => 'يونيو', 7 => 'يوليو', 8 => 'أغسطس',
+            9 => 'سبتمبر', 10 => 'أكتوبر', 11 => 'نوفمبر', 12 => 'ديسمبر',
+        ];
+
+        $monthName = $months[(int)$month] ?? '';
+        $years = range(now()->year - 5, now()->year + 1);
+
+        $summary = [
+            'total' => $cases->count(),
+            'active' => $cases->where('status', 'active')->count(),
+            'closed' => $cases->whereIn('status', ['closed', 'won', 'lost'])->count(),
+            'pending' => $cases->where('status', 'pending')->count(),
+        ];
+
+        return view('cases.monthly', compact('cases', 'month', 'year', 'monthName', 'years', 'months', 'summary'));
+    }
+
     public function restore(int $id): RedirectResponse
     {
         $case = LegalCase::onlyTrashed()->findOrFail($id);

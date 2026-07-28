@@ -137,6 +137,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/cases/{case}/summarize', [CaseController::class, 'summarize'])->name('cases.summarize');
         Route::get('/cases/{case}/file', [CaseFileController::class, 'download'])->name('cases.file');
         Route::post('/cases/detect-overdue', [CaseController::class, 'autoDetectOverdue'])->name('cases.detectOverdue');
+        Route::get('/cases/monthly/list', [CaseController::class, 'monthly'])->name('cases.monthly');
     });
     
     // Court Sessions - developer, admin, lawyer, staff
