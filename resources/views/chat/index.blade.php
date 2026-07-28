@@ -2,6 +2,28 @@
 
 @section('title', __('app.chat') ?? 'المحادثات')
 
+@php
+$roleGradients = [
+    'developer' => 'from-purple-600 to-purple-800',
+    'admin'     => 'from-red-500 to-red-700',
+    'lawyer'    => 'from-blue-500 to-blue-700',
+    'staff'     => 'from-emerald-500 to-emerald-700',
+];
+$roleIcons = [
+    'developer' => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.2a1 1 0 00-1.4 0l-10 10a1 1 0 101.4 1.4l10-10a1 1 0 000-1.4zM8.2 4.7l-4 4a1 1 0 000 1.4l4 4a1 1 0 001.4-1.4L6.4 10l3.2-3.2a1 1 0 00-1.4-1.4zM15.8 9.3a1 1 0 00-1.4 0L19 16l-3.2 3.2a1 1 0 001.4 1.4l4-4a1 1 0 000-1.4l-4-4z"/></svg>',
+    'admin'     => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2l7 3v6c0 6.5-4.5 10.5-7 12-2.5-1.5-7-5.5-7-12V5l7-3z"/></svg>',
+    'lawyer'    => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>',
+    'staff'     => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>',
+];
+function roleAvatar($user, $size = 9) {
+    global $roleGradients, $roleIcons;
+    $role = $user->role ?? 'staff';
+    $gradient = $roleGradients[$role] ?? $roleGradients['staff'];
+    $icon = $roleIcons[$role] ?? $roleIcons['staff'];
+    $sizeClass = $size === 10 ? 'w-10 h-10' : 'w-9 h-9';
+    return '<div class="' . $sizeClass . ' rounded-full bg-gradient-to-br ' . $gradient . ' flex items-center justify-center flex-shrink-0">' . $icon . '</div>';
+}
+@endphp
 @section('content')
 <div class="flex gap-4 h-[calc(100vh-10rem)]">
     {{-- Conversations List --}}
@@ -15,9 +37,7 @@
                 <a href="{{ route('chat.show', $conv) }}" class="block px-4 py-3 border-b border-ivory/5 hover:bg-white/[0.02] transition {{ isset($conversation) && $conversation->id === $conv->id ? 'bg-gold/5 border-r-2 border-r-gold' : '' }}">
                     <div class="flex items-center gap-3">
                         <div class="relative">
-                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center text-navy font-bold text-sm flex-shrink-0">
-                                {{ $other?->name[0] ?? '?' }}
-                            </div>
+                            {!! $other ? roleAvatar($other, 10) : '<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0"><span class="text-white/50 font-bold text-sm">?</span></div>' !!}
                             @if($conv->unread_count > 0)
                                 <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{{ $conv->unread_count > 9 ? '9+' : $conv->unread_count }}</span>
                             @endif
@@ -58,9 +78,7 @@
             {{-- Chat Header --}}
             @php $other = $conversation->participants->where('id', '!=', auth()->id())->first(); @endphp
             <div class="px-4 py-3 border-b border-ivory/5 flex items-center gap-3 bg-navy-light/30">
-                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center text-navy font-bold text-sm flex-shrink-0">
-                    {{ $other?->name[0] ?? '?' }}
-                </div>
+                {!! $other ? roleAvatar($other) : '<div class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0"><span class="text-white/50 font-bold text-sm">?</span></div>' !!}
                 <div>
                     <h3 class="text-sm font-bold text-white">{{ $other?->name ?? 'المحادثة' }}</h3>
                     <p class="text-[11px] text-white/30">{{ $other?->role ?? '' }}</p>
@@ -150,9 +168,7 @@
                     @csrf
                     <input type="hidden" name="user_id" value="{{ $user->id }}">
                     <button type="submit" class="w-full text-right px-4 py-3 border-b border-ivory/5 hover:bg-white/[0.02] transition flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center text-navy font-bold text-sm flex-shrink-0">
-                            {{ $user->name[0] }}
-                        </div>
+                        {!! roleAvatar($user) !!}
                         <div>
                             <p class="text-sm text-white/70">{{ $user->name }}</p>
                             <p class="text-xs text-white/30">{{ $user->role }}</p>
