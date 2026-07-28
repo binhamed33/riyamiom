@@ -88,6 +88,10 @@ class CaseController extends Controller
             $validated['case_number'] = $generated;
         }
 
+        if (auth()->user()->isLawyer() && empty($validated['lawyer_id'])) {
+            $validated['lawyer_id'] = auth()->id();
+        }
+
         $legalCase = LegalCase::create($validated);
 
         $this->logAudit(
@@ -241,7 +245,7 @@ class CaseController extends Controller
         $case = LegalCase::onlyTrashed()->findOrFail($id);
 
         $user = auth()->user();
-        if ($user->isLawyer() && $case->lawyer_id !== $user->id) {
+        if ($user->isLawyer() && $case->lawyer_id !== null && $case->lawyer_id !== $user->id) {
             abort(403);
         }
 
@@ -252,7 +256,7 @@ class CaseController extends Controller
     private function authorizeCaseAccess(LegalCase $case): void
     {
         $user = auth()->user();
-        if ($user->isLawyer() && $case->lawyer_id !== $user->id) {
+        if ($user->isLawyer() && $case->lawyer_id !== null && $case->lawyer_id !== $user->id) {
             abort(403);
         }
     }
