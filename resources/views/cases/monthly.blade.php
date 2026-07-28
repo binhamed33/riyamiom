@@ -130,21 +130,23 @@
 <style nonce="{{ $cspNonce }}">
 @media print {
     body { background: white !important; }
+    *, *::before, *::after { color: #000 !important; }
     aside, .sidebar, .content-area aside, nav, .print\\:hidden { display: none !important; }
     .content-area { margin-right: 0 !important; margin-left: 0 !important; padding: 20px !important; }
+    h1, h2, h3, h4, h5, h6, p, span, div:not(.print\\:hidden) { color: #000 !important; }
+    .text-gold, .text-ivory, .text-ivory\\/50, .text-ivory\\/60, .text-ivory\\/70, .text-ivory\\/80, .text-ivory\\/30, .text-white { color: #000 !important; }
     table { width: 100%; border-collapse: collapse; }
     th { background: #C9A55A !important; color: #000 !important; padding: 10px 14px !important; font-size: 13px !important; font-weight: 700 !important; border: 2px solid #000 !important; }
     td { padding: 8px 14px !important; border: 1px solid #000 !important; font-size: 12px !important; color: #000 !important; }
     tr:nth-child(even) td { background: #f0ead6 !important; }
     tr:nth-child(odd) td { background: #fff !important; }
     a { color: #000 !important; text-decoration: underline !important; font-weight: 600 !important; }
-    .text-gold { color: #000 !important; }
-    .bg-gold, .bg-gold\\/10, .bg-gold\\/15, .bg-gold\\/20 { background: #C9A55A !important; color: #000 !important; }
+    .bg-navy-light, .bg-navy, .bg-navy-darker { background: #fff !important; border: 1px solid #000 !important; }
+    .bg-gold { background: #C9A55A !important; color: #000 !important; }
+    .bg-gold\\/10, .bg-gold\\/15, .bg-gold\\/20 { background: #f0ead6 !important; }
     .text-green-400 { color: #0a5a0a !important; font-weight: 700 !important; }
     .text-blue-400 { color: #0a2a6a !important; font-weight: 700 !important; }
     .text-red-400 { color: #8a1010 !important; font-weight: 700 !important; }
-    .text-ivory\\/50, .text-ivory\\/60, .text-ivory\\/70, .text-ivory\\/80 { color: #000 !important; }
-    .text-ivory\\/30 { color: #333 !important; }
     .bg-green-500\\/15 { background: #c8e6c9 !important; color: #000 !important; }
     .bg-yellow-500\\/15 { background: #fff9c4 !important; color: #000 !important; }
     .bg-red-500\\/15 { background: #ffcdd2 !important; color: #000 !important; }
