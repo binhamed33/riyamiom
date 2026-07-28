@@ -25,16 +25,16 @@
     <div class="bg-navy rounded-xl border border-gold/20 p-5 print:hidden">
         <div class="flex flex-wrap items-end gap-6">
             <div class="flex-1 min-w-[160px]">
-                <label class="block text-gold text-xs font-bold uppercase tracking-wider mb-2">الشهر</label>
-                <select x-model="month" @change="fetchData" class="w-full rounded-xl bg-navy-darker border-2 border-gold/30 px-4 py-3 text-white text-base font-medium focus:ring-2 focus:ring-gold focus:border-gold appearance-none cursor-pointer hover:border-gold/60 transition">
+                <label class="block text-ivory/60 text-xs mb-1.5">الشهر</label>
+                <select x-model="month" @change="fetchData" class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]">
                     <template x-for="(name, num) in monthNames" :key="num">
                         <option :value="num" x-text="name" :selected="month == num"></option>
                     </template>
                 </select>
             </div>
             <div class="flex-1 min-w-[120px]">
-                <label class="block text-gold text-xs font-bold uppercase tracking-wider mb-2">السنة</label>
-                <select x-model="year" @change="fetchData" class="w-full rounded-xl bg-navy-darker border-2 border-gold/30 px-4 py-3 text-white text-base font-medium focus:ring-2 focus:ring-gold focus:border-gold appearance-none cursor-pointer hover:border-gold/60 transition">
+                <label class="block text-ivory/60 text-xs mb-1.5">السنة</label>
+                <select x-model="year" @change="fetchData" class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]">
                     <template x-for="y in years" :key="y">
                         <option :value="y" x-text="y" :selected="year == y"></option>
                     </template>
