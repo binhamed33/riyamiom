@@ -6,43 +6,37 @@ $kernel->bootstrap();
 
 use Illuminate\Support\Facades\DB;
 
-// Get all private conversations with their participants
 $convs = DB::table('conversations')->where('type', 'private')->get();
 echo "Private conversations found: " . $convs->count() . "\n\n";
 
 foreach ($convs as $conv) {
-    $participants = DB::table('conversation_participants cp')
-        ->join('users', 'cp.user_id', '=', 'users.id')
-        ->where('cp.conversation_id', $conv->id)
-        ->select('users.id', 'users.name', 'users.role')
-        ->get();
-    
-    $roles = $participants->pluck('role')->toArray();
-    $names = $participants->pluck('name')->toArray();
+    $participants = DB::select(
+        'SELECT u.id, u.name, u.role FROM conversation_participants cp JOIN users u ON cp.user_id = u.id WHERE cp.conversation_id = ?',
+        [$conv->id]
+    );
+
+    $roles = array_column($participants, 'role');
+    $names = array_column($participants, 'name');
     $allEmployees = !in_array('client', $roles);
-    
+
     $msgCount = DB::table('messages')->where('conversation_id', $conv->id)->count();
-    
+
     echo "Conv #{$conv->id} ({$conv->created_at}) - {$msgCount} msgs - " . implode(', ', $names) . " [roles: " . implode(',', $roles) . "] " . ($allEmployees ? '✅ EMPLOYEES' : '❌ HAS CLIENT') . "\n";
 }
 
 echo "\n---\n";
-// Count totals
-$privateCount = DB::table('conversations')->where('type', 'private')->count();
-$employeePrivateConvIds = DB::table('conversations AS c')
-    ->where('c.type', 'private')
-    ->whereNotExists(function ($q) {
-        $q->select(DB::raw(1))
-            ->from('conversation_participants AS cp')
-            ->join('users', 'cp.user_id', '=', 'users.id')
-            ->whereColumn('cp.conversation_id', 'c.id')
-            ->where('users.role', 'client');
-    })
-    ->pluck('c.id');
 
-echo "\nEmployee-only private conversations to delete: " . $employeePrivateConvIds->count() . "\n";
-echo "IDs: " . $employeePrivateConvIds->implode(',') . "\n";
+// Find private conversations where none of the participants have role=client
+$employeeOnlyIds = DB::select(
+    'SELECT c.id FROM conversations c WHERE c.type = ? AND c.id NOT IN (SELECT cp.conversation_id FROM conversation_participants cp JOIN users u ON cp.user_id = u.id WHERE u.role = ?)',
+    ['private', 'client']
+);
 
-// Count the messages that would be deleted
-$msgCount = DB::table('messages')->whereIn('conversation_id', $employeePrivateConvIds)->count();
-echo "Messages to delete: {$msgCount}\n";
+$ids = array_column($employeeOnlyIds, 'id');
+echo "Employee-only private conversations to delete: " . count($ids) . "\n";
+echo "IDs: " . implode(',', $ids) . "\n";
+
+if (!empty($ids)) {
+    $msgCount = DB::table('messages')->whereIn('conversation_id', $ids)->count();
+    echo "Messages to delete: {$msgCount}\n";
+}
