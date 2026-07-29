@@ -92,6 +92,10 @@
         [dir="ltr"] .ct-open { margin-left: 16rem; }
         [dir="rtl"] .ct-closed { margin-right: 72px; }
         [dir="ltr"] .ct-closed { margin-left: 72px; }
+        @media (max-width: 767px) {
+            [dir="rtl"] .ct-open, [dir="rtl"] .ct-closed { margin-right: 0 !important; }
+            [dir="ltr"] .ct-open, [dir="ltr"] .ct-closed { margin-left: 0 !important; }
+        }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.2s ease-out; }
@@ -347,8 +351,8 @@
         x-transition:leave="transition-opacity ease-linear duration-300"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        @click="mobileOpen = false"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+    @click="mobileOpen = false"
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
     ></div>
 
     {{-- Sidebar --}}
@@ -356,7 +360,7 @@
         class="fixed top-0 {{ $isRtl ? 'right-0' : 'left-0' }} h-full z-50 flex flex-col transition-all duration-300 ease-in-out"
         :class="[
             sidebarOpen ? 'sb-open' : 'sb-closed',
-            mobileOpen ? 'translate-x-0' : '{{ $isRtl ? 'translate-x-full' : '-translate-x-full' }} lg:translate-x-0'
+            mobileOpen ? 'translate-x-0' : '{{ $isRtl ? 'translate-x-full' : '-translate-x-full' }} md:translate-x-0'
         ]"
         style="background: linear-gradient(180deg, #111B2E 0%, #060A14 100%); {{ $isRtl ? 'border-left' : 'border-right' }}: 1px solid rgba(201,165,90,0.06);"
     >
@@ -370,7 +374,7 @@
                 </div>
                 <span class="sidebar-logo-text text-white font-heading font-bold text-[10px] leading-tight whitespace-normal max-w-[160px]" style="background: linear-gradient(135deg, #C9A55A, #E0C878); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $officeName }}</span>
             </div>
-            <button @click="mobileOpen = false" class="lg:hidden text-white/40 hover:text-white/80 transition">
+            <button @click="mobileOpen = false" class="md:hidden text-white/40 hover:text-white/80 transition">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
@@ -567,10 +571,10 @@
             <div class="flex items-center justify-between h-16 px-4 sm:px-6">
                 {{-- Right Side: Hamburger + Breadcrumb --}}
                 <div class="flex items-center gap-3">
-                    <button @click="mobileOpen = !mobileOpen" class="lg:hidden p-2 rounded-xl text-white/40 hover:text-white/80 transition">
+                    <button @click="mobileOpen = !mobileOpen" class="md:hidden p-2 rounded-xl text-white/40 hover:text-white/80 transition">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     </button>
-                    <button @click="sidebarOpen = !sidebarOpen" class="hidden lg:inline-flex p-2 rounded-xl text-white/40 hover:text-white/80 transition">
+                    <button @click="sidebarOpen = !sidebarOpen" class="hidden md:inline-flex p-2 rounded-xl text-white/40 hover:text-white/80 transition">
                         <svg x-show="sidebarOpen" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="{{ $isRtl ? 'M13 5l7 7-7 7M5 5l7 7-7 7' : 'M11 19l-7-7 7-7m8 14l-7-7 7-7' }}"/>
                         </svg>
