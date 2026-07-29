@@ -12,7 +12,7 @@
         ],
         'navy' => [
             'bg' => 'bg-gray-100',
-            'icon_bg' => 'bg-gradient-to-br from-gray-700 to-gray-600',
+            'icon_bg' => 'bg-gradient-to-br from-amber-500 to-amber-600',
             'icon_text' => 'text-white',
             'border' => 'border-gray-200',
             'shadow' => 'shadow-gray-200/20',

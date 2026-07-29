@@ -49,7 +49,7 @@
                     <p class="text-gray-400 text-xs">{{ $counts['sessions'] }} {{ __('app.record') }}</p>
                 </div>
             </div>
-            <a href="{{ route('export.sessions') }}" class="block w-full text-center px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors">
+            <a href="{{ route('export.sessions') }}" class="block w-full text-center px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg transition-colors">
                 {{ __('app.export_excel') }}
             </a>
         </div>

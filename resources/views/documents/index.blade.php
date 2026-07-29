@@ -7,7 +7,7 @@
     <div class="flex items-center justify-between">
         <h2 class="text-2xl font-bold text-gray-900">{{ __('app.page_documents') }} ({{ $documents->total() }})</h2>
         <button @click="showUpload = true"
-            class="bg-gold hover:bg-gold-dark text-navy px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+            class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
             </svg>
@@ -17,15 +17,15 @@
     <div class="flex items-center gap-2">
         @php $currentAccess = request('access_level'); @endphp
         <a href="{{ route('documents.index', array_merge(request()->query(), ['access_level' => ''])) }}"
-           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ !$currentAccess ? 'bg-gold text-navy' : 'bg-ivory text-gray-600 hover:bg-gray-200' }}">
+           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ !$currentAccess ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             {{ __('app.access_public') }}
         </a>
         <a href="{{ route('documents.index', array_merge(request()->query(), ['access_level' => 'team'])) }}"
-           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $currentAccess === 'team' ? 'bg-gold text-navy' : 'bg-ivory text-gray-600 hover:bg-gray-200' }}">
+           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $currentAccess === 'team' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             {{ __('app.access_team') }}
         </a>
         <a href="{{ route('documents.index', array_merge(request()->query(), ['access_level' => 'private'])) }}"
-           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $currentAccess === 'private' ? 'bg-gold text-navy' : 'bg-ivory text-gray-600 hover:bg-gray-200' }}">
+           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $currentAccess === 'private' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             {{ __('app.access_private') }}
         </a>
     </div>
@@ -114,7 +114,7 @@
                     </div>
 
                     <div class="flex items-center gap-3 pt-2">
-                        <button type="submit" class="bg-gold hover:bg-gold-dark text-navy px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                             {{ __('app.upload') }}
                         </button>
                         <button type="button" @click="showUpload = false"
