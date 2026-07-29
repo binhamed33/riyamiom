@@ -111,7 +111,17 @@ class CaseController extends Controller
 
         $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader']);
 
-        return view('cases.show', compact('case'));
+        $sessionsData = $case->sessions->map(fn($s) => [
+            'id' => $s->id,
+            'case_id' => $s->case_id,
+            'date' => $s->date?->format('Y-m-d H:i:s'),
+            'location' => $s->location,
+            'status' => $s->status,
+            'notes' => $s->notes,
+            'report' => $s->report,
+        ])->values();
+
+        return view('cases.show', compact('case', 'sessionsData'));
     }
 
     public function edit(LegalCase $case): View

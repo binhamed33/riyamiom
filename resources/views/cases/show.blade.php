@@ -12,15 +12,7 @@ document.addEventListener('alpine:init', () => {
         reportSessionId: null,
         reportText: '',
         reportSaving: false,
-        sessions: @json($case->sessions->map(fn($s) => [
-            'id' => $s->id,
-            'case_id' => $s->case_id,
-            'date' => $s->date?->format('Y-m-d H:i:s'),
-            'location' => $s->location,
-            'status' => $s->status,
-            'notes' => $s->notes,
-            'report' => $s->report,
-        ])->values()),
+        sessions: @json($sessionsData),
         get reportSession() {
             if (!this.reportSessionId) return null;
             return this.sessions.find(s => s.id === this.reportSessionId) || null;
