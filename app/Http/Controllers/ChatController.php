@@ -50,7 +50,7 @@ class ChatController extends Controller
             ->whereIn('role', ['developer', 'admin', 'lawyer', 'staff'])
             ->get();
 
-        $messages = $conversation->messages()->with('user')->oldest()->get();
+        $messages = $conversation->messages()->with(['user', 'replyTo.user'])->oldest()->get();
 
         return view('chat.index', compact('conversations', 'conversation', 'messages', 'users'));
     }
@@ -107,6 +107,7 @@ class ChatController extends Controller
             'conversation_id' => $conversation->id,
             'user_id' => $user->id,
             'message' => $request->message ?? '',
+            'reply_to_id' => $request->reply_to_id ?? null,
         ];
 
         if ($request->hasFile('attachment')) {
@@ -125,6 +126,7 @@ class ChatController extends Controller
         $notifyText = $request->message ?: ($request->hasFile('attachment') ? $file->getClientOriginalName() : 'مرفق');
         $this->notifyParticipants($conversation, $user, $notifyText);
 
+        $message->load('replyTo');
         return response()->json([
             'id' => $message->id,
             'message' => $message->message,
@@ -135,6 +137,9 @@ class ChatController extends Controller
             'attachment_name' => $message->attachment_name,
             'attachment_type' => $message->attachment_type,
             'is_image' => $message->is_image,
+            'reply_to_id' => $message->reply_to_id,
+            'reply_message' => $message->replyTo?->message,
+            'edited_at' => $message->edited_at?->diffForHumans(),
         ]);
     }
 
@@ -149,7 +154,7 @@ class ChatController extends Controller
         $lastId = $request->get('after', 0);
 
         $messages = $conversation->messages()
-            ->with('user')
+            ->with(['user', 'replyTo'])
             ->where('id', '>', $lastId)
             ->oldest()
             ->get();
@@ -166,7 +171,47 @@ class ChatController extends Controller
             'attachment_name' => $m->attachment_name,
             'attachment_type' => $m->attachment_type,
             'is_image' => $m->is_image,
+            'reply_to_id' => $m->reply_to_id,
+            'reply_message' => $m->replyTo?->message,
+            'edited_at' => $m->edited_at?->diffForHumans(),
         ]));
+    }
+
+    public function editMessage(Request $request, Message $message): JsonResponse
+    {
+        $user = auth()->user();
+        if ($message->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $request->validate(['message' => 'required|string|max:5000']);
+
+        $message->update([
+            'message' => $request->message,
+            'edited_at' => now(),
+        ]);
+
+        return response()->json([
+            'id' => $message->id,
+            'message' => $message->message,
+            'edited_at' => $message->edited_at->diffForHumans(),
+        ]);
+    }
+
+    public function deleteMessage(Message $message): JsonResponse
+    {
+        $user = auth()->user();
+        if ($message->user_id !== $user->id) {
+            abort(403);
+        }
+
+        if ($message->attachment_path) {
+            Storage::disk('public')->delete($message->attachment_path);
+        }
+
+        $message->delete();
+
+        return response()->json(['id' => $message->id]);
     }
 
     public function unreadCount(): JsonResponse

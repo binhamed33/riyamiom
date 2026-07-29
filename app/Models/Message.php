@@ -8,9 +8,16 @@ use Illuminate\Support\Facades\Storage;
 
 class Message extends Model
 {
-    protected $fillable = ['conversation_id', 'user_id', 'message', 'attachment_path', 'attachment_name', 'attachment_type', 'attachment_size'];
+    protected $fillable = ['conversation_id', 'user_id', 'message', 'attachment_path', 'attachment_name', 'attachment_type', 'attachment_size', 'reply_to_id', 'edited_at'];
 
     protected $appends = ['attachment_url', 'is_image'];
+
+    protected function casts(): array
+    {
+        return [
+            'edited_at' => 'datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {
@@ -20,6 +27,11 @@ class Message extends Model
     public function conversation(): BelongsTo
     {
         return $this->belongsTo(Conversation::class);
+    }
+
+    public function replyTo(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reply_to_id');
     }
 
     public function getAttachmentUrlAttribute(): ?string

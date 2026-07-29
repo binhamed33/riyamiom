@@ -75,13 +75,21 @@ function roleAvatar($user, $size = 9) {
             {{-- Messages --}}
             <div class="flex-1 overflow-y-auto p-4 space-y-3" id="chatMessages">
                 @foreach($messages as $msg)
-                    <div class="flex {{ $msg->user_id === auth()->id() ? 'justify-end' : 'justify-start' }}">
-                        <div class="max-w-[75%] {{ $msg->user_id === auth()->id() ? 'bg-gold/15 border-gold/20' : 'bg-white/5 border-white/10' }} rounded-2xl px-4 py-2.5 border">
-                            @if($msg->user_id !== auth()->id())
-                                <p class="text-[11px] text-gold/60 font-medium mb-1">{{ $msg->user->name }}</p>
+                    @php $isOwn = $msg->user_id === auth()->id(); $escMsg = htmlspecialchars($msg->message, ENT_QUOTES, 'UTF-8'); @endphp
+                    <div class="flex {{ $isOwn ? 'justify-end' : 'justify-start' }} group" data-message-id="{{ $msg->id }}">
+                        <div class="max-w-[75%] {{ $isOwn ? 'bg-gold/15 border-gold/20' : 'bg-white/5 border-white/10' }} rounded-2xl px-4 py-2.5 border relative">
+                            @if(!$isOwn)
+                                <p class="text-[11px] text-gold/60 font-medium mb-1" data-sender-name="{{ $msg->user->name }}">{{ $msg->user->name }}</p>
+                            @endif
+                            @if($msg->replyTo)
+                                <div class="text-[11px] text-white/40 mb-1.5 pr-2 border-r-2 border-gold/30 py-0.5 truncate">
+                                    <span class="text-gold/50">رد:</span> {{ $msg->replyTo->message }}
+                                </div>
                             @endif
                             @if($msg->message)
-                                <p class="text-sm text-white/80">{{ $msg->message }}</p>
+                                <p class="text-sm text-white/80" data-message-text="{{ $escMsg }}">{{ $msg->message }}
+                                    @if($msg->edited_at) <span class="text-[10px] text-white/30">(تم التعديل)</span> @endif
+                                </p>
                             @endif
                             @if($msg->attachment_path)
                                 @if($msg->is_image)
@@ -96,39 +104,67 @@ function roleAvatar($user, $size = 9) {
                                     </a>
                                 </div>
                             @endif
-                            <p class="text-[10px] text-white/30 mt-1 text-left">{{ $msg->created_at->diffForHumans() }}</p>
+                            <div class="flex items-center justify-between mt-1">
+                                <p class="text-[10px] text-white/30">{{ $msg->created_at->diffForHumans() }}</p>
+                                <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                                    @if($isOwn)
+                                        <button type="button" data-msg-action="edit" class="text-[10px] text-gold/50 hover:text-gold transition" title="تعديل">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        </button>
+                                        <button type="button" data-msg-action="delete" class="text-[10px] text-red-400/50 hover:text-red-400 transition" title="حذف">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    @endif
+                                    <button type="button" data-msg-action="reply" class="text-[10px] text-white/30 hover:text-gold transition" title="رد">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endforeach
                 <div id="chatScrollAnchor"></div>
             </div>
 
-            {{-- Input --}}
-            <div class="p-4 border-t border-ivory/5 bg-navy-light/20">
-                <form id="chatForm" enctype="multipart/form-data">
-                    @csrf
-                    <div class="flex gap-2">
-                        <label class="flex-shrink-0 w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center cursor-pointer hover:bg-gold/10 hover:border-gold/30 transition">
-                            <input type="file" id="fileInput" name="attachment" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden">
-                            <svg class="w-5 h-5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
-                            </svg>
-                        </label>
-                        <div class="flex-1 relative">
-                            <input type="text" id="messageInput" placeholder="اكتب رسالة..." autocomplete="off"
-                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-gold/30 focus:bg-gold/[0.02] transition">
-                            <div id="filePreview" class="hidden absolute bottom-full mb-2 right-0 left-0 bg-navy border border-ivory/10 rounded-xl p-3 flex items-center gap-3">
-                                <span id="fileName" class="text-xs text-white/70 flex-1 truncate"></span>
-                                <button type="button" id="clearFile" class="text-red-400 hover:text-red-300 transition">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <button type="submit" class="bg-gold hover:bg-gold-light text-navy font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
-                        </button>
+            {{-- Reply Bar + Input --}}
+            <div class="border-t border-ivory/5 bg-navy-light/20">
+                <div id="replyBar" class="hidden px-4 py-2 bg-gold/5 border-b border-gold/10 flex items-center gap-3">
+                    <svg class="w-4 h-4 text-gold/50 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[11px] text-gold/60"><span id="replyUserName"></span></p>
+                        <p class="text-xs text-white/50 truncate" id="replyMessageText"></p>
                     </div>
-                </form>
+                    <button type="button" id="cancelReply" class="text-red-400/50 hover:text-red-400 transition flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="p-4">
+                    <form id="chatForm" enctype="multipart/form-data">
+                        @csrf
+                        <input type="hidden" id="replyToId" name="reply_to_id" value="">
+                        <div class="flex gap-2">
+                            <label class="flex-shrink-0 w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center cursor-pointer hover:bg-gold/10 hover:border-gold/30 transition">
+                                <input type="file" id="fileInput" name="attachment" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden">
+                                <svg class="w-5 h-5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                                </svg>
+                            </label>
+                            <div class="flex-1 relative">
+                                <input type="text" id="messageInput" placeholder="اكتب رسالة..." autocomplete="off"
+                                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-gold/30 focus:bg-gold/[0.02] transition">
+                                <div id="filePreview" class="hidden absolute bottom-full mb-2 right-0 left-0 bg-navy border border-ivory/10 rounded-xl p-3 flex items-center gap-3">
+                                    <span id="fileName" class="text-xs text-white/70 flex-1 truncate"></span>
+                                    <button type="button" id="clearFile" class="text-red-400 hover:text-red-300 transition">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="submit" class="bg-gold hover:bg-gold-light text-navy font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         @else
             {{-- No conversation selected --}}
@@ -173,6 +209,70 @@ function roleAvatar($user, $size = 9) {
 @push('scripts')
 @if(isset($conversation))
 <script nonce="{{ $cspNonce }}">
+window.chatActions = {
+    editMsg: function(container) {
+        const bubble = container.querySelector(':scope > div');
+        const textEl = bubble.querySelector('p.text-sm');
+        const oldText = textEl ? textEl.textContent.replace(/\(تم التعديل\)/g, '').trim() : '';
+        const editHtml = `
+            <div class="edit-form mt-1">
+                <textarea class="w-full bg-white/5 border border-gold/30 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-gold resize-none" rows="2">${oldText.replace(/</g, '&lt;')}</textarea>
+                <div class="flex gap-2 mt-1">
+                    <button type="button" class="edit-save text-[11px] bg-gold text-navy font-bold px-3 py-1 rounded-lg hover:bg-gold-light transition">حفظ</button>
+                    <button type="button" class="edit-cancel text-[11px] text-white/50 hover:text-white transition">إلغاء</button>
+                </div>
+            </div>`;
+        const timeRow = bubble.querySelector('.flex.items-center');
+        if (textEl) textEl.style.display = 'none';
+        if (timeRow) timeRow.style.display = 'none';
+        if (textEl) {
+            textEl.insertAdjacentHTML('afterend', editHtml);
+        } else {
+            bubble.insertAdjacentHTML('beforeend', editHtml);
+        }
+        const editForm = bubble.querySelector('.edit-form');
+        const textarea = editForm.querySelector('textarea');
+        const msgId = container.dataset.messageId;
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        editForm.querySelector('.edit-save').addEventListener('click', function() {
+            const newText = textarea.value.trim();
+            if (!newText) return;
+            fetch('{{ url('chat/messages') }}/' + msgId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
+                body: JSON.stringify({ message: newText })
+            }).then(r => { if (!r.ok) throw new Error(); return r.json(); })
+            .then(data => {
+                if (textEl) {
+                    textEl.textContent = newText + ' ';
+                    let editedSpan = textEl.querySelector('span');
+                    if (!editedSpan) { editedSpan = document.createElement('span'); textEl.appendChild(editedSpan); }
+                    editedSpan.className = 'text-[10px] text-white/30';
+                    editedSpan.textContent = '(تم التعديل)';
+                    textEl.style.display = '';
+                }
+                if (timeRow) timeRow.style.display = '';
+                editForm.remove();
+            }).catch(() => { alert('فشل التعديل'); });
+        });
+        editForm.querySelector('.edit-cancel').addEventListener('click', function() {
+            if (textEl) textEl.style.display = '';
+            if (timeRow) timeRow.style.display = '';
+            editForm.remove();
+        });
+    },
+    deleteMsg: function(msgId, container) {
+        if (!confirm('حذف هذه الرسالة؟')) return;
+        fetch('{{ url('chat/messages') }}/' + msgId, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+        }).then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(data => { container.remove(); })
+        .catch(() => { alert('فشل الحذف'); });
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     const messagesEl = document.getElementById('chatMessages');
     const form = document.getElementById('chatForm');
@@ -182,6 +282,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileName = document.getElementById('fileName');
     const clearFile = document.getElementById('clearFile');
     const anchor = document.getElementById('chatScrollAnchor');
+    const replyBar = document.getElementById('replyBar');
+    const replyToId = document.getElementById('replyToId');
+    const replyUserName = document.getElementById('replyUserName');
+    const replyMessageText = document.getElementById('replyMessageText');
+    const cancelReply = document.getElementById('cancelReply');
     const conversationId = {{ $conversation->id }};
     let lastMessageId = {{ $messages->last()?->id ?? 0 }};
     let selectedFile = null;
@@ -190,6 +295,53 @@ document.addEventListener('DOMContentLoaded', function() {
         anchor?.scrollIntoView({ behavior: 'smooth' });
     }
     scrollToBottom();
+
+    // Reply bar
+    window.setReply = function(id, msg, name) {
+        replyToId.value = id;
+        replyUserName.textContent = 'رد على ' + name + ':';
+        replyMessageText.textContent = msg || 'مرفق';
+        replyBar.classList.remove('hidden');
+        input.focus();
+    };
+    cancelReply.addEventListener('click', function() {
+        replyToId.value = '';
+        replyBar.classList.add('hidden');
+    });
+
+    // Double-click to reply
+    messagesEl.addEventListener('dblclick', function(e) {
+        const container = e.target.closest('[data-message-id]');
+        if (!container) return;
+        const id = container.dataset.messageId;
+        const nameEl = container.querySelector('[data-sender-name]');
+        const textEl = container.querySelector('[data-message-text]');
+        const name = nameEl ? nameEl.dataset.senderName : '';
+        const msg = textEl ? textEl.dataset.messageText : '';
+        setReply(id, msg, name);
+    });
+
+    // Event delegation for action buttons (CSP-safe)
+    messagesEl.addEventListener('click', function(e) {
+        const btn = e.target.closest('[data-msg-action]');
+        if (!btn) return;
+        const action = btn.dataset.msgAction;
+        const container = btn.closest('[data-message-id]');
+        if (!container) return;
+        const msgId = container.dataset.messageId;
+
+        if (action === 'edit') {
+            chatActions.editMsg(container);
+        } else if (action === 'delete') {
+            chatActions.deleteMsg(msgId, container);
+        } else if (action === 'reply') {
+            const nameEl = container.querySelector('[data-sender-name]');
+            const textEl = container.querySelector('[data-message-text]');
+            const name = nameEl ? nameEl.dataset.senderName : '';
+            const msg = textEl ? textEl.dataset.messageText : '';
+            setReply(msgId, msg, name);
+        }
+    });
 
     fileInput.addEventListener('change', function() {
         if (this.files.length) {
@@ -213,6 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         if (msg) formData.append('message', msg);
         if (selectedFile) formData.append('attachment', selectedFile);
+        if (replyToId.value) formData.append('reply_to_id', replyToId.value);
 
         fetch('{{ route('chat.messages.send', $conversation) }}', {
             method: 'POST',
@@ -226,6 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedFile = null;
             fileInput.value = '';
             filePreview.classList.add('hidden');
+            cancelReply.click();
             appendMessage(data, true);
             lastMessageId = data.id;
             scrollToBottom();
@@ -236,7 +390,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function appendMessage(data, isOwn) {
         const div = document.createElement('div');
-        div.className = 'flex ' + (isOwn ? 'justify-end' : 'justify-start');
+        div.className = 'flex ' + (isOwn ? 'justify-end' : 'justify-start') + ' group';
+        div.dataset.messageId = data.id;
 
         if (!isOwn) {
             try {
@@ -269,11 +424,37 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>`;
         }
 
-        div.innerHTML = `<div class="max-w-[75%] ${isOwn ? 'bg-gold/15 border-gold/20' : 'bg-white/5 border-white/10'} rounded-2xl px-4 py-2.5 border">
-            ${!isOwn ? '<p class="text-[11px] text-gold/60 font-medium mb-1">' + data.user_name + '</p>' : ''}
-            ${data.message ? '<p class="text-sm text-white/80">' + data.message.replace(/</g, '&lt;') + '</p>' : ''}
+        const replyHtml = data.reply_message ? `<div class="text-[11px] text-white/40 mb-1.5 pr-2 border-r-2 border-gold/30 py-0.5 truncate">
+            <span class="text-gold/50">رد:</span> ${data.reply_message.replace(/</g, '&lt;')}
+        </div>` : '';
+
+        const editedHtml = data.edited_at ? '<span class="text-[10px] text-white/30">(تم التعديل)</span>' : '';
+
+        const senderNameDisplay = !isOwn ? `<p class="text-[11px] text-gold/60 font-medium mb-1" data-sender-name="${data.user_name.replace(/"/g, '&quot;')}">${data.user_name}</p>` : '';
+
+        const actionsHtml = `<div class="flex items-center justify-between mt-1">
+            <p class="text-[10px] text-white/30">${data.created_at}</p>
+            <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                ${isOwn ? `
+                    <button type="button" data-msg-action="edit" class="text-[10px] text-gold/50 hover:text-gold transition" title="تعديل">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </button>
+                    <button type="button" data-msg-action="delete" class="text-[10px] text-red-400/50 hover:text-red-400 transition" title="حذف">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                ` : ''}
+                <button type="button" data-msg-action="reply" class="text-[10px] text-white/30 hover:text-gold transition" title="رد">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                </button>
+            </div>
+        </div>`;
+
+        div.innerHTML = `<div class="max-w-[75%] ${isOwn ? 'bg-gold/15 border-gold/20' : 'bg-white/5 border-white/10'} rounded-2xl px-4 py-2.5 border relative">
+            ${senderNameDisplay}
+            ${replyHtml}
+            ${data.message ? '<p class="text-sm text-white/80" data-message-text="' + data.message.replace(/"/g, '&quot;') + '">' + data.message.replace(/</g, '&lt;') + ' ' + editedHtml + '</p>' : ''}
             ${attachmentHtml}
-            <p class="text-[10px] text-white/30 mt-1 text-left">${data.created_at}</p>
+            ${actionsHtml}
         </div>`;
         messagesEl.insertBefore(div, anchor);
     }

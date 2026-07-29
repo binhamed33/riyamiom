@@ -199,6 +199,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/chat', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
         Route::post('/chat/{conversation}/messages', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.messages.send');
         Route::get('/chat/{conversation}/messages', [App\Http\Controllers\ChatController::class, 'fetchMessages'])->name('chat.messages.fetch');
+        Route::put('/chat/messages/{message}', [App\Http\Controllers\ChatController::class, 'editMessage'])->name('chat.messages.edit');
+        Route::delete('/chat/messages/{message}', [App\Http\Controllers\ChatController::class, 'deleteMessage'])->name('chat.messages.destroy');
         Route::get('/chat/unread/count', [App\Http\Controllers\ChatController::class, 'unreadCount'])->name('chat.unread');
     });
 
