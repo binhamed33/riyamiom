@@ -76,6 +76,16 @@
                 @enderror
             </div>
 
+            <div>
+                <label for="report" class="block text-sm font-medium text-white/70 mb-1">{{ __('app.session_report') }}</label>
+                <textarea id="report" name="report" rows="4"
+                          class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-3 py-2.5 focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('report') border-red-500 @enderror"
+                          placeholder="{{ __('app.session_report_placeholder') }}">{{ old('report', $session->report) }}</textarea>
+                @error('report')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
             <div class="flex items-center gap-3 pt-4">
                 <button type="submit" class="bg-gold hover:bg-gold-dark text-navy px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                     {{ __('app.save_changes') }}

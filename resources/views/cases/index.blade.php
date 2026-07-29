@@ -90,12 +90,12 @@
                 <thead>
                     <tr class="border-b border-white/10">
                         <th class="px-4 py-3 text-[#C9A55A] font-bold whitespace-nowrap">{{ __('app.case_number') }}</th>
-                        <th class="px-4 py-3 text-[#C9A55A] font-bold whitespace-nowrap">{{ __('app.title') }}</th>
+                        <th class="px-4 py-3 text-[#C9A55A] font-bold whitespace-nowrap">{{ __('app.case_type') }}</th>
                         <th class="px-4 py-3 text-[#C9A55A] font-bold whitespace-nowrap">{{ __('app.court') }}</th>
                         <th class="px-4 py-3 text-[#C9A55A] font-bold whitespace-nowrap">{{ __('app.status') }}</th>
                         <th class="px-4 py-3 text-[#C9A55A] font-bold whitespace-nowrap">{{ __('app.priority') }}</th>
                         <th class="px-4 py-3 text-[#C9A55A] font-bold whitespace-nowrap">{{ __('app.case_lawyer') }}</th>
-                        <th class="px-4 py-3 text-[#C9A55A] font-bold whitespace-nowrap">{{ __('app.next_date') }}</th>
+                        <th class="px-4 py-3 text-[#C9A55A] font-bold whitespace-nowrap">{{ __('app.next_session_date') }}</th>
                         <th class="px-4 py-3 text-[#C9A55A] font-bold whitespace-nowrap">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
@@ -103,7 +103,7 @@
                     @forelse($cases ?? [] as $case)
                         <tr class="hover:bg-white/5 transition-colors">
                             <td class="px-4 py-3 text-white font-mono text-xs">{{ $case->case_number }}</td>
-                            <td class="px-4 py-3 text-white max-w-xs truncate">{{ $case->title }}</td>
+                            <td class="px-4 py-3 text-white/30 text-xs">{{ $case->case_type ?? '—' }}</td>
                             <td class="px-4 py-3 text-white/30 max-w-[200px] truncate text-xs">{{ $case->court }}</td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium

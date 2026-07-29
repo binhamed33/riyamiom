@@ -62,6 +62,13 @@
                 <div class="bg-white/5 rounded-lg p-4 text-white/70 leading-relaxed whitespace-pre-wrap">{{ $session->notes }}</div>
             </div>
         @endif
+
+        @if ($session->report)
+            <div class="mt-6">
+                <h4 class="text-sm text-white/50 mb-2">{{ __('app.session_report') }}</h4>
+                <div class="bg-white/5 rounded-lg p-4 text-white/70 leading-relaxed whitespace-pre-wrap">{{ $session->report }}</div>
+            </div>
+        @endif
     </div>
 
     <div class="bg-navy rounded-xl border border-white/10 p-6">

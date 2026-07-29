@@ -34,157 +34,7 @@
     <form action="{{ route('cases.store') }}" method="POST" class="space-y-6">
         @csrf
 
-        {{-- Basic Info Card --}}
-        <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6 space-y-5">
-            <h2 class="text-lg font-bold text-[#C9A55A] border-b border-white/10 pb-3">{{ __('app.basic_info') }}</h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {{-- Case Number --}}
-                <div>
-                    <label for="case_number" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_number') }}</label>
-                    <input type="text" name="case_number" id="case_number" value="{{ old('case_number', $generatedNumber) }}"
-                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('case_number') border-red-500/50 @enderror"
-                        placeholder="{{ __('app.case_number_placeholder') }}">
-                    <p class="mt-1 text-xs text-white/30">{{ __('app.case_number_auto') }}</p>
-                    @error('case_number')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Title --}}
-                <div>
-                    <label for="title" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_title') }} <span class="text-red-400">*</span></label>
-                    <input type="text" name="title" id="title" value="{{ old('title') }}" required
-                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('title') border-red-500/50 @enderror"
-                        placeholder="{{ __('app.case_title_placeholder') }}">
-                    @error('title')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Type --}}
-                <div>
-                    <label for="type" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_type') }} <span class="text-red-400">*</span></label>
-                    <input type="text" name="type" id="type" value="{{ old('type') }}" required
-                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('type') border-red-500/50 @enderror"
-                        placeholder="{{ __('app.case_type_placeholder') }}">
-                    @error('type')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Opponent --}}
-                <div>
-                    <label for="opponent" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_opponent') }} <span class="text-red-400">*</span></label>
-                    <input type="text" name="opponent" id="opponent" value="{{ old('opponent') }}" required
-                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('opponent') border-red-500/50 @enderror"
-                        placeholder="{{ __('app.opponent_name_placeholder') }}">
-                    @error('opponent')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-
-            {{-- Description --}}
-            <div>
-                <label for="description" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_description') }} <span class="text-red-400">*</span></label>
-                <textarea name="description" id="description" rows="4" required
-                    class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] resize-y @error('description') border-red-500/50 @enderror"
-                    placeholder="{{ __('app.case_description_placeholder') }}">{{ old('description') }}</textarea>
-                @error('description')
-                    <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-
-            {{-- Court --}}
-            <div x-data="{ manual: false }">
-                <div class="flex items-center gap-2 mb-1.5">
-                    <label for="court" class="block text-sm font-medium text-white/30">{{ __('app.case_court') }} <span class="text-red-400">*</span></label>
-                    <label class="flex items-center gap-1.5 cursor-pointer ml-auto">
-                        <input type="checkbox" x-model="manual" class="rounded border-white/20 bg-white/5 text-[#C9A55A] focus:ring-[#C9A55A]/50">
-                        <span class="text-xs text-white/40">{{ __('app.manual_entry') }}</span>
-                    </label>
-                </div>
-                <template x-if="!manual">
-                    @include('cases._court_select', ['selected' => old('court')])
-                </template>
-                <template x-if="manual">
-                    <input type="text" name="court" id="court" value="{{ old('court') }}"
-                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('court') border-red-500/50 @enderror"
-                        placeholder="{{ __('app.court_manual_placeholder') }}">
-                </template>
-                @error('court')
-                    <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-        </div>
-
-        {{-- Status & Priority Card --}}
-        <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6 space-y-5">
-            <h2 class="text-lg font-bold text-[#C9A55A] border-b border-white/10 pb-3">{{ __('app.case_status_priority') }}</h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {{-- Status --}}
-                <div>
-                    <label for="status" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.status') }}</label>
-                    <select name="status" id="status"
-                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('status') border-red-500/50 @enderror">
-                        <option value="active" {{ old('status') === 'active' ? 'selected' : '' }}>{{ __('app.status_active') }}</option>
-                        <option value="pending" {{ old('status', 'pending') === 'pending' ? 'selected' : '' }}>{{ __('app.status_pending') }}</option>
-                        <option value="closed" {{ old('status') === 'closed' ? 'selected' : '' }}>{{ __('app.status_closed') }}</option>
-                        <option value="won" {{ old('status') === 'won' ? 'selected' : '' }}>{{ __('app.status_won') }}</option>
-                        <option value="lost" {{ old('status') === 'lost' ? 'selected' : '' }}>{{ __('app.status_lost') }}</option>
-                    </select>
-                    @error('status')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Priority --}}
-                <div>
-                    <label for="priority" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.priority') }}</label>
-                    <select name="priority" id="priority"
-                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('priority') border-red-500/50 @enderror">
-                        <option value="low" {{ old('priority') === 'low' ? 'selected' : '' }}>{{ __('app.priority_low') }}</option>
-                        <option value="medium" {{ old('priority', 'medium') === 'medium' ? 'selected' : '' }}>{{ __('app.priority_medium') }}</option>
-                        <option value="high" {{ old('priority') === 'high' ? 'selected' : '' }}>{{ __('app.priority_high') }}</option>
-                        <option value="urgent" {{ old('priority') === 'urgent' ? 'selected' : '' }}>{{ __('app.priority_urgent') }}</option>
-                    </select>
-                    @error('priority')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-        </div>
-
-        {{-- Dates Card --}}
-        <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6 space-y-5">
-            <h2 class="text-lg font-bold text-[#C9A55A] border-b border-white/10 pb-3">{{ __('app.case_dates') }}</h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {{-- Opened At --}}
-                <div>
-                    <label for="opened_at" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.opened_date') }} <span class="text-red-400">*</span></label>
-                    <input type="date" name="opened_at" id="opened_at" value="{{ old('opened_at', date('Y-m-d')) }}" required
-                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('opened_at') border-red-500/50 @enderror">
-                    @error('opened_at')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Next Date --}}
-                <div>
-                    <label for="next_date" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.next_date') }}</label>
-                    <input type="date" name="next_date" id="next_date" value="{{ old('next_date') }}"
-                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('next_date') border-red-500/50 @enderror">
-                    @error('next_date')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-        </div>
-
-        {{-- People Card --}}
+        {{-- People Card (moved to top) --}}
         <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6 space-y-5">
             <h2 class="text-lg font-bold text-[#C9A55A] border-b border-white/10 pb-3">{{ __('app.related_people') }}</h2>
 
@@ -230,7 +80,6 @@
                         </button>
                     </div>
 
-                    {{-- Existing client dropdown --}}
                     <div x-show="!newMode">
                         <select name="client_id" id="client_id" required
                             class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('client_id') border-red-500/50 @enderror">
@@ -241,7 +90,6 @@
                         </select>
                     </div>
 
-                    {{-- Inline new client fields --}}
                     <div x-show="newMode" x-transition class="bg-white/[0.03] border border-[#C9A55A]/20 rounded-xl p-4 space-y-3">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
@@ -300,6 +148,197 @@
                         @endforeach
                     </select>
                     @error('lawyer_id')
+                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+        </div>
+
+        {{-- Case Details Card --}}
+        <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6 space-y-5">
+            <h2 class="text-lg font-bold text-[#C9A55A] border-b border-white/10 pb-3">{{ __('app.case_details') }}</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {{-- Court Case Number --}}
+                <div>
+                    <label for="case_number" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.court_case_number') }}</label>
+                    <input type="text" name="case_number" id="case_number" value="{{ old('case_number', $generatedNumber) }}"
+                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('case_number') border-red-500/50 @enderror"
+                        placeholder="{{ __('app.case_number_placeholder') }}">
+                    <p class="mt-1 text-xs text-white/30">{{ __('app.case_number_auto') }}</p>
+                    @error('case_number')
+                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Office Case Number --}}
+                <div>
+                    <label for="office_case_number" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.office_case_number') }}</label>
+                    <input type="text" name="office_case_number" id="office_case_number" value="{{ old('office_case_number') }}"
+                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('office_case_number') border-red-500/50 @enderror"
+                        placeholder="{{ __('app.office_case_number_placeholder') }}">
+                    @error('office_case_number')
+                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Case Type --}}
+                <div>
+                    <label for="case_type" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_type') }}</label>
+                    <select name="case_type" id="case_type"
+                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('case_type') border-red-500/50 @enderror">
+                        <option value="">{{ __('app.choose_case_type') }}</option>
+                        <option value="مدني" {{ old('case_type') === 'مدني' ? 'selected' : '' }}>مدني</option>
+                        <option value="تجاري" {{ old('case_type') === 'تجاري' ? 'selected' : '' }}>تجاري</option>
+                        <option value="عمالي" {{ old('case_type') === 'عمالي' ? 'selected' : '' }}>عمالي</option>
+                        <option value="أحوال شخصية" {{ old('case_type') === 'أحوال شخصية' ? 'selected' : '' }}>أحوال شخصية</option>
+                        <option value="استثمار" {{ old('case_type') === 'استثمار' ? 'selected' : '' }}>استثمار</option>
+                        <option value="تنفيذ" {{ old('case_type') === 'تنفيذ' ? 'selected' : '' }}>تنفيذ</option>
+                    </select>
+                    @error('case_type')
+                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Court --}}
+                <div x-data="{ manual: false }">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <label for="court" class="block text-sm font-medium text-white/30">{{ __('app.case_court') }} <span class="text-red-400">*</span></label>
+                        <label class="flex items-center gap-1.5 cursor-pointer ml-auto">
+                            <input type="checkbox" x-model="manual" class="rounded border-white/20 bg-white/5 text-[#C9A55A] focus:ring-[#C9A55A]/50">
+                            <span class="text-xs text-white/40">{{ __('app.manual_entry') }}</span>
+                        </label>
+                    </div>
+                    <template x-if="!manual">
+                        @include('cases._court_select', ['selected' => old('court')])
+                    </template>
+                    <template x-if="manual">
+                        <input type="text" name="court" id="court" value="{{ old('court') }}"
+                            class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('court') border-red-500/50 @enderror"
+                            placeholder="{{ __('app.court_manual_placeholder') }}">
+                    </template>
+                    @error('court')
+                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            {{-- Title (Court case number as name) --}}
+            <div>
+                <label for="title" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_title_number') }} <span class="text-red-400">*</span></label>
+                <input type="text" name="title" id="title" value="{{ old('title') }}" required
+                    class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('title') border-red-500/50 @enderror"
+                    placeholder="{{ __('app.case_title_number_placeholder') }}">
+                @error('title')
+                    <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- Description --}}
+            <div>
+                <label for="description" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_description') }} <span class="text-red-400">*</span></label>
+                <textarea name="description" id="description" rows="4" required
+                    class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] resize-y @error('description') border-red-500/50 @enderror"
+                    placeholder="{{ __('app.case_description_placeholder') }}">{{ old('description') }}</textarea>
+                @error('description')
+                    <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+
+        {{-- Opponent Data Card --}}
+        <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6 space-y-5">
+            <h2 class="text-lg font-bold text-[#C9A55A] border-b border-white/10 pb-3">{{ __('app.opponent_data') }}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label for="opponent" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.opponent_name') }} <span class="text-red-400">*</span></label>
+                    <input type="text" name="opponent" id="opponent" value="{{ old('opponent') }}" required
+                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('opponent') border-red-500/50 @enderror"
+                        placeholder="{{ __('app.opponent_name_placeholder') }}">
+                    @error('opponent')
+                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="opponent_phone" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.opponent_phone') }}</label>
+                    <input type="text" name="opponent_phone" id="opponent_phone" value="{{ old('opponent_phone') }}"
+                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('opponent_phone') border-red-500/50 @enderror"
+                        placeholder="{{ __('app.opponent_phone_placeholder') }}">
+                    @error('opponent_phone')
+                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div class="md:col-span-2">
+                    <label for="opponent_address" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.opponent_address') }}</label>
+                    <input type="text" name="opponent_address" id="opponent_address" value="{{ old('opponent_address') }}"
+                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('opponent_address') border-red-500/50 @enderror"
+                        placeholder="{{ __('app.opponent_address_placeholder') }}">
+                    @error('opponent_address')
+                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+        </div>
+
+        {{-- Status & Priority Card --}}
+        <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6 space-y-5">
+            <h2 class="text-lg font-bold text-[#C9A55A] border-b border-white/10 pb-3">{{ __('app.case_status_priority') }}</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {{-- Status --}}
+                <div>
+                    <label for="status" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.status') }}</label>
+                    <select name="status" id="status"
+                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('status') border-red-500/50 @enderror">
+                        <option value="active" {{ old('status') === 'active' ? 'selected' : '' }}>{{ __('app.status_active') }}</option>
+                        <option value="pending" {{ old('status', 'pending') === 'pending' ? 'selected' : '' }}>{{ __('app.status_pending') }}</option>
+                        <option value="closed" {{ old('status') === 'closed' ? 'selected' : '' }}>{{ __('app.status_closed') }}</option>
+                        <option value="won" {{ old('status') === 'won' ? 'selected' : '' }}>{{ __('app.status_won') }}</option>
+                        <option value="lost" {{ old('status') === 'lost' ? 'selected' : '' }}>{{ __('app.status_lost') }}</option>
+                    </select>
+                    @error('status')
+                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Priority --}}
+                <div>
+                    <label for="priority" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.priority') }}</label>
+                    <select name="priority" id="priority"
+                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('priority') border-red-500/50 @enderror">
+                        <option value="low" {{ old('priority') === 'low' ? 'selected' : '' }}>{{ __('app.priority_low') }}</option>
+                        <option value="medium" {{ old('priority', 'medium') === 'medium' ? 'selected' : '' }}>{{ __('app.priority_medium') }}</option>
+                        <option value="high" {{ old('priority') === 'high' ? 'selected' : '' }}>{{ __('app.priority_high') }}</option>
+                        <option value="urgent" {{ old('priority') === 'urgent' ? 'selected' : '' }}>{{ __('app.priority_urgent') }}</option>
+                    </select>
+                    @error('priority')
+                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+        </div>
+
+        {{-- Dates Card --}}
+        <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6 space-y-5">
+            <h2 class="text-lg font-bold text-[#C9A55A] border-b border-white/10 pb-3">{{ __('app.case_dates') }}</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {{-- Opened At --}}
+                <div>
+                    <label for="opened_at" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.opened_date') }} <span class="text-red-400">*</span></label>
+                    <input type="date" name="opened_at" id="opened_at" value="{{ old('opened_at', date('Y-m-d')) }}" required
+                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('opened_at') border-red-500/50 @enderror">
+                    @error('opened_at')
+                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Next Session Date --}}
+                <div>
+                    <label for="next_date" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.next_session_date') }}</label>
+                    <input type="date" name="next_date" id="next_date" value="{{ old('next_date') }}"
+                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('next_date') border-red-500/50 @enderror">
+                    @error('next_date')
                         <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
                     @enderror
                 </div>

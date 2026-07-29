@@ -63,18 +63,22 @@ class CaseController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'case_number' => 'nullable|string|unique:cases,case_number',
-            'title'       => 'required|string|max:255',
-            'description' => 'required|string',
-            'type'        => 'required|string|max:255',
-            'court'       => 'required|string|max:255',
-            'opponent'    => 'required|string',
-            'status'      => 'required|in:active,pending,overdue,closed,won,lost',
-            'priority'    => 'required|in:low,medium,high,urgent',
-            'opened_at'   => 'required|date',
-            'next_date'   => 'nullable|date|after_or_equal:opened_at',
-            'client_id'   => 'required|exists:clients,id',
-            'lawyer_id'   => 'nullable|exists:users,id',
+            'case_number'       => 'nullable|string|unique:cases,case_number',
+            'office_case_number' => 'nullable|string|max:255',
+            'case_type'         => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,استثمار,تنفيذ',
+            'title'             => 'required|string|max:255',
+            'description'       => 'required|string',
+            'type'              => 'required|string|max:255',
+            'court'             => 'required|string|max:255',
+            'opponent'          => 'required|string',
+            'opponent_phone'    => 'nullable|string|max:255',
+            'opponent_address'  => 'nullable|string',
+            'status'            => 'required|in:active,pending,overdue,closed,won,lost',
+            'priority'          => 'required|in:low,medium,high,urgent',
+            'opened_at'         => 'required|date',
+            'next_date'         => 'nullable|date|after_or_equal:opened_at',
+            'client_id'         => 'required|exists:clients,id',
+            'lawyer_id'         => 'nullable|exists:users,id',
         ]);
 
         if (empty($validated['case_number'])) {
@@ -125,18 +129,22 @@ class CaseController extends Controller
         $this->authorizeCaseAccess($case);
 
         $validated = $request->validate([
-            'case_number' => 'required|string|unique:cases,case_number,' . $case->id,
-            'title'       => 'required|string|max:255',
-            'description' => 'required|string',
-            'type'        => 'required|string|max:255',
-            'court'       => 'required|string|max:255',
-            'opponent'    => 'required|string',
-            'status'      => 'required|in:active,pending,overdue,closed,won,lost',
-            'priority'    => 'required|in:low,medium,high,urgent',
-            'opened_at'   => 'required|date',
-            'next_date'   => 'nullable|date|after_or_equal:opened_at',
-            'client_id'   => 'required|exists:clients,id',
-            'lawyer_id'   => 'nullable|exists:users,id',
+            'case_number'       => 'required|string|unique:cases,case_number,' . $case->id,
+            'office_case_number' => 'nullable|string|max:255',
+            'case_type'         => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,استثمار,تنفيذ',
+            'title'             => 'required|string|max:255',
+            'description'       => 'required|string',
+            'type'              => 'required|string|max:255',
+            'court'             => 'required|string|max:255',
+            'opponent'          => 'required|string',
+            'opponent_phone'    => 'nullable|string|max:255',
+            'opponent_address'  => 'nullable|string',
+            'status'            => 'required|in:active,pending,overdue,closed,won,lost',
+            'priority'          => 'required|in:low,medium,high,urgent',
+            'opened_at'         => 'required|date',
+            'next_date'         => 'nullable|date|after_or_equal:opened_at',
+            'client_id'         => 'required|exists:clients,id',
+            'lawyer_id'         => 'nullable|exists:users,id',
         ]);
 
         $oldValues = $case->toArray();

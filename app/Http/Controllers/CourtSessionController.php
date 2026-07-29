@@ -56,6 +56,7 @@ class CourtSessionController extends Controller
             'location' => 'required|string|max:255',
             'status'   => 'required|in:upcoming,completed,postponed,cancelled',
             'notes'    => 'nullable|string',
+            'report'   => 'nullable|string',
         ]);
 
         $case = LegalCase::findOrFail($validated['case_id']);
@@ -115,6 +116,7 @@ class CourtSessionController extends Controller
             'location' => 'required|string|max:255',
             'status'   => 'required|in:upcoming,completed,postponed,cancelled',
             'notes'    => 'nullable|string',
+            'report'   => 'nullable|string',
         ]);
 
         $oldValues = $session->toArray();

@@ -19,6 +19,7 @@ class Session extends Model
         'location',
         'status',
         'notes',
+        'report',
     ];
 
     protected function casts(): array

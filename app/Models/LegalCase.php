@@ -18,6 +18,7 @@ class LegalCase extends Model
     protected $encryptable = [
         'description',
         'opponent',
+        'opponent_address',
     ];
 
     const STATUS_ACTIVE = 'active';
@@ -34,11 +35,15 @@ class LegalCase extends Model
 
     protected $fillable = [
         'case_number',
+        'office_case_number',
+        'case_type',
         'title',
         'description',
         'type',
         'court',
         'opponent',
+        'opponent_phone',
+        'opponent_address',
         'status',
         'priority',
         'opened_at',

@@ -8,6 +8,44 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('caseDetail', () => ({
         activeTab: 'sessions',
         showSummary: false,
+        reportModal: false,
+        reportSession: null,
+        reportText: '',
+        reportSaving: false,
+        async openReport(session) {
+            this.reportSession = session;
+            this.reportText = session.report || '';
+            this.reportModal = true;
+        },
+        async saveReport() {
+            if (!this.reportSession || !this.reportSession.id) return;
+            this.reportSaving = true;
+            try {
+                const res = await fetch('{{ route('sessions.update', '') }}/' + this.reportSession.id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        case_id: this.reportSession.case_id,
+                        date: this.reportSession.date,
+                        location: this.reportSession.location,
+                        status: this.reportSession.status,
+                        notes: this.reportSession.notes || '',
+                        report: this.reportText
+                    })
+                });
+                this.reportSaving = false;
+                if (res.ok) {
+                    this.reportSession.report = this.reportText;
+                    this.reportModal = false;
+                    this.reportSession = null;
+                } else {
+                    alert('{{ __("app.save_error") }}');
+                }
+            } catch(e) {
+                this.reportSaving = false;
+                alert('{{ __("app.connection_error") }}');
+            }
+        },
         copySummary() {
             const el = document.querySelector('.summary-body');
             if (el) {
@@ -59,15 +97,22 @@ document.addEventListener('alpine:init', () => {
 
     {{-- Print Header (visible only in print) --}}
     <div class="print-only print-header">
-        <h1 style="font-size:20px;color:#C9A55A;margin:0;">{{ $case->title }}</h1>
-        <p style="color:#666;font-size:12px;margin:2px 0;">{{ __('app.case_number') }}: {{ $case->case_number }} | {{ $case->created_at->format('Y-m-d') }}</p>
+        <h1 style="font-size:20px;color:#C9A55A;margin:0;">{{ __('app.case_number') }}: {{ $case->case_number }}</h1>
+        <p style="color:#666;font-size:12px;margin:2px 0;">{{ $case->created_at->format('Y-m-d') }}</p>
     </div>
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-[#C9A55A]">{{ $case->title }}</h1>
-            <p class="text-white/40 text-sm mt-1">{{ __('app.case_number') }}: <span class="text-white font-mono">{{ $case->case_number }}</span></p>
+            <h1 class="text-2xl font-bold text-[#C9A55A]">{{ $case->case_number }}</h1>
+            @if($case->title && $case->title !== $case->case_number)
+                <p class="text-white/40 text-sm mt-1">{{ $case->title }}</p>
+            @endif
+            @if($case->case_type)
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#C9A55A]/15 text-[#C9A55A] border border-[#C9A55A]/30 mt-2">
+                    {{ $case->case_type }}
+                </span>
+            @endif
         </div>
         <div class="flex items-center gap-3">
             {{-- Summarize Button --}}
@@ -101,6 +146,21 @@ document.addEventListener('alpine:init', () => {
                     {{ __('app.delete') }}
                 </button>
             </form>
+        </div>
+    </div>
+
+    {{-- Related People Section (at top) --}}
+    <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6">
+        <h2 class="text-lg font-bold text-[#C9A55A] border-b border-white/10 pb-3 mb-5">{{ __('app.related_people') }}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <p class="text-white/40 text-xs mb-1">{{ __('app.case_client') }}</p>
+                <p class="text-white text-sm font-medium">{{ $case->client->name ?? '—' }}</p>
+            </div>
+            <div>
+                <p class="text-white/40 text-xs mb-1">{{ __('app.case_lawyer') }}</p>
+                <p class="text-white text-sm">{{ $case->lawyer->name ?? '—' }}</p>
+            </div>
         </div>
     </div>
 
@@ -147,34 +207,22 @@ document.addEventListener('alpine:init', () => {
                 </span>
             </div>
 
-            {{-- Type --}}
+            {{-- Case Type --}}
             <div>
                 <p class="text-white/40 text-xs mb-1">{{ __('app.case_type') }}</p>
-                <p class="text-white text-sm">{{ $case->type ?? '—' }}</p>
+                <p class="text-white text-sm">{{ $case->case_type ?? '—' }}</p>
             </div>
 
-            {{-- Court --}}
+            {{-- Court + Case Number --}}
             <div>
                 <p class="text-white/40 text-xs mb-1">{{ __('app.case_court') }}</p>
-                <p class="text-white text-sm">{{ $case->court }}</p>
+                <p class="text-white text-sm">{{ $case->court }} <span class="text-white/30 text-xs">({{ $case->case_number }})</span></p>
             </div>
 
-            {{-- Client --}}
+            {{-- Office Case Number --}}
             <div>
-                <p class="text-white/40 text-xs mb-1">{{ __('app.case_client') }}</p>
-                <p class="text-white text-sm">{{ $case->client->name ?? '—' }}</p>
-            </div>
-
-            {{-- Lawyer --}}
-            <div>
-                <p class="text-white/40 text-xs mb-1">{{ __('app.case_lawyer') }}</p>
-                <p class="text-white text-sm">{{ $case->lawyer->name ?? '—' }}</p>
-            </div>
-
-            {{-- Opponent --}}
-            <div>
-                <p class="text-white/40 text-xs mb-1">{{ __('app.case_opponent') }}</p>
-                <p class="text-white text-sm">{{ $case->opponent ?? '—' }}</p>
+                <p class="text-white/40 text-xs mb-1">{{ __('app.office_case_number') }}</p>
+                <p class="text-white text-sm">{{ $case->office_case_number ?? '—' }}</p>
             </div>
 
             {{-- Opened At --}}
@@ -183,21 +231,40 @@ document.addEventListener('alpine:init', () => {
                 <p class="text-white text-sm">{{ $case->opened_at?->format('Y/m/d') ?? '—' }}</p>
             </div>
 
-            {{-- Next Date --}}
+            {{-- Next Session Date --}}
             <div>
-                <p class="text-white/40 text-xs mb-1">{{ __('app.next_date') }}</p>
+                <p class="text-white/40 text-xs mb-1">{{ __('app.next_session_date') }}</p>
                 <p class="text-white text-sm">{{ $case->next_date?->format('Y/m/d') ?? '—' }}</p>
             </div>
         </div>
-
-        {{-- Description --}}
-        @if($case->description)
-            <div class="mt-5 pt-5 border-t border-white/10">
-                <p class="text-white/40 text-xs mb-2">{{ __('app.case_description') }}</p>
-                <p class="text-white text-sm leading-relaxed">{{ $case->description }}</p>
-            </div>
-        @endif
     </div>
+
+    {{-- Opponent Data Card --}}
+    <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6">
+        <h2 class="text-lg font-bold text-[#C9A55A] border-b border-white/10 pb-3 mb-5">{{ __('app.opponent_data') }}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div>
+                <p class="text-white/40 text-xs mb-1">{{ __('app.opponent_name') }}</p>
+                <p class="text-white text-sm">{{ $case->opponent ?? '—' }}</p>
+            </div>
+            <div>
+                <p class="text-white/40 text-xs mb-1">{{ __('app.opponent_phone') }}</p>
+                <p class="text-white text-sm">{{ $case->opponent_phone ?? '—' }}</p>
+            </div>
+            <div>
+                <p class="text-white/40 text-xs mb-1">{{ __('app.opponent_address') }}</p>
+                <p class="text-white text-sm">{{ $case->opponent_address ?? '—' }}</p>
+            </div>
+        </div>
+    </div>
+
+    {{-- Description --}}
+    @if($case->description)
+    <div class="bg-navy rounded-xl border border-[#C9A55A]/20 p-6">
+        <p class="text-white/40 text-xs mb-2">{{ __('app.case_description') }}</p>
+        <p class="text-white text-sm leading-relaxed">{{ $case->description }}</p>
+    </div>
+    @endif
 
     {{-- Tabs --}}
     <div class="bg-navy rounded-xl border border-[#C9A55A]/20 overflow-hidden">
@@ -230,6 +297,7 @@ document.addEventListener('alpine:init', () => {
                                 <th class="px-3 py-2 text-[#C9A55A] font-bold text-xs">{{ __('app.table_judge') }}</th>
                                 <th class="px-3 py-2 text-[#C9A55A] font-bold text-xs">{{ __('app.status') }}</th>
                                 <th class="px-3 py-2 text-[#C9A55A] font-bold text-xs">{{ __('app.table_notes') }}</th>
+                                <th class="px-3 py-2 text-[#C9A55A] font-bold text-xs">{{ __('app.session_report') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5">
@@ -248,6 +316,20 @@ document.addEventListener('alpine:init', () => {
                                         </span>
                                     </td>
                                     <td class="px-3 py-2.5 text-white/40 text-xs max-w-[200px] truncate">{{ $session->notes ?? '—' }}</td>
+                                    <td class="px-3 py-2.5">
+                                        <button @click="openReport({
+                                            id: {{ $session->id }},
+                                            case_id: {{ $session->case_id }},
+                                            date: '{{ $session->date }}',
+                                            location: '{{ addslashes($session->location) }}',
+                                            status: '{{ $session->status }}',
+                                            notes: '{{ addslashes($session->notes ?? '') }}',
+                                            report: '{{ addslashes($session->report ?? '') }}'
+                                        })" class="text-xs"
+                                            :class="reportSession && reportSession.id === {{ $session->id }} && reportText ? 'text-[#C9A55A]' : 'text-white/30 hover:text-[#C9A55A]'">
+                                            {{ $session->report ? __('app.view_report') : __('app.add_report') }}
+                                        </button>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -362,6 +444,39 @@ document.addEventListener('alpine:init', () => {
         </div>
     </div>
 
+    {{-- Report Modal --}}
+    <div x-show="reportModal" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="reportModal = false"></div>
+        <div class="relative bg-navy border border-[#C9A55A]/30 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
+            x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
+                <h3 class="text-lg font-bold text-[#C9A55A]">{{ __('app.session_report') }}</h3>
+                <button @click="reportModal = false" class="p-1 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-5 overflow-y-auto flex-1">
+                <textarea x-model="reportText" rows="8"
+                    class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] resize-y"
+                    placeholder="{{ __('app.session_report_placeholder') }}"></textarea>
+            </div>
+            <div class="px-6 py-3 border-t border-white/10 flex justify-end gap-3">
+                <button @click="reportModal = false" class="bg-white/10 hover:bg-white/20 text-white/70 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">
+                    {{ __('app.cancel') }}
+                </button>
+                <button @click="saveReport()" :disabled="reportSaving"
+                    class="bg-gold hover:bg-gold-dark text-navy px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm disabled:opacity-50">
+                    <span x-text="reportSaving ? '{{ __("app.saving") }}' : '{{ __("app.save") }}'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     {{-- Summary Modal --}}
     <div x-show="showSummary" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
@@ -412,12 +527,12 @@ document.addEventListener('alpine:init', () => {
                         <span class="text-white font-mono text-sm">{{ $case->case_number }}</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-white/50 text-sm">{{ __('app.court') }}</span>
-                        <span class="text-white text-sm text-left max-w-[60%]">{{ $case->court }}</span>
+                        <span class="text-white/50 text-sm">{{ __('app.case_court') }}</span>
+                        <span class="text-white text-sm">{{ $case->court }}</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-white/50 text-sm">{{ __('app.type') }}</span>
-                        <span class="text-white text-sm">{{ $case->type ?: '—' }}</span>
+                        <span class="text-white/50 text-sm">{{ __('app.case_type') }}</span>
+                        <span class="text-white text-sm">{{ $case->case_type ?? '—' }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-white/50 text-sm">{{ __('app.case_client') }}</span>
@@ -428,7 +543,7 @@ document.addEventListener('alpine:init', () => {
                         <span class="text-white text-sm">{{ $case->lawyer?->name ?? '—' }}</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-white/50 text-sm">{{ __('app.case_opponent') }}</span>
+                        <span class="text-white/50 text-sm">{{ __('app.opponent_name') }}</span>
                         <span class="text-white text-sm">{{ $case->opponent ?: '—' }}</span>
                     </div>
                 </div>
@@ -448,7 +563,7 @@ document.addEventListener('alpine:init', () => {
                         <p class="text-white text-sm">{{ $case->opened_at ? $case->opened_at->format('d/m/Y') : '—' }}</p>
                     </div>
                     <div class="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                        <p class="text-xs text-white/50 mb-1">{{ __('app.next_date') }}</p>
+                        <p class="text-xs text-white/50 mb-1">{{ __('app.next_session_date') }}</p>
                         <p class="text-white text-sm">{{ $case->next_date ? $case->next_date->format('d/m/Y') : '—' }}</p>
                     </div>
                 </div>
