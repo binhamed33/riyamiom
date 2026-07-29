@@ -27,9 +27,7 @@
             theme: {
                 extend: {
                     colors: {
-                        navy: { DEFAULT: '#111B2E', light: '#1a2744', dark: '#0A0F1E' },
-                        gold: { DEFAULT: '#C9A55A', light: '#E0C878', dark: '#A8903E', 50: '#FBF7EC' },
-                        ivory: { DEFAULT: '#F5F0E8', light: '#FAF8F4', dark: '#EDE5D6' },
+                        gold: { DEFAULT: '#C9A55A', light: '#E0C878', dark: '#A8903E' },
                     },
                     fontFamily: {
                         body: ['Tajawal', 'sans-serif'],
@@ -43,7 +41,6 @@
     <style>
         [x-cloak] { display: none !important; }
         * { font-family: 'Tajawal', sans-serif; }
-        .bg-navy, .bg-navy-light, .bg-navy-darker { background-color: #fff !important; }
         h1, h2, h3, h4, h5, h6, .font-heading { font-family: 'Cairo', sans-serif; }
 
         ::-webkit-scrollbar { width: 5px; }

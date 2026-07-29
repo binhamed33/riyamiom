@@ -19,7 +19,7 @@
     <script nonce="{{ $cspNonce }}" src="https://cdn.tailwindcss.com"></script>
     <script nonce="{{ $cspNonce }}">
         tailwind.config = {
-            theme: { extend: { colors: { navy: { DEFAULT: '#0D1321', light: '#1A2744', dark: '#090E18' }, gold: { DEFAULT: '#C9A55A', light: '#E0C878', dark: '#A8903E' } } } }
+            theme: { extend: { colors: { gold: { DEFAULT: '#C9A55A', light: '#E0C878', dark: '#A8903E' } } } }
         }
     </script>
     <script nonce="{{ $cspNonce }}" defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
