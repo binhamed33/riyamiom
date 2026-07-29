@@ -204,11 +204,54 @@ function roleAvatar($user, $size = 9) {
         </div>
     </div>
 </div>
+
+{{-- Custom Confirm Modal --}}
+<div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-gradient-to-br from-navy-light to-navy border border-ivory/10 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl shadow-black/40">
+        <div class="text-center">
+            <svg class="w-14 h-14 mx-auto mb-4 text-gold/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+            </svg>
+            <p id="confirmMessage" class="text-white/90 text-base font-medium mb-6 leading-relaxed"></p>
+            <div class="flex gap-3 justify-center">
+                <button id="confirmYes" class="px-7 py-2.5 bg-gradient-to-l from-gold to-gold-light hover:from-gold-light hover:to-gold text-navy-dark font-bold rounded-xl transition-all shadow-lg shadow-gold/20 hover:shadow-gold/30 text-sm">تأكيد</button>
+                <button id="confirmNo" class="px-7 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/80 border border-white/10 rounded-xl transition text-sm">إلغاء</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 @if(isset($conversation))
 <script nonce="{{ $cspNonce }}">
+function showConfirm(message) {
+    return new Promise(resolve => {
+        const modal = document.getElementById('confirmModal');
+        const msgEl = document.getElementById('confirmMessage');
+        const yesBtn = document.getElementById('confirmYes');
+        const noBtn = document.getElementById('confirmNo');
+        if (!modal || !msgEl || !yesBtn || !noBtn) { resolve(true); return; }
+        msgEl.textContent = message;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        function cleanup(result) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            yesBtn.removeEventListener('click', onYes);
+            noBtn.removeEventListener('click', onNo);
+            modal.removeEventListener('click', onOverlay);
+            resolve(result);
+        }
+        function onYes() { cleanup(true); }
+        function onNo() { cleanup(false); }
+        function onOverlay(e) { if (e.target === modal) cleanup(false); }
+        yesBtn.addEventListener('click', onYes);
+        noBtn.addEventListener('click', onNo);
+        modal.addEventListener('click', onOverlay);
+    });
+}
+
 window.chatActions = {
     editMsg: function(container) {
         const bubble = container.querySelector(':scope > div');
@@ -235,10 +278,11 @@ window.chatActions = {
         const msgId = container.dataset.messageId;
         textarea.focus();
         textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-        editForm.querySelector('.edit-save').addEventListener('click', function() {
+        editForm.querySelector('.edit-save').addEventListener('click', async function() {
             const newText = textarea.value.trim();
             if (!newText) return;
-            if (!confirm('هل انت متأكد من تعديل الرسالة؟')) return;
+            const confirmed = await showConfirm('هل انت متأكد من تعديل الرسالة؟');
+            if (!confirmed) return;
             fetch('{{ url('chat/messages') }}/' + msgId, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
@@ -263,8 +307,9 @@ window.chatActions = {
             editForm.remove();
         });
     },
-    deleteMsg: function(msgId, container) {
-        if (!confirm('هل انت متأكد من حذف الرسالة؟')) return;
+    deleteMsg: async function(msgId, container) {
+        const confirmed = await showConfirm('هل انت متأكد من حذف الرسالة؟');
+        if (!confirmed) return;
         fetch('{{ url('chat/messages') }}/' + msgId, {
             method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
