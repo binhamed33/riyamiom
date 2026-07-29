@@ -9,35 +9,50 @@ document.addEventListener('alpine:init', () => {
         activeTab: 'sessions',
         showSummary: false,
         reportModal: false,
-        reportSession: null,
+        reportSessionId: null,
         reportText: '',
         reportSaving: false,
-        async openReport(session) {
-            this.reportSession = session;
-            this.reportText = session.report || '';
+        sessions: @json($case->sessions->map(fn($s) => [
+            'id' => $s->id,
+            'case_id' => $s->case_id,
+            'date' => $s->date?->format('Y-m-d H:i:s'),
+            'location' => $s->location,
+            'status' => $s->status,
+            'notes' => $s->notes,
+            'report' => $s->report,
+        ])->values()),
+        get reportSession() {
+            if (!this.reportSessionId) return null;
+            return this.sessions.find(s => s.id === this.reportSessionId) || null;
+        },
+        openReport(id) {
+            this.reportSessionId = id;
+            const s = this.reportSession;
+            this.reportText = s ? s.report || '' : '';
             this.reportModal = true;
         },
         async saveReport() {
-            if (!this.reportSession || !this.reportSession.id) return;
+            const s = this.reportSession;
+            if (!s || !s.id) return;
             this.reportSaving = true;
             try {
-                const res = await fetch('{{ route('sessions.update', '') }}/' + this.reportSession.id, {
+                const res = await fetch('{{ url('sessions') }}/' + s.id, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
                     body: JSON.stringify({
-                        case_id: this.reportSession.case_id,
-                        date: this.reportSession.date,
-                        location: this.reportSession.location,
-                        status: this.reportSession.status,
-                        notes: this.reportSession.notes || '',
+                        case_id: s.case_id,
+                        date: s.date,
+                        location: s.location,
+                        status: s.status,
+                        notes: s.notes || '',
                         report: this.reportText
                     })
                 });
                 this.reportSaving = false;
                 if (res.ok) {
-                    this.reportSession.report = this.reportText;
+                    s.report = this.reportText;
                     this.reportModal = false;
-                    this.reportSession = null;
+                    this.reportSessionId = null;
                 } else {
                     alert('{{ __("app.save_error") }}');
                 }
@@ -317,15 +332,7 @@ document.addEventListener('alpine:init', () => {
                                     </td>
                                     <td class="px-3 py-2.5 text-white/40 text-xs max-w-[200px] truncate">{{ $session->notes ?? '—' }}</td>
                                     <td class="px-3 py-2.5">
-                                        <button @click="openReport({
-                                            id: {{ $session->id }},
-                                            case_id: {{ $session->case_id }},
-                                            date: '{{ $session->date }}',
-                                            location: '{{ addslashes($session->location) }}',
-                                            status: '{{ $session->status }}',
-                                            notes: '{{ addslashes($session->notes ?? '') }}',
-                                            report: '{{ addslashes($session->report ?? '') }}'
-                                        })" class="text-xs"
+                                        <button @click="openReport({{ $session->id }})" class="text-xs"
                                             :class="reportSession && reportSession.id === {{ $session->id }} && reportText ? 'text-[#C9A55A]' : 'text-white/30 hover:text-[#C9A55A]'">
                                             {{ $session->report ? __('app.view_report') : __('app.add_report') }}
                                         </button>
