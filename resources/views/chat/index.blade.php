@@ -238,6 +238,7 @@ window.chatActions = {
         editForm.querySelector('.edit-save').addEventListener('click', function() {
             const newText = textarea.value.trim();
             if (!newText) return;
+            if (!confirm('هل انت متأكد من تعديل الرسالة؟')) return;
             fetch('{{ url('chat/messages') }}/' + msgId, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
@@ -263,7 +264,7 @@ window.chatActions = {
         });
     },
     deleteMsg: function(msgId, container) {
-        if (!confirm('حذف هذه الرسالة؟')) return;
+        if (!confirm('هل انت متأكد من حذف الرسالة؟')) return;
         fetch('{{ url('chat/messages') }}/' + msgId, {
             method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
