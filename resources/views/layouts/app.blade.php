@@ -309,10 +309,20 @@
          .light-theme input[type=checkbox] { accent-color: #C9A55A !important; }
          .light-theme .bg-red-500\/10 { background: rgba(184,58,46,0.08) !important; }
          .light-theme .border-\[#C9A55A\]\/20 { border-color: rgba(201,165,90,0.3) !important; }
-         .light-theme aside[style*=linear-gradient] { background: #111B2E !important; }
-         .light-theme aside .text-white\/50 { color: rgba(255,255,255,.55) !important; }
-         .light-theme aside .text-white\/20 { color: rgba(255,255,255,.25) !important; }
-         .light-theme aside .sidebar-link:hover { background: rgba(201,165,90,.12) !important; }
+         .light-theme aside[style*=linear-gradient] { background: #FAF8F4 !important; border-color: #E5DEC9 !important; }
+         .light-theme aside .sidebar-link { color: #6B6558 !important; }
+         .light-theme aside .sidebar-link svg { color: #6B6558 !important; }
+         .light-theme aside .sidebar-link:hover { background: rgba(201,165,90,0.08) !important; color: #C9A55A !important; }
+         .light-theme aside .sidebar-link:hover svg { color: #C9A55A !important; }
+         .light-theme aside .sidebar-link.active { background: rgba(201,165,90,0.1) !important; color: #C9A55A !important; }
+         .light-theme aside .sidebar-link.active svg { color: #C9A55A !important; }
+         .light-theme aside .sidebar-section-title { color: #9B9585 !important; }
+         .light-theme aside .sidebar-footer-text { color: #6B6558 !important; }
+         .light-theme aside .text-white\/40 { color: #9B9585 !important; }
+         .light-theme aside .hover\:text-white\/80:hover { color: #2D2A24 !important; }
+         .light-theme aside .hover\:text-red-400:hover { color: #B83A2E !important; }
+         .light-theme aside [style*="border-bottom"] { border-color: #E5DEC9 !important; }
+         .light-theme aside [style*="border-top"] { border-color: #E5DEC9 !important; }
          .light-theme .glass-card { background: rgba(255,255,255,0.6) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(0,0,0,0.06) !important; }
          .light-theme .gold-shimmer { background: linear-gradient(90deg, transparent, rgba(201,165,90,0.08), transparent) !important; }
          .light-theme .form-input { border-color: #D0C8B8 !important; }
