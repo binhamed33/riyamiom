@@ -142,7 +142,7 @@
                     <label for="lawyer_id" class="block text-sm font-medium text-white/30 mb-1.5">{{ __('app.case_lawyer') }}</label>
                     <select name="lawyer_id" id="lawyer_id"
                         class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('lawyer_id') border-red-500/50 @enderror">
-                        <option value="">اختر محامي القضيه</option>
+                        <option value="">اختر محامي القضية</option>
                         @foreach($users ?? [] as $user)
                             <option value="{{ $user->id }}" {{ old('lawyer_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
                         @endforeach
