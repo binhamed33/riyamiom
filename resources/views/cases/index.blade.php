@@ -89,25 +89,34 @@
             <table class="w-full text-sm text-right">
                 <thead>
                     <tr class="border-b border-white/10">
+                        <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.case_number') }}</th>
                         <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.court') }}</th>
-                        <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.case_type') }}</th>
-                        <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.status') }}</th>
-                        <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.priority') }}</th>
                         <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.case_client') }}</th>
                         <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.case_opponent') }}</th>
-                        <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.case_lawyer') }}</th>
                         <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.next_session_date') }}</th>
+                        <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.case_type') }}</th>
+                        <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.case_lawyer') }}</th>
+                        <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.status') }}</th>
+                        <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.priority') }}</th>
                         <th class="px-3 py-2 text-[#C9A55A] font-bold whitespace-nowrap text-xs">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5">
                     @forelse($cases ?? [] as $case)
                         <tr class="hover:bg-white/5 transition-colors">
-                            <td class="px-3 py-2 text-white/70 text-xs whitespace-nowrap">
-                                <span class="text-white font-mono font-medium">{{ $case->case_number }}</span>
-                                <br><span class="text-white/40">{{ $case->court }}</span>
+                            <td class="px-3 py-2 text-white font-mono font-medium text-xs whitespace-nowrap">{{ $case->case_number }}</td>
+                            <td class="px-3 py-2 text-white/40 text-xs">{{ $case->court }}</td>
+                            <td class="px-3 py-2 text-white text-xs">{{ $case->client->name ?? '—' }}</td>
+                            <td class="px-3 py-2 text-white/30 text-xs">{{ $case->opponent ?? '—' }}</td>
+                            <td class="px-3 py-2 text-white/30 text-xs whitespace-nowrap">
+                                @if($case->next_date)
+                                    {{ \Carbon\Carbon::parse($case->next_date)->format('Y/m/d') }}
+                                @else
+                                    —
+                                @endif
                             </td>
                             <td class="px-3 py-2 text-white/30 text-xs">{{ $case->case_type ?? '—' }}</td>
+                            <td class="px-3 py-2 text-white/30 text-xs">{{ $case->lawyer->name ?? '—' }}</td>
                             <td class="px-3 py-2">
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap
                                     @if($case->status === 'active') bg-green-500/15 text-green-400 border border-green-500/30
@@ -142,16 +151,6 @@
                                     @endif
                                 </span>
                             </td>
-                            <td class="px-3 py-2 text-white text-xs">{{ $case->client->name ?? '—' }}</td>
-                            <td class="px-3 py-2 text-white/30 text-xs">{{ $case->opponent ?? '—' }}</td>
-                            <td class="px-3 py-2 text-white/30 text-xs">{{ $case->lawyer->name ?? '—' }}</td>
-                            <td class="px-3 py-2 text-white/30 text-xs whitespace-nowrap">
-                                @if($case->next_date)
-                                    {{ \Carbon\Carbon::parse($case->next_date)->format('Y/m/d') }}
-                                @else
-                                    —
-                                @endif
-                            </td>
                             <td class="px-3 py-2">
                                 <div class="flex items-center gap-1">
                                     <a href="{{ route('cases.show', $case->id) }}" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors" title="{{ __('app.view') }}">
@@ -179,7 +178,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-4 py-12 text-center text-white/50">
+                            <td colspan="10" class="px-4 py-12 text-center text-white/50">
                                 <svg class="w-16 h-16 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                 </svg>
