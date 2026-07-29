@@ -70,6 +70,11 @@ Route::middleware(['auth', 'active'])->group(function () {
     // Dashboard - all roles
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // LexPro landing page
+    Route::get('/lexpro', function () {
+        return view('lexpro.index');
+    })->name('lexpro');
+
     // User Guide
     Route::get('/guide', function () {
         return view('guide.index');

@@ -421,7 +421,7 @@
 
     {{-- Footer --}}
     <div class="text-center py-10 text-ivory/30 text-sm border-t border-ivory/5">
-        <p>تم تطويره بواسطة <span class="text-gold/60">مهند بن حامد</span> — 2026</p>
+        <p>تم تطويره بواسطة <span class="text-gold/60">عبدالرحمن الريامي</span> — LexPro</p>
     </div>
 </div>
 @endsection
