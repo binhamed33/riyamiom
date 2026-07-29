@@ -19,6 +19,7 @@
     <link nonce="{{ $cspNonce }}" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css">
 
     <script nonce="{{ $cspNonce }}" src="https://cdn.tailwindcss.com"></script>
+    <script nonce="{{ $cspNonce }}">document.addEventListener('DOMContentLoaded',function(){var s=document.createElement('style');s.textContent='.bg-navy,.bg-navy-light,.bg-navy-darker{background-color:#E8E0D6!important}';document.head.appendChild(s)})</script>
     <script nonce="{{ $cspNonce }}" defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
