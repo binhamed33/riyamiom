@@ -419,10 +419,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { color: '#9ca3af', padding: 12, font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8 }
+                        labels: { color: '#6b7280', padding: 12, font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8 }
                     },
                     tooltip: {
-                        backgroundColor: bgColor, titleColor: goldColor, bodyColor: '#fff',
+                        backgroundColor: '#1f2937', titleColor: goldColor, bodyColor: '#fff',
                         borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
                     }
                 }
@@ -456,15 +456,15 @@ document.addEventListener('DOMContentLoaded', function () {
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: { size: 11 } } },
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: { size: 11 }, stepSize: 1 } }
+                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#9ca3af', font: { size: 11 } } },
+                    y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#9ca3af', font: { size: 11 }, stepSize: 1 } }
                 },
                 plugins: {
                     legend: {
-                        labels: { color: '#9ca3af', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8, padding: 12 }
+                        labels: { color: '#6b7280', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8, padding: 12 }
                     },
                     tooltip: {
-                        backgroundColor: bgColor, titleColor: goldColor, bodyColor: '#fff',
+                        backgroundColor: '#1f2937', titleColor: goldColor, bodyColor: '#fff',
                         borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
                     }
                 }
@@ -492,16 +492,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 indexAxis: 'y',
                 responsive: true, maintainAspectRatio: false,
                 scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: { size: 11 }, stepSize: 1 } },
-                    y: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 11 } } }
+                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#9ca3af', font: { size: 11 }, stepSize: 1 } },
+                    y: { grid: { display: false }, ticks: { color: '#6b7280', font: { size: 11 } } }
                 },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: bgColor, titleColor: goldColor, bodyColor: '#fff',
+                        backgroundColor: '#1f2937', titleColor: goldColor, bodyColor: '#fff',
                         borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
                     }
-                }
             }
         });
     }
