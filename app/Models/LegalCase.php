@@ -19,6 +19,8 @@ class LegalCase extends Model
         'description',
         'opponent',
         'opponent_address',
+        'opponent_lawyer',
+        'opponent_civil_number',
     ];
 
     const STATUS_ACTIVE = 'active';
@@ -44,6 +46,8 @@ class LegalCase extends Model
         'opponent',
         'opponent_phone',
         'opponent_address',
+        'opponent_lawyer',
+        'opponent_civil_number',
         'status',
         'priority',
         'opened_at',

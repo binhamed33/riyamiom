@@ -5,65 +5,65 @@
 @section('content')
 <div class="max-w-3xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-gold">{{ __('app.page_add_user') }}</h1>
-        <a href="{{ route('users.index') }}" class="text-ivory/50 hover:text-ivory transition">{{ __('app.back_to_list') }}</a>
+        <h1 class="text-3xl font-bold text-amber-600">{{ __('app.page_add_user') }}</h1>
+        <a href="{{ route('users.index') }}" class="text-gray-500 hover:text-gray-700 transition">{{ __('app.back_to_list') }}</a>
     </div>
 
-    <form method="POST" action="{{ route('users.store') }}" class="bg-navy-light rounded-xl border border-ivory/10 p-8 space-y-6">
+    <form method="POST" action="{{ route('users.store') }}" class="bg-white rounded-xl border border-gray-200 p-8 space-y-6">
         @csrf
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <label for="name" class="block text-sm font-medium text-gold mb-2">{{ __('app.user_full_name') }} <span class="text-red-400">*</span></label>
+                <label for="name" class="block text-sm font-medium text-amber-600 mb-2">{{ __('app.user_full_name') }} <span class="text-red-700">*</span></label>
                 <input
                     type="text"
                     name="name"
                     id="name"
                     value="{{ old('name') }}"
-                    class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-4 py-2.5 focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]"
+                    class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     required
                 >
                 @error('name')
-                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
                 @enderror
             </div>
             <div>
-                <label for="email" class="block text-sm font-medium text-gold mb-2">{{ __('app.user_email') }} <span class="text-red-400">*</span></label>
+                <label for="email" class="block text-sm font-medium text-amber-600 mb-2">{{ __('app.user_email') }} <span class="text-red-700">*</span></label>
                 <input
                     type="email"
                     name="email"
                     id="email"
                     value="{{ old('email') }}"
-                    class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-4 py-2.5 focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]"
+                    class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     required
                 >
                 @error('email')
-                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
                 @enderror
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <label for="password" class="block text-sm font-medium text-gold mb-2">{{ __('app.password') }} <span class="text-red-400">*</span></label>
+                <label for="password" class="block text-sm font-medium text-amber-600 mb-2">{{ __('app.password') }} <span class="text-red-700">*</span></label>
                 <input
                     type="password"
                     name="password"
                     id="password"
-                    class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-4 py-2.5 focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]"
+                    class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     required
                 >
                 @error('password')
-                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
                 @enderror
             </div>
             <div>
-                <label for="password_confirmation" class="block text-sm font-medium text-gold mb-2">{{ __('app.confirm_password') }} <span class="text-red-400">*</span></label>
+                <label for="password_confirmation" class="block text-sm font-medium text-amber-600 mb-2">{{ __('app.confirm_password') }} <span class="text-red-700">*</span></label>
                 <input
                     type="password"
                     name="password_confirmation"
                     id="password_confirmation"
-                    class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-4 py-2.5 focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]"
+                    class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     required
                 >
             </div>
@@ -71,11 +71,11 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <label for="role" class="block text-sm font-medium text-gold mb-2">{{ __('app.user_role') }} <span class="text-red-400">*</span></label>
+                <label for="role" class="block text-sm font-medium text-amber-600 mb-2">{{ __('app.user_role') }} <span class="text-red-700">*</span></label>
                 <select
                     name="role"
                     id="role"
-                    class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-4 py-2.5 focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]"
+                    class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     required
                 >
                     <option value="">{{ __('app.choose_role') }}</option>
@@ -86,21 +86,21 @@
                     <option value="client" {{ old('role') === 'client' ? 'selected' : '' }}>{{ __('app.client_role') }}</option>
                 </select>
                 @error('role')
-                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
                 @enderror
             </div>
             <div>
-                <label for="phone" class="block text-sm font-medium text-gold mb-2">{{ __('app.user_phone') }}</label>
+                <label for="phone" class="block text-sm font-medium text-amber-600 mb-2">{{ __('app.user_phone') }}</label>
                 <input
                     type="text"
                     name="phone"
                     id="phone"
                     value="{{ old('phone') }}"
-                    class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-4 py-2.5 focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]"
+                    class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     dir="ltr"
                 >
                 @error('phone')
-                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
                 @enderror
             </div>
         </div>
@@ -112,20 +112,20 @@
                     name="is_active"
                     value="1"
                     {{ old('is_active', 1) ? 'checked' : '' }}
-                    class="w-4 h-4 text-gold bg-navy border-ivory/30 rounded focus:ring-gold"
+                    class="w-4 h-4 text-amber-600 bg-white border-gray-300 rounded focus:ring-amber-600"
                 >
-                <span class="text-ivory">{{ __('app.active_account') }}</span>
+                <span class="text-gray-700">{{ __('app.active_account') }}</span>
             </label>
             @error('is_active')
-                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
             @enderror
         </div>
 
         @include('users._permissions')
 
-        <div class="flex items-center gap-4 pt-4 border-t border-ivory/10">
-            <button type="submit" class="bg-gold hover:bg-gold-dark text-navy px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.add_user') }}</button>
-            <a href="{{ route('users.index') }}" class="bg-white/10 hover:bg-white/20 text-white/70 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">{{ __('app.cancel') }}</a>
+        <div class="flex items-center gap-4 pt-4 border-t border-gray-200">
+            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.add_user') }}</button>
+            <a href="{{ route('users.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">{{ __('app.cancel') }}</a>
         </div>
     </form>
 </div>

@@ -59,7 +59,7 @@ class DocumentController extends Controller
         }
 
         $documents = $query->latest()->paginate(15)->withQueryString();
-        $cases = LegalCase::orderBy('title')->get();
+        $cases = LegalCase::with('client')->orderBy('office_case_number')->get();
 
         return view('documents.index', compact('documents', 'cases'));
     }

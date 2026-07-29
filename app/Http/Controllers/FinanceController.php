@@ -38,7 +38,7 @@ class FinanceController extends Controller
             ->latest()->paginate(20);
 
         $clients = Client::orderBy('name')->get();
-        $cases = LegalCase::when(!$isFinAdmin, fn($q) => $q->where('lawyer_id', $userId))->orderBy('case_number')->get();
+        $cases = LegalCase::with('client')->when(!$isFinAdmin, fn($q) => $q->where('lawyer_id', $userId))->orderBy('office_case_number')->get();
 
         $stats = [];
         $incomeByCategory = collect();

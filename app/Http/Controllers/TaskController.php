@@ -39,7 +39,7 @@ class TaskController extends Controller
 
     public function create(): View
     {
-        $cases = LegalCase::orderBy('title')->get();
+        $cases = LegalCase::with('client')->orderBy('office_case_number')->get();
         $users = User::where('role', '!=', 'client')->orderBy('name')->get();
 
         return view('tasks.create', compact('cases', 'users'));
@@ -96,7 +96,7 @@ class TaskController extends Controller
     public function edit(Task $task): View
     {
         $this->authorizeTaskAccess($task);
-        $cases = LegalCase::orderBy('title')->get();
+        $cases = LegalCase::with('client')->orderBy('office_case_number')->get();
         $users = User::where('role', '!=', 'client')->orderBy('name')->get();
 
         return view('tasks.edit', compact('task', 'cases', 'users'));

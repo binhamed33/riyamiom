@@ -54,37 +54,33 @@ class CaseController extends Controller
         $clients = Client::orderBy('name')->get();
         $users = User::where('is_active', true)->orderBy('name')->get();
 
-        $maxNum = LegalCase::whereRaw('case_number REGEXP "^[0-9]+$"')->max(DB::raw('CAST(case_number AS UNSIGNED)'));
-        $generatedNumber = (string) (($maxNum ?: 0) + 1);
-
-        return view('cases.create', compact('clients', 'users', 'generatedNumber'));
+        return view('cases.create', compact('clients', 'users'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'case_number'       => 'nullable|string|unique:cases,case_number',
-            'office_case_number' => 'nullable|string|max:255',
-            'case_type'         => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,استثمار,تنفيذ',
-            'title'             => 'required|string|max:255',
-            'description'       => 'required|string',
-            'type'              => 'required|string|max:255',
-            'court'             => 'required|string|max:255',
-            'opponent'          => 'required|string',
-            'opponent_phone'    => 'nullable|string|max:255',
-            'opponent_address'  => 'nullable|string',
-            'status'            => 'required|in:active,pending,overdue,closed,won,lost',
-            'priority'          => 'required|in:low,medium,high,urgent',
-            'opened_at'         => 'required|date',
-            'next_date'         => 'nullable|date|after_or_equal:opened_at',
-            'client_id'         => 'required|exists:clients,id',
-            'lawyer_id'         => 'nullable|exists:users,id',
+            'case_number'         => 'nullable|string|unique:cases,case_number',
+            'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,استثمار,تنفيذ',
+            'title'               => 'required|string|max:255',
+            'description'         => 'required|string',
+            'type'                => 'required|string|max:255',
+            'court'               => 'required|string|max:255',
+            'opponent'            => 'required|string',
+            'opponent_phone'      => 'nullable|string|max:255',
+            'opponent_address'    => 'nullable|string',
+            'opponent_lawyer'     => 'nullable|string|max:255',
+            'opponent_civil_number' => 'nullable|string|max:255',
+            'status'              => 'required|in:active,pending,overdue,closed,won,lost',
+            'priority'            => 'required|in:low,medium,high,urgent',
+            'opened_at'           => 'required|date',
+            'next_date'           => 'nullable|date|after_or_equal:opened_at',
+            'client_id'           => 'required|exists:clients,id',
+            'lawyer_id'           => 'nullable|exists:users,id',
         ]);
 
-        if (empty($validated['case_number'])) {
-            $maxNum = LegalCase::whereRaw('case_number REGEXP "^[0-9]+$"')->max(DB::raw('CAST(case_number AS UNSIGNED)'));
-            $validated['case_number'] = (string) (($maxNum ?: 0) + 1);
-        }
+        $maxOffice = LegalCase::max('office_case_number');
+        $validated['office_case_number'] = (string) (($maxOffice ?? -1) + 1);
 
         if (auth()->user()->isLawyer() && empty($validated['lawyer_id'])) {
             $validated['lawyer_id'] = auth()->id();
@@ -139,22 +135,23 @@ class CaseController extends Controller
         $this->authorizeCaseAccess($case);
 
         $validated = $request->validate([
-            'case_number'       => 'required|string|unique:cases,case_number,' . $case->id,
-            'office_case_number' => 'nullable|string|max:255',
-            'case_type'         => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,استثمار,تنفيذ',
-            'title'             => 'required|string|max:255',
-            'description'       => 'required|string',
-            'type'              => 'required|string|max:255',
-            'court'             => 'required|string|max:255',
-            'opponent'          => 'required|string',
-            'opponent_phone'    => 'nullable|string|max:255',
-            'opponent_address'  => 'nullable|string',
-            'status'            => 'required|in:active,pending,overdue,closed,won,lost',
-            'priority'          => 'required|in:low,medium,high,urgent',
-            'opened_at'         => 'required|date',
-            'next_date'         => 'nullable|date|after_or_equal:opened_at',
-            'client_id'         => 'required|exists:clients,id',
-            'lawyer_id'         => 'nullable|exists:users,id',
+            'case_number'         => 'required|string|unique:cases,case_number,' . $case->id,
+            'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,استثمار,تنفيذ',
+            'title'               => 'required|string|max:255',
+            'description'         => 'required|string',
+            'type'                => 'required|string|max:255',
+            'court'               => 'required|string|max:255',
+            'opponent'            => 'required|string',
+            'opponent_phone'      => 'nullable|string|max:255',
+            'opponent_address'    => 'nullable|string',
+            'opponent_lawyer'     => 'nullable|string|max:255',
+            'opponent_civil_number' => 'nullable|string|max:255',
+            'status'              => 'required|in:active,pending,overdue,closed,won,lost',
+            'priority'            => 'required|in:low,medium,high,urgent',
+            'opened_at'           => 'required|date',
+            'next_date'           => 'nullable|date|after_or_equal:opened_at',
+            'client_id'           => 'required|exists:clients,id',
+            'lawyer_id'           => 'nullable|exists:users,id',
         ]);
 
         $oldValues = $case->toArray();

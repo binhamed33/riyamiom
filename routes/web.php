@@ -90,20 +90,50 @@ Route::middleware(['auth', 'active'])->group(function () {
         $results = collect();
 
         if (in_array($user->role, ['developer', 'admin', 'lawyer', 'staff'])) {
-            $cases = \App\Models\LegalCase::where(function ($q) use ($query) {
-                $q->where('case_number', 'like', "%{$query}%")->orWhere('title', 'like', "%{$query}%");
-            });
-            $cases->limit(5)->get()->each(function ($c) use ($results) {
-                $results->push(['type' => 'case', 'label' => $c->case_number . ' - ' . $c->title, 'url' => route('cases.show', $c)]);
-            });
+            $cases = \App\Models\LegalCase::with('client')
+                ->where(function ($q) use ($query) {
+                    $q->where('case_number', 'like', "%{$query}%")
+                      ->orWhere('office_case_number', 'like', "%{$query}%")
+                      ->orWhere('title', 'like', "%{$query}%")
+                      ->orWhere('court', 'like', "%{$query}%")
+                      ->orWhere('opponent_phone', 'like', "%{$query}%");
+                })->limit(5)->get();
+            foreach ($cases as $c) {
+                $label = '#' . $c->office_case_number;
+                if ($c->case_number) $label .= ' - ' . $c->case_number;
+                $label .= ' - ' . $c->title;
+                if ($c->client) $label .= ' - ' . $c->client->phone . ' - ' . $c->client->name;
+                $results->push(['type' => 'case', 'label' => $label, 'url' => route('cases.show', $c)]);
+            }
 
-            $clients = \App\Models\Client::where('name', 'like', "%{$query}%");
-            $clients->limit(5)->get()->each(function ($c) use ($results) {
-                $results->push(['type' => 'client', 'label' => '👤 ' . $c->name, 'url' => route('clients.show', $c)]);
-            });
+            $clients = \App\Models\Client::where('name', 'like', "%{$query}%")
+                ->limit(5)->get();
+            foreach ($clients as $c) {
+                $results->push(['type' => 'client', 'label' => $c->name . ' - ' . $c->phone, 'url' => route('clients.show', $c)]);
+            }
+
+            $sessions = \App\Models\Session::with('case')
+                ->where(function ($q) use ($query) {
+                    $q->where('location', 'like', "%{$query}%")
+                      ->orWhere('notes', 'like', "%{$query}%");
+                })->limit(5)->get();
+            foreach ($sessions as $s) {
+                $label = 'جلسة - ' . ($s->case->case_number ?? '') . ' - ' . $s->location;
+                $results->push(['type' => 'session', 'label' => $label, 'url' => route('sessions.show', $s)]);
+            }
+
+            $tasks = \App\Models\Task::with('case')
+                ->where(function ($q) use ($query) {
+                    $q->where('title', 'like', "%{$query}%")
+                      ->orWhere('description', 'like', "%{$query}%");
+                })->limit(5)->get();
+            foreach ($tasks as $t) {
+                $label = 'مهمة - ' . $t->title . ($t->case ? ' (' . $t->case->case_number . ')' : '');
+                $results->push(['type' => 'task', 'label' => $label, 'url' => route('tasks.show', $t)]);
+            }
         }
 
-        return response()->json($results->take(10)->values());
+        return response()->json($results->take(15)->values());
     })->name('search');
 
     // Sync - lightweight polling endpoint for real-time updates

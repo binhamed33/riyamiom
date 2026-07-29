@@ -5,15 +5,15 @@
 @section('content')
 <div class="space-y-6">
     <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-gold">{{ __('app.page_audit_log') }}</h1>
+        <h1 class="text-3xl font-bold text-amber-600">{{ __('app.page_audit_log') }}</h1>
     </div>
 
     <form method="GET" action="{{ route('audit-log.index') }}">
-        <div class="bg-navy-light rounded-xl border border-ivory/10 p-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                    <label class="block text-xs text-ivory/40 mb-1">{{ __('app.audit_user') }}</label>
-                    <select name="user_id" class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-3 py-2 text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]">
+                    <label class="block text-xs text-gray-400 mb-1">{{ __('app.audit_user') }}</label>
+                    <select name="user_id" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                         <option value="">{{ __('app.all_users') }}</option>
                         @foreach($users ?? [] as $u)
                             <option value="{{ $u->id }}" {{ request('user_id') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
@@ -21,8 +21,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs text-ivory/40 mb-1">{{ __('app.audit_action') }}</label>
-                    <select name="action" class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-3 py-2 text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]">
+                    <label class="block text-xs text-gray-400 mb-1">{{ __('app.audit_action') }}</label>
+                    <select name="action" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                         <option value="">{{ __('app.all_actions') }}</option>
                         <option value="create" {{ request('action') === 'create' ? 'selected' : '' }}>{{ __('app.create') }}</option>
                         <option value="update" {{ request('action') === 'update' ? 'selected' : '' }}>{{ __('app.edit') }}</option>
@@ -32,69 +32,69 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs text-ivory/40 mb-1">{{ __('app.model_name') }}</label>
+                    <label class="block text-xs text-gray-400 mb-1">{{ __('app.model_name') }}</label>
                     <input
                         type="text"
                         name="model"
                         value="{{ request('model') }}"
                         placeholder="{{ __('app.model_name') }}"
-                        class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-3 py-2 text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]"
+                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     >
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-xs text-ivory/40 mb-1">{{ __('app.from_date_label') }}</label>
+                        <label class="block text-xs text-gray-400 mb-1">{{ __('app.from_date_label') }}</label>
                         <input
                             type="date"
                             name="date_from"
                             value="{{ request('date_from') }}"
-                            class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-3 py-2 text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]"
+                            class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                         >
                     </div>
                     <div>
-                        <label class="block text-xs text-ivory/40 mb-1">{{ __('app.to_date_label') }}</label>
+                        <label class="block text-xs text-gray-400 mb-1">{{ __('app.to_date_label') }}</label>
                         <input
                             type="date"
                             name="date_to"
                             value="{{ request('date_to') }}"
-                            class="w-full rounded-lg bg-[#0D1321] border border-white/20 text-white px-3 py-2 text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A]"
+                            class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                         >
                     </div>
                 </div>
             </div>
             <div class="flex items-center gap-3 mt-4">
-                <button type="submit" class="bg-gold hover:bg-gold-dark text-navy px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.apply_filter') }}</button>
-                <a href="{{ route('audit-log.index') }}" class="text-ivory/50 hover:text-ivory transition text-sm">{{ __('app.reset_filter') }}</a>
+                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.apply_filter') }}</button>
+                <a href="{{ route('audit-log.index') }}" class="text-gray-500 hover:text-gray-900 transition text-sm">{{ __('app.reset_filter') }}</a>
             </div>
         </div>
     </form>
 
-    <div class="bg-navy-light rounded-xl border border-ivory/10 overflow-hidden">
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
-                    <tr class="border-b border-ivory/10">
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold">{{ __('app.table_datetime') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold">{{ __('app.audit_user') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold">{{ __('app.table_action') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold">{{ __('app.model_name') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold">{{ __('app.table_details') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold">{{ __('app.table_ip') }}</th>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.table_datetime') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.audit_user') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.table_action') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.model_name') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.table_details') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.table_ip') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-ivory/5">
+                <tbody class="divide-y divide-gray-100">
                     @forelse($logs ?? [] as $log)
-                        <tr class="hover:bg-navy-lighter/50 transition">
-                            <td class="px-6 py-4 text-ivory/50 text-sm whitespace-nowrap">{{ $log->created_at?->format('Y-m-d H:i:s') ?? '—' }}</td>
-                            <td class="px-6 py-4 text-ivory font-medium">{{ $log->user->name ?? __('app.system') }}</td>
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 text-gray-500 text-sm whitespace-nowrap">{{ $log->created_at?->format('Y-m-d H:i:s') ?? '—' }}</td>
+                            <td class="px-6 py-4 text-gray-700 font-medium">{{ $log->user->name ?? __('app.system') }}</td>
                             <td class="px-6 py-4">
                                 @php
                                     $actionStyles = [
-                                        'create' => 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-                                        'update' => 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-                                        'delete' => 'bg-red-500/20 text-red-400 border-red-500/30',
-                                        'login' => 'bg-gold/20 text-gold border-gold/30',
-                                        'logout' => 'bg-ivory/10 text-ivory/50 border-ivory/10',
+                                        'create' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                                        'update' => 'bg-blue-100 text-blue-700 border-blue-200',
+                                        'delete' => 'bg-red-100 text-red-700 border-red-200',
+                                        'login' => 'bg-amber-100 text-amber-600 border-amber-200',
+                                        'logout' => 'bg-gray-100 text-gray-500 border-gray-200',
                                     ];
                                     $actionLabels = [
                                         'create' => __('app.create'),
@@ -104,18 +104,18 @@
                                         'logout' => __('app.logout'),
                                     ];
                                 @endphp
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $actionStyles[$log->action] ?? 'bg-ivory/10 text-ivory/50 border-ivory/10' }}">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $actionStyles[$log->action] ?? 'bg-gray-100 text-gray-500 border-gray-200' }}">
                                     {{ $actionLabels[$log->action] ?? $log->action }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-ivory/70 text-sm">{{ class_basename($log->model_type ?? '') ?: '—' }}</td>
-                            <td class="px-6 py-4 text-ivory/50 text-sm max-w-xs truncate">
+                            <td class="px-6 py-4 text-gray-700 text-sm">{{ class_basename($log->model_type ?? '') ?: '—' }}</td>
+                            <td class="px-6 py-4 text-gray-500 text-sm max-w-xs truncate">
                                 @if($log->new_values)
                                     @php
                                         $details = '';
                                         try {
                                             $details = collect($log->new_values)->map(function ($v, $k) {
-                                                return '<span class="text-ivory/40">' . e($k) . ':</span> ' . (is_array($v) ? e(json_encode($v, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) : e($v));
+                                                return '<span class="text-gray-400">' . e($k) . ':</span> ' . (is_array($v) ? e(json_encode($v, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) : e($v));
                                             })->implode(', ');
                                         } catch (\Throwable $e) {
                                             $details = '— (decode error)';
@@ -126,11 +126,11 @@
                                     —
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-ivory/40 text-sm" dir="ltr">{{ $log->ip_address ?? '—' }}</td>
+                            <td class="px-6 py-4 text-gray-400 text-sm" dir="ltr">{{ $log->ip_address ?? '—' }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-ivory/30">{{ __('app.no_logs') }}</td>
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-400">{{ __('app.no_logs') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -43,7 +43,7 @@ class CourtSessionController extends Controller
 
     public function create(): View
     {
-        $cases = LegalCase::orderBy('title')->get();
+        $cases = LegalCase::with('client')->orderBy('office_case_number')->get();
 
         return view('sessions.create', compact('cases'));
     }
@@ -101,7 +101,7 @@ class CourtSessionController extends Controller
     {
         $this->authorizeSessionAccess($session);
 
-        $cases = LegalCase::orderBy('title')->get();
+        $cases = LegalCase::with('client')->orderBy('office_case_number')->get();
 
         return view('sessions.edit', compact('session', 'cases'));
     }

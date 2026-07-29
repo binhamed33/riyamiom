@@ -1,6 +1,6 @@
 @php $selected = $selected ?? old('court'); @endphp
 <select name="court" id="court" required
-    class="w-full rounded-lg bg-[#0D1321] border border-white/20 px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('court') border-red-500/50 @enderror">
+    class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('court') border-red-500/50 @enderror">
     <option value="">اختر المحكمة هنا</option>
     <optgroup label="المحكمة العليا">
         <option value="المحكمة العليا" {{ $selected == 'المحكمة العليا' ? 'selected' : '' }}>المحكمة العليا</option>
