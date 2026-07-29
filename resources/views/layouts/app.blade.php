@@ -28,6 +28,7 @@
                 extend: {
                     colors: {
                         gold: { DEFAULT: '#C9A55A', light: '#E0C878', dark: '#A8903E' },
+                        navy: '#E8E0D6',
                     },
                     fontFamily: {
                         body: ['Tajawal', 'sans-serif'],
@@ -42,7 +43,6 @@
         [x-cloak] { display: none !important; }
         * { font-family: 'Tajawal', sans-serif; }
         h1, h2, h3, h4, h5, h6, .font-heading { font-family: 'Cairo', sans-serif; }
-        .bg-navy, .bg-navy-light, .bg-navy-darker { background-color: #E8E0D6 !important; }
 
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #E8E4DE; }
