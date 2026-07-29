@@ -280,11 +280,10 @@
 <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
-    const isLight = document.documentElement.classList.contains('light-theme');
     const goldColor = '#C9A55A';
-    const bgColor = isLight ? '#FFFFFF' : '#111B2E';
-    const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)';
-    const tickColor = isLight ? '#555555' : '#9ca3af';
+    const bgColor = '#FFFFFF';
+    const gridColor = 'rgba(0,0,0,0.06)';
+    const tickColor = '#555555';
 
     // === Efficiency Comparison (Grouped Bar) ===
     const effCtx = document.getElementById('efficiencyChart');

@@ -393,7 +393,7 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 data: [{{ $ratingDistribution['excellent'] }}, {{ $ratingDistribution['good'] }}, {{ $ratingDistribution['poor'] }}],
                 backgroundColor: ['#4ADE80', '#FBBF24', '#F87171'],
-                borderColor: '#0D1321',
+                borderColor: '#D1D5DB',
                 borderWidth: 3
             }]
         },

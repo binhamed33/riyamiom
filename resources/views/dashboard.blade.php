@@ -383,9 +383,8 @@
 <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
-    const isLight = document.documentElement.classList.contains('light-theme');
     const goldColor = '#C9A55A';
-    const bgColor = isLight ? '#FFFFFF' : '#111B2E';
+    const bgColor = '#FFFFFF';
 
     // === Cases by Status (Doughnut) ===
     const statusCtx = document.getElementById('casesStatusChart');
