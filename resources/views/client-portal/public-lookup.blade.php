@@ -31,27 +31,12 @@
                 @csrf
 
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-600 mb-1.5">البريد الإلكتروني</label>
-                    <input type="email" id="email" name="email" value="{{ old('email') }}"
+                    <label for="credential" class="block text-sm font-medium text-gray-600 mb-1.5">البريد الإلكتروني أو رقم الهاتف</label>
+                    <input type="text" id="credential" name="credential" value="{{ old('credential') }}"
                         class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 outline-none transition text-sm"
-                        placeholder="example@email.com">
-                    @error('email')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="flex items-center gap-3">
-                    <span class="flex-1 h-px bg-gray-200"></span>
-                    <span class="text-xs text-gray-400 font-medium">أو</span>
-                    <span class="flex-1 h-px bg-gray-200"></span>
-                </div>
-
-                <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-600 mb-1.5">رقم الهاتف</label>
-                    <input type="text" id="phone" name="phone" value="{{ old('phone') }}"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 outline-none transition text-sm"
-                        placeholder="09xxxxxxxx">
-                    @error('phone')
+                        placeholder="example@email.com أو 09xxxxxxxx"
+                        autofocus>
+                    @error('credential')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>

@@ -18,23 +18,16 @@ class PublicClientController extends Controller
     public function lookup(Request $request): View|RedirectResponse
     {
         $request->validate([
-            'email' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:255',
+            'credential' => 'required|string|max:255',
         ]);
 
-        if (!$request->email && !$request->phone) {
-            return back()->with('error', 'الرجاء إدخال البريد الإلكتروني أو رقم الهاتف');
-        }
+        $value = trim($request->credential);
 
         $clients = Client::with('cases.lawyer')->get();
         $match = null;
 
         foreach ($clients as $client) {
-            if ($request->email && $client->email === $request->email) {
-                $match = $client;
-                break;
-            }
-            if ($request->phone && $client->phone === $request->phone) {
+            if ($client->email === $value || $client->phone === $value) {
                 $match = $client;
                 break;
             }
