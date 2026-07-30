@@ -105,7 +105,7 @@
                     @forelse($cases ?? [] as $case)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-3 py-2 text-gray-900 font-mono font-medium text-xs whitespace-nowrap">{{ $case->office_case_number }}</td>
-                            <td class="px-3 py-2 text-gray-400 text-xs">「{{ $case->court }}」</td>
+                            <td class="px-3 py-2"><span class="font-mono font-medium text-gray-900 text-xs">{{ $case->case_number }}</span> <span class="text-gray-400 text-xs">「{{ $case->court }}」</span></td>
                             <td class="px-3 py-2 text-gray-900 text-xs">{{ $case->client->name ?? '—' }}</td>
                             <td class="px-3 py-2 text-gray-400 text-xs">{{ $case->opponent ?? '—' }}</td>
                             <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">
