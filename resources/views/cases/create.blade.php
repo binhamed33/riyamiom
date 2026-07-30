@@ -60,9 +60,15 @@
                         <option value="تجاري" {{ old('case_type') === 'تجاري' ? 'selected' : '' }}>تجاري</option>
                         <option value="عمالي" {{ old('case_type') === 'عمالي' ? 'selected' : '' }}>عمالي</option>
                         <option value="أحوال شخصية" {{ old('case_type') === 'أحوال شخصية' ? 'selected' : '' }}>أحوال شخصية</option>
-                        <option value="استثمار" {{ old('case_type') === 'استثمار' ? 'selected' : '' }}>استثمار</option>
-                        <option value="تنفيذ" {{ old('case_type') === 'تنفيذ' ? 'selected' : '' }}>تنفيذ</option>
                         <option value="جزائي" {{ old('case_type') === 'جزائي' ? 'selected' : '' }}>جزائي</option>
+                        <option value="تنفيذ مدني" {{ old('case_type') === 'تنفيذ مدني' ? 'selected' : '' }}>تنفيذ مدني</option>
+                        <option value="تنفيذ جزائي" {{ old('case_type') === 'تنفيذ جزائي' ? 'selected' : '' }}>تنفيذ جزائي</option>
+                        <option value="قضاء مستعجل" {{ old('case_type') === 'قضاء مستعجل' ? 'selected' : '' }}>قضاء مستعجل</option>
+                        <option value="أوامر على العرائض" {{ old('case_type') === 'أوامر على العرائض' ? 'selected' : '' }}>أوامر على العرائض</option>
+                        <option value="إفلاس وإعادة هيكلة" {{ old('case_type') === 'إفلاس وإعادة هيكلة' ? 'selected' : '' }}>إفلاس وإعادة هيكلة</option>
+                        <option value="إيجارات" {{ old('case_type') === 'إيجارات' ? 'selected' : '' }}>إيجارات</option>
+                        <option value="مرور" {{ old('case_type') === 'مرور' ? 'selected' : '' }}>مرور</option>
+                        <option value="أحداث" {{ old('case_type') === 'أحداث' ? 'selected' : '' }}>أحداث</option>
                     </select>
                     @error('case_type')
                         <p class="mt-1 text-xs text-red-700">{{ $message }}</p>

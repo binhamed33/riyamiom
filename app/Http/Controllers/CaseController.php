@@ -61,7 +61,7 @@ class CaseController extends Controller
     {
         $validated = $request->validate([
             'case_number'         => 'required|string|unique:cases,case_number',
-            'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,استثمار,تنفيذ,جزائي',
+            'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,جزائي,تنفيذ مدني,تنفيذ جزائي,قضاء مستعجل,أوامر على العرائض,إفلاس وإعادة هيكلة,إيجارات,مرور,أحداث',
             'title'               => 'required|string|max:255',
             'description'         => 'required|string',
             'type'                => 'nullable|string|max:255',
@@ -142,7 +142,7 @@ class CaseController extends Controller
 
         $validated = $request->validate([
             'case_number'         => 'required|string|unique:cases,case_number,' . $case->id,
-            'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,استثمار,تنفيذ,جزائي',
+            'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,جزائي,تنفيذ مدني,تنفيذ جزائي,قضاء مستعجل,أوامر على العرائض,إفلاس وإعادة هيكلة,إيجارات,مرور,أحداث',
             'title'               => 'required|string|max:255',
             'description'         => 'required|string',
             'type'                => 'nullable|string|max:255',
