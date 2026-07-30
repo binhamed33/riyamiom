@@ -45,7 +45,7 @@ class CaseController extends Controller
             });
         }
 
-        $cases = $query->oldest()->paginate(15)->withQueryString();
+        $cases = $query->orderBy(DB::raw('CAST(office_case_number AS UNSIGNED)'))->paginate(15)->withQueryString();
         $users = User::where('is_active', true)->orderBy('name')->get();
 
         return view('cases.index', compact('cases', 'users'));
