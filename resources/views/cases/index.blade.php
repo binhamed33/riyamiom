@@ -38,12 +38,26 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {{-- Search --}}
             <div class="lg:col-span-1">
-                <div class="relative">
+                <div class="relative" x-data="{ open: false, results: [], selected: -1 }">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('app.search_placeholder_general') }}"
+                        x-on:input.debounce.300ms="if ($el.value.length > 1) { fetch('{{ route('search') }}?q=' + encodeURIComponent($el.value)).then(r => r.json()).then(d => { results = d.filter(r => r.type === 'case'); open = results.length > 0; selected = -1; }) } else { open = false }"
+                        x-on:keydown.down.prevent="if (open) { selected = Math.min(selected + 1, results.length - 1) }"
+                        x-on:keydown.up.prevent="if (open) { selected = Math.max(selected - 1, -1) }"
+                        x-on:keydown.enter.prevent="if (open && selected >= 0 && results[selected]) { window.location = results[selected].url } else { $el.closest('form').submit() }"
+                        x-on:blur="setTimeout(() => open = false, 200)"
+                        x-on:focus="if (results.length > 0) open = true"
+                        autocomplete="off"
                         class="w-full rounded-lg bg-white border border-gray-200 pr-10 pl-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                     <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
+                    <div x-show="open" x-cloak class="absolute z-50 top-full mt-1 w-full bg-white border border-amber-200 rounded-lg shadow-lg overflow-hidden">
+                        <template x-for="(r, i) in results" :key="i">
+                            <a :href="r.url" x-html="r.label"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 transition-colors border-b border-gray-100 last:border-b-0"
+                                :class="{ 'bg-amber-50': i === selected }"></a>
+                        </template>
+                    </div>
                 </div>
             </div>
 

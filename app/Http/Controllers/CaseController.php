@@ -41,6 +41,8 @@ class CaseController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('case_number', 'like', "%{$search}%")
+                    ->orWhere('office_case_number', 'like', "%{$search}%")
+                    ->orWhere('opponent_phone', 'like', "%{$search}%")
                     ->orWhere('title', 'like', "%{$search}%");
             });
         }
