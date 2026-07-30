@@ -43,14 +43,14 @@
                     <label for="case_id" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case') }}</label>
                     <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('case_id') border-red-500 @enderror">
                         <option value="">{{ __('app.no_case') }}</option>
-                        @foreach ( as )
-                            <option value="{{ ->id }}" {{ old('case_id', ->case_id) == ->id ? 'selected' : '' }}>
-                                #{{ ->office_case_number }} - {{ ->case_number ?? '' }} - {{ ->client?->phone ?? '' }} - {{ ->client?->name ?? '' }}
+                        @foreach($cases as $case)
+                            <option value="{{ $case->id }}" {{ old('case_id', $task->case_id) == $case->id ? 'selected' : '' }}>
+                                #{{ $case->office_case_number }} - {{ $case->case_number ?? '' }} - {{ $case->client?->phone ?? '' }} - {{ $case->client?->name ?? '' }}
                             </option>
                         @endforeach
                     </select>
                     @error('case_id')
-                        <p class="mt-1 text-sm text-red-600">{{  }}</p>
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -58,14 +58,14 @@
                     <label for="assigned_to" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.task_assigned_to') }} <span class="text-red-500">*</span></label>
                     <select id="assigned_to" name="assigned_to" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('assigned_to') border-red-500 @enderror" required>
                         <option value="">{{ __('app.choose_assignee') }}</option>
-                        @foreach ( as )
-                            <option value="{{ ->id }}" {{ old('assigned_to', ->assigned_to) == ->id ? 'selected' : '' }}>
-                                {{ ->name }}
+                        @foreach($users as $user)
+                            <option value="{{ $user->id }}" {{ old('assigned_to', $task->assigned_to) == $user->id ? 'selected' : '' }}>
+                                {{ $user->name }}
                             </option>
                         @endforeach
                     </select>
                     @error('assigned_to')
-                        <p class="mt-1 text-sm text-red-600">{{  }}</p>
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
             </div>
