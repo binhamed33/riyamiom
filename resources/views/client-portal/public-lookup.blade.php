@@ -1,3 +1,7 @@
+@php
+    $isRtl = app()->getLocale() === 'ar';
+@endphp
+
 @extends('layouts.public')
 
 @section('title', 'الدخول للبوابة')
@@ -43,13 +47,13 @@
                         البريد الإلكتروني أو رقم الهاتف
                     </label>
                     <div class="relative">
-                        <div class="absolute inset-y-0 {{ $isRtl ? 'right-3' : 'left-3' }} flex items-center pointer-events-none text-gray-400">
+                        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                             </svg>
                         </div>
                         <input type="text" id="credential" name="credential" value="{{ old('credential') }}"
-                            class="w-full px-4 py-3.5 {{ $isRtl ? 'pr-11' : 'pl-11' }} rounded-xl border-2 border-gray-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 outline-none transition-all text-sm bg-gray-50/50 hover:bg-white focus:bg-white"
+                            class="w-full px-4 py-3.5 pr-11 rounded-xl border-2 border-gray-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 outline-none transition-all text-sm bg-gray-50/50 hover:bg-white focus:bg-white"
                             placeholder="example@email.com أو 09xxxxxxxx"
                             autofocus
                             autocomplete="off">
