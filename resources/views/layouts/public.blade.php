@@ -47,11 +47,11 @@
 
     <footer class="py-4 text-center">
         <div class="flex items-center justify-center gap-2">
-            <span class="text-xs text-gray-400">LexPro &copy; {{ date('Y') }}</span>
+            <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-xs text-gray-400 hover:text-amber-600 transition">LexPro &copy; {{ date('Y') }}</a>
             <span class="text-gray-300">|</span>
             <span class="text-xs text-gray-400">{{ $officeName }}</span>
             <span class="text-gray-300">|</span>
-            <span class="text-xs text-gray-400">المطور عبدالرحمن الريامي</span>
+            <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-xs text-gray-400 hover:text-amber-600 transition">المطور عبدالرحمن الريامي</a>
         </div>
     </footer>
 </body>

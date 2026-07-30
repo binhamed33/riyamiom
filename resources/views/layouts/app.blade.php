@@ -735,14 +735,14 @@
         <footer style="border-top: 1px solid #E2DED6; background: rgba(244,242,238,0.5);">
             <div class="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <a href="{{ url('/portfolio') }}" target="_blank" class="text-sm font-heading font-bold hover:opacity-80 transition-opacity" style="color: #D97706;">LexPro</a>
+                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-sm font-heading font-bold hover:opacity-80 transition-opacity" style="color: #D97706;">LexPro</a>
                     <span class="text-xs text-gray-400">&copy;</span>
                     <span class="text-sm text-gray-500">{{ date('Y') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <p class="text-xs text-gray-400">{{ $officeName }}</p>
                     <span class="text-gray-300">|</span>
-                    <p class="text-xs text-gray-400">المطور عبدالرحمن الريامي</p>
+                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-xs text-gray-400 hover:text-amber-600 transition">المطور عبدالرحمن الريامي</a>
                 </div>
             </div>
         </footer>
