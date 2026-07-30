@@ -44,7 +44,7 @@
                     <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('case_id') border-red-500 @enderror">
                         <option value="">{{ __('app.no_case') }}</option>
                         @foreach($cases as $case)
-                            <option value="{{ $case->id }}" {{ old('case_id', $task->case_id) == $case->id ? 'selected' : '' }}>
+                            <option value="{{ $case->id }}" @selected(old('case_id', $task->case_id) == $case->id)>
                                 #{{ $case->office_case_number }} - {{ $case->case_number ?? '' }} - {{ $case->client?->phone ?? '' }} - {{ $case->client?->name ?? '' }}
                             </option>
                         @endforeach
@@ -59,7 +59,7 @@
                     <select id="assigned_to" name="assigned_to" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('assigned_to') border-red-500 @enderror" required>
                         <option value="">{{ __('app.choose_assignee') }}</option>
                         @foreach($users as $user)
-                            <option value="{{ $user->id }}" {{ old('assigned_to', $task->assigned_to) == $user->id ? 'selected' : '' }}>
+                            <option value="{{ $user->id }}" @selected(old('assigned_to', $task->assigned_to) == $user->id)>
                                 {{ $user->name }}
                             </option>
                         @endforeach
