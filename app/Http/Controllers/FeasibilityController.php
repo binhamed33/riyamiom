@@ -185,10 +185,19 @@ class FeasibilityController extends Controller
         $avgDeadline = $efficiencyData->count() > 0 ? round($efficiencyData->avg('deadline_compliance'), 1) : 0;
 
         // Charts data
-        $casesByType = LegalCase::select(DB::raw('COALESCE(type, case_type) as type'), DB::raw('count(*) as count'))
+        $casesByType = LegalCase::select('type', DB::raw('count(*) as count'))
             ->groupBy('type')
             ->pluck('count', 'type')
             ->toArray();
+        // Fallback: use case_type where type is null
+        $casesMissingType = LegalCase::whereNull('type')
+            ->select('case_type', DB::raw('count(*) as count'))
+            ->groupBy('case_type')
+            ->pluck('count', 'case_type')
+            ->toArray();
+        foreach ($casesMissingType as $ct => $cnt) {
+            $casesByType[$ct] = ($casesByType[$ct] ?? 0) + $cnt;
+        }
 
         $monthlyTrend = collect();
         for ($i = 5; $i >= 0; $i--) {
