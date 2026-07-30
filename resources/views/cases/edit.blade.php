@@ -99,6 +99,7 @@
                         <option value="أحوال شخصية" {{ old('case_type', $case->case_type) === 'أحوال شخصية' ? 'selected' : '' }}>أحوال شخصية</option>
                         <option value="استثمار" {{ old('case_type', $case->case_type) === 'استثمار' ? 'selected' : '' }}>استثمار</option>
                         <option value="تنفيذ" {{ old('case_type', $case->case_type) === 'تنفيذ' ? 'selected' : '' }}>تنفيذ</option>
+                        <option value="جزائيه" {{ old('case_type', $case->case_type) === 'جزائيه' ? 'selected' : '' }}>جزائيه</option>
                     </select>
                     @error('case_type')
                         <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
