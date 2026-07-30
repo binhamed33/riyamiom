@@ -12,7 +12,7 @@ class BackupController extends Controller
 {
     use AuditLoggable;
 
-    private const BACKUP_PATTERN = '/^backup-\d{4}-\d{2}-\d{2}-\d{6}\.zip$/';
+    private const BACKUP_PATTERN = '/^(backup|auto)-\d{4}-\d{2}-\d{2}-\d{6}\.zip$/';
 
     private function getDbConfig(): array
     {
