@@ -345,15 +345,6 @@ document.addEventListener('alpine:init', () => {
                 </div>
             @endif
         </div>
-            @else
-                <div class="text-center py-8 text-gray-500">
-                    <svg class="w-12 h-12 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    <p class="text-sm">{{ __('app.no_sessions_recorded') }}</p>
-                </div>
-            @endif
-        </div>
 
         {{-- Tab Content: Tasks --}}
         <div x-show="activeTab === 'tasks'" x-cloak class="p-4">
