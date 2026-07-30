@@ -262,10 +262,55 @@
         .ts-wrapper .ts-dropdown .no-results { color: #9A9690 !important; }
         .ts-wrapper .ts-control .item { color: #111111 !important; }
         .ts-wrapper.multi .ts-control .item { background: rgba(191,155,48,0.12) !important; border: 1px solid rgba(191,155,48,0.3) !important; color: #BF9B30 !important; }
+
+        /* Dark mode */
+        [data-theme="dark"] { --bg: #0A0F1E; --card: #111B2E; --text: #F4E8C1; --text-muted: #9CA3AF; --border: rgba(201,165,90,0.15); }
+        [data-theme="dark"] body { background-color: #0A0F1E !important; color: #F4E8C1 !important; }
+        [data-theme="dark"] .bg-white { background-color: #111B2E !important; }
+        [data-theme="dark"] .bg-gray-50 { background-color: #1a2744 !important; }
+        [data-theme="dark"] .bg-gray-100 { background-color: #1a2744 !important; }
+        [data-theme="dark"] .text-gray-900, [data-theme="dark"] .text-gray-800, [data-theme="dark"] .text-gray-700 { color: #F4E8C1 !important; }
+        [data-theme="dark"] .text-gray-600, [data-theme="dark"] .text-gray-500 { color: #D1C9A5 !important; }
+        [data-theme="dark"] .text-gray-400 { color: #9CA3AF !important; }
+        [data-theme="dark"] .text-gray-300 { color: #6B7280 !important; }
+        [data-theme="dark"] .border-gray-200, [data-theme="dark"] .border-gray-100, [data-theme="dark"] .divide-gray-100, [data-theme="dark"] .divide-gray-200 { border-color: rgba(201,165,90,0.12) !important; }
+        [data-theme="dark"] .border-amber-200, [data-theme="dark"] .border-amber-300 { border-color: rgba(201,165,90,0.25) !important; }
+        [data-theme="dark"] .hover\:bg-gray-50:hover { background-color: #1a2744 !important; }
+        [data-theme="dark"] .hover\:bg-gray-100:hover { background-color: #243352 !important; }
+        [data-theme="dark"] .hover\:text-amber-600:hover, [data-theme="dark"] .hover\:text-amber-700:hover { color: #E0C878 !important; }
+        [data-theme="dark"] .sidebar-link { color: #9CA3AF !important; }
+        [data-theme="dark"] .sidebar-link:hover { background: rgba(201,165,90,0.1) !important; color: #E0C878 !important; }
+        [data-theme="dark"] .sidebar-link.active { background: rgba(201,165,90,0.12) !important; color: #C9A55A !important; }
+        [data-theme="dark"] header[style*="background"] { background: rgba(10,15,30,0.95) !important; }
+        [data-theme="dark"] .bg-amber-100 { background-color: rgba(201,165,90,0.15) !important; }
+        [data-theme="dark"] .text-amber-700, [data-theme="dark"] .text-amber-600 { color: #C9A55A !important; }
+        [data-theme="dark"] .bg-green-100 { background-color: rgba(74,222,128,0.15) !important; }
+        [data-theme="dark"] .text-green-700 { color: #4ADE80 !important; }
+        [data-theme="dark"] .bg-red-100 { background-color: rgba(239,68,68,0.15) !important; }
+        [data-theme="dark"] .text-red-700 { color: #F87171 !important; }
+        [data-theme="dark"] .bg-blue-100 { background-color: rgba(96,165,250,0.15) !important; }
+        [data-theme="dark"] .text-blue-700 { color: #60A5FA !important; }
+        [data-theme="dark"] .bg-purple-100 { background-color: rgba(168,85,247,0.15) !important; }
+        [data-theme="dark"] .text-purple-700 { color: #A855F7 !important; }
+        [data-theme="dark"] .bg-emerald-100 { background-color: rgba(52,211,153,0.15) !important; }
+        [data-theme="dark"] .text-emerald-700 { color: #34D399 !important; }
+        [data-theme="dark"] .bg-yellow-100 { background-color: rgba(234,179,8,0.15) !important; }
+        [data-theme="dark"] .text-yellow-700 { color: #EAB308 !important; }
+        [data-theme="dark"] .bg-orange-100 { background-color: rgba(251,146,60,0.15) !important; }
+        [data-theme="dark"] .text-orange-700 { color: #FB923C !important; }
+        [data-theme="dark"] aside[style*="background"] { background: #0A0F1E !important; }
+        [data-theme="dark"] aside div[style*="border-bottom"] { border-color: rgba(201,165,90,0.1) !important; }
+        [data-theme="dark"] .dropdown-dark { background: rgba(10,15,30,0.98) !important; border-color: rgba(201,165,90,0.15) !important; }
+        [data-theme="dark"] footer[style*="background"] { background: rgba(10,15,30,0.5) !important; }
+        [data-theme="dark"] .btn-gold { background: linear-gradient(135deg, #C9A55A, #B8933E) !important; color: #0A0F1E !important; }
+        [data-theme="dark"] .card-premium { background: #111B2E !important; border-color: rgba(201,165,90,0.15) !important; }
+        [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background-color: #0D1321 !important; border-color: rgba(201,165,90,0.15) !important; color: #F4E8C1 !important; }
+        [data-theme="dark"] table thead { border-bottom-color: rgba(201,165,90,0.1) !important; }
+        [data-theme="dark"] .ts-wrapper .ts-control, [data-theme="dark"] .ts-wrapper .ts-dropdown { background: #0D1321 !important; border-color: rgba(201,165,90,0.15) !important; color: #F4E8C1 !important; }
 </style>
     @stack('styles')
 </head>
-<body class="font-body min-h-screen" style="background-color: #F4F2EE; color: #111111;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false }">
+<body class="font-body min-h-screen" style="background-color: #F4F2EE; color: #111111;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: localStorage.getItem('theme') || 'light' }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
 
     {{-- Mobile Overlay --}}
     <div
@@ -540,9 +585,16 @@
                         </svg>
                     </a>
 
-
-
-                    {{-- Notifications --}}
+                    {{-- Theme Toggle --}}
+                    <button @click="theme = theme === 'dark' ? 'light' : 'dark'; $el.closest('html').setAttribute('data-theme', theme); localStorage.setItem('theme', theme)"
+                        class="p-2 rounded-xl transition" :class="theme === 'dark' ? 'text-amber-400 hover:text-amber-300' : 'text-gray-400 hover:text-amber-700'" title="{{ app()->getLocale() === 'ar' ? 'تغيير السمة' : 'Toggle Theme' }}">
+                        <svg x-show="theme === 'light'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+                        </svg>
+                        <svg x-show="theme === 'dark'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/>
+                        </svg>
+                    </button>
                     @php
                         $unreadCount = \App\Models\Notification::where('user_id', auth()->id())->where('is_read', false)->count();
                         $recentNotifications = \App\Models\Notification::where('user_id', auth()->id())->latest()->limit(10)->get();
