@@ -232,11 +232,6 @@ document.addEventListener('alpine:init', () => {
                 <p class="text-gray-900 text-sm">{{ $case->office_case_number ?? '—' }}</p>
             </div>
 
-            {{-- Next Session Date --}}
-            <div>
-                <p class="text-gray-400 text-xs mb-1">{{ __('app.next_session_date') }}</p>
-                <p class="text-gray-900 text-sm">{{ $case->next_date?->format('Y/m/d') ?? '—' }}</p>
-            </div>
         </div>
     </div>
 
@@ -573,13 +568,14 @@ document.addEventListener('alpine:init', () => {
 
                 {{-- Dates --}}
                 <div class="grid grid-cols-2 gap-3">
+                    @php $latestSession = $case->sessions->sortByDesc('date')->first(); @endphp
                     <div class="bg-white rounded-xl p-3 border border-gray-100">
-                        <p class="text-xs text-gray-500 mb-1">{{ __('app.opened_date') }}</p>
-                        <p class="text-gray-900 text-sm">{{ $case->opened_at ? $case->opened_at->format('d/m/Y') : '—' }}</p>
+                        <p class="text-xs text-gray-500 mb-1">{{ __('app.total_sessions') }}</p>
+                        <p class="text-gray-900 text-sm font-bold">{{ $case->sessions->count() }}</p>
                     </div>
                     <div class="bg-white rounded-xl p-3 border border-gray-100">
-                        <p class="text-xs text-gray-500 mb-1">{{ __('app.next_session_date') }}</p>
-                        <p class="text-gray-900 text-sm">{{ $case->next_date ? $case->next_date->format('d/m/Y') : '—' }}</p>
+                        <p class="text-xs text-gray-500 mb-1">{{ __('app.last_session_date') }}</p>
+                        <p class="text-gray-900 text-sm">{{ $latestSession?->date?->format('Y/m/d') ?? '—' }}</p>
                     </div>
                 </div>
 

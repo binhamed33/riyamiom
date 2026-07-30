@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\LegalCase;
 use App\Models\Notification;
+use App\Models\Session;
 use App\Models\User;
 
 use App\Traits\AuditLoggable;
@@ -73,7 +74,6 @@ class CaseController extends Controller
             'opponent_civil_number' => 'nullable|string|max:255',
             'status'              => 'required|in:active,pending,overdue,closed,won,lost',
             'priority'            => 'required|in:low,medium,high,urgent',
-            'next_date'           => 'nullable|date',
             'client_id'           => 'required|exists:clients,id',
             'lawyer_id'           => 'nullable|exists:users,id',
         ]);
@@ -91,19 +91,41 @@ class CaseController extends Controller
             $validated['lawyer_id'] = auth()->id();
         }
 
-        $legalCase = LegalCase::create($validated);
+        DB::beginTransaction();
+        try {
+            $legalCase = LegalCase::create($validated);
 
-        $this->logAudit(
-            AuditLog::ACTION_CREATE,
-            LegalCase::class,
-            $legalCase->id,
-            null,
-            $legalCase->toArray()
-        );
+            if ($request->has('sessions')) {
+                foreach ($request->input('sessions', []) as $sessionData) {
+                    if (empty($sessionData['date'])) continue;
+                    Session::create([
+                        'case_id'  => $legalCase->id,
+                        'date'     => $sessionData['date'] ?? now(),
+                        'location' => $sessionData['location'] ?? '',
+                        'status'   => $sessionData['status'] ?? 'upcoming',
+                        'notes'    => $sessionData['notes'] ?? '',
+                        'report'   => $sessionData['report'] ?? '',
+                    ]);
+                }
+            }
 
-        return redirect()->route('cases.show', $legalCase)
-            ->with('success', 'case_created')
-            ->with('print_url', route('cases.show', $legalCase) . '?print=1');
+            DB::commit();
+
+            $this->logAudit(
+                AuditLog::ACTION_CREATE,
+                LegalCase::class,
+                $legalCase->id,
+                null,
+                $legalCase->toArray()
+            );
+
+            return redirect()->route('cases.show', $legalCase)
+                ->with('success', 'case_created')
+                ->with('print_url', route('cases.show', $legalCase) . '?print=1');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'حدث خطأ أثناء حفظ القضية والجلسات: ' . $e->getMessage());
+        }
     }
 
     public function show(LegalCase $case): View
@@ -129,6 +151,7 @@ class CaseController extends Controller
     {
         $this->authorizeCaseAccess($case);
 
+        $case->load('sessions');
         $clients = Client::orderBy('name')->get();
         $users = User::where('is_active', true)->orderBy('name')->get();
 
@@ -153,7 +176,6 @@ class CaseController extends Controller
             'opponent_civil_number' => 'nullable|string|max:255',
             'status'              => 'required|in:active,pending,overdue,closed,won,lost',
             'priority'            => 'required|in:low,medium,high,urgent',
-            'next_date'           => 'nullable|date',
             'client_id'           => 'required|exists:clients,id',
             'lawyer_id'           => 'nullable|exists:users,id',
         ]);
@@ -164,31 +186,68 @@ class CaseController extends Controller
             $validated['type'] = $case->type ?: 'مدني';
         }
 
-        $oldValues = $case->toArray();
-        $case->update($validated);
+        DB::beginTransaction();
+        try {
+            $oldValues = $case->toArray();
+            $case->update($validated);
 
-        if (isset($validated['status']) && $oldValues['status'] !== $validated['status'] && $case->lawyer_id) {
-            Notification::create([
-                'user_id'         => $case->lawyer_id,
-                'title'           => 'تم تغيير حالة القضية',
-                'message'         => "تم تغيير حالة قضية '{$case->title}' من {$oldValues['status']} إلى {$validated['status']}",
-                'type'            => Notification::TYPE_INFO,
-                'is_read'         => false,
-                'notifiable_type' => LegalCase::class,
-                'notifiable_id'   => $case->id,
-            ]);
+            if (isset($validated['status']) && $oldValues['status'] !== $validated['status'] && $case->lawyer_id) {
+                Notification::create([
+                    'user_id'         => $case->lawyer_id,
+                    'title'           => 'تم تغيير حالة القضية',
+                    'message'         => "تم تغيير حالة قضية '{$case->title}' من {$oldValues['status']} إلى {$validated['status']}",
+                    'type'            => Notification::TYPE_INFO,
+                    'is_read'         => false,
+                    'notifiable_type' => LegalCase::class,
+                    'notifiable_id'   => $case->id,
+                ]);
+            }
+
+            // Process sessions
+            $processedIds = [];
+            if ($request->has('sessions')) {
+                foreach ($request->input('sessions', []) as $sessionData) {
+                    if (!empty($sessionData['delete'])) {
+                        Session::where('id', $sessionData['id'])->delete();
+                        continue;
+                    }
+                    if (empty($sessionData['date'])) continue;
+
+                    $sessionFields = [
+                        'case_id'  => $case->id,
+                        'date'     => $sessionData['date'],
+                        'location' => $sessionData['location'] ?? '',
+                        'status'   => $sessionData['status'] ?? 'upcoming',
+                        'notes'    => $sessionData['notes'] ?? '',
+                        'report'   => $sessionData['report'] ?? '',
+                    ];
+
+                    if (!empty($sessionData['id'])) {
+                        Session::where('id', $sessionData['id'])->update($sessionFields);
+                        $processedIds[] = $sessionData['id'];
+                    } else {
+                        $newSession = Session::create($sessionFields);
+                        $processedIds[] = $newSession->id;
+                    }
+                }
+            }
+
+            DB::commit();
+
+            $this->logAudit(
+                AuditLog::ACTION_UPDATE,
+                LegalCase::class,
+                $case->id,
+                $oldValues,
+                $case->fresh()->toArray()
+            );
+
+            return redirect()->route('cases.show', $case)
+                ->with('success', 'Case updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'حدث خطأ أثناء تحديث القضية والجلسات: ' . $e->getMessage());
         }
-
-        $this->logAudit(
-            AuditLog::ACTION_UPDATE,
-            LegalCase::class,
-            $case->id,
-            $oldValues,
-            $case->toArray()
-        );
-
-        return redirect()->route('cases.show', $case)
-            ->with('success', 'Case updated successfully.');
     }
 
     public function destroy(LegalCase $case): RedirectResponse
@@ -226,7 +285,7 @@ class CaseController extends Controller
             'client'       => $case->client?->name,
             'lawyer'       => $case->lawyer?->name,
             'opened_at'    => $case->opened_at?->format('Y-m-d'),
-            'next_date'    => $case->next_date?->format('Y-m-d'),
+            'sessions_count' => $case->sessions->count(),
             'sessions'     => $case->sessions->count(),
             'tasks'        => $case->tasks->count(),
             'documents'    => $case->documents->count(),
@@ -235,9 +294,16 @@ class CaseController extends Controller
 
     public function autoDetectOverdue(): RedirectResponse
     {
-        $updated = LegalCase::where('status', 'active')
-            ->where('next_date', '<', now()->toDateString())
-            ->update(['status' => 'overdue']);
+        $updated = 0;
+        LegalCase::where('status', 'active')->chunk(100, function ($cases) use (&$updated) {
+            foreach ($cases as $case) {
+                $latestSession = $case->sessions()->where('status', 'upcoming')->orderBy('date', 'desc')->first();
+                if ($latestSession && $latestSession->date < now()) {
+                    $case->update(['status' => 'overdue']);
+                    $updated++;
+                }
+            }
+        });
 
         return redirect()->back()
             ->with('success', "{$updated} cases marked as overdue.");

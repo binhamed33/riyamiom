@@ -293,22 +293,79 @@
             </div>
         </div>
 
-        {{-- Dates Card --}}
-        <div class="bg-white rounded-xl border border-amber-200 p-6 space-y-5">
-            <h2 class="text-lg font-bold text-amber-700 border-b border-gray-200 pb-3">{{ __('app.case_dates') }}</h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {{-- Next Session Date --}}
-                <div>
-                    <label for="next_date" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.next_session_date') }}</label>
-                    <input type="date" name="next_date" id="next_date" value="{{ old('next_date') }}"
-                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('next_date') border-red-500/50 @enderror">
-                    @error('next_date')
-                        <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
-                    @enderror
-                </div>
+        {{-- Sessions Card --}}
+        <div class="bg-white rounded-xl border border-amber-200 p-6 space-y-4" x-data="sessionsManager()">
+            <div class="flex items-center justify-between border-b border-gray-200 pb-3">
+                <h2 class="text-lg font-bold text-amber-700">{{ __('app.sessions') }}</h2>
+                <button type="button" @click="addSession()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    {{ __('app.add_session') }}
+                </button>
             </div>
+
+            <template x-for="(s, i) in sessions" :key="i">
+                <div class="border border-gray-200 rounded-xl p-4 space-y-3 relative">
+                    <button type="button" @click="removeSession(i)" class="absolute top-2 left-2 text-red-500 hover:text-red-700 transition-colors" title="{{ __('app.delete') }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.session_datetime') }} <span class="text-red-700">*</span></label>
+                            <input type="datetime-local" :name="'sessions['+i+'][date]'" x-model="s.date"
+                                class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.location') }}</label>
+                            <input type="text" :name="'sessions['+i+'][location]'" x-model="s.location"
+                                class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                placeholder="{{ __('app.session_location_placeholder') }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.status') }}</label>
+                            <select :name="'sessions['+i+'][status]'" x-model="s.status"
+                                class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                                <option value="upcoming">{{ __('app.status_upcoming') }}</option>
+                                <option value="completed">{{ __('app.status_completed') }}</option>
+                                <option value="postponed">{{ __('app.status_postponed') }}</option>
+                                <option value="cancelled">{{ __('app.status_cancelled') }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.session_decision') }}</label>
+                            <input type="text" :name="'sessions['+i+'][report]'" x-model="s.report"
+                                class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                placeholder="{{ __('app.session_decision_placeholder') }}">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.table_notes') }}</label>
+                        <textarea :name="'sessions['+i+'][notes]'" x-model="s.notes" rows="2"
+                            class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-y"
+                            placeholder="{{ __('app.session_notes_placeholder') }}"></textarea>
+                    </div>
+                </div>
+            </template>
+
+            <p x-show="sessions.length === 0" class="text-center py-6 text-gray-400 text-sm">{{ __('app.no_sessions_recorded') }}</p>
         </div>
+
+        <script nonce="{{ $cspNonce }}">
+        function sessionsManager() {
+            return {
+                sessions: [],
+                addSession() {
+                    this.sessions.push({ date: '', location: '', status: 'upcoming', report: '', notes: '' });
+                },
+                removeSession(i) {
+                    this.sessions.splice(i, 1);
+                }
+            }
+        }
+        </script>
 
         {{-- Status & Priority Card --}}
         <div class="bg-white rounded-xl border border-amber-200 p-6 space-y-5">

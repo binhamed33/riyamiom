@@ -93,7 +93,6 @@
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.court') }}</th>
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_client') }}</th>
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_opponent') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.next_session_date') }}</th>
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_type') }}</th>
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_lawyer') }}</th>
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.status') }}</th>
@@ -108,13 +107,6 @@
                             <td class="px-3 py-2"><span class="font-mono font-medium text-gray-900 text-xs">{{ $case->case_number }}</span> <span class="text-gray-400 text-xs">「{{ $case->court }}」</span></td>
                             <td class="px-3 py-2 text-gray-900 text-xs">{{ $case->client->name ?? '—' }}</td>
                             <td class="px-3 py-2 text-gray-400 text-xs">{{ $case->opponent ?? '—' }}</td>
-                            <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">
-                                @if($case->next_date)
-                                    {{ \Carbon\Carbon::parse($case->next_date)->format('Y/m/d') }}
-                                @else
-                                    —
-                                @endif
-                            </td>
                             <td class="px-3 py-2 text-gray-400 text-xs">{{ $case->case_type ?? '—' }}</td>
                             <td class="px-3 py-2 text-gray-400 text-xs">{{ $case->lawyer->name ?? '—' }}</td>
                             <td class="px-3 py-2">
@@ -178,7 +170,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="px-4 py-12 text-center text-gray-500">
+                            <td colspan="9" class="px-4 py-12 text-center text-gray-500">
                                 <svg class="w-16 h-16 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                 </svg>

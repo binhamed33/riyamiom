@@ -50,7 +50,6 @@ class LegalCase extends Model
         'opponent_civil_number',
         'status',
         'priority',
-        'next_date',
         'client_id',
         'lawyer_id',
     ];
@@ -58,7 +57,6 @@ class LegalCase extends Model
     protected function casts(): array
     {
         return [
-            'next_date' => 'date',
         ];
     }
 
