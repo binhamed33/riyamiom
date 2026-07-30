@@ -6,7 +6,6 @@ use App\Models\LegalCase;
 use App\Models\Session;
 use App\Models\Task;
 use App\Models\User;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -161,14 +160,14 @@ class FeasibilityController extends Controller
         $topPerformer = $efficiencyData->first();
         $leastPerformer = $efficiencyData->last();
 
-        // Office-wide aggregate stats (cached 5 min)
-        $officeStats = Cache::remember('feasibility_office_stats', 300, fn () => [
+        // Office-wide aggregate stats
+        $officeStats = [
             'totalCasesAll' => LegalCase::count(),
             'totalTasksAll' => Task::count(),
             'completedTasksAll' => Task::where('status', 'completed')->count(),
             'wonCasesAll' => LegalCase::where('status', 'won')->count(),
             'lostCasesAll' => LegalCase::where('status', 'lost')->count(),
-        ]);
+        ];
 
         $totalCasesAll = $officeStats['totalCasesAll'];
         $totalTasksAll = $officeStats['totalTasksAll'];
@@ -185,43 +184,34 @@ class FeasibilityController extends Controller
         $avgTaskComp = $efficiencyData->count() > 0 ? round($efficiencyData->avg('task_completion'), 1) : 0;
         $avgDeadline = $efficiencyData->count() > 0 ? round($efficiencyData->avg('deadline_compliance'), 1) : 0;
 
-        // Charts data (cached 5 min)
-        $casesByType = Cache::remember('feasibility_cases_by_type', 300, fn () =>
-            LegalCase::select('type', DB::raw('count(*) as count'))
-                ->groupBy('type')
-                ->pluck('count', 'type')
-                ->toArray()
-        );
+        // Charts data
+        $casesByType = LegalCase::select(DB::raw('COALESCE(type, case_type) as type'), DB::raw('count(*) as count'))
+            ->groupBy('type')
+            ->pluck('count', 'type')
+            ->toArray();
 
-        $monthlyTrend = Cache::remember('feasibility_monthly_trend', 300, function () {
-            $trend = collect();
-            for ($i = 5; $i >= 0; $i--) {
-                $date = now()->subMonths($i);
-                $start = $date->copy()->startOfMonth();
-                $end = $date->copy()->endOfMonth();
-                $trend->push([
-                    'label' => $date->format('M Y'),
-                    'new' => LegalCase::whereBetween('created_at', [$start, $end])->count(),
-                    'won' => LegalCase::where('status', 'won')->whereBetween('updated_at', [$start, $end])->count(),
-                    'lost' => LegalCase::where('status', 'lost')->whereBetween('updated_at', [$start, $end])->count(),
-                ]);
-            }
-            return $trend;
-        });
+        $monthlyTrend = collect();
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $start = $date->copy()->startOfMonth();
+            $end = $date->copy()->endOfMonth();
+            $monthlyTrend->push([
+                'label' => $date->format('M Y'),
+                'new' => LegalCase::whereBetween('created_at', [$start, $end])->count(),
+                'won' => LegalCase::where('status', 'won')->whereBetween('updated_at', [$start, $end])->count(),
+                'lost' => LegalCase::where('status', 'lost')->whereBetween('updated_at', [$start, $end])->count(),
+            ]);
+        }
 
-        $casesByLawyer = Cache::remember('feasibility_cases_by_lawyer', 300, fn () =>
-            LegalCase::select('lawyer_id', DB::raw('count(*) as count'))
-                ->groupBy('lawyer_id')
-                ->pluck('count', 'lawyer_id')
-                ->toArray()
-        );
+        $casesByLawyer = LegalCase::select('lawyer_id', DB::raw('count(*) as count'))
+            ->groupBy('lawyer_id')
+            ->pluck('count', 'lawyer_id')
+            ->toArray();
 
-        $tasksByPriority = Cache::remember('feasibility_tasks_by_priority', 300, fn () =>
-            Task::select('priority', DB::raw('count(*) as count'))
-                ->groupBy('priority')
-                ->pluck('count', 'priority')
-                ->toArray()
-        );
+        $tasksByPriority = Task::select('priority', DB::raw('count(*) as count'))
+            ->groupBy('priority')
+            ->pluck('count', 'priority')
+            ->toArray();
 
         return view('feasibility.index', compact(
             'efficiencyData', 'topPerformer', 'leastPerformer',
