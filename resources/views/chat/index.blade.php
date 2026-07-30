@@ -77,45 +77,45 @@ function roleAvatar($user, $size = 9) {
                 @foreach($messages as $msg)
                     @php $isOwn = $msg->user_id === auth()->id(); $escMsg = htmlspecialchars($msg->message, ENT_QUOTES, 'UTF-8'); @endphp
                     <div class="flex {{ $isOwn ? 'justify-end' : 'justify-start' }} group" data-message-id="{{ $msg->id }}">
-                        <div class="max-w-[75%] {{ $isOwn ? 'bg-amber-50 border-amber-200' : 'bg-gray-100 border-gray-200' }} rounded-2xl px-4 py-2.5 border relative">
+                        <div class="max-w-[75%] {{ $isOwn ? 'bg-amber-600 border-amber-700' : 'bg-white border-gray-200' }} rounded-2xl px-4 py-2.5 border relative shadow-sm">
                             @if(!$isOwn)
-                                <p class="text-[11px] text-amber-600/60 font-medium mb-1" data-sender-name="{{ $msg->user->name }}">{{ $msg->user->name }}</p>
+                                <p class="text-[11px] text-amber-600 font-semibold mb-1" data-sender-name="{{ $msg->user->name }}">{{ $msg->user->name }}</p>
                             @endif
                             @if($msg->replyTo)
-                                <div class="text-[11px] text-gray-400 mb-1.5 pr-2 border-r-2 border-r-amber-300 py-0.5 truncate">
-                                    <span class="text-amber-600/50">رد:</span> {{ $msg->replyTo->message }}
+                                <div class="text-[11px] mb-1.5 pr-2 border-r-2 border-r-amber-400 py-0.5 truncate {{ $isOwn ? 'text-amber-200' : 'text-gray-400' }}">
+                                    <span class="{{ $isOwn ? 'text-amber-300' : 'text-amber-600' }}">رد:</span> {{ $msg->replyTo->message }}
                                 </div>
                             @endif
                             @if($msg->message)
-                                <p class="text-sm text-gray-800" data-message-text="{{ $escMsg }}">{{ $msg->message }}
-                                    @if($msg->edited_at) <span class="text-[10px] text-gray-400">(تم التعديل)</span> @endif
+                                <p class="text-sm {{ $isOwn ? 'text-white' : 'text-gray-800' }}" data-message-text="{{ $escMsg }}">{{ $msg->message }}
+                                    @if($msg->edited_at) <span class="text-[10px] {{ $isOwn ? 'text-amber-200' : 'text-gray-400' }}">(تم التعديل)</span> @endif
                                 </p>
                             @endif
                             @if($msg->attachment_path)
                                 @if($msg->is_image)
-                                    <div class="mt-2 rounded-xl overflow-hidden border border-gray-200 bg-black/20">
+                                    <div class="mt-2 rounded-xl overflow-hidden {{ $isOwn ? 'border border-amber-500/30' : 'border border-gray-200' }}">
                                         <img src="{{ $msg->attachment_url }}" alt="{{ $msg->attachment_name }}" class="max-w-full h-auto">
                                     </div>
                                 @endif
                                 <div class="mt-2">
-                                    <a href="{{ $msg->attachment_url }}" download="{{ $msg->attachment_name }}" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-100 hover:bg-amber-200 transition text-xs text-amber-600">
+                                    <a href="{{ $msg->attachment_url }}" download="{{ $msg->attachment_name }}" class="flex items-center gap-2 px-3 py-2 rounded-lg transition text-xs {{ $isOwn ? 'bg-amber-700 hover:bg-amber-800 text-amber-200' : 'bg-amber-100 hover:bg-amber-200 text-amber-700' }}">
                                         <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span class="truncate">{{ $msg->attachment_name }}</span>
                                     </a>
                                 </div>
                             @endif
                             <div class="flex items-center justify-between mt-1">
-                                <p class="text-[10px] text-gray-400">{{ $msg->created_at->diffForHumans() }}</p>
+                                <p class="text-[10px] {{ $isOwn ? 'text-amber-200' : 'text-gray-400' }}">{{ $msg->created_at->diffForHumans() }}</p>
                                 <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
                                     @if($isOwn)
-                                        <button type="button" data-msg-action="edit" class="text-[10px] text-amber-600/50 hover:text-amber-700 transition" title="تعديل">
+                                        <button type="button" data-msg-action="edit" class="text-[10px] {{ $isOwn ? 'text-amber-200 hover:text-white' : 'text-amber-600/50 hover:text-amber-700' }} transition" title="تعديل">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         </button>
-                                        <button type="button" data-msg-action="delete" class="text-[10px] text-red-700/50 hover:text-red-700 transition" title="حذف">
+                                        <button type="button" data-msg-action="delete" class="text-[10px] {{ $isOwn ? 'text-red-300 hover:text-red-200' : 'text-red-700/50 hover:text-red-700' }} transition" title="حذف">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     @endif
-                                    <button type="button" data-msg-action="reply" class="text-[10px] text-gray-400 hover:text-amber-700 transition" title="رد">
+                                    <button type="button" data-msg-action="reply" class="text-[10px] {{ $isOwn ? 'text-amber-200 hover:text-white' : 'text-gray-400 hover:text-amber-700' }} transition" title="رد">
                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
                                     </button>
                                 </div>
