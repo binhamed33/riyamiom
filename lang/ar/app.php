@@ -559,6 +559,7 @@ return [
     'monthly_trend' => 'الاتجاه الشهري',
     'office_overview' => 'نظرة عامة على المكتب',
     'total_sessions' => 'إجمالي الجلسات',
+    'last_session_date' => 'تاريخ آخر جلسة',
     'new_this_month' => 'جديد هذا الشهر',
     'from_last_month' => 'من الشهر السابق',
     'today_sessions' => 'جلسات اليوم',

@@ -559,6 +559,7 @@ return [
     'monthly_trend' => 'Monthly Trend',
     'office_overview' => 'Office Overview',
     'total_sessions' => 'Total Sessions',
+    'last_session_date' => 'Last Session Date',
     'new_this_month' => 'New This Month',
     'from_last_month' => 'from last month',
     'today_sessions' => "Today's Sessions",

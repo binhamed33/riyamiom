@@ -322,7 +322,7 @@ class CaseController extends Controller
         $month = $request->input('month', now()->month);
         $year = $request->input('year', now()->year);
 
-        $cases = LegalCase::with(['client', 'lawyer'])
+        $cases = LegalCase::with(['client', 'lawyer', 'sessions' => fn($q) => $q->orderBy('date', 'desc')])
             ->whereYear('opened_at', $year)
             ->whereMonth('opened_at', $month)
             ->latest('opened_at')
@@ -352,7 +352,7 @@ class CaseController extends Controller
             'client_url' => $c->client ? route('clients.show', $c->client) : null,
             'court' => $c->court,
             'status' => $c->status,
-            'opened_at' => $c->opened_at?->format('Y-m-d'),
+            'last_session_date' => $c->sessions->first()?->date?->format('Y-m-d'),
             'show_url' => route('cases.show', $c),
         ])->values();
 
@@ -366,7 +366,7 @@ class CaseController extends Controller
         $month = $request->input('month', now()->month);
         $year = $request->input('year', now()->year);
 
-        $cases = LegalCase::with(['client', 'lawyer'])
+        $cases = LegalCase::with(['client', 'lawyer', 'sessions' => fn($q) => $q->orderBy('date', 'desc')])
             ->whereYear('opened_at', $year)
             ->whereMonth('opened_at', $month)
             ->latest('opened_at')
@@ -387,7 +387,7 @@ class CaseController extends Controller
             'client_url' => $c->client ? route('clients.show', $c->client) : null,
             'court' => $c->court,
             'status' => $c->status,
-            'opened_at' => $c->opened_at?->format('Y-m-d'),
+            'last_session_date' => $c->sessions->first()?->date?->format('Y-m-d'),
             'show_url' => route('cases.show', $c),
         ])->values();
 

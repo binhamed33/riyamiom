@@ -76,7 +76,7 @@
                         <th class="px-4 py-3 text-right text-amber-600 font-bold">العميل</th>
                         <th class="px-4 py-3 text-right text-amber-600 font-bold">المحكمة</th>
                         <th class="px-4 py-3 text-right text-amber-600 font-bold">الحالة</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">تاريخ الفتح</th>
+                        <th class="px-4 py-3 text-right text-amber-600 font-bold">تاريخ آخر جلسة</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -99,7 +99,7 @@
                             <td class="px-4 py-3">
                                 <span class="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold" :class="statusColors[caseItem.status]" x-text="statusLabels[caseItem.status] || caseItem.status"></span>
                             </td>
-                            <td class="px-4 py-3 text-gray-500 text-xs" x-text="caseItem.opened_at || '—'"></td>
+                            <td class="px-4 py-3 text-gray-500 text-xs" x-text="caseItem.last_session_date || '—'"></td>
                         </tr>
                     </template>
                     <tr x-show="cases.length === 0 && !loading">
