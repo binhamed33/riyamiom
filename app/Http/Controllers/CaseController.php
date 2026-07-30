@@ -54,7 +54,10 @@ class CaseController extends Controller
         $clients = Client::orderBy('name')->get();
         $users = User::where('is_active', true)->orderBy('name')->get();
 
-        return view('cases.create', compact('clients', 'users'));
+        $maxNum = LegalCase::whereRaw('case_number REGEXP "^[0-9]+$"')->max(DB::raw('CAST(case_number AS UNSIGNED)'));
+        $generatedNumber = (string) (($maxNum ?: 0) + 1);
+
+        return view('cases.create', compact('clients', 'users', 'generatedNumber'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -64,7 +67,7 @@ class CaseController extends Controller
             'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,استثمار,تنفيذ',
             'title'               => 'required|string|max:255',
             'description'         => 'required|string',
-            'type'                => 'required|string|max:255',
+            'type'                => 'nullable|string|max:255',
             'court'               => 'required|string|max:255',
             'opponent'            => 'required|string',
             'opponent_phone'      => 'nullable|string|max:255',
@@ -78,6 +81,17 @@ class CaseController extends Controller
             'client_id'           => 'required|exists:clients,id',
             'lawyer_id'           => 'nullable|exists:users,id',
         ]);
+
+        if (empty($validated['case_number'])) {
+            $maxNum = LegalCase::whereRaw('case_number REGEXP "^[0-9]+$"')->max(DB::raw('CAST(case_number AS UNSIGNED)'));
+            $validated['case_number'] = (string) (($maxNum ?: 0) + 1);
+        }
+
+        if (empty($validated['type']) && !empty($validated['case_type'])) {
+            $validated['type'] = $validated['case_type'];
+        } elseif (empty($validated['type'])) {
+            $validated['type'] = 'مدني';
+        }
 
         $maxOffice = LegalCase::max('office_case_number');
         $validated['office_case_number'] = (string) (($maxOffice ?? -1) + 1);
@@ -139,7 +153,7 @@ class CaseController extends Controller
             'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,استثمار,تنفيذ',
             'title'               => 'required|string|max:255',
             'description'         => 'required|string',
-            'type'                => 'required|string|max:255',
+            'type'                => 'nullable|string|max:255',
             'court'               => 'required|string|max:255',
             'opponent'            => 'required|string',
             'opponent_phone'      => 'nullable|string|max:255',
@@ -153,6 +167,12 @@ class CaseController extends Controller
             'client_id'           => 'required|exists:clients,id',
             'lawyer_id'           => 'nullable|exists:users,id',
         ]);
+
+        if (empty($validated['type']) && !empty($validated['case_type'])) {
+            $validated['type'] = $validated['case_type'];
+        } elseif (empty($validated['type'])) {
+            $validated['type'] = $case->type ?: 'مدني';
+        }
 
         $oldValues = $case->toArray();
         $case->update($validated);
