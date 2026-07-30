@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+
 use Illuminate\View\View;
 
 class CaseController extends Controller
@@ -44,7 +45,7 @@ class CaseController extends Controller
             });
         }
 
-        $cases = $query->latest()->paginate(15)->withQueryString();
+        $cases = $query->oldest()->paginate(15)->withQueryString();
         $users = User::where('is_active', true)->orderBy('name')->get();
 
         return view('cases.index', compact('cases', 'users'));
@@ -62,7 +63,7 @@ class CaseController extends Controller
     {
         $validated = $request->validate([
             'case_number'         => 'required|string|unique:cases,case_number',
-            'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,جزائي,تنفيذ مدني,تنفيذ جزائي,قضاء مستعجل,أوامر على العرائض,إفلاس وإعادة هيكلة,إيجارات,مرور,أحداث',
+            'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,جزائي,تنفيذ مدني,تنفيذ جزائي,قضاء مستعجل,أوامر على العرائض,إفلاس وإعادة هيكلة,إيجارات,مرور,أحداث,اداري,استثمار,استشكال,تظلمات',
             'title'               => 'required|string|max:255',
             'description'         => 'required|string',
             'type'                => 'nullable|string|max:255',
@@ -84,8 +85,8 @@ class CaseController extends Controller
             $validated['type'] = 'مدني';
         }
 
-        $maxOffice = LegalCase::max('office_case_number');
-        $validated['office_case_number'] = (string) (($maxOffice ?? -1) + 1);
+        $maxOffice = LegalCase::max(DB::raw('office_case_number + 0'));
+        $validated['office_case_number'] = (string) ((int) ($maxOffice ?? 0) + 1);
 
         if (auth()->user()->isLawyer() && empty($validated['lawyer_id'])) {
             $validated['lawyer_id'] = auth()->id();
@@ -177,7 +178,7 @@ class CaseController extends Controller
 
         $validated = $request->validate([
             'case_number'         => 'required|string|unique:cases,case_number,' . $case->id,
-            'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,جزائي,تنفيذ مدني,تنفيذ جزائي,قضاء مستعجل,أوامر على العرائض,إفلاس وإعادة هيكلة,إيجارات,مرور,أحداث',
+            'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,جزائي,تنفيذ مدني,تنفيذ جزائي,قضاء مستعجل,أوامر على العرائض,إفلاس وإعادة هيكلة,إيجارات,مرور,أحداث,اداري,استثمار,استشكال,تظلمات',
             'title'               => 'required|string|max:255',
             'description'         => 'required|string',
             'type'                => 'nullable|string|max:255',
