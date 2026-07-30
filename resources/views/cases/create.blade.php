@@ -41,8 +41,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {{-- Court Case Number --}}
                 <div>
-                    <label for="case_number" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.court_case_number') }}</label>
-                    <input type="text" name="case_number" id="case_number" value="{{ old('case_number', $generatedNumber) }}"
+                    <label for="case_number" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.court_case_number') }} <span class="text-red-700">*</span></label>
+                    <input type="text" name="case_number" id="case_number" value="{{ old('case_number') }}" required
                         class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('case_number') border-red-500/50 @enderror"
                         placeholder="{{ __('app.case_number_placeholder') }}">
                     @error('case_number')
