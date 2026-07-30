@@ -56,7 +56,10 @@ class PublicClientController extends Controller
 
         $case->load(['lawyer', 'sessions', 'documents.uploader']);
 
-        return view('client-portal.public-case-show', compact('case'));
+        $nextSession = $case->sessions->where('status', 'scheduled')->sortBy('date')->first();
+        $pastSessions = $case->sessions->whereIn('status', ['held', 'postponed', 'cancelled'])->sortByDesc('date');
+
+        return view('client-portal.public-case-show', compact('case', 'nextSession', 'pastSessions'));
     }
 
     public function logout(): RedirectResponse
