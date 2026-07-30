@@ -91,16 +91,29 @@ class CaseController extends Controller
             $validated['lawyer_id'] = auth()->id();
         }
 
+        $sessionErrors = [];
+        $sessionsData = $request->input('sessions', []);
+        if (is_array($sessionsData)) {
+            foreach ($sessionsData as $i => $s) {
+                if (!empty($s['date']) && !strtotime($s['date'])) {
+                    $sessionErrors[] = "الجلسة " . ($i + 1) . ": تاريخ غير صالح";
+                }
+            }
+        }
+        if (!empty($sessionErrors)) {
+            return redirect()->back()->withInput()->with('error', implode('<br>', $sessionErrors));
+        }
+
         DB::beginTransaction();
         try {
             $legalCase = LegalCase::create($validated);
 
-            if ($request->has('sessions')) {
-                foreach ($request->input('sessions', []) as $sessionData) {
+            if (is_array($sessionsData)) {
+                foreach ($sessionsData as $sessionData) {
                     if (empty($sessionData['date'])) continue;
                     Session::create([
                         'case_id'  => $legalCase->id,
-                        'date'     => $sessionData['date'] ?? now(),
+                        'date'     => $sessionData['date'],
                         'location' => $sessionData['location'] ?? '',
                         'status'   => $sessionData['status'] ?? 'upcoming',
                         'notes'    => $sessionData['notes'] ?? '',
@@ -186,6 +199,19 @@ class CaseController extends Controller
             $validated['type'] = $case->type ?: 'مدني';
         }
 
+        $sessionErrors = [];
+        $sessionsData = $request->input('sessions', []);
+        if (is_array($sessionsData)) {
+            foreach ($sessionsData as $i => $s) {
+                if (!empty($s['date']) && !strtotime($s['date'])) {
+                    $sessionErrors[] = "الجلسة " . ($i + 1) . ": تاريخ غير صالح";
+                }
+            }
+        }
+        if (!empty($sessionErrors)) {
+            return redirect()->back()->withInput()->with('error', implode('<br>', $sessionErrors));
+        }
+
         DB::beginTransaction();
         try {
             $oldValues = $case->toArray();
@@ -205,8 +231,8 @@ class CaseController extends Controller
 
             // Process sessions
             $processedIds = [];
-            if ($request->has('sessions')) {
-                foreach ($request->input('sessions', []) as $sessionData) {
+            if (is_array($sessionsData)) {
+                foreach ($sessionsData as $sessionData) {
                     if (!empty($sessionData['delete'])) {
                         Session::where('id', $sessionData['id'])->delete();
                         continue;
