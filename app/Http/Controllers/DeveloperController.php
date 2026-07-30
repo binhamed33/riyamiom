@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Setting;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -85,5 +87,49 @@ class DeveloperController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('developer.index')->with('error', '❌ فشل: ' . $e->getMessage());
         }
+    }
+
+    public function features(): View
+    {
+        $features = [
+            'cases'        => 'القضايا',
+            'tasks'        => 'المهام',
+            'sessions'     => 'الجلسات',
+            'clients'      => 'العملاء',
+            'feasibility'  => 'دراسة الجدوى',
+            'hr'           => 'الموارد البشرية',
+            'settings'     => 'الإعدادات',
+            'reports'      => 'التقارير',
+            'chat'         => 'المحادثات',
+            'notifications'=> 'الإشعارات',
+            'documents'    => 'المستندات',
+            'users'        => 'المستخدمين',
+            'audit_log'    => 'سجل النشاطات',
+            'finance'      => 'المالية',
+        ];
+
+        $statuses = [];
+        foreach (array_keys($features) as $key) {
+            $statuses[$key] = Setting::get('feature_' . $key, '0');
+        }
+
+        return view('developer.features', compact('features', 'statuses'));
+    }
+
+    public function toggleFeature(Request $request): RedirectResponse
+    {
+        $key = $request->input('key');
+        $value = $request->input('value', '0');
+
+        $allowed = ['cases','tasks','sessions','clients','feasibility','hr','settings','reports','chat','notifications','documents','users','audit_log','finance'];
+
+        if (!in_array($key, $allowed)) {
+            return redirect()->route('developer.features')->with('error', '❌ ميزة غير صالحة');
+        }
+
+        Setting::set('feature_' . $key, $value, 'features');
+
+        $status = $value === '1' ? 'معطّلة' : 'مفعلة';
+        return redirect()->route('developer.features')->with('success', "✅ تم تغيير حالة الميزة إلى $status");
     }
 }

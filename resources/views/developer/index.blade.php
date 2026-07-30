@@ -81,6 +81,7 @@
                 @csrf
                 <button type="submit" class="bg-emerald-100 border border-emerald-200 text-emerald-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-200 transition">🔗 رابط التخزين</button>
             </form>
+            <a href="{{ route('developer.features') }}" class="bg-indigo-100 border border-indigo-200 text-indigo-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-200 inline-block transition">🔘 إدارة الميزات</a>
         </div>
     </div>
 

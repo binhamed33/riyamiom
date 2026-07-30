@@ -154,18 +154,20 @@ Route::middleware(['auth', 'active'])->group(function () {
     })->name('sync');
     
     // Notifications - all roles
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
-    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
-    Route::get('/notifications/count', [NotificationController::class, 'count'])->name('notifications.count');
-    Route::get('/notifications/latest', [NotificationController::class, 'latest'])->name('notifications.latest');
+    Route::middleware('feature:notifications')->group(function () {
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
+        Route::get('/notifications/count', [NotificationController::class, 'count'])->name('notifications.count');
+        Route::get('/notifications/latest', [NotificationController::class, 'latest'])->name('notifications.latest');
+    });
     
     // Profile - all roles
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     
     // Cases - developer, admin, lawyer, staff
-    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:cases'])->group(function () {
         Route::get('/cases/trashed', [CaseController::class, 'trashed'])->name('cases.trashed');
         Route::post('/cases/{id}/restore', [CaseController::class, 'restore'])->name('cases.restore');
         Route::resource('cases', CaseController::class);
@@ -177,19 +179,19 @@ Route::middleware(['auth', 'active'])->group(function () {
     });
     
     // Court Sessions - developer, admin, lawyer, staff
-    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:sessions'])->group(function () {
         Route::resource('sessions', CourtSessionController::class);
         Route::get('/sessions/today/list', [CourtSessionController::class, 'today'])->name('sessions.today');
     });
     
     // Tasks - developer, admin, lawyer, staff
-    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:tasks'])->group(function () {
         Route::resource('tasks', TaskController::class);
         Route::get('/my-tasks', [TaskController::class, 'myTasks'])->name('tasks.my');
     });
     
     // Documents - developer, admin, lawyer, staff
-    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:documents'])->group(function () {
         Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
         Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
         Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
@@ -198,7 +200,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     });
 
     // Reports & Export - developer, admin, lawyer, staff
-    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:reports'])->group(function () {
         Route::get('/reports', [ExportController::class, 'index'])->name('reports.index');
         Route::get('/export/cases', [ExportController::class, 'cases'])->name('export.cases');
         Route::get('/export/sessions', [ExportController::class, 'sessions'])->name('export.sessions');
@@ -208,7 +210,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     });
     
     // Clients - developer, admin, lawyer, staff
-    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:clients'])->group(function () {
         Route::get('/clients/trashed', [ClientController::class, 'trashed'])->name('clients.trashed');
         Route::post('/clients/{id}/restore', [ClientController::class, 'restore'])->name('clients.restore');
         Route::post('/clients/ajax', [ClientController::class, 'storeAjax'])->name('clients.ajax');
@@ -216,14 +218,14 @@ Route::middleware(['auth', 'active'])->group(function () {
     });
     
     // Users & Admin - all team roles
-    Route::resource('users', UserController::class)->middleware('role:developer,admin,lawyer,staff,permission:users.view');
-    Route::get('/feasibility', [FeasibilityController::class, 'index'])->middleware('role:developer,admin,permission:feasibility.view')->name('feasibility.index');
-    Route::get('/audit-log', [AuditLogController::class, 'index'])->middleware('role:developer,admin,permission:audit_log.view')->name('audit-log.index');
-    Route::get('/settings', [SettingController::class, 'index'])->middleware('role:developer,admin,permission:settings.manage')->name('settings.index');
-    Route::put('/settings', [SettingController::class, 'update'])->middleware('role:developer,admin,permission:settings.manage')->name('settings.update');
+    Route::resource('users', UserController::class)->middleware(['role:developer,admin,lawyer,staff,permission:users.view', 'feature:users']);
+    Route::get('/feasibility', [FeasibilityController::class, 'index'])->middleware(['role:developer,admin,permission:feasibility.view', 'feature:feasibility'])->name('feasibility.index');
+    Route::get('/audit-log', [AuditLogController::class, 'index'])->middleware(['role:developer,admin,permission:audit_log.view', 'feature:audit_log'])->name('audit-log.index');
+    Route::get('/settings', [SettingController::class, 'index'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.index');
+    Route::put('/settings', [SettingController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.update');
 
     // Chat - developer, admin, lawyer, staff
-    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:chat'])->group(function () {
         Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
         Route::get('/chat/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
         Route::post('/chat', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
@@ -243,7 +245,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::delete('/backup/{filename}', [BackupController::class, 'destroy'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.destroy');
 
     // HR - all authenticated non-client users (controller handles per-role logic)
-    Route::middleware(['auth', 'active', 'role:developer,admin,lawyer,staff'])->group(function () {
+    Route::middleware(['auth', 'active', 'role:developer,admin,lawyer,staff', 'feature:hr'])->group(function () {
         Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
         Route::post('/hr/leaves', [HrController::class, 'storeLeave'])->name('hr.leaves.store');
         Route::post('/hr/performance', [HrController::class, 'storePerformance'])->name('hr.performance.store');
@@ -258,7 +260,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     });
 
     // Finance - all authenticated non-client users (controller handles per-role logic)
-    Route::middleware(['auth', 'active', 'role:developer,admin,lawyer,staff'])->group(function () {
+    Route::middleware(['auth', 'active', 'role:developer,admin,lawyer,staff', 'feature:finance'])->group(function () {
         Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
         Route::get('/finance/transactions/{transaction}', [FinanceController::class, 'showTransaction'])->name('finance.transactions.show');
         Route::get('/finance/transactions/{transaction}/print', [FinanceController::class, 'printTransaction'])->name('finance.transactions.print');
@@ -294,6 +296,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/optimize', [App\Http\Controllers\DeveloperController::class, 'optimize'])->name('developer.optimize');
         Route::post('/migrate', [App\Http\Controllers\DeveloperController::class, 'migrate'])->name('developer.migrate');
         Route::post('/storage-link', [App\Http\Controllers\DeveloperController::class, 'storageLink'])->name('developer.storage-link');
+        Route::get('/features', [App\Http\Controllers\DeveloperController::class, 'features'])->name('developer.features');
+        Route::post('/features/toggle', [App\Http\Controllers\DeveloperController::class, 'toggleFeature'])->name('developer.features.toggle');
     });
 
     }); // end throttle group
