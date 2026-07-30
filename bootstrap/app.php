@@ -30,4 +30,16 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->dontReport(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
         $exceptions->dontReport(\Illuminate\Auth\AuthenticationException::class);
+
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json(['error' => 'Server Error'], 500);
+            }
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
+                || $e instanceof \Illuminate\Auth\AuthenticationException) {
+                return;
+            }
+            return redirect()->route('dashboard')
+                ->with('error', 'هذه الصفحة قيد التطوير');
+        });
     })->create();
