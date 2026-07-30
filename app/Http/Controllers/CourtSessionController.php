@@ -41,11 +41,12 @@ class CourtSessionController extends Controller
         return view('sessions.index', compact('sessions'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $cases = LegalCase::with('client')->orderBy('office_case_number')->get();
+        $selectedCaseId = $request->query('case_id');
 
-        return view('sessions.create', compact('cases'));
+        return view('sessions.create', compact('cases', 'selectedCaseId'));
     }
 
     public function store(Request $request): RedirectResponse

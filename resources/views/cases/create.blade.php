@@ -298,16 +298,6 @@
             <h2 class="text-lg font-bold text-amber-700 border-b border-gray-200 pb-3">{{ __('app.case_dates') }}</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {{-- Opened At --}}
-                <div>
-                    <label for="opened_at" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.opened_date') }} <span class="text-red-700">*</span></label>
-                    <input type="date" name="opened_at" id="opened_at" value="{{ old('opened_at', date('Y-m-d')) }}" required
-                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('opened_at') border-red-500/50 @enderror">
-                    @error('opened_at')
-                        <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
-                    @enderror
-                </div>
-
                 {{-- Next Session Date --}}
                 <div>
                     <label for="next_date" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.next_session_date') }}</label>

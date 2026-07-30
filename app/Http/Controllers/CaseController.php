@@ -73,8 +73,7 @@ class CaseController extends Controller
             'opponent_civil_number' => 'nullable|string|max:255',
             'status'              => 'required|in:active,pending,overdue,closed,won,lost',
             'priority'            => 'required|in:low,medium,high,urgent',
-            'opened_at'           => 'required|date',
-            'next_date'           => 'nullable|date|after_or_equal:opened_at',
+            'next_date'           => 'nullable|date',
             'client_id'           => 'required|exists:clients,id',
             'lawyer_id'           => 'nullable|exists:users,id',
         ]);
@@ -154,8 +153,7 @@ class CaseController extends Controller
             'opponent_civil_number' => 'nullable|string|max:255',
             'status'              => 'required|in:active,pending,overdue,closed,won,lost',
             'priority'            => 'required|in:low,medium,high,urgent',
-            'opened_at'           => 'required|date',
-            'next_date'           => 'nullable|date|after_or_equal:opened_at',
+            'next_date'           => 'nullable|date',
             'client_id'           => 'required|exists:clients,id',
             'lawyer_id'           => 'nullable|exists:users,id',
         ]);

@@ -77,10 +77,10 @@
             </div>
 
             <div>
-                <label for="report" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.session_report') }}</label>
+                <label for="report" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.session_decision') }}</label>
                 <textarea id="report" name="report" rows="4"
                           class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('report') border-red-500 @enderror"
-                          placeholder="{{ __('app.session_report_placeholder') }}">{{ old('report', $session->report) }}</textarea>
+                          placeholder="{{ __('app.session_decision_placeholder') }}">{{ old('report', $session->report) }}</textarea>
                 @error('report')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror

@@ -232,12 +232,6 @@ document.addEventListener('alpine:init', () => {
                 <p class="text-gray-900 text-sm">{{ $case->office_case_number ?? '—' }}</p>
             </div>
 
-            {{-- Opened At --}}
-            <div>
-                <p class="text-gray-400 text-xs mb-1">{{ __('app.opened_date') }}</p>
-                <p class="text-gray-900 text-sm">{{ $case->opened_at?->format('Y/m/d') ?? '—' }}</p>
-            </div>
-
             {{-- Next Session Date --}}
             <div>
                 <p class="text-gray-400 text-xs mb-1">{{ __('app.next_session_date') }}</p>
@@ -301,6 +295,15 @@ document.addEventListener('alpine:init', () => {
 
         {{-- Tab Content: Sessions --}}
         <div x-show="activeTab === 'sessions'" x-cloak class="p-4">
+            <div class="flex justify-end mb-3">
+                <a href="{{ route('sessions.create', ['case_id' => $case->id]) }}"
+                   class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    {{ __('app.add_session') }}
+                </a>
+            </div>
             @if($case->sessions && $case->sessions->count() > 0)
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-right">
@@ -308,11 +311,9 @@ document.addEventListener('alpine:init', () => {
                             <tr class="border-b border-gray-200">
                                 <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.table_date') }}</th>
                                 <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.table_type') }}</th>
-                                <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.table_hall') }}</th>
-                                <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.table_judge') }}</th>
                                 <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.status') }}</th>
                                 <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.table_notes') }}</th>
-                                <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.session_report') }}</th>
+                                <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.session_decision') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -320,8 +321,6 @@ document.addEventListener('alpine:init', () => {
                                 <tr class="hover:bg-gray-50 transition-colors">
                                     <td class="px-3 py-2.5 text-gray-900 text-xs whitespace-nowrap">{{ $session->date?->format('Y/m/d H:i') ?? '—' }}</td>
                                     <td class="px-3 py-2.5 text-gray-400 text-xs">{{ $session->location ?? '—' }}</td>
-                                    <td class="px-3 py-2.5 text-gray-400 text-xs">—</td>
-                                    <td class="px-3 py-2.5 text-gray-400 text-xs">—</td>
                                     <td class="px-3 py-2.5">
                                         <span class="text-xs px-2 py-0.5 rounded-full
                                             @if(($session->status ?? '') === 'completed') bg-green-100 text-green-700
@@ -334,7 +333,7 @@ document.addEventListener('alpine:init', () => {
                                     <td class="px-3 py-2.5">
                                         <button @click="openReport({{ $session->id }})" class="text-xs"
                                             :class="reportSession && reportSession.id === {{ $session->id }} && reportText ? 'text-amber-700' : 'text-gray-400 hover:text-amber-700'">
-                                            {{ $session->report ? __('app.view_report') : __('app.add_report') }}
+                                            {{ $session->report ? __('app.view_decision') : __('app.add_decision') }}
                                         </button>
                                     </td>
                                 </tr>
@@ -342,6 +341,15 @@ document.addEventListener('alpine:init', () => {
                         </tbody>
                     </table>
                 </div>
+            @else
+                <div class="text-center py-8 text-gray-500">
+                    <svg class="w-12 h-12 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <p class="text-sm">{{ __('app.no_sessions_recorded') }}</p>
+                </div>
+            @endif
+        </div>
             @else
                 <div class="text-center py-8 text-gray-500">
                     <svg class="w-12 h-12 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -460,7 +468,7 @@ document.addEventListener('alpine:init', () => {
             x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
             x-transition:enter-end="opacity-100 scale-100">
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-bold text-amber-700">{{ __('app.session_report') }}</h3>
+                <h3 class="text-lg font-bold text-amber-700">{{ __('app.session_decision') }}</h3>
                 <button @click="reportModal = false" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -470,7 +478,7 @@ document.addEventListener('alpine:init', () => {
             <div class="px-6 py-5 overflow-y-auto flex-1">
                 <textarea x-model="reportText" rows="8"
                     class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-y"
-                    placeholder="{{ __('app.session_report_placeholder') }}"></textarea>
+                    placeholder="{{ __('app.session_decision_placeholder') }}"></textarea>
             </div>
             <div class="px-6 py-3 border-t border-gray-200 flex justify-end gap-3">
                 <button @click="reportModal = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">

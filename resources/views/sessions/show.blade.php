@@ -65,7 +65,7 @@
 
         @if ($session->report)
             <div class="mt-6">
-                <h4 class="text-sm text-gray-500 mb-2">{{ __('app.session_report') }}</h4>
+                <h4 class="text-sm text-gray-500 mb-2">{{ __('app.session_decision') }}</h4>
                 <div class="bg-gray-100 rounded-lg p-4 text-gray-700 leading-relaxed whitespace-pre-wrap">{{ $session->report }}</div>
             </div>
         @endif

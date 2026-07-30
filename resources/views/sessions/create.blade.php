@@ -13,6 +13,29 @@
         </a>
     </div>
 
+    @if($selectedCaseId && $selectedCase = $cases->firstWhere('id', $selectedCaseId))
+    <div class="bg-amber-50 rounded-xl border border-amber-200 p-4 mb-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div>
+                <p class="text-gray-500 text-xs">{{ __('app.case_number') }}</p>
+                <p class="text-gray-900 font-medium">{{ $selectedCase->case_number }}</p>
+            </div>
+            <div>
+                <p class="text-gray-500 text-xs">{{ __('app.case_client') }}</p>
+                <p class="text-gray-900 font-medium">{{ $selectedCase->client->name ?? '—' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-500 text-xs">{{ __('app.case_opponent') }}</p>
+                <p class="text-gray-900 font-medium">{{ $selectedCase->opponent ?? '—' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-500 text-xs">{{ __('app.case_court') }}</p>
+                <p class="text-gray-900 font-medium">{{ $selectedCase->court ?? '—' }}</p>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <div class="bg-white rounded-xl border border-gray-200 p-6">
         <form method="POST" action="{{ route('sessions.store') }}" class="space-y-5">
             @csrf
@@ -22,7 +45,7 @@
                 <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('case_id') border-red-500 @enderror" required>
                     <option value="">{{ __('app.choose_case') }}</option>
                     @foreach ($cases as $case)
-                        <option value="{{ $case->id }}" {{ old('case_id') == $case->id ? 'selected' : '' }}>
+                        <option value="{{ $case->id }}" {{ old('case_id', $selectedCaseId ?? '') == $case->id ? 'selected' : '' }}>
                             #{{ $case->office_case_number }} - {{ $case->case_number ?? '' }} - {{ $case->client?->phone ?? '' }} - {{ $case->client?->name ?? '' }}
                         </option>
                     @endforeach
@@ -75,10 +98,10 @@
             </div>
 
             <div>
-                <label for="report" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.session_report') }}</label>
+                <label for="report" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.session_decision') }}</label>
                 <textarea id="report" name="report" rows="4"
                           class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('report') border-red-500 @enderror"
-                          placeholder="{{ __('app.session_report_placeholder') }}">{{ old('report') }}</textarea>
+                          placeholder="{{ __('app.session_decision_placeholder') }}">{{ old('report') }}</textarea>
                 @error('report')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
