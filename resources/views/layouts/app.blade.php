@@ -423,14 +423,14 @@
 
             {{-- Admin Section --}}
             @php
-                $adminRole = Auth::check() && (in_array(Auth::user()->role, ['admin', 'developer', 'lawyer', 'staff']) || Auth::user()->hasPermission('users.view') || Auth::user()->hasPermission('feasibility.view') || Auth::user()->hasPermission('audit_log.view') || Auth::user()->hasPermission('settings.manage') || Auth::user()->hasPermission('backup.manage'));
+                $adminRole = Auth::check() && (in_array(Auth::user()->role, ['admin', 'developer']) || Auth::user()->hasPermission('feasibility.view') || Auth::user()->hasPermission('audit_log.view') || Auth::user()->hasPermission('settings.manage') || Auth::user()->hasPermission('backup.manage'));
             @endphp
             @if($adminRole)
                 <div class="pt-5 pb-2">
                     <p class="sidebar-section-title text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-3">{{ __('app.admin_section') }}</p>
                 </div>
 
-                @if(Auth::user()->hasPermission('users.view') || in_array(Auth::user()->role, ['admin', 'developer', 'lawyer', 'staff']))
+                @if(in_array(Auth::user()->role, ['admin', 'developer']))
                 <a href="{{ route('users.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('users.*') ? 'active' : '' }}">
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
