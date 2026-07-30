@@ -85,6 +85,8 @@ return [
     'status_completed' => 'Completed',
     'status_postponed' => 'Postponed',
     'status_cancelled' => 'Cancelled',
+    'status_held' => 'Held',
+    'status_scheduled' => 'Scheduled',
 
     // Task status
     'status_in_progress' => 'In Progress',

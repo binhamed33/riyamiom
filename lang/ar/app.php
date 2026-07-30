@@ -85,6 +85,8 @@ return [
     'status_completed' => 'مكتملة',
     'status_postponed' => 'مؤجلة',
     'status_cancelled' => 'ملغاة',
+    'status_held' => 'منعقدة',
+    'status_scheduled' => 'مجدولة',
 
     // Task status
     'status_in_progress' => 'قيد التنفيذ',

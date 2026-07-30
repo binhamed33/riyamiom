@@ -61,6 +61,12 @@ Route::get('/portfolio/{path?}', function ($path = null) {
 // Redirect root to dashboard or login
 Route::get('/', fn () => redirect()->route('dashboard'));
 
+// Public client portal - no auth required
+Route::get('/client-access', [App\Http\Controllers\PublicClientController::class, 'showLookupForm'])->name('client.access');
+Route::post('/client-access', [App\Http\Controllers\PublicClientController::class, 'lookup'])->name('client.access.lookup');
+Route::get('/client-access/cases/{case}', [App\Http\Controllers\PublicClientController::class, 'showCase'])->name('client.access.case');
+Route::post('/client-access/logout', [App\Http\Controllers\PublicClientController::class, 'logout'])->name('client.access.logout');
+
 // Protected routes
 Route::middleware(['auth', 'active'])->group(function () {
     
