@@ -69,6 +69,10 @@
                         <option value="إيجارات" {{ old('case_type') === 'إيجارات' ? 'selected' : '' }}>إيجارات</option>
                         <option value="مرور" {{ old('case_type') === 'مرور' ? 'selected' : '' }}>مرور</option>
                         <option value="أحداث" {{ old('case_type') === 'أحداث' ? 'selected' : '' }}>أحداث</option>
+                        <option value="اداري" {{ old('case_type') === 'اداري' ? 'selected' : '' }}>اداري</option>
+                        <option value="استثمار" {{ old('case_type') === 'استثمار' ? 'selected' : '' }}>استثمار</option>
+                        <option value="استشكال" {{ old('case_type') === 'استشكال' ? 'selected' : '' }}>استشكال</option>
+                        <option value="تظلمات" {{ old('case_type') === 'تظلمات' ? 'selected' : '' }}>تظلمات</option>
                     </select>
                     @error('case_type')
                         <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
