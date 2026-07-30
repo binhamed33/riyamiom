@@ -24,7 +24,7 @@
                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('title') border-red-500 @enderror"
                        placeholder="{{ __('app.task_title_placeholder') }}" required>
                 @error('title')
-                    <p class="mt-1 text-sm text-red-600">{{  }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -34,7 +34,7 @@
                           class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('description') border-red-500 @enderror"
                           placeholder="{{ __('app.task_description_placeholder') }}">{{ old('description', ->description) }}</textarea>
                 @error('description')
-                    <p class="mt-1 text-sm text-red-600">{{  }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -80,7 +80,7 @@
                         <option value="urgent" {{ old('priority', ->priority) === 'urgent' ? 'selected' : '' }}>{{ __('app.priority_urgent') }}</option>
                     </select>
                     @error('priority')
-                        <p class="mt-1 text-sm text-red-600">{{  }}</p>
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -90,7 +90,7 @@
                            value="{{ old('due_date', ->due_date?->format('Y-m-d')) }}"
                            class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('due_date') border-red-500 @enderror">
                     @error('due_date')
-                        <p class="mt-1 text-sm text-red-600">{{  }}</p>
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
             </div>
@@ -104,7 +104,7 @@
                     <option value="cancelled" {{ old('status', ->status) === 'cancelled' ? 'selected' : '' }}>{{ __('app.status_cancelled') }}</option>
                 </select>
                 @error('status')
-                    <p class="mt-1 text-sm text-red-600">{{  }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
