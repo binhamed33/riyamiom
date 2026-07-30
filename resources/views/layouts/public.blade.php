@@ -46,7 +46,13 @@
     </div>
 
     <footer class="py-4 text-center">
-        <p class="text-xs text-gray-400">{{ $officeName }} &copy; {{ date('Y') }}</p>
+        <div class="flex items-center justify-center gap-2">
+            <span class="text-xs text-gray-400">LexPro &copy; {{ date('Y') }}</span>
+            <span class="text-gray-300">|</span>
+            <span class="text-xs text-gray-400">{{ $officeName }}</span>
+            <span class="text-gray-300">|</span>
+            <span class="text-xs text-gray-400">المطور عبدالرحمن الريامي</span>
+        </div>
     </footer>
 </body>
 </html>

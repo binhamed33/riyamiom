@@ -739,7 +739,11 @@
                     <span class="text-xs text-gray-400">&copy;</span>
                     <span class="text-sm text-gray-500">{{ date('Y') }}</span>
                 </div>
-                <p class="text-xs text-gray-400">{{ $officeName }} &mdash; {{ __('app.all_rights') }}</p>
+                <div class="flex items-center gap-2">
+                    <p class="text-xs text-gray-400">{{ $officeName }}</p>
+                    <span class="text-gray-300">|</span>
+                    <p class="text-xs text-gray-400">المطور عبدالرحمن الريامي</p>
+                </div>
             </div>
         </footer>
     </div>
