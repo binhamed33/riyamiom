@@ -14,7 +14,7 @@ class FeasibilityController extends Controller
 {
     public function index(): View
     {
-        $userIds = User::where('role', 'lawyer')->pluck('id');
+        $userIds = User::whereIn('role', ['developer', 'admin', 'lawyer', 'staff'])->pluck('id');
 
         $stats = [];
 
