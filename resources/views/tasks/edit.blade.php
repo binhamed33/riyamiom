@@ -14,13 +14,13 @@
     </div>
 
     <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <form method="POST" action="{{ route('tasks.update', ) }}" class="space-y-5">
+        <form method="POST" action="{{ route('tasks.update', $task) }}" class="space-y-5">
             @csrf
             @method('PUT')
 
             <div>
                 <label for="title" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.title') }} <span class="text-red-500">*</span></label>
-                <input type="text" id="title" name="title" value="{{ old('title', ->title) }}"
+                <input type="text" id="title" name="title" value="{{ old('title', $task->title) }}"
                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('title') border-red-500 @enderror"
                        placeholder="{{ __('app.task_title_placeholder') }}" required>
                 @error('title')
@@ -32,7 +32,7 @@
                 <label for="description" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.description') }}</label>
                 <textarea id="description" name="description" rows="4"
                           class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('description') border-red-500 @enderror"
-                          placeholder="{{ __('app.task_description_placeholder') }}">{{ old('description', ->description) }}</textarea>
+                          placeholder="{{ __('app.task_description_placeholder') }}">{{ old('description', $task->description) }}</textarea>
                 @error('description')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -74,10 +74,10 @@
                 <div>
                     <label for="priority" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.priority') }} <span class="text-red-500">*</span></label>
                     <select id="priority" name="priority" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('priority') border-red-500 @enderror" required>
-                        <option value="low" {{ old('priority', ->priority) === 'low' ? 'selected' : '' }}>{{ __('app.priority_low') }}</option>
-                        <option value="medium" {{ old('priority', ->priority) === 'medium' ? 'selected' : '' }}>{{ __('app.priority_medium') }}</option>
-                        <option value="high" {{ old('priority', ->priority) === 'high' ? 'selected' : '' }}>{{ __('app.priority_high') }}</option>
-                        <option value="urgent" {{ old('priority', ->priority) === 'urgent' ? 'selected' : '' }}>{{ __('app.priority_urgent') }}</option>
+                        <option value="low" {{ old('priority', $task->priority) === 'low' ? 'selected' : '' }}>{{ __('app.priority_low') }}</option>
+                        <option value="medium" {{ old('priority', $task->priority) === 'medium' ? 'selected' : '' }}>{{ __('app.priority_medium') }}</option>
+                        <option value="high" {{ old('priority', $task->priority) === 'high' ? 'selected' : '' }}>{{ __('app.priority_high') }}</option>
+                        <option value="urgent" {{ old('priority', $task->priority) === 'urgent' ? 'selected' : '' }}>{{ __('app.priority_urgent') }}</option>
                     </select>
                     @error('priority')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -87,7 +87,7 @@
                 <div>
                     <label for="due_date" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.due_date') }}</label>
                     <input type="date" id="due_date" name="due_date"
-                           value="{{ old('due_date', ->due_date?->format('Y-m-d')) }}"
+                           value="{{ old('due_date', $task->due_date?->format('Y-m-d')) }}"
                            class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('due_date') border-red-500 @enderror">
                     @error('due_date')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -98,10 +98,10 @@
             <div>
                 <label for="status" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.status') }} <span class="text-red-500">*</span></label>
                 <select id="status" name="status" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('status') border-red-500 @enderror" required>
-                    <option value="pending" {{ old('status', ->status) === 'pending' ? 'selected' : '' }}>{{ __('app.status_pending') }}</option>
-                    <option value="in_progress" {{ old('status', ->status) === 'in_progress' ? 'selected' : '' }}>{{ __('app.status_in_progress') }}</option>
-                    <option value="completed" {{ old('status', ->status) === 'completed' ? 'selected' : '' }}>{{ __('app.status_completed') }}</option>
-                    <option value="cancelled" {{ old('status', ->status) === 'cancelled' ? 'selected' : '' }}>{{ __('app.status_cancelled') }}</option>
+                    <option value="pending" {{ old('status', $task->status) === 'pending' ? 'selected' : '' }}>{{ __('app.status_pending') }}</option>
+                    <option value="in_progress" {{ old('status', $task->status) === 'in_progress' ? 'selected' : '' }}>{{ __('app.status_in_progress') }}</option>
+                    <option value="completed" {{ old('status', $task->status) === 'completed' ? 'selected' : '' }}>{{ __('app.status_completed') }}</option>
+                    <option value="cancelled" {{ old('status', $task->status) === 'cancelled' ? 'selected' : '' }}>{{ __('app.status_cancelled') }}</option>
                 </select>
                 @error('status')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
