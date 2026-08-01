@@ -22,16 +22,26 @@ class PublicClientController extends Controller
         ]);
 
         $value = trim($request->credential);
+        $phoneValue = $this->normalizePhone($value);
+        $emailValue = $this->normalizeEmail($value);
 
-        $clients = Client::with('cases.lawyer')->get();
-        $match = null;
-
-        foreach ($clients as $client) {
-            if ($client->email === $value || $client->phone === $value) {
-                $match = $client;
-                break;
+        $match = Client::with('cases.lawyer')->get()->first(function ($client) use ($phoneValue, $emailValue) {
+            if ($client->email && $this->normalizeEmail($client->email) === $emailValue) {
+                return true;
             }
-        }
+
+            if (!$client->phone) {
+                return false;
+            }
+
+            foreach (array_map('trim', explode(',', $client->phone)) as $phone) {
+                if ($this->normalizePhone($phone) === $phoneValue) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
 
         if (!$match) {
             return back()->with('error', 'لم يتم العثور على بيانات مطابقة، يرجى التأكد من المعلومات المدخلة');
@@ -66,5 +76,21 @@ class PublicClientController extends Controller
     {
         session()->forget(['client_access_id', 'client_access_name']);
         return redirect()->route('client.access')->with('success', 'تم تسجيل الخروج بنجاح');
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        if (str_starts_with($digits, '968')) {
+            $digits = substr($digits, 3);
+        }
+
+        return ltrim($digits, '0');
+    }
+
+    private function normalizeEmail(string $email): string
+    {
+        return strtolower(trim($email));
     }
 }
