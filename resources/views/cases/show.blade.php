@@ -120,9 +120,9 @@ document.addEventListener('alpine:init', () => {
                 alert('{{ __("app.connection_error") }}');
             }
         },
-        async runAnalysis() {
+        async runAnalysis(force = false) {
             if (this.analyzing) return;
-            if (this.analysis) {
+            if (this.analysis && !force) {
                 this.showSummary = true;
                 return;
             }
@@ -702,6 +702,12 @@ https://office.riyami.om/client-access
                             تحليل الذكاء الاصطناعي
                         </h4>
                         <span class="text-[10px] text-indigo-400 font-medium bg-white px-2 py-0.5 rounded-full border border-indigo-200">Gemini</span>
+                        <button @click="runAnalysis(true)" class="text-[10px] text-indigo-500 hover:text-indigo-700 font-medium bg-white px-2 py-0.5 rounded-full border border-indigo-200 hover:bg-indigo-50 transition-colors">
+                            <svg class="w-3 h-3 inline -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            إعادة التحليل
+                        </button>
                     </div>
                     <div x-show="analyzing" class="flex items-center gap-3 text-indigo-600 text-sm py-2">
                         <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">

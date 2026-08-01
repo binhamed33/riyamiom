@@ -85,7 +85,7 @@ class GeminiService
                 ->post('https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . ':generateContent', array_merge($payload, [
                     'generationConfig' => [
                         'temperature' => 0.4,
-                        'maxOutputTokens' => 2048,
+                        'maxOutputTokens' => 8192,
                     ],
                 ]));
 
