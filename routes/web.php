@@ -23,6 +23,7 @@ use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\CaseFileController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\LawyerEvaluationController;
 use App\Http\Controllers\HrController;
 use App\Http\Controllers\FinanceController;
 
@@ -230,6 +231,11 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/clients/{id}/restore', [ClientController::class, 'restore'])->name('clients.restore');
         Route::post('/clients/ajax', [ClientController::class, 'storeAjax'])->name('clients.ajax');
         Route::resource('clients', ClientController::class);
+    });
+
+    // Evaluations - developer, admin, lawyer, staff
+    Route::middleware(['role:developer,admin,lawyer,staff'])->group(function () {
+        Route::get('/evaluations', [LawyerEvaluationController::class, 'index'])->name('evaluations.index');
     });
     
     // Users & Admin - all team roles
