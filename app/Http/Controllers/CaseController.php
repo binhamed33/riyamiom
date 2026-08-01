@@ -140,13 +140,45 @@ class CaseController extends Controller
                 $legalCase->toArray()
             );
 
-            return redirect()->route('cases.show', $legalCase)
-                ->with('success', 'case_created')
-                ->with('print_url', route('cases.show', $legalCase) . '?print=1');
+            return $this->redirectAfterStore($legalCase);
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->withInput()->with('error', 'حدث خطأ أثناء حفظ القضية والجلسات: ' . $e->getMessage());
         }
+    }
+
+    private function redirectAfterStore(LegalCase $legalCase): RedirectResponse
+    {
+        try {
+            $notify = $this->notifyClientPortal($legalCase);
+
+            if (!empty($notify['sent'])) {
+                $channelsText = count($notify['sent']) > 1
+                    ? 'البريد الإلكتروني وواتساب'
+                    : ($notify['sent'][0] === 'email' ? 'البريد الإلكتروني' : 'واتساب');
+                $notice = 'تم إرسال رسالة المتابعة للموكل تلقائياً عبر ' . $channelsText;
+                if (!empty($notify['failures'])) {
+                    $notice .= ' — ' . implode(' | ', $notify['failures']);
+                }
+                return redirect()->route('cases.show', $legalCase)
+                    ->with('success', 'case_created')
+                    ->with('portal_notice', $notice)
+                    ->with('print_url', route('cases.show', $legalCase) . '?print=1');
+            }
+
+            if (!empty($notify['failures'])) {
+                return redirect()->route('cases.show', $legalCase)
+                    ->with('success', 'case_created')
+                    ->with('portal_notice', 'لم يتم إرسال رسالة المتابعة تلقائياً: ' . implode(' | ', $notify['failures']))
+                    ->with('print_url', route('cases.show', $legalCase) . '?print=1');
+            }
+        } catch (\Throwable $e) {
+            Log::error('Auto portal notify failed for case ' . $legalCase->id . ': ' . $e->getMessage());
+        }
+
+        return redirect()->route('cases.show', $legalCase)
+            ->with('success', 'case_created')
+            ->with('print_url', route('cases.show', $legalCase) . '?print=1');
     }
 
     public function show(LegalCase $case): View
@@ -623,11 +655,36 @@ SYSTEM;
     {
         $this->authorizeCaseAccess($case);
 
-        $case->load('client');
+        $result = $this->notifyClientPortal($case);
+        $sentChannels = $result['sent'];
+        $failures = $result['failures'];
+
+        if (empty($sentChannels)) {
+            return response()->json([
+                'error' => 'تعذر الإرسال التلقائي: ' . implode(' | ', $failures),
+                'fallback_wa_link' => $result['fallback_wa_link'],
+            ], 400);
+        }
+
+        $channelsText = count($sentChannels) > 1
+            ? 'البريد الإلكتروني وواتساب'
+            : ($sentChannels[0] === 'email' ? 'البريد الإلكتروني' : 'واتساب');
+
+        return response()->json([
+            'success' => true,
+            'channels' => $sentChannels,
+            'message' => 'تم إرسال رسالة المتابعة للموكل عبر ' . $channelsText,
+            'failures' => $failures,
+        ]);
+    }
+
+    private function notifyClientPortal(LegalCase $case): array
+    {
+        $case->loadMissing('client');
         $client = $case->client;
 
         if (!$client) {
-            return response()->json(['error' => 'لا يوجد موكل مرتبط بهذه القضية'], 400);
+            return ['sent' => [], 'failures' => ['لا يوجد موكل مرتبط بهذه القضية'], 'fallback_wa_link' => null];
         }
 
         $message = $this->portalInviteMessage();
@@ -683,23 +740,7 @@ SYSTEM;
             $fallbackWaLink = 'https://wa.me/' . ltrim($client->phone, '+') . '?text=' . urlencode($message);
         }
 
-        if (empty($sentChannels)) {
-            return response()->json([
-                'error' => 'تعذر الإرسال التلقائي: ' . implode(' | ', $failures),
-                'fallback_wa_link' => $fallbackWaLink,
-            ], 400);
-        }
-
-        $channelsText = count($sentChannels) > 1
-            ? 'البريد الإلكتروني وواتساب'
-            : ($sentChannels[0] === 'email' ? 'البريد الإلكتروني' : 'واتساب');
-
-        return response()->json([
-            'success' => true,
-            'channels' => $sentChannels,
-            'message' => 'تم إرسال رسالة المتابعة للموكل عبر ' . $channelsText,
-            'failures' => $failures,
-        ]);
+        return ['sent' => $sentChannels, 'failures' => $failures, 'fallback_wa_link' => $fallbackWaLink];
     }
 
     protected function portalInviteMessage(): string
