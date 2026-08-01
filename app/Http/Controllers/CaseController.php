@@ -16,6 +16,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 use Illuminate\View\View;
 
@@ -614,6 +617,103 @@ SYSTEM;
                 'error' => 'خطأ من خدمة الذكاء الاصطناعي: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function sendPortalMessage(LegalCase $case): JsonResponse
+    {
+        $this->authorizeCaseAccess($case);
+
+        $case->load('client');
+        $client = $case->client;
+
+        if (!$client) {
+            return response()->json(['error' => 'لا يوجد موكل مرتبط بهذه القضية'], 400);
+        }
+
+        $message = $this->portalInviteMessage();
+        $sentChannels = [];
+        $failures = [];
+
+        // Email - automatic
+        if ($client->email) {
+            if (config('mail.default', 'log') !== 'log') {
+                try {
+                    Mail::raw($message, function ($m) use ($client, $case) {
+                        $m->to($client->email)
+                            ->subject('متابعة قضيتك إلكترونياً - شركة حمد الريامي للمحاماة (قضية ' . $case->case_number . ')');
+                    });
+                    $sentChannels[] = 'email';
+                } catch (\Throwable $e) {
+                    Log::error('Portal invite email failed: ' . $e->getMessage());
+                    $failures[] = 'الإيميل: ' . $e->getMessage();
+                }
+            } else {
+                $failures[] = 'الإيميل غير مفعل في إعدادات الخادم';
+            }
+        }
+
+        // WhatsApp - automatic via Green API if configured
+        $waUrl = config('services.whatsapp.url', '');
+        $waToken = config('services.whatsapp.token', '');
+
+        if ($client->phone && $waUrl && $waToken) {
+            try {
+                $response = Http::timeout(30)
+                    ->post(rtrim($waUrl, '/') . '/sendMessage/' . $waToken, [
+                        'chatId' => preg_replace('/^\+?/', '', $client->phone),
+                        'message' => $message,
+                    ]);
+                if ($response->successful()) {
+                    $sentChannels[] = 'whatsapp';
+                } else {
+                    $failures[] = 'الواتساب: رمز الحالة ' . $response->status();
+                }
+            } catch (\Throwable $e) {
+                Log::error('Portal invite whatsapp failed: ' . $e->getMessage());
+                $failures[] = 'الواتساب: ' . $e->getMessage();
+            }
+        }
+
+        $fallbackWaLink = null;
+        if ($client->phone && !in_array('whatsapp', $sentChannels)) {
+            $fallbackWaLink = 'https://wa.me/' . ltrim($client->phone, '+') . '?text=' . urlencode($message);
+        }
+
+        if (empty($sentChannels)) {
+            return response()->json([
+                'error' => 'تعذر الإرسال التلقائي: ' . implode(' | ', $failures),
+                'fallback_wa_link' => $fallbackWaLink,
+            ], 400);
+        }
+
+        $channelsText = count($sentChannels) > 1
+            ? 'البريد الإلكتروني وواتساب'
+            : ($sentChannels[0] === 'email' ? 'البريد الإلكتروني' : 'واتساب');
+
+        return response()->json([
+            'success' => true,
+            'channels' => $sentChannels,
+            'message' => 'تم إرسال رسالة المتابعة للموكل عبر ' . $channelsText,
+            'failures' => $failures,
+        ]);
+    }
+
+    protected function portalInviteMessage(): string
+    {
+        return <<<TXT
+يسر **شركة حمد الريامي للمحاماة (شركة مدنية للمحاماة)** أن تضع بين أيديكم خدمة **متابعة القضايا إلكترونياً**، وذلك حرصاً منا على تعزيز جودة الخدمات القانونية، وتوفير تجربة أكثر سهولة وشفافية لموكلينا الكرام.
+
+يمكنكم الاطلاع على آخر مستجدات القضية، ومتابعة تفاصيلها بكل يسر، من خلال الدخول إلى الرابط التالي:
+
+https://office.riyami.om/client-access
+
+بعد فتح الرابط، يُرجى إدخال **رقم الهاتف** أو **البريد الإلكتروني** المسجل لدى المكتب، لتظهر لكم جميع تفاصيل القضية والمستجدات المتعلقة بها بشكل مباشر.
+
+وفي حال واجهتكم أي صعوبة في الدخول أو كانت لديكم أي استفسارات، فإن فريقنا على أتم الاستعداد لخدمتكم والإجابة عن جميع استفساراتكم.
+
+**شركة حمد الريامي للمحاماة (شركة مدنية للمحاماة)**
+نعتز بثقتكم، ونسعى دائماً إلى تقديم خدمات قانونية احترافية بأعلى معايير الجودة.
+TXT;
     }
 
     private function sessionsText(LegalCase $case): string

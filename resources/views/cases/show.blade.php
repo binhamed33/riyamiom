@@ -16,6 +16,32 @@ document.addEventListener('alpine:init', () => {
         analysis: @json($case->ai_analysis),
         analysisError: null,
         chatOpen: false,
+        portalSending: false,
+        portalResult: null,
+        async sendPortalMessage() {
+            if (this.portalSending) return;
+            this.portalSending = true;
+            this.portalResult = null;
+            try {
+                const res = await fetch('{{ route('cases.sendPortalMessage', $case) }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                });
+                const data = await res.json().catch(() => null);
+                if (res.ok && data?.success) {
+                    this.portalResult = { ok: true, text: data.message };
+                } else {
+                    this.portalResult = { ok: false, text: data?.error || '{{ __("app.save_error") }}' };
+                    if (data?.fallback_wa_link) {
+                        window.open(data.fallback_wa_link, '_blank');
+                    }
+                }
+            } catch(e) {
+                this.portalResult = { ok: false, text: '{{ __("app.connection_error") }}' };
+            }
+            this.portalSending = false;
+            this.$nextTick(() => { if (this.portalResult) setTimeout(() => this.portalResult = null, 7000); });
+        },
         aiMessages: @json($aiMessagesData ?? []),
         aiInput: '',
         aiSending: false,
@@ -296,6 +322,16 @@ https://office.riyami.om/client-access
                             <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.566 4.112 1.547 5.838L.043 23.626l6.015-1.828A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.6c-1.916 0-3.74-.496-5.328-1.37l-.382-.228-3.57 1.085 1.148-3.472-.248-.397A9.538 9.538 0 012.4 12c0-5.302 4.298-9.6 9.6-9.6s9.6 4.298 9.6 9.6-4.298 9.6-9.6 9.6z"/>
                         </svg>
                     </a>
+                    <button @click="sendPortalMessage()" :disabled="portalSending" class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors disabled:opacity-50" title="إرسال رسالة المتابعة للموكل تلقائياً (إيميل وواتساب)">
+                        <svg x-show="!portalSending" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        <svg x-show="portalSending" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+                    <div x-show="portalResult" x-cloak class="text-xs font-medium mt-0.5" :class="portalResult?.ok ? 'text-green-600' : 'text-red-600'" x-text="portalResult?.text"></div>
                     @endif
                 </div>
             </div>

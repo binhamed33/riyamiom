@@ -45,4 +45,9 @@ return [
         'model' => env('GEMINI_MODEL', 'gemini-flash-latest'),
     ],
 
+    'whatsapp' => [
+        'url' => env('WHATSAPP_API_URL', ''),
+        'token' => env('WHATSAPP_API_TOKEN', ''),
+    ],
+
 ];
