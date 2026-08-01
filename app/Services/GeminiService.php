@@ -13,7 +13,7 @@ class GeminiService
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key') ?: null;
-        $this->model = config('services.gemini.model', 'gemini-2.0-flash') ?: 'gemini-2.0-flash';
+        $this->model = config('services.gemini.model', 'gemini-flash-latest') ?: 'gemini-flash-latest';
     }
 
     public function isConfigured(): bool
