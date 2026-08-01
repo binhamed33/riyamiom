@@ -37,7 +37,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json(['error' => 'Server Error'], 500);
             }
             if ($e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
-                || $e instanceof \Illuminate\Auth\AuthenticationException) {
+                || $e instanceof \Illuminate\Auth\AuthenticationException
+                || $e instanceof \Illuminate\Validation\ValidationException) {
                 return;
             }
             return redirect()->route('dashboard')
