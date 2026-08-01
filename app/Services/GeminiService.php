@@ -77,7 +77,7 @@ class GeminiService
         }
 
         try {
-            $response = Http::timeout(90)
+            $response = Http::timeout(120)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                     'X-goog-api-key' => $this->apiKey,

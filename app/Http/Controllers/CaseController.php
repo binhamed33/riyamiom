@@ -442,6 +442,8 @@ class CaseController extends Controller
 
     public function analyze(LegalCase $case): JsonResponse
     {
+        @set_time_limit(180);
+
         $service = new GeminiService();
 
         if (!$service->isConfigured()) {
@@ -521,6 +523,8 @@ PROMPT;
     public function aiChat(Request $request, LegalCase $case): JsonResponse
     {
         $this->authorizeCaseAccess($case);
+
+        @set_time_limit(180);
 
         $request->validate([
             'message' => 'required|string|max:4000',
