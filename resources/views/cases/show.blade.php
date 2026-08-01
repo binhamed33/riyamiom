@@ -737,8 +737,6 @@ https://office.riyami.om/client-access
         </div>
     </div>
 
-</div>
-
 {{-- AI Chat Modal --}}
 <div x-show="chatOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
     x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
@@ -821,6 +819,7 @@ https://office.riyami.om/client-access
         </div>
     </div>
 </div>
+    </div>
 
 @push('scripts')
 @if(request()->has('print'))
