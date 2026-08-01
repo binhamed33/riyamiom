@@ -202,7 +202,7 @@ document.addEventListener('alpine:init', () => {
                                     </a>
                                     @if($case->client && ($case->client->phone || $case->client->email))
                                     <div class="relative" x-data="sendPortal({{ $case->id }})">
-                                        <button @click="send()" :disabled="sending" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors disabled:opacity-50" title="إرسال رسالة المتابعة للموكل تلقائياً (إيميل وواتساب)">
+                                        <button @click="send()" :disabled="sending" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors disabled:opacity-50" title="إرسال رسالة المتابعة للموكل تلقائياً (إيميل وواتساب)">
                                             <svg x-show="!sending" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                                             </svg>
