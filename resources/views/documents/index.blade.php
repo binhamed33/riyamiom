@@ -76,7 +76,7 @@
                         <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('case_id') border-red-500 @enderror">
                             <option value="">{{ __('app.no_case') }}</option>
                             @foreach ($cases as $case)
-                                <option value="{{ $case->id }}" {{ old('case_id') == $case->id ? 'selected' : '' }}>
+                                <option value="{{ $case->id }}" {{ old('case_id', $selectedCaseId ?? '') == $case->id ? 'selected' : '' }}>
                                     #{{ $case->office_case_number }} - {{ $case->case_number ?? '' }} - {{ $case->client?->phone ?? '' }} - {{ $case->client?->name ?? '' }}
                                 </option>
                             @endforeach

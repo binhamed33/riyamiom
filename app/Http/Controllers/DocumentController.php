@@ -60,8 +60,9 @@ class DocumentController extends Controller
 
         $documents = $query->latest()->paginate(15)->withQueryString();
         $cases = LegalCase::with('client')->orderBy('office_case_number')->get();
+        $selectedCaseId = (int) $request->query('case_id', 0);
 
-        return view('documents.index', compact('documents', 'cases'));
+        return view('documents.index', compact('documents', 'cases', 'selectedCaseId'));
     }
 
     public function store(Request $request): RedirectResponse

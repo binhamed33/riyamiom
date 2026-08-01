@@ -509,6 +509,14 @@ document.addEventListener('alpine:init', () => {
 
         {{-- Tab Content: Tasks --}}
         <div x-show="activeTab === 'tasks'" x-cloak class="p-4">
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-sm text-gray-400">{{ __('app.tasks_tab') }} ({{ $case->tasks->count() ?? 0 }})</p>
+                <a href="{{ route('tasks.create', ['case_id' => $case->id]) }}" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors" title="إضافة مهمة">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                </a>
+            </div>
             @if($case->tasks && $case->tasks->count() > 0)
                 <div class="space-y-2">
                     @foreach($case->tasks as $task)
@@ -552,6 +560,14 @@ document.addEventListener('alpine:init', () => {
 
         {{-- Tab Content: Documents --}}
         <div x-show="activeTab === 'documents'" x-cloak class="p-4">
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-sm text-gray-400">{{ __('app.documents_tab') }} ({{ $case->documents->count() ?? 0 }})</p>
+                <a href="{{ route('documents.index', ['case_id' => $case->id]) }}" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors" title="إضافة مستند">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                </a>
+            </div>
             @if($case->documents && $case->documents->count() > 0)
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     @foreach($case->documents as $document)

@@ -37,12 +37,13 @@ class TaskController extends Controller
         return view('tasks.index', compact('tasks', 'users'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $cases = LegalCase::with('client')->orderBy('office_case_number')->get();
         $users = User::where('role', '!=', 'client')->orderBy('name')->get();
+        $selectedCaseId = (int) $request->query('case_id', 0);
 
-        return view('tasks.create', compact('cases', 'users'));
+        return view('tasks.create', compact('cases', 'users', 'selectedCaseId'));
     }
 
     public function store(Request $request): RedirectResponse
