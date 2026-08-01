@@ -89,9 +89,13 @@ class GeminiService
                 ]));
 
             if (!$response->successful()) {
+                $status = $response->status();
                 $errorBody = $response->body();
-                Log::error('Gemini API error: ' . $response->status() . ' - ' . $errorBody);
-                throw new \RuntimeException('Gemini API responded with status ' . $response->status() . ': ' . $errorBody);
+                Log::error('Gemini API error: ' . $status . ' - ' . $errorBody);
+                if ($status === 429) {
+                    throw new \RuntimeException('تم تجاوز الحصة المجانية من خدمة Gemini أو أن مفتاح API غير صالح. يرجى إنشاء مفتاح جديد من https://aistudio.google.com/apikey ثم تحديث GEMINI_API_KEY في ملف .env');
+                }
+                throw new \RuntimeException('Gemini API responded with status ' . $status . ': ' . $errorBody);
             }
 
             $data = $response->json();
