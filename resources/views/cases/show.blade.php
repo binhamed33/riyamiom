@@ -64,17 +64,17 @@ document.addEventListener('alpine:init', () => {
             }
             this.analyzing = true;
             this.analysisError = null;
+            this.showSummary = true;
             try {
                 const res = await fetch('{{ route('cases.analyze', $case) }}', {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
                 });
-                const data = await res.json();
+                const data = await res.json().catch(() => null);
                 if (!res.ok) {
-                    this.analysisError = data.error || '{{ __("app.save_error") }}';
+                    this.analysisError = data?.error || '{{ __("app.save_error") }}';
                 } else {
                     this.analysis = data.analysis;
-                    this.showSummary = true;
                 }
             } catch(e) {
                 this.analysisError = '{{ __("app.connection_error") }}';
