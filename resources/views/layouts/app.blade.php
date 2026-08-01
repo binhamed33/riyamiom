@@ -1004,5 +1004,211 @@
     });
     </script>
 
+    @auth
+    <style>
+        [x-cloak] { display: none !important; }
+        .ai-content { line-height: 1.9; }
+        .ai-content strong { color: #6d28d9; font-weight: 700; }
+        .ai-content h1, .ai-content h2, .ai-content h3 { color: #5b21b6; font-weight: 700; margin: 0.75rem 0 0.4rem; line-height: 1.5; }
+        .ai-content h1 { font-size: 1rem; }
+        .ai-content h2 { font-size: 0.95rem; }
+        .ai-content h3 { font-size: 0.9rem; }
+        .ai-content ul { list-style: disc; padding-inline-start: 1.25rem; margin: 0.4rem 0; }
+        .ai-content li { margin: 0.25rem 0; }
+        .ai-content p { margin: 0.4rem 0; }
+        .ai-content hr { border: 0; border-top: 1px dashed #c7d2fe; margin: 0.6rem 0; }
+        .ai-content code { background: #ede9fe; color: #5b21b6; padding: 0 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
+    </style>
+
+    {{-- Global AI Legal Assistant Widget --}}
+    <div x-data="assistant">
+        {{-- Floating Button --}}
+        <button @click="toggle()" class="fixed bottom-6 {{ app()->getLocale() === 'ar' ? 'left-6' : 'right-6' }} z-40 w-14 h-14 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105" title="{{ __('app.ai_chat_title') }}">
+            <svg x-show="!open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+            </svg>
+            <svg x-show="open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+
+        {{-- Chat Panel --}}
+        <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-4" class="fixed bottom-24 {{ app()->getLocale() === 'ar' ? 'left-6' : 'right-6' }} z-40 w-[380px] max-w-[calc(100vw-2rem)] bg-white border border-emerald-300 rounded-2xl shadow-2xl flex flex-col overflow-hidden" style="height: min(560px, calc(100vh - 140px));">
+            {{-- Header --}}
+            <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+                    </svg>
+                    <div>
+                        <h3 class="font-bold text-sm">{{ __('app.ai_chat_title') }}</h3>
+                        <p class="text-[10px] text-emerald-100">{{ __('app.ai_assistant_subtitle') }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button @click="clearChat()" class="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors" title="{{ __('app.ai_chat_clear') }}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                    <button @click="open = false" class="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Messages --}}
+            <div x-ref="box" class="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+                <template x-if="messages.length === 0">
+                    <div class="text-center py-8">
+                        <div class="w-14 h-14 mx-auto mb-3 bg-emerald-100 rounded-full flex items-center justify-center">
+                            <svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+                            </svg>
+                        </div>
+                        <p class="text-sm text-gray-600 leading-relaxed max-w-xs mx-auto">{{ __('app.ai_assistant_greeting') }}</p>
+                    </div>
+                </template>
+
+                <template x-for="m in messages" :key="m.id">
+                    <div :class="m.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+                        <div :class="m.role === 'user'
+                            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl rounded-tr-sm max-w-[85%] px-4 py-2.5 shadow-sm'
+                            : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm max-w-[85%] px-4 py-2.5 shadow-sm'">
+                            <div class="text-sm leading-relaxed" :class="m.role === 'user' ? 'whitespace-pre-wrap' : 'ai-content'" x-html="m.role === 'assistant' ? md(m.content) : m.content"></div>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="sending" class="flex justify-start">
+                    <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-2">
+                        <svg class="w-4 h-4 animate-spin text-emerald-600" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-xs text-gray-500">{{ __('app.ai_chat_typing') }}</span>
+                    </div>
+                </div>
+
+                <div x-show="error" x-text="error" class="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-3"></div>
+            </div>
+
+            {{-- Input --}}
+            <div class="px-4 py-3 border-t border-gray-200 bg-white">
+                <p class="text-[10px] text-gray-400 mb-2">{{ __('app.ai_assistant_disclaimer') }}</p>
+                <div class="flex items-end gap-2">
+                    <textarea x-model="input" rows="1" :disabled="sending"
+                        @keydown.enter.prevent="if (!$event.shiftKey) send()"
+                        class="flex-1 rounded-xl bg-gray-50 border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:opacity-50"
+                        placeholder="{{ __('app.ai_assistant_placeholder') }}"></textarea>
+                    <button @click="send()" :disabled="sending || !input.trim()"
+                        class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-2.5 rounded-xl font-semibold transition-colors text-sm disabled:opacity-50 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        {{ __('app.ai_chat_send') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script nonce="{{ $cspNonce }}">
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('assistant', () => ({
+            open: false,
+            loaded: false,
+            messages: [],
+            input: '',
+            sending: false,
+            error: null,
+            md(text) {
+                if (!text) return '';
+                const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const lines = esc.split('\n');
+                let html = '', inList = false;
+                const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
+                for (let line of lines) {
+                    line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                               .replace(/`([^`]+)`/g, '<code>$1</code>');
+                    const h1 = line.match(/^#\s+(.*)/);
+                    const h2 = line.match(/^##\s+(.*)/);
+                    const h3 = line.match(/^###\s+(.*)/);
+                    const hr = /^---+$/.test(line.trim());
+                    const li = line.match(/^\s*[-*]\s+(.*)/);
+                    if (h1) { closeList(); html += '<h1>' + h1[1] + '</h1>'; }
+                    else if (h2) { closeList(); html += '<h2>' + h2[1] + '</h2>'; }
+                    else if (h3) { closeList(); html += '<h3>' + h3[1] + '</h3>'; }
+                    else if (hr) { closeList(); html += '<hr>'; }
+                    else if (li) { if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + li[1] + '</li>'; }
+                    else if (!line.trim()) { closeList(); }
+                    else { closeList(); html += '<p>' + line + '</p>'; }
+                }
+                closeList();
+                return html;
+            },
+            scrollChat() {
+                const el = this.$refs.box;
+                if (el) el.scrollTop = el.scrollHeight;
+            },
+            toggle() {
+                this.open = !this.open;
+                if (this.open && !this.loaded) this.loadHistory();
+                this.$nextTick(() => this.scrollChat());
+            },
+            async loadHistory() {
+                try {
+                    const res = await fetch('{{ route("assistant.history") }}', {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    const data = await res.json().catch(() => null);
+                    if (data && data.messages) this.messages = data.messages;
+                } catch(e) {}
+                this.loaded = true;
+                this.$nextTick(() => this.scrollChat());
+            },
+            async send() {
+                const text = this.input.trim();
+                if (!text || this.sending) return;
+                this.messages.push({ id: 'user-' + Date.now(), role: 'user', content: text });
+                this.input = '';
+                this.error = null;
+                this.sending = true;
+                this.$nextTick(() => this.scrollChat());
+                try {
+                    const res = await fetch('{{ route("assistant.chat") }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                        body: JSON.stringify({ message: text })
+                    });
+                    const data = await res.json().catch(() => null);
+                    if (!res.ok) {
+                        this.error = data?.error || '{{ __("app.save_error") }}';
+                    } else {
+                        this.messages.push({ id: 'ai-' + Date.now(), role: 'assistant', content: data.reply });
+                    }
+                } catch(e) {
+                    this.error = '{{ __("app.connection_error") }}';
+                }
+                this.sending = false;
+                this.$nextTick(() => this.scrollChat());
+            },
+            async clearChat() {
+                this.messages = [];
+                this.error = null;
+                try {
+                    await fetch('{{ route("assistant.clear") }}', {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                    });
+                } catch(e) {}
+            }
+        }));
+    });
+    </script>
+    @endauth
+
 </body>
 </html>

@@ -76,6 +76,11 @@ Route::middleware(['auth', 'active'])->group(function () {
     // Dashboard - all roles
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Global AI legal assistant - all roles
+    Route::get('/ai-assistant/history', [App\Http\Controllers\AssistantController::class, 'history'])->name('assistant.history');
+    Route::post('/ai-assistant', [App\Http\Controllers\AssistantController::class, 'chat'])->name('assistant.chat');
+    Route::post('/ai-assistant/clear', [App\Http\Controllers\AssistantController::class, 'clear'])->name('assistant.clear');
+
     // LexPro landing page
     Route::get('/lexpro', function () {
         return view('lexpro.index');
