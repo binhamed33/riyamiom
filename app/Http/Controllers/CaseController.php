@@ -103,7 +103,9 @@ class CaseController extends Controller
         $sessionsData = $request->input('sessions', []);
         if (is_array($sessionsData)) {
             foreach ($sessionsData as $i => $s) {
-                if (!empty($s['date']) && !strtotime($s['date'])) {
+                if (empty($s['date'])) {
+                    $sessionErrors[] = "الجلسة " . ($i + 1) . ": التاريخ مطلوب";
+                } elseif (!strtotime($s['date'])) {
                     $sessionErrors[] = "الجلسة " . ($i + 1) . ": تاريخ غير صالح";
                 }
             }
@@ -250,7 +252,10 @@ class CaseController extends Controller
         $sessionsData = $request->input('sessions', []);
         if (is_array($sessionsData)) {
             foreach ($sessionsData as $i => $s) {
-                if (!empty($s['date']) && !strtotime($s['date'])) {
+                if (!empty($s['delete'])) continue;
+                if (empty($s['date'])) {
+                    $sessionErrors[] = "الجلسة " . ($i + 1) . ": التاريخ مطلوب";
+                } elseif (!strtotime($s['date'])) {
                     $sessionErrors[] = "الجلسة " . ($i + 1) . ": تاريخ غير صالح";
                 }
             }

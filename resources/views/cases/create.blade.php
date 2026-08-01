@@ -319,7 +319,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.session_datetime') }} <span class="text-red-700">*</span></label>
-                            <input type="datetime-local" :name="'sessions['+i+'][date]'" x-model="s.date"
+                            <input type="datetime-local" :name="'sessions['+i+'][date]'" x-model="s.date" required
                                 class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                         </div>
                         <div>
