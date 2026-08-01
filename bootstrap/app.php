@@ -41,6 +41,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 return;
             }
             return redirect()->route('dashboard')
-                ->with('error', 'هذه الصفحة قيد التطوير');
+                ->with('error', 'حدث خطأ أثناء تنفيذ العملية: ' . $e->getMessage());
         });
     })->create();
