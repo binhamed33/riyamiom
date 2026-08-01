@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\Log;
 
 class GeminiService
 {
-    protected string $apiKey;
+    protected ?string $apiKey;
     protected string $model;
 
     public function __construct()
     {
-        $this->apiKey = config('services.gemini.api_key', '');
-        $this->model = config('services.gemini.model', 'gemini-2.0-flash');
+        $this->apiKey = config('services.gemini.api_key') ?: null;
+        $this->model = config('services.gemini.model', 'gemini-2.0-flash') ?: 'gemini-2.0-flash';
     }
 
     public function isConfigured(): bool
