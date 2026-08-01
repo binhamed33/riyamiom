@@ -31,7 +31,7 @@ document.addEventListener('alpine:init', () => {
         async sendAiMessage() {
             const text = this.aiInput.trim();
             if (!text || this.aiSending) return;
-            this.aiMessages.push({ role: 'user', content: text });
+            this.aiMessages.push({ id: 'user-' + Date.now(), role: 'user', content: text });
             this.aiInput = '';
             this.aiChatError = null;
             this.aiSending = true;
@@ -46,7 +46,7 @@ document.addEventListener('alpine:init', () => {
                 if (!res.ok) {
                     this.aiChatError = data?.error || '{{ __("app.save_error") }}';
                 } else {
-                    this.aiMessages.push({ role: 'assistant', content: data.reply });
+                    this.aiMessages.push({ id: 'ai-' + Date.now(), role: 'assistant', content: data.reply });
                 }
             } catch(e) {
                 this.aiChatError = '{{ __("app.connection_error") }}';
