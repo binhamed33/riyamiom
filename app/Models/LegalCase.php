@@ -85,4 +85,9 @@ class LegalCase extends Model
     {
         return $this->hasMany(Document::class, 'case_id');
     }
+
+    public function aiMessages(): HasMany
+    {
+        return $this->hasMany(CaseAiMessage::class, 'case_id');
+    }
 }

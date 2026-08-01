@@ -183,6 +183,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/cases/monthly/list', [CaseController::class, 'monthly'])->name('cases.monthly');
         Route::get('/cases/monthly/data', [CaseController::class, 'monthlyData'])->name('cases.monthly.data');
         Route::post('/cases/{case}/analyze', [CaseController::class, 'analyze'])->name('cases.analyze');
+        Route::post('/cases/{case}/ai-chat', [CaseController::class, 'aiChat'])->name('cases.ai_chat');
     });
     
     // Court Sessions - developer, admin, lawyer, staff

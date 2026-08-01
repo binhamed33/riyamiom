@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\CaseAiMessage;
 use App\Models\Client;
 use App\Models\LegalCase;
 use App\Models\Notification;
 use App\Models\Session;
 use App\Models\User;
+use App\Services\GeminiService;
 
 use App\Traits\AuditLoggable;
 use Illuminate\Http\JsonResponse;
@@ -148,7 +150,7 @@ class CaseController extends Controller
     {
         $this->authorizeCaseAccess($case);
 
-        $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader']);
+        $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader', 'aiMessages']);
 
         $sessionsData = $case->sessions->map(fn($s) => [
             'id' => $s->id,
@@ -160,7 +162,14 @@ class CaseController extends Controller
             'report' => $s->report,
         ])->values();
 
-        return view('cases.show', compact('case', 'sessionsData'));
+        $aiMessagesData = $case->aiMessages->sortBy('created_at')->take(-40)->map(fn($m) => [
+            'id' => $m->id,
+            'role' => $m->role,
+            'content' => $m->content,
+            'created_at' => $m->created_at?->format('Y/m/d H:i'),
+        ])->values();
+
+        return view('cases.show', compact('case', 'sessionsData', 'aiMessagesData'));
     }
 
     public function edit(LegalCase $case): View
@@ -433,7 +442,7 @@ class CaseController extends Controller
 
     public function analyze(LegalCase $case): JsonResponse
     {
-        $service = new \App\Services\GeminiService();
+        $service = new GeminiService();
 
         if (!$service->isConfigured()) {
             return response()->json([
@@ -443,16 +452,21 @@ class CaseController extends Controller
 
         $case->load(['client', 'lawyer', 'sessions', 'tasks']);
 
-        $sessionsText = $case->sessions->map(function ($s) {
-            return "- {$s->date?->format('Y-m-d')} ({$s->status}): {$s->notes} {$s->report}";
-        })->join("\n");
-
-        $tasksText = $case->tasks->map(function ($t) {
-            return "- {$t->title} (حالة: {$t->status})";
-        })->join("\n");
-
         $prompt = <<<PROMPT
-أنت خبير قانوني محامٍ في سلطنة عمان، متخصص في تحليل القضايا القانونية. قم بتحليل القضية التالية بشكل احترافي وشامل باللغة العربية:
+أنت محامٍ خبير وأستاذ قانون في سلطنة عمان، متخصص في تطبيق القوانين العمانية السارية:
+- قانون المعاملات المدنية العماني
+- قانون الإجراءات المدنية والتجارية العماني
+- قانون الإثبات في المعاملات المدنية والتجارية العماني
+- قانون العمل العماني
+- قانون الشركات التجارية العماني
+- قانون التجارة العماني
+- قانون الجزاء العماني وقانون الإجراءات الجزائية العماني
+- قانون المرافعات الشرعية العماني وأحكام الأحوال الشخصية
+- قوانين التنفيذ المدني والجزائي العماني
+- نظام المحاماة العماني وقرارات المهن القانونية
+- أحكام المحكمة العليا العمانية ومبادئها المستقرة
+
+قم بتحليل القضية التالية بشكل احترافي وعميق باللغة العربية:
 
 **بيانات القضية:**
 - رقم القضية: {$case->case_number}
@@ -468,19 +482,24 @@ class CaseController extends Controller
 - المحامي المسؤول: {$case->lawyer?->name}
 
 **الجلسات:**
-{$sessionsText}
+{$this->sessionsText($case)}
 
 **المهام المنجزة/المعلقة:**
-{$tasksText}
+{$this->tasksText($case)}
 
-قم بتقديم تحليل منظم بالأقسام التالية (استخدم العناوين):
-1. **تقييم القضية**: تحليل قوة الدعوى وفرص نجاحها
-2. **نقاط ضعف الخصم**: تحليل نقاط الضعف في موقف الخصم
-3. **توقع النتيجة**: توقع محتمل لنتيجة القضية بناءً على المعطيات
-4. **خطة العمل**: خطوات مقترحة للمحامي للمضي قدماً
-5. **المخاطر**: مخاطر محتملة وكيفية التعامل معها
+قم بتقديم تحليل منظم بالأقسام التالية (استخدم عناوين واضحة):
+1. **تقييم القضية**: تحليل قوة الدعوى وفرص نجاحها وفقاً للقانون العماني، مع ذكر الأساس القانوني والمبادئ المستند إليها.
+2. **المواد والمراجع القانونية**: اذكر النصوص القانونية العمانية ذات الصلة بنوع القضية (قانون المعاملات المدنية، قانون الإثبات، قانون الإجراءات المدنية، قانون العمل، قانون الجزاء، قانون الشركات... حسب طبيعة القضية)، مع شرح دلالتها على هذه القضية.
+3. **نقاط ضعف الخصم**: تحليل نقاط الضعف في موقف الخصم والدفوع المحتملة ضده.
+4. **توقع النتيجة**: توقع محتمل لنتيجة القضية بناءً على المعطيات والاجتهاد القضائي العماني.
+5. **خطة العمل**: خطوات إجرائية مقترحة للمحامي (مذكرات، مستندات، شهود، خبرة، وساطة...) مرتبة حسب الأولوية.
+6. **المخاطر**: مخاطر محتملة وكيفية التعامل معها.
 
-كن واقعياً ومحايداً ولا تبالغ في التوقعات. إذا كانت المعلومات غير كافية في بعض النقاط، اذكر ذلك بصراحة.
+تعليمات مهمة:
+- لا تختلق نصوص مواد قانونية غير موجودة؛ إذا لم تكن متأكداً من رقم المادة، اذكر المبدأ القانوني والمرجع العام دون رقم مادة محدد، ونبّه أن يتم التحقق من النص الرسمي.
+- كن واقعياً ومحايداً ولا تبالغ في التوقعات.
+- إذا كانت المعلومات غير كافية في بعض النقاط، اذكر ذلك بصراحة.
+- التزم بالقوانين السارية في سلطنة عمان فقط.
 PROMPT;
 
         $analysis = $service->analyze($prompt);
@@ -497,6 +516,108 @@ PROMPT;
         return response()->json([
             'analysis' => $analysis,
         ]);
+    }
+
+    public function aiChat(Request $request, LegalCase $case): JsonResponse
+    {
+        $this->authorizeCaseAccess($case);
+
+        $request->validate([
+            'message' => 'required|string|max:4000',
+        ]);
+
+        $service = new GeminiService();
+
+        if (!$service->isConfigured()) {
+            return response()->json([
+                'error' => 'لم يتم إعداد مفتاح Gemini في ملف الإعدادات، يرجى التواصل مع المطور',
+            ], 400);
+        }
+
+        $userMessage = trim($request->input('message'));
+
+        $case->aiMessages()->create([
+            'role' => 'user',
+            'content' => $userMessage,
+        ]);
+
+        $case->load(['client', 'lawyer', 'sessions', 'tasks']);
+
+        $history = $case->aiMessages()
+            ->orderBy('created_at', 'asc')
+            ->take(40)
+            ->get()
+            ->map(fn($m) => ['role' => $m->role, 'content' => $m->content])
+            ->values()
+            ->toArray();
+
+        $systemPrompt = <<<SYSTEM
+أنت مساعد قانوني ذكي مدمج في نظام إدارة مكتب محاماة عماني. أنت محامٍ خبير في القوانين السارية في سلطنة عمان (قانون المعاملات المدنية، قانون الإجراءات المدنية والتجارية، قانون الإثبات، قانون العمل، قانون الشركات التجارية، قانون التجارة، قانون الجزاء، قانون الإجراءات الجزائية، قانون المرافعات الشرعية، قوانين التنفيذ، نظام المحاماة، وأحكام المحكمة العليا العمانية).
+
+بيانات القضية الحالية:
+- رقم القضية: {$case->case_number}
+- نوع القضية: {$case->case_type} ({$case->type})
+- عنوان القضية: {$case->title}
+- المحكمة: {$case->court}
+- الحالة: {$case->status}
+- وصف القضية: {$case->description}
+- الخصم: {$case->opponent}
+- الموكل: {$case->client?->name}
+- المحامي المسؤول: {$case->lawyer?->name}
+
+الجلسات السابقة:
+{$this->sessionsText($case)}
+
+المهام:
+{$this->tasksText($case)}
+
+قواعد الرد:
+- أجب باللغة العربية الفصحى دائماً.
+- استند في إجاباتك إلى القانون العماني فقط، واذكر القانون أو المبدأ ذي الصلة.
+- لا تختلق نصوص مواد قانونية؛ إذا لم تكن متأكداً من رقم المادة، اشرح المبدأ القانوني والمرجع العام ونبّه للتحقق من النص الرسمي.
+- أجب بإجابات عملية ومركزة ومختصرة قدر الإمكان (دون إسهاب غير ضروري).
+- استخدم عناوين أو نقاط عند الحاجة لتسهيل القراءة.
+- يمكنك الرد على أسئلة عامة عن القانون العماني أيضاً.
+- تذكّر سياق القضية الحالية عند الإجابة، وأشر إليه عند الاقتضاء.
+- إذا سُئلت عن شيء خارج القانون أو خطر، اعتذر بلطف.
+SYSTEM;
+
+        try {
+            $reply = $service->chat($history, $systemPrompt);
+
+            if (!$reply) {
+                return response()->json([
+                    'error' => 'تعذر الحصول على رد من الذكاء الاصطناعي، حاول مرة أخرى لاحقاً',
+                ], 500);
+            }
+
+            $case->aiMessages()->create([
+                'role' => 'assistant',
+                'content' => $reply,
+            ]);
+
+            return response()->json([
+                'reply' => $reply,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function sessionsText(LegalCase $case): string
+    {
+        return $case->sessions->map(function ($s) {
+            return "- {$s->date?->format('Y-m-d')} ({$s->status}): {$s->notes} {$s->report}";
+        })->join("\n") ?: '- لا توجد جلسات مسجلة';
+    }
+
+    private function tasksText(LegalCase $case): string
+    {
+        return $case->tasks->map(function ($t) {
+            return "- {$t->title} (حالة: {$t->status})";
+        })->join("\n") ?: '- لا توجد مهام مسجلة';
     }
 
     private function authorizeCaseAccess(LegalCase $case): void

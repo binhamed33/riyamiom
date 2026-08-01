@@ -15,6 +15,45 @@ document.addEventListener('alpine:init', () => {
         analyzing: false,
         analysis: @json($case->ai_analysis),
         analysisError: null,
+        chatOpen: false,
+        aiMessages: @json($aiMessagesData ?? []),
+        aiInput: '',
+        aiSending: false,
+        aiChatError: null,
+        openAiChat() {
+            this.chatOpen = true;
+            this.$nextTick(() => this.scrollChat());
+        },
+        scrollChat() {
+            const el = this.$refs.chatBox;
+            if (el) el.scrollTop = el.scrollHeight;
+        },
+        async sendAiMessage() {
+            const text = this.aiInput.trim();
+            if (!text || this.aiSending) return;
+            this.aiMessages.push({ role: 'user', content: text });
+            this.aiInput = '';
+            this.aiChatError = null;
+            this.aiSending = true;
+            this.$nextTick(() => this.scrollChat());
+            try {
+                const res = await fetch('{{ route('cases.ai_chat', $case) }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await res.json().catch(() => null);
+                if (!res.ok) {
+                    this.aiChatError = data?.error || '{{ __("app.save_error") }}';
+                } else {
+                    this.aiMessages.push({ role: 'assistant', content: data.reply });
+                }
+            } catch(e) {
+                this.aiChatError = '{{ __("app.connection_error") }}';
+            }
+            this.aiSending = false;
+            this.$nextTick(() => this.scrollChat());
+        },
         sessions: @json($sessionsData),
         get reportSession() {
             if (!this.reportSessionId) return null;
@@ -167,6 +206,13 @@ document.addEventListener('alpine:init', () => {
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
                 <span x-text="analyzing ? 'جارِ التحليل...' : 'تحليل بالذكاء الاصطناعي'"></span>
+            </button>
+            {{-- AI Chat Button --}}
+            <button @click="openAiChat()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                </svg>
+                {{ __('app.ai_chat_title') }}
             </button>
             {{-- Print Button --}}
             <button @click="window.print()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 no-print">
@@ -691,6 +737,89 @@ https://office.riyami.om/client-access
         </div>
     </div>
 
+</div>
+
+{{-- AI Chat Modal --}}
+<div x-show="chatOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="chatOpen = false"></div>
+    <div class="relative bg-white border border-emerald-300 rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col"
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-t-2xl">
+            <div class="flex items-center gap-2 text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+                </svg>
+                <div>
+                    <h3 class="font-bold text-sm">{{ __('app.ai_chat_title') }}</h3>
+                    <p class="text-[10px] text-emerald-100">{{ __('app.ai_chat_subtitle') }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] text-white bg-white/20 px-2 py-0.5 rounded-full">Gemini</span>
+                <button @click="chatOpen = false" class="p-1 rounded-lg hover:bg-white/20 text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div x-ref="chatBox" class="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+            <template x-if="aiMessages.length === 0">
+                <div class="text-center py-8">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm text-gray-600 leading-relaxed max-w-xs mx-auto">{{ __('app.ai_chat_greeting') }}</p>
+                </div>
+            </template>
+
+            <template x-for="m in aiMessages" :key="m.id ? m.id : $index">
+                <div :class="m.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+                    <div :class="m.role === 'user'
+                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl rounded-tr-sm max-w-[85%] px-4 py-2.5 shadow-sm'
+                        : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm max-w-[85%] px-4 py-2.5 shadow-sm'">
+                        <p class="text-sm leading-relaxed whitespace-pre-wrap" x-text="m.content"></p>
+                        <p class="text-[10px] mt-1.5" :class="m.role === 'user' ? 'text-emerald-100' : 'text-gray-400'" x-text="m.created_at || ''"></p>
+                    </div>
+                </div>
+            </template>
+
+            <div x-show="aiSending" class="flex justify-start">
+                <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4 animate-spin text-emerald-600" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-xs text-gray-500">{{ __('app.ai_chat_typing') }}</span>
+                </div>
+            </div>
+
+            <div x-show="aiChatError" x-text="aiChatError" class="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-3"></div>
+        </div>
+
+        <div class="px-4 py-3 border-t border-gray-200 bg-white">
+            <p class="text-[10px] text-gray-400 mb-2">{{ __('app.ai_chat_disclaimer') }}</p>
+            <div class="flex items-end gap-2">
+                <textarea x-model="aiInput" rows="1" :disabled="aiSending"
+                    @keydown.enter.prevent="if (!$event.shiftKey) sendAiMessage()"
+                    class="flex-1 rounded-xl bg-gray-50 border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:opacity-50"
+                    placeholder="{{ __('app.ai_chat_placeholder') }}"></textarea>
+                <button @click="sendAiMessage()" :disabled="aiSending || !aiInput.trim()"
+                    class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-2.5 rounded-xl font-semibold transition-colors text-sm disabled:opacity-50 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                    {{ __('app.ai_chat_send') }}
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')

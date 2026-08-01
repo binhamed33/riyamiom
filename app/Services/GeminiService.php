@@ -23,6 +23,50 @@ class GeminiService
 
     public function analyze(string $prompt): ?string
     {
+        return $this->generate([
+            'contents' => [
+                [
+                    'parts' => [
+                        ['text' => $prompt],
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    public function chat(array $history, string $systemPrompt): ?string
+    {
+        $contents = [];
+        foreach ($history as $message) {
+            $role = $message['role'] === 'assistant' ? 'model' : 'user';
+            $last = end($contents);
+            if ($last !== false && $last['role'] === $role) {
+                $contents[array_key_last($contents)]['parts'][] = ['text' => $message['content']];
+            } else {
+                $contents[] = [
+                    'role' => $role,
+                    'parts' => [['text' => $message['content']]],
+                ];
+            }
+        }
+
+        if (empty($contents) || $contents[0]['role'] !== 'user') {
+            array_unshift($contents, [
+                'role' => 'user',
+                'parts' => [['text' => 'مرحباً، أريد الاستفسار عن قضيتي.']],
+            ]);
+        }
+
+        return $this->generate([
+            'contents' => $contents,
+            'system_instruction' => [
+                'parts' => [['text' => $systemPrompt]],
+            ],
+        ]);
+    }
+
+    protected function generate(array $payload): ?string
+    {
         if (!$this->isConfigured()) {
             return null;
         }
@@ -32,19 +76,12 @@ class GeminiService
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                 ])
-                ->post('https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . ':generateContent?key=' . $this->apiKey, [
-                    'contents' => [
-                        [
-                            'parts' => [
-                                ['text' => $prompt],
-                            ],
-                        ],
-                    ],
+                ->post('https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . ':generateContent?key=' . $this->apiKey, array_merge($payload, [
                     'generationConfig' => [
                         'temperature' => 0.4,
                         'maxOutputTokens' => 2048,
                     ],
-                ]);
+                ]));
 
             if (!$response->successful()) {
                 Log::error('Gemini API error: ' . $response->status() . ' - ' . $response->body());
