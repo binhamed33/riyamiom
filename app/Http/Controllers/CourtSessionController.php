@@ -72,6 +72,8 @@ class CourtSessionController extends Controller
             $session->toArray()
         );
 
+        \App\Services\ClientNotifier::notifyCaseUpdate($case);
+
         $case = LegalCase::find($validated['case_id']);
         if ($case && $case->lawyer_id) {
             Notification::create([
@@ -130,6 +132,11 @@ class CourtSessionController extends Controller
             $oldValues,
             $session->toArray()
         );
+
+        $case = LegalCase::find($session->case_id);
+        if ($case) {
+            \App\Services\ClientNotifier::notifyCaseUpdate($case);
+        }
 
         return redirect()->route('sessions.show', $session)
             ->with('success', 'Court session updated successfully.');

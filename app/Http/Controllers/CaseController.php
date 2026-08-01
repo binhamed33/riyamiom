@@ -315,6 +315,8 @@ class CaseController extends Controller
                 $case->fresh()->toArray()
             );
 
+            \App\Services\ClientNotifier::notifyCaseUpdate($case->fresh());
+
             return redirect()->route('cases.show', $case)
                 ->with('success', 'Case updated successfully.');
         } catch (\Exception $e) {
