@@ -536,12 +536,13 @@ PROMPT;
 
         $userMessage = trim($request->input('message'));
 
-        $case->aiMessages()->create([
-            'role' => 'user',
-            'content' => $userMessage,
-        ]);
+        try {
+            $case->aiMessages()->create([
+                'role' => 'user',
+                'content' => $userMessage,
+            ]);
 
-        $case->load(['client', 'lawyer', 'sessions', 'tasks']);
+            $case->load(['client', 'lawyer', 'sessions', 'tasks']);
 
         $history = $case->aiMessages()
             ->orderBy('created_at', 'asc')
@@ -582,8 +583,7 @@ PROMPT;
 - إذا سُئلت عن شيء خارج القانون أو خطر، اعتذر بلطف.
 SYSTEM;
 
-        try {
-            $reply = $service->chat($history, $systemPrompt);
+        $reply = $service->chat($history, $systemPrompt);
 
             if (!$reply) {
                 return response()->json([
@@ -600,8 +600,9 @@ SYSTEM;
                 'reply' => $reply,
             ]);
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AI chat failed for case ' . $case->id . ': ' . $e->getMessage());
             return response()->json([
-                'error' => 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: ' . $e->getMessage(),
+                'error' => 'خطأ من خدمة الذكاء الاصطناعي: ' . $e->getMessage(),
             ], 500);
         }
     }

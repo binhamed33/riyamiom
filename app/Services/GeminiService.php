@@ -23,15 +23,20 @@ class GeminiService
 
     public function analyze(string $prompt): ?string
     {
-        return $this->generate([
-            'contents' => [
-                [
-                    'parts' => [
-                        ['text' => $prompt],
+        try {
+            return $this->generate([
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt],
+                        ],
                     ],
                 ],
-            ],
-        ]);
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Gemini analyze failed: ' . $e->getMessage());
+            return null;
+        }
     }
 
     public function chat(array $history, string $systemPrompt): ?string
@@ -59,7 +64,7 @@ class GeminiService
 
         return $this->generate([
             'contents' => $contents,
-            'system_instruction' => [
+            'systemInstruction' => [
                 'parts' => [['text' => $systemPrompt]],
             ],
         ]);
@@ -84,17 +89,24 @@ class GeminiService
                 ]));
 
             if (!$response->successful()) {
-                Log::error('Gemini API error: ' . $response->status() . ' - ' . $response->body());
-                return null;
+                $errorBody = $response->body();
+                Log::error('Gemini API error: ' . $response->status() . ' - ' . $errorBody);
+                throw new \RuntimeException('Gemini API responded with status ' . $response->status() . ': ' . $errorBody);
             }
 
             $data = $response->json();
             $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
 
+            if ($text === null) {
+                throw new \RuntimeException('Gemini returned an empty or unexpected response');
+            }
+
             return $text;
-        } catch (\Exception $e) {
+        } catch (\RuntimeException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
             Log::error('Gemini API exception: ' . $e->getMessage());
-            return null;
+            throw new \RuntimeException('Gemini connection error: ' . $e->getMessage());
         }
     }
 }
