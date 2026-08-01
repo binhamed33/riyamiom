@@ -170,7 +170,7 @@
                                 <div class="flex items-center gap-2 sm:gap-3">
                                     <span class="text-xs sm:text-sm font-bold text-gray-700">{{ $session->date?->format('Y-m-d') }}</span>
                                     <span class="text-[10px] sm:text-xs px-2 py-0.5 rounded-lg font-medium
-                                        {{ $session->status === 'held' ? 'bg-green-100 text-green-700' : '' }}
+                                        {{ $session->status === 'completed' ? 'bg-green-100 text-green-700' : '' }}
                                         {{ $session->status === 'postponed' ? 'bg-amber-100 text-amber-700' : '' }}
                                         {{ $session->status === 'cancelled' ? 'bg-red-100 text-red-700' : '' }}">
                                         @lang('app.status_' . $session->status)

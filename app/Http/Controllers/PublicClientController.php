@@ -66,8 +66,8 @@ class PublicClientController extends Controller
 
         $case->load(['lawyer', 'sessions', 'documents.uploader']);
 
-        $nextSession = $case->sessions->where('status', 'scheduled')->sortBy('date')->first();
-        $pastSessions = $case->sessions->whereIn('status', ['held', 'postponed', 'cancelled'])->sortByDesc('date');
+        $nextSession = $case->sessions->where('status', 'upcoming')->sortBy('date')->first();
+        $pastSessions = $case->sessions->whereIn('status', ['completed', 'postponed', 'cancelled'])->sortByDesc('date');
 
         return view('client-portal.public-case-show', compact('case', 'nextSession', 'pastSessions'));
     }
