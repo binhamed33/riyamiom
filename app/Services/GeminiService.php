@@ -80,8 +80,9 @@ class GeminiService
             $response = Http::timeout(90)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
+                    'X-goog-api-key' => $this->apiKey,
                 ])
-                ->post('https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . ':generateContent?key=' . $this->apiKey, array_merge($payload, [
+                ->post('https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . ':generateContent', array_merge($payload, [
                     'generationConfig' => [
                         'temperature' => 0.4,
                         'maxOutputTokens' => 2048,
