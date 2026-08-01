@@ -106,6 +106,35 @@ document.addEventListener('alpine:init', () => {
             this.$nextTick(() => this.scrollChat());
         },
         sessions: @json($sessionsData),
+        quickSession: { date: '', location: '', status: 'upcoming', notes: '' },
+        quickAdding: false,
+        async quickAddSession() {
+            if (this.quickAdding || !this.quickSession.date || !this.quickSession.location) return;
+            this.quickAdding = true;
+            try {
+                const res = await fetch('{{ route('sessions.quick') }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                    body: JSON.stringify({ case_id: {{ $case->id }}, ...this.quickSession })
+                });
+                const data = await res.json().catch(() => null);
+                if (res.ok && data?.success) {
+                    this.sessions.push(data.session);
+                    this.quickSession = { date: '', location: '', status: 'upcoming', notes: '' };
+                } else {
+                    alert(data?.message || '{{ __("app.save_error") }}');
+                }
+            } catch(e) {
+                alert('{{ __("app.connection_error") }}');
+            }
+            this.quickAdding = false;
+        },
+        sessionStatusLabel(status) {
+            return { upcoming: '{{ __("app.status_upcoming") }}', completed: '{{ __("app.status_completed") }}', postponed: '{{ __("app.status_postponed") }}', cancelled: '{{ __("app.status_cancelled") }}' }[status] || status || '—';
+        },
+        sessionStatusClass(status) {
+            return { completed: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700', postponed: 'bg-orange-100 text-orange-700', upcoming: 'bg-blue-100 text-blue-700' }[status] || 'bg-blue-100 text-blue-700';
+        },
         get reportSession() {
             if (!this.reportSessionId) return null;
             return this.sessions.find(s => s.id === this.reportSessionId) || null;
@@ -437,7 +466,7 @@ document.addEventListener('alpine:init', () => {
         <div class="flex border-b border-gray-200" role="tablist">
             <button @click="activeTab = 'sessions'" :class="activeTab === 'sessions' ? 'text-amber-700 border-b-2 border-amber-700 bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
                 class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
-                {{ __('app.sessions_tab') }} ({{ $case->sessions->count() ?? 0 }})
+                {{ __('app.sessions_tab') }} (<span x-text="sessions.length">{{ $case->sessions->count() ?? 0 }}</span>)
             </button>
             <button @click="activeTab = 'tasks'" :class="activeTab === 'tasks' ? 'text-amber-700 border-b-2 border-amber-700 bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
                 class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
@@ -451,16 +480,43 @@ document.addEventListener('alpine:init', () => {
 
         {{-- Tab Content: Sessions --}}
         <div x-show="activeTab === 'sessions'" x-cloak class="p-4">
-            <div class="flex justify-end mb-3">
-                <a href="{{ route('sessions.create', ['case_id' => $case->id]) }}"
-                   class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    {{ __('app.add_session') }}
-                </a>
-            </div>
-            @if($case->sessions && $case->sessions->count() > 0)
+            <form @submit.prevent="quickAddSession()" class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+                <div class="flex items-end gap-3 flex-wrap">
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="block text-xs font-bold text-gray-600 mb-1">{{ __('app.table_date') }} *</label>
+                        <input type="datetime-local" x-model="quickSession.date" required
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                    </div>
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="block text-xs font-bold text-gray-600 mb-1">{{ __('app.session_location') }} *</label>
+                        <input type="text" x-model="quickSession.location" required
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                    </div>
+                    <div class="w-36">
+                        <label class="block text-xs font-bold text-gray-600 mb-1">{{ __('app.status') }}</label>
+                        <select x-model="quickSession.status"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                            <option value="upcoming">{{ __('app.status_upcoming') }}</option>
+                            <option value="completed">{{ __('app.status_completed') }}</option>
+                            <option value="postponed">{{ __('app.status_postponed') }}</option>
+                            <option value="cancelled">{{ __('app.status_cancelled') }}</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="block text-xs font-bold text-gray-600 mb-1">{{ __('app.table_notes') }}</label>
+                        <input type="text" x-model="quickSession.notes"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                    </div>
+                    <button type="submit" :disabled="quickAdding"
+                            class="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        <span x-text="quickAdding ? '{{ __('app.saving') }}...' : '{{ __('app.add_session') }}'"></span>
+                    </button>
+                </div>
+            </form>
+            <div x-show="sessions.length > 0">
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-right">
                         <thead>
@@ -473,38 +529,31 @@ document.addEventListener('alpine:init', () => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            @foreach($case->sessions as $session)
+                            <template x-for="s in sessions" :key="s.id">
                                 <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="px-3 py-2.5 text-gray-900 text-xs whitespace-nowrap">{{ $session->date?->format('Y/m/d H:i') ?? '—' }}</td>
-                                    <td class="px-3 py-2.5 text-gray-400 text-xs">{{ $session->location ?? '—' }}</td>
+                                    <td class="px-3 py-2.5 text-gray-900 text-xs whitespace-nowrap" x-text="s.date || '—'"></td>
+                                    <td class="px-3 py-2.5 text-gray-400 text-xs" x-text="s.location || '—'"></td>
                                     <td class="px-3 py-2.5">
-                                        <span class="text-xs px-2 py-0.5 rounded-full
-                                            @if(($session->status ?? '') === 'completed') bg-green-100 text-green-700
-                                            @elseif(($session->status ?? '') === 'cancelled') bg-red-100 text-red-700
-                                            @else bg-blue-100 text-blue-700 @endif">
-                                            {{ $session->status ?? '—' }}
-                                        </span>
+                                        <span class="text-xs px-2 py-0.5 rounded-full" :class="sessionStatusClass(s.status)" x-text="sessionStatusLabel(s.status)"></span>
                                     </td>
-                                    <td class="px-3 py-2.5 text-gray-400 text-xs max-w-[200px] truncate">{{ $session->notes ?? '—' }}</td>
+                                    <td class="px-3 py-2.5 text-gray-400 text-xs max-w-[200px] truncate" x-text="s.notes || '—'"></td>
                                     <td class="px-3 py-2.5">
-                                        <button @click="openReport({{ $session->id }})" class="text-xs"
-                                            :class="reportSession && reportSession.id === {{ $session->id }} && reportText ? 'text-amber-700' : 'text-gray-400 hover:text-amber-700'">
-                                            {{ $session->report ? __('app.view_decision') : __('app.add_decision') }}
-                                        </button>
+                                        <button @click="openReport(s.id)" class="text-xs"
+                                            :class="reportSession && reportSession.id === s.id && reportText ? 'text-amber-700' : 'text-gray-400 hover:text-amber-700'"
+                                            x-text="s.report ? '{{ __('app.view_decision') }}' : '{{ __('app.add_decision') }}'"></button>
                                     </td>
                                 </tr>
-                            @endforeach
+                            </template>
                         </tbody>
                     </table>
                 </div>
-            @else
-                <div class="text-center py-8 text-gray-500">
-                    <svg class="w-12 h-12 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    <p class="text-sm">{{ __('app.no_sessions_recorded') }}</p>
-                </div>
-            @endif
+            </div>
+            <div x-show="sessions.length === 0" class="text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <p class="text-sm">{{ __('app.no_sessions_recorded') }}</p>
+            </div>
         </div>
 
         {{-- Tab Content: Tasks --}}
@@ -767,7 +816,7 @@ document.addEventListener('alpine:init', () => {
                     @php $latestSession = $case->sessions->sortByDesc('date')->first(); @endphp
                     <div class="bg-white rounded-xl p-3 border border-gray-100">
                         <p class="text-xs text-gray-500 mb-1">{{ __('app.total_sessions') }}</p>
-                        <p class="text-gray-900 text-sm font-bold">{{ $case->sessions->count() }}</p>
+                        <p class="text-gray-900 text-sm font-bold" x-text="sessions.length">{{ $case->sessions->count() }}</p>
                     </div>
                     <div class="bg-white rounded-xl p-3 border border-gray-100">
                         <p class="text-xs text-gray-500 mb-1">{{ __('app.last_session_date') }}</p>
@@ -778,7 +827,7 @@ document.addEventListener('alpine:init', () => {
                 {{-- Counts --}}
                 <div class="grid grid-cols-3 gap-3">
                     <div class="bg-white rounded-xl p-3 border border-gray-100 text-center">
-                        <p class="text-2xl font-bold text-amber-700">{{ $case->sessions->count() }}</p>
+                        <p class="text-2xl font-bold text-amber-700" x-text="sessions.length">{{ $case->sessions->count() }}</p>
                         <p class="text-xs text-gray-500 mt-1">{{ __('app.sessions') }}</p>
                     </div>
                     <div class="bg-white rounded-xl p-3 border border-gray-100 text-center">

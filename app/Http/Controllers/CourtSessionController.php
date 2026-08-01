@@ -9,6 +9,7 @@ use App\Models\Session;
 use App\Models\User;
 use App\Traits\AuditLoggable;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -89,6 +90,57 @@ class CourtSessionController extends Controller
 
         return redirect()->route('sessions.show', $session)
             ->with('success', 'Court session created successfully.');
+    }
+
+    public function quickStore(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'case_id'  => 'required|exists:cases,id',
+            'date'     => 'required|date',
+            'location' => 'required|string|max:255',
+            'status'   => 'required|in:upcoming,completed,postponed,cancelled',
+            'notes'    => 'nullable|string',
+            'report'   => 'nullable|string',
+        ]);
+
+        $case = LegalCase::findOrFail($validated['case_id']);
+
+        $session = Session::create($validated);
+
+        $this->logAudit(
+            AuditLog::ACTION_CREATE,
+            Session::class,
+            $session->id,
+            null,
+            $session->toArray()
+        );
+
+        \App\Services\ClientNotifier::notifyCaseUpdate($case);
+
+        if ($case->lawyer_id) {
+            Notification::create([
+                'user_id'         => $case->lawyer_id,
+                'title'           => 'New Court Session Scheduled',
+                'message'         => "A court session has been scheduled for case '{$case->title}' on {$session->date}.",
+                'type'            => Notification::TYPE_INFO,
+                'is_read'         => false,
+                'notifiable_type' => Session::class,
+                'notifiable_id'   => $session->id,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'session' => [
+                'id'       => $session->id,
+                'case_id'  => $session->case_id,
+                'date'     => $session->date?->format('Y-m-d H:i:s'),
+                'location' => $session->location,
+                'status'   => $session->status,
+                'notes'    => $session->notes,
+                'report'   => $session->report,
+            ],
+        ]);
     }
 
     public function show(Session $session): View
