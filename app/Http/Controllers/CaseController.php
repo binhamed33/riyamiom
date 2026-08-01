@@ -639,6 +639,10 @@ SYSTEM;
             if (config('mail.default', 'log') !== 'log') {
                 try {
                     Mail::raw($message, function ($m) use ($client, $case) {
+                        $m->from(
+                            \App\Models\Setting::get('office_email', config('mail.from.address', 'hello@example.com')),
+                            \App\Models\Setting::get('office_name', config('mail.from.name', 'LexPro'))
+                        );
                         $m->to($client->email)
                             ->subject('متابعة قضيتك إلكترونياً - شركة حمد الريامي للمحاماة (قضية ' . $case->case_number . ')');
                     });
