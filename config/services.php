@@ -40,4 +40,9 @@ return [
         'monitor_webhook' => env('DISCORD_MONITOR_WEBHOOK'),
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
+    ],
+
 ];

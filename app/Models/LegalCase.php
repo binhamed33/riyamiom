@@ -52,6 +52,7 @@ class LegalCase extends Model
         'priority',
         'client_id',
         'lawyer_id',
+        'ai_analysis',
     ];
 
     protected function casts(): array

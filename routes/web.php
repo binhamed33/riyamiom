@@ -182,6 +182,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/cases/detect-overdue', [CaseController::class, 'autoDetectOverdue'])->name('cases.detectOverdue');
         Route::get('/cases/monthly/list', [CaseController::class, 'monthly'])->name('cases.monthly');
         Route::get('/cases/monthly/data', [CaseController::class, 'monthlyData'])->name('cases.monthly.data');
+        Route::post('/cases/{case}/analyze', [CaseController::class, 'analyze'])->name('cases.analyze');
     });
     
     // Court Sessions - developer, admin, lawyer, staff

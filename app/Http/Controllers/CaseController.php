@@ -431,6 +431,74 @@ class CaseController extends Controller
         return redirect()->route('cases.index')->with('success', 'تم استرجاع القضية بنجاح');
     }
 
+    public function analyze(LegalCase $case): JsonResponse
+    {
+        $service = new \App\Services\GeminiService();
+
+        if (!$service->isConfigured()) {
+            return response()->json([
+                'error' => 'لم يتم إعداد مفتاح Gemini في ملف الإعدادات، يرجى التواصل مع المطور',
+            ], 400);
+        }
+
+        $case->load(['client', 'lawyer', 'sessions', 'tasks']);
+
+        $sessionsText = $case->sessions->map(function ($s) {
+            return "- {$s->date?->format('Y-m-d')} ({$s->status}): {$s->notes} {$s->report}";
+        })->join("\n");
+
+        $tasksText = $case->tasks->map(function ($t) {
+            return "- {$t->title} (حالة: {$t->status})";
+        })->join("\n");
+
+        $prompt = <<<PROMPT
+أنت خبير قانوني محامٍ في سلطنة عمان، متخصص في تحليل القضايا القانونية. قم بتحليل القضية التالية بشكل احترافي وشامل باللغة العربية:
+
+**بيانات القضية:**
+- رقم القضية: {$case->case_number}
+- نوع القضية: {$case->case_type} ({$case->type})
+- عنوان القضية: {$case->title}
+- المحكمة: {$case->court}
+- الحالة: {$case->status}
+- الأولوية: {$case->priority}
+- وصف القضية: {$case->description}
+- الخصم: {$case->opponent}
+- محامي الخصم: {$case->opponent_lawyer}
+- الموكل: {$case->client?->name}
+- المحامي المسؤول: {$case->lawyer?->name}
+
+**الجلسات:**
+{$sessionsText}
+
+**المهام المنجزة/المعلقة:**
+{$tasksText}
+
+قم بتقديم تحليل منظم بالأقسام التالية (استخدم العناوين):
+1. **تقييم القضية**: تحليل قوة الدعوى وفرص نجاحها
+2. **نقاط ضعف الخصم**: تحليل نقاط الضعف في موقف الخصم
+3. **توقع النتيجة**: توقع محتمل لنتيجة القضية بناءً على المعطيات
+4. **خطة العمل**: خطوات مقترحة للمحامي للمضي قدماً
+5. **المخاطر**: مخاطر محتملة وكيفية التعامل معها
+
+كن واقعياً ومحايداً ولا تبالغ في التوقعات. إذا كانت المعلومات غير كافية في بعض النقاط، اذكر ذلك بصراحة.
+PROMPT;
+
+        $analysis = $service->analyze($prompt);
+
+        if (!$analysis) {
+            return response()->json([
+                'error' => 'تعذر الحصول على التحليل، حاول مرة أخرى لاحقاً',
+            ], 500);
+        }
+
+        $case->ai_analysis = $analysis;
+        $case->save();
+
+        return response()->json([
+            'analysis' => $analysis,
+        ]);
+    }
+
     private function authorizeCaseAccess(LegalCase $case): void
     {
         // All team members can access any case

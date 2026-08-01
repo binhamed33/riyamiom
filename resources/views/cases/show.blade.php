@@ -12,6 +12,9 @@ document.addEventListener('alpine:init', () => {
         reportSessionId: null,
         reportText: '',
         reportSaving: false,
+        analyzing: false,
+        analysis: @json($case->ai_analysis),
+        analysisError: null,
         sessions: @json($sessionsData),
         get reportSession() {
             if (!this.reportSessionId) return null;
@@ -52,6 +55,31 @@ document.addEventListener('alpine:init', () => {
                 this.reportSaving = false;
                 alert('{{ __("app.connection_error") }}');
             }
+        },
+        async runAnalysis() {
+            if (this.analyzing) return;
+            if (this.analysis) {
+                this.showSummary = true;
+                return;
+            }
+            this.analyzing = true;
+            this.analysisError = null;
+            try {
+                const res = await fetch('{{ route('cases.analyze', $case) }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    this.analysisError = data.error || '{{ __("app.save_error") }}';
+                } else {
+                    this.analysis = data.analysis;
+                    this.showSummary = true;
+                }
+            } catch(e) {
+                this.analysisError = '{{ __("app.connection_error") }}';
+            }
+            this.analyzing = false;
         },
         copySummary() {
             const el = document.querySelector('.summary-body');
@@ -128,6 +156,17 @@ document.addEventListener('alpine:init', () => {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 {{ __('app.case_summary') }}
+            </button>
+            {{-- AI Analysis Button --}}
+            <button @click="runAnalysis()" :disabled="analyzing" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
+                <svg x-show="!analyzing" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+                </svg>
+                <svg x-show="analyzing" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span x-text="analyzing ? 'جارِ التحليل...' : 'تحليل بالذكاء الاصطناعي'"></span>
             </button>
             {{-- Print Button --}}
             <button @click="window.print()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 no-print">
@@ -581,6 +620,28 @@ https://office.riyami.om/client-access
                         <p class="text-gray-700 text-sm leading-relaxed">{{ $case->description }}</p>
                     </div>
                 @endif
+
+                {{-- AI Analysis --}}
+                <div x-show="analysis || analyzing" class="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl p-5 border border-indigo-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-bold text-indigo-700 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+                            </svg>
+                            تحليل الذكاء الاصطناعي
+                        </h4>
+                        <span class="text-[10px] text-indigo-400 font-medium bg-white px-2 py-0.5 rounded-full border border-indigo-200">Gemini</span>
+                    </div>
+                    <div x-show="analyzing" class="flex items-center gap-3 text-indigo-600 text-sm py-2">
+                        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        جارِ تحليل القضية... قد يستغرق التحليل بضع ثوانٍ
+                    </div>
+                    <div x-show="analysis" x-html="analysis" class="text-sm text-gray-800 leading-relaxed space-y-2"></div>
+                    <div x-show="analysisError" x-text="analysisError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3"></div>
+                </div>
 
                 {{-- Dates --}}
                 <div class="grid grid-cols-2 gap-3">
