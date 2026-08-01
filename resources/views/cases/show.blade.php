@@ -28,6 +28,31 @@ document.addEventListener('alpine:init', () => {
             const el = this.$refs.chatBox;
             if (el) el.scrollTop = el.scrollHeight;
         },
+        md(text) {
+            if (!text) return '';
+            const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const lines = esc.split('\n');
+            let html = '', inList = false;
+            const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
+            for (let line of lines) {
+                line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                           .replace(/`([^`]+)`/g, '<code>$1</code>');
+                const h1 = line.match(/^#\s+(.*)/);
+                const h2 = line.match(/^##\s+(.*)/);
+                const h3 = line.match(/^###\s+(.*)/);
+                const hr = /^---+$/.test(line.trim());
+                const li = line.match(/^\s*[-*]\s+(.*)/);
+                if (h1) { closeList(); html += '<h1>' + h1[1] + '</h1>'; }
+                else if (h2) { closeList(); html += '<h2>' + h2[1] + '</h2>'; }
+                else if (h3) { closeList(); html += '<h3>' + h3[1] + '</h3>'; }
+                else if (hr) { closeList(); html += '<hr>'; }
+                else if (li) { if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + li[1] + '</li>'; }
+                else if (!line.trim()) { closeList(); }
+                else { closeList(); html += '<p>' + line + '</p>'; }
+            }
+            closeList();
+            return html;
+        },
         async sendAiMessage() {
             const text = this.aiInput.trim();
             if (!text || this.aiSending) return;
@@ -668,8 +693,8 @@ https://office.riyami.om/client-access
                 @endif
 
                 {{-- AI Analysis --}}
-                <div x-show="analysis || analyzing" class="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl p-5 border border-indigo-200">
-                    <div class="flex items-center justify-between mb-3">
+                <div x-show="analysis || analyzing" class="bg-white rounded-xl p-5 border border-indigo-200">
+                    <div class="flex items-center justify-between mb-3 bg-indigo-50 -m-5 mb-4 p-4 rounded-t-xl border-b border-indigo-200">
                         <h4 class="text-sm font-bold text-indigo-700 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
@@ -685,7 +710,7 @@ https://office.riyami.om/client-access
                         </svg>
                         جارِ تحليل القضية... قد يستغرق التحليل بضع ثوانٍ
                     </div>
-                    <div x-show="analysis" x-html="analysis" class="text-sm text-gray-800 leading-relaxed space-y-2"></div>
+                    <div x-show="analysis" x-html="md(analysis)" class="ai-content text-sm text-gray-800 leading-relaxed"></div>
                     <div x-show="analysisError" x-text="analysisError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3"></div>
                 </div>
 
@@ -782,7 +807,7 @@ https://office.riyami.om/client-access
                     <div :class="m.role === 'user'
                         ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl rounded-tr-sm max-w-[85%] px-4 py-2.5 shadow-sm'
                         : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm max-w-[85%] px-4 py-2.5 shadow-sm'">
-                        <p class="text-sm leading-relaxed whitespace-pre-wrap" x-text="m.content"></p>
+                        <div class="text-sm leading-relaxed" :class="m.role === 'user' ? 'whitespace-pre-wrap' : 'ai-content'" x-html="m.role === 'assistant' ? md(m.content) : m.content"></div>
                         <p class="text-[10px] mt-1.5" :class="m.role === 'user' ? 'text-emerald-100' : 'text-gray-400'" x-text="m.created_at || ''"></p>
                     </div>
                 </div>
@@ -829,5 +854,16 @@ https://office.riyami.om/client-access
 
 <style>
     [x-cloak] { display: none !important; }
+    .ai-content { line-height: 1.9; }
+    .ai-content strong { color: #6d28d9; font-weight: 700; }
+    .ai-content h1, .ai-content h2, .ai-content h3 { color: #5b21b6; font-weight: 700; margin: 1rem 0 0.5rem; line-height: 1.5; }
+    .ai-content h1 { font-size: 1.05rem; }
+    .ai-content h2 { font-size: 1rem; }
+    .ai-content h3 { font-size: 0.95rem; }
+    .ai-content ul { list-style: disc; padding-inline-start: 1.25rem; margin: 0.5rem 0; }
+    .ai-content li { margin: 0.3rem 0; }
+    .ai-content p { margin: 0.5rem 0; }
+    .ai-content hr { border: 0; border-top: 1px dashed #c7d2fe; margin: 0.75rem 0; }
+    .ai-content code { background: #ede9fe; color: #5b21b6; padding: 0 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
 </style>
 @endsection
