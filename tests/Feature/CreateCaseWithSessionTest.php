@@ -30,7 +30,7 @@ class CreateCaseWithSessionTest extends TestCase
 
         $response = $this->actingAs($user)->post('/cases', [
             'case_number' => $number,
-            'case_type'   => 'مدني',
+            'case_type'   => 'تحكيم تجاري',
             'title'       => 'اختبار',
             'description' => 'وصف تجريبي',
             'court'       => 'المحكمة العليا',
@@ -53,6 +53,7 @@ class CreateCaseWithSessionTest extends TestCase
 
         $case = LegalCase::where('case_number', $number)->first();
         $this->assertNotNull($case, 'Case was not created');
+        $this->assertEquals('تحكيم تجاري', $case->case_type, 'Custom case type was not saved');
         $this->assertEquals(1, $case->sessions()->count(), 'Sessions were not saved with the case');
 
         $case->delete();

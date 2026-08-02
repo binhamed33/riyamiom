@@ -88,29 +88,45 @@
                 </div>
 
                 {{-- Case Type --}}
-                <div>
-                    <label for="case_type" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.case_type') }}</label>
-                    <select name="case_type" id="case_type"
-                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('case_type') border-red-500/50 @enderror">
-                        <option value="">{{ __('app.choose_case_type') }}</option>
-                        <option value="اداري" {{ old('case_type', $case->case_type) === 'اداري' ? 'selected' : '' }}>اداري</option>
-                        <option value="أحداث" {{ old('case_type', $case->case_type) === 'أحداث' ? 'selected' : '' }}>أحداث</option>
-                        <option value="أحوال شخصية" {{ old('case_type', $case->case_type) === 'أحوال شخصية' ? 'selected' : '' }}>أحوال شخصية</option>
-                        <option value="استثمار" {{ old('case_type', $case->case_type) === 'استثمار' ? 'selected' : '' }}>استثمار</option>
-                        <option value="استشكال" {{ old('case_type', $case->case_type) === 'استشكال' ? 'selected' : '' }}>استشكال</option>
-                        <option value="أوامر على العرائض" {{ old('case_type', $case->case_type) === 'أوامر على العرائض' ? 'selected' : '' }}>أوامر على العرائض</option>
-                        <option value="إفلاس وإعادة هيكلة" {{ old('case_type', $case->case_type) === 'إفلاس وإعادة هيكلة' ? 'selected' : '' }}>إفلاس وإعادة هيكلة</option>
-                        <option value="إيجارات" {{ old('case_type', $case->case_type) === 'إيجارات' ? 'selected' : '' }}>إيجارات</option>
-                        <option value="تجاري" {{ old('case_type', $case->case_type) === 'تجاري' ? 'selected' : '' }}>تجاري</option>
-                        <option value="تظلمات" {{ old('case_type', $case->case_type) === 'تظلمات' ? 'selected' : '' }}>تظلمات</option>
-                        <option value="تنفيذ جزائي" {{ old('case_type', $case->case_type) === 'تنفيذ جزائي' ? 'selected' : '' }}>تنفيذ جزائي</option>
-                        <option value="تنفيذ مدني" {{ old('case_type', $case->case_type) === 'تنفيذ مدني' ? 'selected' : '' }}>تنفيذ مدني</option>
-                        <option value="جزائي" {{ old('case_type', $case->case_type) === 'جزائي' ? 'selected' : '' }}>جزائي</option>
-                        <option value="مدني" {{ old('case_type', $case->case_type) === 'مدني' ? 'selected' : '' }}>مدني</option>
-                        <option value="مرور" {{ old('case_type', $case->case_type) === 'مرور' ? 'selected' : '' }}>مرور</option>
-                        <option value="قضاء مستعجل" {{ old('case_type', $case->case_type) === 'قضاء مستعجل' ? 'selected' : '' }}>قضاء مستعجل</option>
-                        <option value="عمالي" {{ old('case_type', $case->case_type) === 'عمالي' ? 'selected' : '' }}>عمالي</option>
-                    </select>
+                @php
+                    $caseTypePresets = ['مدني','تجاري','عمالي','أحوال شخصية','جزائي','تنفيذ مدني','تنفيذ جزائي','قضاء مستعجل','أوامر على العرائض','إفلاس وإعادة هيكلة','إيجارات','مرور','أحداث','اداري','استثمار','استشكال','تظلمات'];
+                @endphp
+                <div x-data="{ manual: {{ in_array(old('case_type', $case->case_type), $caseTypePresets, true) ? 'false' : (old('case_type', $case->case_type) ? 'true' : 'false') }} }">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <label for="case_type" class="block text-sm font-medium text-gray-400">{{ __('app.case_type') }}</label>
+                        <label class="flex items-center gap-1.5 cursor-pointer ml-auto">
+                            <input type="checkbox" x-model="manual" class="rounded border-gray-200 bg-gray-100 text-amber-500 focus:ring-amber-500/50">
+                            <span class="text-xs text-gray-400">{{ __('app.manual_entry') }}</span>
+                        </label>
+                    </div>
+                    <template x-if="!manual">
+                        <select name="case_type" id="case_type"
+                            class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('case_type') border-red-500/50 @enderror">
+                            <option value="">{{ __('app.choose_case_type') }}</option>
+                            <option value="اداري" {{ old('case_type', $case->case_type) === 'اداري' ? 'selected' : '' }}>اداري</option>
+                            <option value="أحداث" {{ old('case_type', $case->case_type) === 'أحداث' ? 'selected' : '' }}>أحداث</option>
+                            <option value="أحوال شخصية" {{ old('case_type', $case->case_type) === 'أحوال شخصية' ? 'selected' : '' }}>أحوال شخصية</option>
+                            <option value="استثمار" {{ old('case_type', $case->case_type) === 'استثمار' ? 'selected' : '' }}>استثمار</option>
+                            <option value="استشكال" {{ old('case_type', $case->case_type) === 'استشكال' ? 'selected' : '' }}>استشكال</option>
+                            <option value="أوامر على العرائض" {{ old('case_type', $case->case_type) === 'أوامر على العرائض' ? 'selected' : '' }}>أوامر على العرائض</option>
+                            <option value="إفلاس وإعادة هيكلة" {{ old('case_type', $case->case_type) === 'إفلاس وإعادة هيكلة' ? 'selected' : '' }}>إفلاس وإعادة هيكلة</option>
+                            <option value="إيجارات" {{ old('case_type', $case->case_type) === 'إيجارات' ? 'selected' : '' }}>إيجارات</option>
+                            <option value="تجاري" {{ old('case_type', $case->case_type) === 'تجاري' ? 'selected' : '' }}>تجاري</option>
+                            <option value="تظلمات" {{ old('case_type', $case->case_type) === 'تظلمات' ? 'selected' : '' }}>تظلمات</option>
+                            <option value="تنفيذ جزائي" {{ old('case_type', $case->case_type) === 'تنفيذ جزائي' ? 'selected' : '' }}>تنفيذ جزائي</option>
+                            <option value="تنفيذ مدني" {{ old('case_type', $case->case_type) === 'تنفيذ مدني' ? 'selected' : '' }}>تنفيذ مدني</option>
+                            <option value="جزائي" {{ old('case_type', $case->case_type) === 'جزائي' ? 'selected' : '' }}>جزائي</option>
+                            <option value="مدني" {{ old('case_type', $case->case_type) === 'مدني' ? 'selected' : '' }}>مدني</option>
+                            <option value="مرور" {{ old('case_type', $case->case_type) === 'مرور' ? 'selected' : '' }}>مرور</option>
+                            <option value="قضاء مستعجل" {{ old('case_type', $case->case_type) === 'قضاء مستعجل' ? 'selected' : '' }}>قضاء مستعجل</option>
+                            <option value="عمالي" {{ old('case_type', $case->case_type) === 'عمالي' ? 'selected' : '' }}>عمالي</option>
+                        </select>
+                    </template>
+                    <template x-if="manual">
+                        <input type="text" name="case_type" id="case_type" value="{{ old('case_type', $case->case_type) }}"
+                            class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('case_type') border-red-500/50 @enderror"
+                            placeholder="اكتب نوع القضية يدوياً">
+                    </template>
                     @error('case_type')
                         <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
                     @enderror
