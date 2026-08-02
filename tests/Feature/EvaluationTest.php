@@ -85,6 +85,24 @@ class EvaluationTest extends TestCase
         }
     }
 
+    public function test_developer_is_excluded_from_evaluation(): void
+    {
+        $developer = User::factory()->create(['role' => 'developer', 'is_active' => true]);
+        $client = Client::factory()->create();
+
+        try {
+            LegalCase::factory()->create(['lawyer_id' => $developer->id, 'client_id' => $client->id, 'status' => 'closed']);
+
+            $rows = app(LawyerEvaluationService::class)->evaluate('all');
+
+            $this->assertNull(collect($rows)->firstWhere('id', $developer->id), 'Developer must not appear in evaluation');
+        } finally {
+            $developer->cases()->forceDelete();
+            $developer->delete();
+            $client->delete();
+        }
+    }
+
     public function test_evaluations_page_renders(): void
     {
         $developer = User::where('role', 'developer')->firstOrFail();

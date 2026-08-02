@@ -14,7 +14,7 @@ class LawyerEvaluationService
 {
     public const PERIODS = ['all', 'month', 'last_month'];
 
-    private const ROLES = ['developer', 'admin', 'lawyer', 'staff'];
+    private const ROLES = ['admin', 'lawyer', 'staff'];
 
     public function evaluate(string $period = 'all'): array
     {
