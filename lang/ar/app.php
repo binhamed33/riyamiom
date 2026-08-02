@@ -133,6 +133,8 @@ return [
     'office_case_number_auto' => 'يُولد تلقائياً ولا يمكن تعديله',
     'case_title_number' => 'رقم/عنوان القضية',
     'case_title_number_placeholder' => 'رقم أو عنوان مختصر للقضية',
+    'court_with_case_number' => 'المحكمة مع رقم القضية',
+    'case_principal' => 'الموكل',
     'choose_case_type' => 'اختر نوع القضية',
     'opponent_data' => 'بيانات الخصم',
     'opponent_name' => 'اسم الخصم',

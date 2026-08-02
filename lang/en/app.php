@@ -133,6 +133,8 @@ return [
     'office_case_number_placeholder' => 'Case number in office',
     'case_title_number' => 'Case Title/Number',
     'case_title_number_placeholder' => 'Case title or short identifier',
+    'court_with_case_number' => 'Court & Case Number',
+    'case_principal' => 'Principal',
     'choose_case_type' => 'Choose Case Type',
     'opponent_data' => 'Opponent Data',
     'opponent_name' => 'Opponent Name',

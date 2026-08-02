@@ -138,9 +138,9 @@ document.addEventListener('alpine:init', () => {
             <table class="w-full text-sm text-right">
                 <thead>
                     <tr class="border-b border-gray-200">
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_number') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.court') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_client') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.office_case_number') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.court_with_case_number') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_principal') }}</th>
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_opponent') }}</th>
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_type') }}</th>
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_lawyer') }}</th>
