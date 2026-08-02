@@ -86,6 +86,10 @@ class CaseController extends Controller
             'lawyer_id'           => 'nullable|exists:users,id',
         ]);
 
+        if (empty($validated['title'])) {
+            $validated['title'] = $validated['case_number'];
+        }
+
         if (empty($validated['type']) && !empty($validated['case_type'])) {
             $validated['type'] = $validated['case_type'];
         } elseif (empty($validated['type'])) {
@@ -227,7 +231,7 @@ class CaseController extends Controller
         $validated = $request->validate([
             'case_number'         => 'required|string|unique:cases,case_number,' . $case->id,
             'case_type'           => 'nullable|in:مدني,تجاري,عمالي,أحوال شخصية,جزائي,تنفيذ مدني,تنفيذ جزائي,قضاء مستعجل,أوامر على العرائض,إفلاس وإعادة هيكلة,إيجارات,مرور,أحداث,اداري,استثمار,استشكال,تظلمات',
-            'title'               => 'required|string|max:255',
+            'title'               => 'nullable|string|max:255',
             'description'         => 'required|string',
             'type'                => 'nullable|string|max:255',
             'court'               => 'required|string|max:255',
@@ -241,6 +245,10 @@ class CaseController extends Controller
             'client_id'           => 'required|exists:clients,id',
             'lawyer_id'           => 'nullable|exists:users,id',
         ]);
+
+        if (empty($validated['title'])) {
+            $validated['title'] = $case->title;
+        }
 
         if (empty($validated['type']) && !empty($validated['case_type'])) {
             $validated['type'] = $validated['case_type'];
