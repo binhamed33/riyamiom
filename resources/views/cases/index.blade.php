@@ -139,8 +139,7 @@ document.addEventListener('alpine:init', () => {
                 <thead>
                     <tr class="border-b border-gray-200">
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.office_case_number') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.court') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.court_case_number') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_court_with_number') }}</th>
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_principal') }}</th>
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_opponent') }}</th>
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_type') }}</th>
@@ -154,8 +153,12 @@ document.addEventListener('alpine:init', () => {
                     @forelse($cases ?? [] as $case)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-3 py-2 text-gray-900 font-mono font-medium text-xs whitespace-nowrap">{{ $case->office_case_number }}</td>
-                            <td class="px-3 py-2 text-gray-900 text-xs whitespace-nowrap">{{ $case->court }}</td>
-                            <td class="px-3 py-2 text-gray-900 font-mono font-medium text-xs whitespace-nowrap">{{ $case->case_number }}</td>
+                            <td class="px-3 py-2 text-gray-900 text-xs whitespace-nowrap">
+                                {{ $case->court }}
+                                @if(!empty($case->case_number))
+                                    <span class="block text-gray-400 font-normal">{{ $case->case_number }}</span>
+                                @endif
+                            </td>
                             <td class="px-3 py-2 text-gray-900 text-xs">{{ $case->client->name ?? '—' }}</td>
                             <td class="px-3 py-2 text-gray-400 text-xs">{{ $case->opponent ?? '—' }}</td>
                             <td class="px-3 py-2 text-gray-400 text-xs">{{ $case->case_type ?? '—' }}</td>
