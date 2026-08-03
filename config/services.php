@@ -48,6 +48,9 @@ return [
     'whatsapp' => [
         'url' => env('WHATSAPP_API_URL', ''),
         'token' => env('WHATSAPP_API_TOKEN', ''),
+        'meta_token' => env('WHATSAPP_META_TOKEN', ''),
+        'meta_phone_id' => env('WHATSAPP_META_PHONE_ID', ''),
+        'template' => env('WHATSAPP_TEMPLATE_NAME', ''),
     ],
 
 ];

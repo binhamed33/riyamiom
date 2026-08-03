@@ -728,11 +728,44 @@ SYSTEM;
             }
         }
 
-        // WhatsApp - automatic via Green API if configured
+        // WhatsApp - Meta Cloud API (preferred) or Green API fallback
         $waUrl = config('services.whatsapp.url', '');
         $waToken = config('services.whatsapp.token', '');
+        $metaToken = config('services.whatsapp.meta_token', '');
+        $metaPhoneId = config('services.whatsapp.meta_phone_id', '');
+        $waTemplate = config('services.whatsapp.template', '');
 
-        if ($client->phone && $waUrl && $waToken) {
+        $phoneDigits = preg_replace('/^\+/', '', $client->phone);
+
+        if ($client->phone && $metaToken && $metaPhoneId && $waTemplate) {
+            try {
+                $response = Http::withToken($metaToken)
+                    ->timeout(30)
+                    ->post("https://graph.facebook.com/v21.0/{$metaPhoneId}/messages", [
+                        'messaging_product' => 'whatsapp',
+                        'to' => $phoneDigits,
+                        'type' => 'template',
+                        'template' => [
+                            'name' => $waTemplate,
+                            'language' => ['code' => 'ar'],
+                            'components' => [
+                                ['type' => 'body', 'parameters' => [
+                                    ['type' => 'text', 'text' => $case->case_number ?: '—'],
+                                    ['type' => 'text', 'text' => 'https://office.riyami.om/client-access'],
+                                ]],
+                            ],
+                        ],
+                    ]);
+                if ($response->successful()) {
+                    $sentChannels[] = 'whatsapp';
+                } else {
+                    $failures[] = 'الواتساب: ' . ($response->json('error.message') ?? 'رمز الحالة ' . $response->status());
+                }
+            } catch (\Throwable $e) {
+                Log::error('Portal invite whatsapp (meta) failed: ' . $e->getMessage());
+                $failures[] = 'الواتساب: ' . $e->getMessage();
+            }
+        } elseif ($client->phone && $waUrl && $waToken) {
             try {
                 $phone = preg_replace('/^\+/', '', $client->phone);
                 $phone = str_contains($phone, '@') ? $phone : $phone . '@c.us';
