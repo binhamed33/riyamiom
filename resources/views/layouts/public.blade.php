@@ -11,6 +11,11 @@
     <meta name="theme-color" content="#B45309">
     <title>@yield('title', $officeName) - {{ $officeName }}</title>
 
+    <link rel="icon" href="/favicon.ico">
+    @if(is_file(public_path('img/office-logo.svg')))
+        <link rel="icon" type="image/svg+xml" href="{{ asset('img/office-logo.svg') }}">
+    @endif
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">

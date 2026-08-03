@@ -1,6 +1,7 @@
 @php
     $officeName = \App\Models\Setting::get('office_name', 'LexPro');
     $isRtl = app()->getLocale() === 'ar';
+    $officeLogo = is_file(public_path('img/office-logo.svg')) ? asset('img/office-logo.svg') : null;
 @endphp
 <!DOCTYPE html>
 <html dir="{{ $isRtl ? 'rtl' : 'ltr' }}" lang="{{ app()->getLocale() }}">
@@ -12,6 +13,11 @@
     <meta http-equiv="Expires" content="0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', __('app.dashboard')) - {{ $officeName }}</title>
+
+    <link rel="icon" href="/favicon.ico">
+    @if($officeLogo)
+        <link rel="icon" type="image/svg+xml" href="{{ $officeLogo }}">
+    @endif
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -337,10 +343,14 @@
         {{-- Logo --}}
         <div class="flex items-center justify-between h-16 px-4" style="border-bottom: 1px solid #E2DED6;">
             <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center flex-shrink-0 shadow-lg" style="box-shadow: 0 8px 24px rgba(245, 158, 11, 0.25);">
-                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                    </svg>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden" style="box-shadow: 0 8px 24px rgba(245, 158, 11, 0.25);">
+                    @if($officeLogo)
+                        <img src="{{ $officeLogo }}" alt="{{ $officeName }}" class="w-full h-full object-cover">
+                    @else
+                        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                        </svg>
+                    @endif
                 </div>
                 <span class="sidebar-logo-text text-amber-600 font-heading font-bold text-[10px] leading-tight whitespace-normal max-w-[160px]" style="background: linear-gradient(135deg, #C9A55A, #E0C878); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $officeName }}</span>
             </div>
