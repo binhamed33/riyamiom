@@ -11,6 +11,22 @@
     <meta name="theme-color" content="#B45309">
     <title>@yield('title', $officeName) - {{ $officeName }}</title>
 
+    <link rel="icon" href="/favicon.ico">
+    @php
+        $publicLogo = null;
+        $publicLogoType = 'image/svg+xml';
+        foreach (['svg', 'png', 'jpg', 'jpeg'] as $ext) {
+            if (is_file(public_path("img/office-logo.{$ext}"))) {
+                $publicLogo = asset("img/office-logo.{$ext}") . '?v=' . @filemtime(public_path("img/office-logo.{$ext}"));
+                $publicLogoType = $ext === 'svg' ? 'image/svg+xml' : "image/{$ext}";
+                break;
+            }
+        }
+    @endphp
+    @if($publicLogo)
+        <link rel="icon" type="{{ $publicLogoType }}" href="{{ $publicLogo }}">
+    @endif
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
