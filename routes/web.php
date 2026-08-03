@@ -244,7 +244,6 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/audit-log', [AuditLogController::class, 'index'])->middleware(['role:developer,admin,permission:audit_log.view', 'feature:audit_log'])->name('audit-log.index');
     Route::get('/settings', [SettingController::class, 'index'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.update');
-    Route::post('/settings/logo', [SettingController::class, 'uploadLogo'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.logo');
 
     // Chat - developer, admin, lawyer, staff
     Route::middleware(['role:developer,admin,lawyer,staff', 'feature:chat'])->group(function () {

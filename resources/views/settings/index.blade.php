@@ -72,47 +72,6 @@
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-            <h2 class="text-lg font-semibold text-amber-600 border-b border-gray-200 pb-3">شعار المكتب</h2>
-            @php
-                $currentLogo = null;
-                foreach (['svg', 'png', 'jpg', 'jpeg', 'webp'] as $ext) {
-                    if (is_file(public_path("img/office-logo.{$ext}"))) {
-                        $currentLogo = asset("img/office-logo.{$ext}") . '?v=' . @filemtime(public_path("img/office-logo.{$ext}"));
-                        break;
-                    }
-                }
-            @endphp
-            <form method="POST" action="{{ route('settings.logo') }}" enctype="multipart/form-data">
-                @csrf
-                <div class="flex items-start gap-6 flex-wrap">
-                    <div class="w-24 h-24 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        @if($currentLogo)
-                            <img src="{{ $currentLogo }}" alt="الشعار الحالي" class="w-full h-full object-cover">
-                        @else
-                            <span class="text-gray-400 text-xs px-2 text-center">لا يوجد شعار</span>
-                        @endif
-                    </div>
-                    <div class="flex-1 space-y-3 min-w-[220px]">
-                        <input
-                            type="file"
-                            name="office_logo"
-                            id="office_logo"
-                            accept="image/jpeg,image/png,image/svg+xml"
-                            class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-500 file:text-white hover:file:bg-amber-600"
-                        >
-                        <p class="text-xs text-gray-400">JPG أو PNG أو SVG — يظهر في القائمة الجانبية وصفحة الدخول وأيقونة المتصفح (يفضل PNG بخلفية شفافة).</p>
-                        @error('office_logo')
-                            <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
-                        @enderror
-                        <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors">
-                            رفع الشعار
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-        <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
             <h2 class="text-lg font-semibold text-amber-600 border-b border-gray-200 pb-3">{{ __('app.notification_settings') }}</h2>
             <div class="space-y-4">
                 <label class="flex items-center gap-3 cursor-pointer">
