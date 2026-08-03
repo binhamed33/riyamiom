@@ -16,8 +16,9 @@
         $publicLogo = null;
         $publicLogoType = 'image/svg+xml';
         foreach (['svg', 'png', 'jpg', 'jpeg', 'webp'] as $ext) {
-            if (is_file(public_path("img/office-logo.{$ext}"))) {
-                $publicLogo = asset("img/office-logo.{$ext}");
+            $logoPath = public_path("img/office-logo.{$ext}");
+            if (is_file($logoPath)) {
+                $publicLogo = asset("img/office-logo.{$ext}") . '?v=' . @filemtime($logoPath);
                 $publicLogoType = $ext === 'svg' ? 'image/svg+xml' : "image/{$ext}";
                 break;
             }

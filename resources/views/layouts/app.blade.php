@@ -3,8 +3,9 @@
     $isRtl = app()->getLocale() === 'ar';
     $officeLogo = null;
     foreach (['svg', 'png', 'jpg', 'jpeg', 'webp'] as $ext) {
-        if (is_file(public_path("img/office-logo.{$ext}"))) {
-            $officeLogo = asset("img/office-logo.{$ext}");
+        $logoPath = public_path("img/office-logo.{$ext}");
+        if (is_file($logoPath)) {
+            $officeLogo = asset("img/office-logo.{$ext}") . '?v=' . @filemtime($logoPath);
             $officeLogoType = $ext === 'svg' ? 'image/svg+xml' : "image/{$ext}";
             break;
         }

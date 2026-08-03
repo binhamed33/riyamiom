@@ -77,7 +77,7 @@
                 $currentLogo = null;
                 foreach (['svg', 'png', 'jpg', 'jpeg', 'webp'] as $ext) {
                     if (is_file(public_path("img/office-logo.{$ext}"))) {
-                        $currentLogo = asset("img/office-logo.{$ext}");
+                        $currentLogo = asset("img/office-logo.{$ext}") . '?v=' . @filemtime(public_path("img/office-logo.{$ext}"));
                         break;
                     }
                 }
