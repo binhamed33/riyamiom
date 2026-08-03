@@ -12,8 +12,19 @@
     <title>@yield('title', $officeName) - {{ $officeName }}</title>
 
     <link rel="icon" href="/favicon.ico">
-    @if(is_file(public_path('img/office-logo.svg')))
-        <link rel="icon" type="image/svg+xml" href="{{ asset('img/office-logo.svg') }}">
+    @php
+        $publicLogo = null;
+        $publicLogoType = 'image/svg+xml';
+        foreach (['svg', 'png', 'jpg', 'jpeg'] as $ext) {
+            if (is_file(public_path("img/office-logo.{$ext}"))) {
+                $publicLogo = asset("img/office-logo.{$ext}");
+                $publicLogoType = $ext === 'svg' ? 'image/svg+xml' : "image/{$ext}";
+                break;
+            }
+        }
+    @endphp
+    @if($publicLogo)
+        <link rel="icon" type="{{ $publicLogoType }}" href="{{ $publicLogo }}">
     @endif
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

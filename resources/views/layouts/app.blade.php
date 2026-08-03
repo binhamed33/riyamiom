@@ -1,7 +1,14 @@
 @php
     $officeName = \App\Models\Setting::get('office_name', 'LexPro');
     $isRtl = app()->getLocale() === 'ar';
-    $officeLogo = is_file(public_path('img/office-logo.svg')) ? asset('img/office-logo.svg') : null;
+    $officeLogo = null;
+    foreach (['svg', 'png', 'jpg', 'jpeg'] as $ext) {
+        if (is_file(public_path("img/office-logo.{$ext}"))) {
+            $officeLogo = asset("img/office-logo.{$ext}");
+            $officeLogoType = $ext === 'svg' ? 'image/svg+xml' : "image/{$ext}";
+            break;
+        }
+    }
 @endphp
 <!DOCTYPE html>
 <html dir="{{ $isRtl ? 'rtl' : 'ltr' }}" lang="{{ app()->getLocale() }}">
@@ -16,7 +23,7 @@
 
     <link rel="icon" href="/favicon.ico">
     @if($officeLogo)
-        <link rel="icon" type="image/svg+xml" href="{{ $officeLogo }}">
+        <link rel="icon" type="{{ $officeLogoType }}" href="{{ $officeLogo }}">
     @endif
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

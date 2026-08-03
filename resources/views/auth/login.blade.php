@@ -99,8 +99,17 @@
                 <a href="{{ url('/portfolio') }}" target="_blank" class="w-24 h-24 mx-auto mb-10 relative block">
                     <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-amber-400 to-amber-600 opacity-10 blur-2xl" style="animation:glowPulse 4s ease-in-out infinite;"></div>
                     <div class="relative w-full h-full rounded-3xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-2xl overflow-hidden">
-                        @if(is_file(public_path('img/office-logo.svg')))
-                            <img src="{{ asset('img/office-logo.svg') }}" alt="{{ $officeName }}" class="w-full h-full object-cover">
+                        @php
+                            $loginLogo = null;
+                            foreach (['svg', 'png', 'jpg', 'jpeg'] as $ext) {
+                                if (is_file(public_path("img/office-logo.{$ext}"))) {
+                                    $loginLogo = asset("img/office-logo.{$ext}");
+                                    break;
+                                }
+                            }
+                        @endphp
+                        @if($loginLogo)
+                            <img src="{{ $loginLogo }}" alt="{{ $officeName }}" class="w-full h-full object-cover">
                         @else
                             <svg class="w-14 h-14 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
