@@ -75,7 +75,7 @@
             <h2 class="text-lg font-semibold text-amber-600 border-b border-gray-200 pb-3">شعار المكتب</h2>
             @php
                 $currentLogo = null;
-                foreach (['svg', 'png', 'jpg', 'jpeg'] as $ext) {
+                foreach (['svg', 'png', 'jpg', 'jpeg', 'webp'] as $ext) {
                     if (is_file(public_path("img/office-logo.{$ext}"))) {
                         $currentLogo = asset("img/office-logo.{$ext}");
                         break;

@@ -101,7 +101,7 @@
                     <div class="relative w-full h-full rounded-3xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-2xl overflow-hidden">
                         @php
                             $loginLogo = null;
-                            foreach (['svg', 'png', 'jpg', 'jpeg'] as $ext) {
+                            foreach (['svg', 'png', 'jpg', 'jpeg', 'webp'] as $ext) {
                                 if (is_file(public_path("img/office-logo.{$ext}"))) {
                                     $loginLogo = asset("img/office-logo.{$ext}");
                                     break;

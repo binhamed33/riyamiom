@@ -59,25 +59,39 @@ class SettingController extends Controller
     public function uploadLogo(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'office_logo' => 'required|image|mimes:jpeg,jpg,png,svg|max:5120',
+            'office_logo' => 'required|image|mimes:jpeg,jpg,jfif,png,svg,webp|max:5120',
         ]);
 
-        $file = $validated['office_logo'];
-        $ext = strtolower($file->getClientOriginalExtension());
+        try {
+            $file = $validated['office_logo'];
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (in_array($ext, ['jfif', 'jpeg'])) {
+                $ext = 'jpg';
+            }
+            if (!in_array($ext, ['jpg', 'png', 'svg', 'webp'], true)) {
+                $ext = 'png';
+            }
 
-        $imgDir = public_path('img');
-        if (!is_dir($imgDir)) {
-            mkdir($imgDir, 0755, true);
+            $imgDir = public_path('img');
+            if (!is_dir($imgDir)) {
+                mkdir($imgDir, 0755, true);
+            }
+            @chmod($imgDir, 0755);
+
+            foreach (glob($imgDir . '/office-logo.*') as $old) {
+                @unlink($old);
+            }
+
+            $file->move($imgDir, 'office-logo.' . $ext);
+            @chmod($imgDir . '/office-logo.' . $ext, 0644);
+
+            return redirect()->route('settings.index')
+                ->with('success', 'تم رفع شعار المكتب بنجاح');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Logo upload failed: ' . $e->getMessage());
+
+            return redirect()->route('settings.index')
+                ->with('error', 'فشل رفع الشعار: ' . $e->getMessage());
         }
-
-        foreach (glob($imgDir . '/office-logo.*') as $old) {
-            @unlink($old);
-        }
-
-        $file->move($imgDir, 'office-logo.' . $ext);
-        @chmod($imgDir . '/office-logo.' . $ext, 0644);
-
-        return redirect()->route('settings.index')
-            ->with('success', 'تم رفع شعار المكتب بنجاح');
     }
 }
