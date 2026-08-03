@@ -734,9 +734,11 @@ SYSTEM;
 
         if ($client->phone && $waUrl && $waToken) {
             try {
+                $phone = preg_replace('/^\+/', '', $client->phone);
+                $phone = str_contains($phone, '@') ? $phone : $phone . '@c.us';
                 $response = Http::timeout(30)
                     ->post(rtrim($waUrl, '/') . '/sendMessage/' . $waToken, [
-                        'chatId' => preg_replace('/^\+?/', '', $client->phone),
+                        'chatId' => $phone,
                         'message' => $message,
                     ]);
                 if ($response->successful()) {
