@@ -97,6 +97,7 @@ return [
     'case_description' => 'وصف القضية',
     'case_type' => 'نوع القضية',
     'case_court' => 'المحكمة',
+    'case_court_with_number' => 'المحكمة ورقم الدعوى',
     'case_opponent' => 'الخصم',
     'case_status' => 'حالة القضية',
     'case_priority' => 'الأولوية',

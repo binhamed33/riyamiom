@@ -97,6 +97,7 @@ return [
     'case_description' => 'Case Description',
     'case_type' => 'Case Type',
     'case_court' => 'Court',
+    'case_court_with_number' => 'Court & Case No.',
     'case_opponent' => 'Opponent',
     'case_status' => 'Case Status',
     'case_priority' => 'Priority',

@@ -53,7 +53,9 @@
         <table class="w-full text-sm">
             <thead class=" text-gray-900">
                 <tr>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.case') }}</th>
+                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.case_court_with_number') }}</th>
+                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.case_principal') }}</th>
+                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.case_opponent') }}</th>
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.date') }}</th>
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.location') }}</th>
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.status') }}</th>
@@ -64,7 +66,16 @@
                 @forelse ($sessions as $session)
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-6 py-4 font-medium text-gray-900">
-                            {{ $session->case->title ?? '—' }}
+                            {{ $session->case->court ?? '—' }}
+                            @if(!empty($session->case->case_number))
+                                <span class="block text-xs text-gray-500 font-normal">{{ $session->case->case_number }}</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 text-gray-600">
+                            {{ $session->case->client->name ?? '—' }}
+                        </td>
+                        <td class="px-6 py-4 text-gray-600">
+                            {{ $session->case->opponent ?? '—' }}
                         </td>
                         <td class="px-6 py-4 text-gray-600">
                             {{ $session->date->format('Y-m-d H:i') }}
@@ -118,7 +129,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
                             {{ __('app.no_sessions') }}
                         </td>
                     </tr>
