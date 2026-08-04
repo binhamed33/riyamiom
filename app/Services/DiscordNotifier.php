@@ -89,7 +89,7 @@ class DiscordNotifier
                 $request = $request->attach('files[' . $i . ']', fopen($path, 'r'), $name);
             }
 
-            $response = $request->post($webhook, [
+            $response = $request->post(self::webhookUrl() . '?wait=true', [
                 'payload_json' => json_encode($payload, JSON_UNESCAPED_UNICODE),
             ]);
 
