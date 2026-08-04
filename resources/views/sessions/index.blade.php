@@ -78,7 +78,7 @@
                             {{ $session->case->opponent ?? '—' }}
                         </td>
                         <td class="px-6 py-4 text-gray-600">
-                            {{ $session->date->format('Y-m-d H:i') }}
+                            {{ $session->date->format('Y-m-d') }}
                         </td>
                         <td class="px-6 py-4 text-gray-600">
                             {{ $session->location }}

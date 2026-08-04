@@ -106,10 +106,10 @@ document.addEventListener('alpine:init', () => {
             this.$nextTick(() => this.scrollChat());
         },
         sessions: @json($sessionsData),
-        quickSession: { date: '', location: '', status: 'upcoming', notes: '' },
+        quickSession: { date: '', status: 'upcoming', notes: '' },
         quickAdding: false,
         async quickAddSession() {
-            if (this.quickAdding || !this.quickSession.date || !this.quickSession.location) return;
+            if (this.quickAdding || !this.quickSession.date) return;
             this.quickAdding = true;
             try {
                 const res = await fetch('{{ route('sessions.quick') }}', {
@@ -120,7 +120,7 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json().catch(() => null);
                 if (res.ok && data?.success) {
                     this.sessions.push(data.session);
-                    this.quickSession = { date: '', location: '', status: 'upcoming', notes: '' };
+                    this.quickSession = { date: '', status: 'upcoming', notes: '' };
                 } else {
                     alert(data?.message || '{{ __("app.save_error") }}');
                 }
@@ -484,12 +484,7 @@ document.addEventListener('alpine:init', () => {
                 <div class="flex items-end gap-3 flex-wrap">
                     <div class="flex-1 min-w-[150px]">
                         <label class="block text-xs font-bold text-gray-600 mb-1">{{ __('app.table_date') }} *</label>
-                        <input type="datetime-local" x-model="quickSession.date" required
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
-                    </div>
-                    <div class="flex-1 min-w-[150px]">
-                        <label class="block text-xs font-bold text-gray-600 mb-1">{{ __('app.session_location') }} *</label>
-                        <input type="text" x-model="quickSession.location" required
+                        <input type="date" x-model="quickSession.date" required
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
                     </div>
                     <div class="w-36">

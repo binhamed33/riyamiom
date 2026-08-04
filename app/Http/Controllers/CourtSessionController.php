@@ -97,7 +97,7 @@ class CourtSessionController extends Controller
         $validated = $request->validate([
             'case_id'  => 'required|exists:cases,id',
             'date'     => 'required|date',
-            'location' => 'required|string|max:255',
+            'location' => 'nullable|string|max:255',
             'status'   => 'required|in:upcoming,completed,postponed,cancelled',
             'notes'    => 'nullable|string',
             'report'   => 'nullable|string',
