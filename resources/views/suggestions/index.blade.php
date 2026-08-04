@@ -16,13 +16,13 @@
     @endif
 
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
-        <form method="POST" action="{{ route('suggestions.store') }}" x-data="{ len: 0 }">
+        <form method="POST" action="{{ route('suggestions.store') }}" x-data="{ len: 0, content: '' }">
             @csrf
             <label for="content" class="block text-sm font-semibold text-gray-700 mb-2">اقتراحك <span class="text-red-500">*</span></label>
             <textarea
                 id="content" name="content" rows="5" required minlength="20" maxlength="2000"
                 x-model="content"
-                @input="len = $event.target.value.length"
+                @input="len = content.length"
                 class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-300 focus:bg-amber-50 transition resize-y @error('content') border-red-300 @enderror"
                 placeholder="صف اقتراحك بوصف واضح... ماذا تقترح ولماذا؟"></textarea>
             <div class="flex items-center justify-between mt-2">
