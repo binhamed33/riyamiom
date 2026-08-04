@@ -87,7 +87,7 @@ class DailyBackup extends Command
             'user_agent' => 'System',
         ]);
 
-        $this->cleanupOldBackups($backupDir, 60);
+        $this->keepOnlyNewest($backupDir, $filepath);
 
         return 0;
     }
@@ -104,18 +104,14 @@ class DailyBackup extends Command
         }
     }
 
-    private function cleanupOldBackups(string $backupDir, int $keepCount): void
+    private function keepOnlyNewest(string $backupDir, string $newFile): void
     {
         $files = glob($backupDir . '/*.zip');
-        if (count($files) <= $keepCount) {
-            return;
-        }
-
-        usort($files, fn($a, $b) => filemtime($a) - filemtime($b));
-
-        $toDelete = array_slice($files, 0, count($files) - $keepCount);
-        foreach ($toDelete as $file) {
-            unlink($file);
+        foreach ($files as $file) {
+            if (realpath($file) === realpath($newFile)) {
+                continue;
+            }
+            @unlink($file);
             $this->info("Old backup removed: " . basename($file));
         }
     }

@@ -118,7 +118,7 @@ class AutoBackup extends Command
             'user_agent' => 'System',
         ]);
 
-        $this->cleanupOldAutoBackups($backupDir);
+        $this->keepOnlyNewest($backupDir, $filepath);
 
         return 0;
     }
@@ -135,17 +135,15 @@ class AutoBackup extends Command
         }
     }
 
-    private function cleanupOldAutoBackups(string $backupDir): void
+    private function keepOnlyNewest(string $backupDir, string $newFile): void
     {
-        $files = glob($backupDir . '/auto-*.zip');
-        if (count($files) <= 20) return;
-
-        usort($files, fn($a, $b) => filemtime($a) - filemtime($b));
-
-        $toDelete = array_slice($files, 0, count($files) - 20);
-        foreach ($toDelete as $file) {
-            unlink($file);
-            $this->info("Old auto backup removed: " . basename($file));
+        $files = glob($backupDir . '/*.zip');
+        foreach ($files as $file) {
+            if (realpath($file) === realpath($newFile)) {
+                continue;
+            }
+            @unlink($file);
+            $this->info("Old backup removed: " . basename($file));
         }
     }
 }
