@@ -773,7 +773,7 @@
                 $todayMsgHtml = $todayMsg ? e($todayMsg->content) : '';
                 if ($todayMsg && !Auth::user()->isClient() && !$todayMsgSeen) {
                     $todayMsgHtml = preg_replace(
-                        '/ال?اقتراحات/u',
+                        '/الاقتراحات/u',
                         '<a href="' . e(route('suggestions.index')) . '" data-seen="' . e(route('announcements.seen', $todayMsg)) . '" class="underline font-bold" @click="fetch($el.dataset.seen, { method: \'POST\', headers: { \'X-CSRF-TOKEN\': document.querySelector(\'meta[name="csrf-token"]\')?.content } }).catch(() => {})">$0</a>',
                         $todayMsgHtml
                     );
