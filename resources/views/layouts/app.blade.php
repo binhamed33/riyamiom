@@ -780,17 +780,27 @@
                 }
             @endphp
             @if($todayMsg && !$todayMsgSeen)
-                <div x-data="{ hidden: false }" x-show="!hidden" x-cloak class="mb-4 p-4 rounded-2xl bg-gradient-to-l from-amber-500 to-amber-400 border border-amber-300 shadow-lg shadow-amber-200/30 flex items-start gap-3">
-                    <svg class="w-5 h-5 text-white flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                    </svg>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[11px] font-bold text-amber-100 mb-1">رسالة اليوم</p>
-                        <p class="text-sm text-white leading-relaxed whitespace-pre-wrap">{!! $todayMsgHtml !!}</p>
+                <div x-data="{ hidden: false, locked: false }" x-show="!hidden" x-cloak x-transition:leave="transition ease-in duration-300" x-transition:leave-end="opacity-0 -translate-y-2" class="relative mb-6 rounded-2xl bg-gradient-to-b from-white to-[#faf7ef] border border-amber-200/60 shadow-[0_14px_44px_-14px_rgba(180,140,60,0.35)] overflow-hidden">
+                    <div class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-l from-amber-700/60 via-amber-500/70 to-amber-700/60"></div>
+                    <div class="flex items-start gap-3.5 p-4 sm:px-6 sm:py-4">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-amber-500/15 to-amber-600/5 border border-amber-300/40 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2.5 mb-1.5">
+                                <span class="text-[10px] sm:text-[11px] font-bold tracking-wide text-amber-700/80">رسالة اليوم</span>
+                                <span class="w-1 h-1 rounded-full bg-amber-400/70"></span>
+                                <span class="text-[10px] text-gray-400">إعلان من إدارة النظام</span>
+                            </div>
+                            <p class="text-[13px] sm:text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{!! $todayMsgHtml !!}</p>
+                        </div>
+                        <button type="button" x-bind:class="locked ? 'bg-amber-700 text-white border-amber-700 shadow-md shadow-amber-700/20' : 'text-amber-700/60 border-amber-300/50 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-400/60'" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content } }).catch(() => {}).finally(() => { locked = true; setTimeout(() => hidden = true, 300); })" class="flex-shrink-0 w-9 h-9 rounded-xl border bg-white/60 flex items-center justify-center transition-all duration-300" title="قفل الرسالة وإغلاقها">
+                            <svg x-show="!locked" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+                            <svg x-show="locked" x-cloak class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+                        </button>
                     </div>
-                    <button type="button" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content } }).catch(() => {}).finally(() => { hidden = true; })" class="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition" title="تمت القراءة">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
                 </div>
             @endif
 
