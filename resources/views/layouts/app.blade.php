@@ -431,14 +431,6 @@
                     <span class="mr-auto bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none badge-pulse" style="line-height:14px;">{{ $suggestionUnread > 9 ? '9+' : $suggestionUnread }}</span>
                 @endif
             </a>
-            @if(Auth::user()->isDeveloper())
-            <a href="{{ route('suggestions.developers') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('suggestions.developers') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                <span>اقتراحات الموظفين</span>
-            </a>
-            @endif
             @endif
 
             @if(!Auth::user()->isClient())

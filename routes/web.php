@@ -265,9 +265,10 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     // Suggestions - developer only
     Route::middleware(['role:developer'])->group(function () {
-        Route::get('/suggestions/developers', [App\Http\Controllers\SuggestionController::class, 'developersIndex'])->name('suggestions.developers');
         Route::post('/suggestions/{suggestion}/reply', [App\Http\Controllers\SuggestionController::class, 'reply'])->name('suggestions.reply');
         Route::post('/suggestions/{suggestion}/status', [App\Http\Controllers\SuggestionController::class, 'setStatus'])->name('suggestions.status');
+        Route::put('/suggestions/{suggestion}', [App\Http\Controllers\SuggestionController::class, 'update'])->name('suggestions.update');
+        Route::delete('/suggestions/{suggestion}', [App\Http\Controllers\SuggestionController::class, 'destroy'])->name('suggestions.destroy');
     });
 
     // Backup - developer, admin (أو بصلاحية backup.manage)

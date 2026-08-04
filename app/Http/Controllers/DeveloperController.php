@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Setting;
+use App\Models\Suggestion;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class DeveloperController extends Controller
         $userCount = User::count();
         $logCount = AuditLog::count();
         $recentLogs = AuditLog::with('user')->latest()->limit(20)->get();
+        $suggestions = Suggestion::with('user')->latest()->limit(25)->get();
 
         $cacheDrivers = [
             'config' => app()->configurationIsCached(),
@@ -41,7 +43,7 @@ class DeveloperController extends Controller
         return view('developer.index', compact(
             'phpVersion', 'laravelVersion', 'dbName', 'dbSize',
             'userCount', 'logCount', 'recentLogs', 'cacheDrivers',
-            'diskFree', 'diskTotal'
+            'diskFree', 'diskTotal', 'suggestions'
         ));
     }
 

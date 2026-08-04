@@ -43,13 +43,6 @@ class SuggestionController extends Controller
             : 'تم حفظ اقتراحك، لكن تعذر إرساله إلى ديسكورد حالياً — سنراجعه لاحقاً');
     }
 
-    public function developersIndex()
-    {
-        $suggestions = Suggestion::with('user')->latest()->paginate(25);
-
-        return view('suggestions.developers', compact('suggestions'));
-    }
-
     public function reply(Request $request, Suggestion $suggestion)
     {
         $validated = $request->validate([
@@ -107,5 +100,31 @@ class SuggestionController extends Controller
         return back()->with('success', $request->status === Suggestion::STATUS_IMPLEMENTED
             ? 'تم تحديد الاقتراح كمنفَّذ وإشعار صاحبه'
             : 'تم تحديد الاقتراح كقيد الدراسة أو التنفيذ');
+    }
+
+    public function update(Request $request, Suggestion $suggestion)
+    {
+        $validated = $request->validate([
+            'content' => ['required', 'string', 'min:20', 'max:2000'],
+        ], [
+            'content.required' => 'اكتب نص الاقتراح أولاً',
+            'content.min' => 'يجب وصف الاقتراح بوصف جيد — 20 حرفاً على الأقل',
+            'content.max' => 'الاقتراح أطول من المسموح (2000 حرف كحد أقصى)',
+        ]);
+
+        $suggestion->update(['content' => $validated['content']]);
+
+        return back()->with('success', 'تم تعديل الاقتراح');
+    }
+
+    public function destroy(Suggestion $suggestion)
+    {
+        Notification::where('notifiable_type', Suggestion::class)
+            ->where('notifiable_id', $suggestion->id)
+            ->delete();
+
+        $suggestion->delete();
+
+        return back()->with('success', 'تم حذف الاقتراح نهائياً');
     }
 }
