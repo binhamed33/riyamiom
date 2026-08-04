@@ -95,6 +95,11 @@ class User extends Authenticatable
         return $this->role === 'client';
     }
 
+    public function isGuest(): bool
+    {
+        return $this->role === 'guest';
+    }
+
     public function permissions(): HasMany
     {
         return $this->hasMany(UserPermission::class);

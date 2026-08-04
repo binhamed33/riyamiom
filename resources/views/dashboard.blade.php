@@ -5,6 +5,18 @@
 @section('content')
 <div class="space-y-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
+@if(auth()->user()->isGuest())
+    <div class="rounded-2xl border-2 border-dashed border-amber-300/70 bg-amber-50/50 p-5 flex items-start gap-4">
+        <div class="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5.5 h-5.5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <div>
+            <h3 class="font-bold text-amber-900" style="font-family:'Cairo',sans-serif;">وضع التصفح — أنت ضيف</h3>
+            <p class="text-sm text-amber-800/80 mt-1 leading-relaxed">يمكنك استعراض صفحات النظام والميزات بحرية، لكن جميع البيانات المكتبية مخفية ولن تتمكن من إجراء أي تعديلات. لتجربة النظام كاملاً، سجّل الدخول بحسابك الرسمي.</p>
+        </div>
+    </div>
+@endif
+
 @php $isMgmt = auth()->user()->isAdmin() || auth()->user()->isDeveloper() || auth()->user()->hasPermission('users.view') || auth()->user()->hasPermission('feasibility.view') || auth()->user()->hasPermission('audit_log.view') || auth()->user()->hasPermission('settings.manage') || auth()->user()->hasPermission('backup.manage'); @endphp
 
 @if($isMgmt)

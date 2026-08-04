@@ -20,6 +20,11 @@ class Suggestion extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new \App\Models\Scopes\GuestScope);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

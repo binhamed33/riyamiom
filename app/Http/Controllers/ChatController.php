@@ -25,9 +25,11 @@ class ChatController extends Controller
             ->latest('updated_at')
             ->get();
 
-        $users = User::where('id', '!=', $user->id)
-            ->whereIn('role', ['developer', 'admin', 'lawyer', 'staff'])
-            ->get();
+        $users = $user->isGuest()
+            ? collect()
+            : User::where('id', '!=', $user->id)
+                ->whereIn('role', ['developer', 'admin', 'lawyer', 'staff'])
+                ->get();
 
         return view('chat.index', compact('conversations', 'users'));
     }

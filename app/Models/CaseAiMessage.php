@@ -12,6 +12,11 @@ class CaseAiMessage extends Model
 
     protected $fillable = ['case_id', 'role', 'content'];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new \App\Models\Scopes\GuestScope);
+    }
+
     public function case(): BelongsTo
     {
         return $this->belongsTo(LegalCase::class);

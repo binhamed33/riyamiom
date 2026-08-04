@@ -16,6 +16,11 @@ class FinanceFee extends Model
         return ['date' => 'date', 'amount' => 'decimal:2'];
     }
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new \App\Models\Scopes\GuestScope);
+    }
+
     public function case(): BelongsTo
     {
         return $this->belongsTo(LegalCase::class, 'case_id');

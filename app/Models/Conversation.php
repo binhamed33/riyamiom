@@ -10,6 +10,11 @@ class Conversation extends Model
 {
     protected $fillable = ['title', 'type'];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new \App\Models\Scopes\GuestScope);
+    }
+
     public function participants(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'conversation_participants')

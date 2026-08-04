@@ -24,6 +24,11 @@ class Document extends Model
         'access_level',
     ];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new \App\Models\Scopes\GuestScope);
+    }
+
     public function case(): BelongsTo
     {
         return $this->belongsTo(LegalCase::class, 'case_id');
