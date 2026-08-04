@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Setting;
 use App\Services\DiscordNotifier;
@@ -70,9 +71,15 @@ class DiscordPoll extends Command
             $original = Message::where('discord_message_id', $reference['message_id'])->first();
 
             if (!$original) {
-                $unmatched++;
-                $this->line('تجاهل رد غير مرتبط برسالة من الموقع (id: ' . $reference['message_id'] . ')');
-                continue;
+                $original = $this->resolveFromEmbedFallback($reference['message_id'], $channelId, $token);
+
+                if ($original) {
+                    $this->line('ربط الرد بالرسالة #' . $original->id . ' عبر توقيع البطاقة');
+                } else {
+                    $unmatched++;
+                    $this->line('تجاهل رد غير مرتبط برسالة من الموقع (id: ' . $reference['message_id'] . ')');
+                    continue;
+                }
             }
 
             $developer = $original->conversation->participants()
@@ -115,5 +122,43 @@ class DiscordPoll extends Command
         $this->info("اكتمل الفحص: {$created} ردود محوّلة، {$unmatched} تم تجاهلها");
 
         return 0;
+    }
+
+    private function resolveFromEmbedFallback(string $messageId, string $channelId, string $token): ?Message
+    {
+        try {
+            $response = Http::withHeaders(['Authorization' => 'Bot ' . $token])
+                ->timeout(15)
+                ->get("https://discord.com/api/v10/channels/{$channelId}/messages/{$messageId}");
+
+            if (!$response->successful()) {
+                return null;
+            }
+
+            $data = $response->json();
+            foreach ($data['embeds'] ?? [] as $embed) {
+                $footer = $embed['footer']['text'] ?? '';
+                if (preg_match('/محادثة #(\d+)/u', $footer, $matches)) {
+                    $conversation = Conversation::find((int) $matches[1]);
+                    if (!$conversation) {
+                        return null;
+                    }
+
+                    $original = $conversation->messages()
+                        ->whereNull('discord_message_id')
+                        ->latest('id')
+                        ->first();
+
+                    if ($original) {
+                        $original->update(['discord_message_id' => $messageId]);
+                        return $original;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Discord embed fallback failed: ' . $e->getMessage());
+        }
+
+        return null;
     }
 }
