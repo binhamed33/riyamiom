@@ -16,11 +16,6 @@ class HrPenalty extends Model
         return ['date' => 'date', 'amount' => 'decimal:2'];
     }
 
-    protected static function booted(): void
-    {
-        static::addGlobalScope(new \App\Models\Scopes\GuestScope);
-    }
-
     public function employee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'employee_id');

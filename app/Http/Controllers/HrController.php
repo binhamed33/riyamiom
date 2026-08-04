@@ -29,7 +29,7 @@ class HrController extends Controller
         if ($isAdmin) {
             $employees = User::whereIn('role', ['admin', 'lawyer', 'staff'])->get();
         } else {
-            $employees = auth()->user()->isGuest() ? collect() : User::where('id', $user->id)->get();
+            $employees = User::where('id', $user->id)->get();
         }
 
         $performances = HrPerformance::with(['employee', 'reviewer'])
@@ -49,7 +49,7 @@ class HrController extends Controller
             ->latest()->paginate(20);
 
         $stats = [
-            'total_employees' => auth()->user()->isGuest() ? 0 : User::whereIn('role', ['admin', 'lawyer', 'staff'])->count(),
+            'total_employees' => User::whereIn('role', ['admin', 'lawyer', 'staff'])->count(),
             'avg_rating' => HrPerformance::when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))->avg('rating'),
             'total_bonuses' => HrBonus::when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))->sum('amount'),
             'total_penalties' => HrPenalty::when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))->sum('amount'),

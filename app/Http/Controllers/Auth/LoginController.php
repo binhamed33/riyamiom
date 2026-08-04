@@ -4,14 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
-use App\Models\User;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
@@ -87,39 +85,6 @@ class LoginController extends Controller
 
 
         return redirect()->intended(route('dashboard'));
-    }
-
-    public function guest(Request $request)
-    {
-        $guest = User::firstOrCreate(
-            ['email' => 'guest@office.riyami.om'],
-            [
-                'name' => 'زائر',
-                'role' => 'guest',
-                'password' => Hash::make(Str::random(32)),
-                'is_active' => true,
-            ]
-        );
-
-        if (!$guest->is_active) {
-            return redirect()->route('login')->with('login_error', 'تم تعطيل حساب الضيف');
-        }
-
-        auth()->login($guest);
-        $request->session()->regenerate();
-
-        AuditLog::create([
-            'user_id'    => $guest->id,
-            'action'     => AuditLog::ACTION_LOGIN,
-            'model_type' => null,
-            'model_id'   => null,
-            'old_values' => null,
-            'new_values' => ['email' => $guest->email, 'via' => 'guest_button'],
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
-
-        return redirect()->route('dashboard')->with('success', 'مرحباً بك في وضع التصفح — يمكنك استعراض صفحات النظام دون رؤية أي بيانات.');
     }
 
     private function sendLockAlert(string $email, string $ip, ?string $userAgent): void

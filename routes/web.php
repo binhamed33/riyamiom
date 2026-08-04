@@ -35,7 +35,6 @@ Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('langu
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:5,1');
-    Route::post('/guest-login', [LoginController::class, 'guest'])->name('guest.login')->middleware('throttle:5,1');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
@@ -183,8 +182,8 @@ Route::middleware(['auth', 'active'])->group(function () {
     // Announcements - all roles
     Route::post('/announcements/{announcement}/seen', [AnnouncementController::class, 'markSeen'])->name('announcements.seen');
     
-    // Cases - developer, admin, lawyer, staff, guest (browse)
-    Route::middleware(['role:developer,admin,lawyer,staff,guest', 'guest.readonly', 'feature:cases'])->group(function () {
+    // Cases - developer, admin, lawyer, staff
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:cases'])->group(function () {
         Route::get('/cases/trashed', [CaseController::class, 'trashed'])->name('cases.trashed');
         Route::post('/cases/{id}/restore', [CaseController::class, 'restore'])->name('cases.restore');
         Route::resource('cases', CaseController::class);
@@ -198,21 +197,21 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/cases/{case}/send-portal-message', [CaseController::class, 'sendPortalMessage'])->name('cases.sendPortalMessage');
     });
     
-    // Court Sessions - developer, admin, lawyer, staff, guest (browse)
-    Route::middleware(['role:developer,admin,lawyer,staff,guest', 'guest.readonly', 'feature:sessions'])->group(function () {
+    // Court Sessions - developer, admin, lawyer, staff
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:sessions'])->group(function () {
         Route::post('/sessions/quick', [CourtSessionController::class, 'quickStore'])->name('sessions.quick');
         Route::resource('sessions', CourtSessionController::class);
         Route::get('/sessions/today/list', [CourtSessionController::class, 'today'])->name('sessions.today');
     });
     
-    // Tasks - developer, admin, lawyer, staff, guest (browse)
-    Route::middleware(['role:developer,admin,lawyer,staff,guest', 'guest.readonly', 'feature:tasks'])->group(function () {
+    // Tasks - developer, admin, lawyer, staff
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:tasks'])->group(function () {
         Route::resource('tasks', TaskController::class);
         Route::get('/my-tasks', [TaskController::class, 'myTasks'])->name('tasks.my');
     });
     
-    // Documents - developer, admin, lawyer, staff, guest (browse)
-    Route::middleware(['role:developer,admin,lawyer,staff,guest', 'guest.readonly', 'feature:documents'])->group(function () {
+    // Documents - developer, admin, lawyer, staff
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:documents'])->group(function () {
         Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
         Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
         Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
@@ -230,8 +229,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/export/all', [ExportController::class, 'all'])->name('export.all');
     });
     
-    // Clients - developer, admin, lawyer, staff, guest (browse)
-    Route::middleware(['role:developer,admin,lawyer,staff,guest', 'guest.readonly', 'feature:clients'])->group(function () {
+    // Clients - developer, admin, lawyer, staff
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:clients'])->group(function () {
         Route::get('/clients/trashed', [ClientController::class, 'trashed'])->name('clients.trashed');
         Route::post('/clients/{id}/restore', [ClientController::class, 'restore'])->name('clients.restore');
         Route::post('/clients/ajax', [ClientController::class, 'storeAjax'])->name('clients.ajax');
@@ -250,8 +249,8 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/settings', [SettingController::class, 'index'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.update');
 
-    // Chat - developer, admin, lawyer, staff, guest (browse)
-    Route::middleware(['role:developer,admin,lawyer,staff,guest', 'guest.readonly', 'feature:chat'])->group(function () {
+    // Chat - developer, admin, lawyer, staff
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:chat'])->group(function () {
         Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
         Route::get('/chat/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
         Route::post('/chat', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
@@ -262,8 +261,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/chat/unread/count', [App\Http\Controllers\ChatController::class, 'unreadCount'])->name('chat.unread');
     });
 
-    // Suggestions - all team roles + guest (browse)
-    Route::middleware(['role:developer,admin,lawyer,staff,guest', 'guest.readonly'])->group(function () {
+    // Suggestions - all team roles
+    Route::middleware(['role:developer,admin,lawyer,staff'])->group(function () {
         Route::get('/suggestions', [App\Http\Controllers\SuggestionController::class, 'index'])->name('suggestions.index');
         Route::post('/suggestions', [App\Http\Controllers\SuggestionController::class, 'store'])->middleware('throttle:5,10')->name('suggestions.store');
     });
@@ -285,7 +284,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::delete('/backup/{filename}', [BackupController::class, 'destroy'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.destroy');
 
     // HR - all authenticated non-client users (controller handles per-role logic)
-    Route::middleware(['auth', 'active', 'role:developer,admin,lawyer,staff,guest', 'guest.readonly', 'feature:hr'])->group(function () {
+    Route::middleware(['auth', 'active', 'role:developer,admin,lawyer,staff', 'feature:hr'])->group(function () {
         Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
         Route::post('/hr/leaves', [HrController::class, 'storeLeave'])->name('hr.leaves.store');
         Route::post('/hr/performance', [HrController::class, 'storePerformance'])->name('hr.performance.store');
@@ -300,7 +299,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     });
 
     // Finance - all authenticated non-client users (controller handles per-role logic)
-    Route::middleware(['auth', 'active', 'role:developer,admin,lawyer,staff,guest', 'guest.readonly', 'feature:finance'])->group(function () {
+    Route::middleware(['auth', 'active', 'role:developer,admin,lawyer,staff', 'feature:finance'])->group(function () {
         Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
         Route::get('/finance/transactions/{transaction}', [FinanceController::class, 'showTransaction'])->name('finance.transactions.show');
         Route::get('/finance/transactions/{transaction}/print', [FinanceController::class, 'printTransaction'])->name('finance.transactions.print');

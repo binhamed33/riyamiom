@@ -22,8 +22,6 @@ class DashboardController extends Controller
         $lastMonth = $now->copy()->subMonth();
         $user = auth()->user();
 
-        $remember = fn (string $key, callable $cb) => $user->isGuest() ? $cb() : Cache::remember($key, 300, $cb);
-
         $caseBase = LegalCase::query();
         $clientBase = Client::query();
         $taskBase = Task::query();
@@ -31,7 +29,7 @@ class DashboardController extends Controller
         $documentBase = Document::query();
 
         // === Case Statistics (cached 5 min) ===
-        $caseStats = $remember('dashboard_case_stats', fn () => [
+        $caseStats = Cache::remember('dashboard_case_stats', 300, fn () => [
             'total' => (clone $caseBase)->count(),
             'active' => (clone $caseBase)->where('status', 'active')->count(),
             'overdue' => (clone $caseBase)->where('status', 'overdue')->count(),
@@ -101,20 +99,20 @@ class DashboardController extends Controller
 
         // === Charts Data (cached 5 min) ===
         $cacheSuffix = '';
-        $casesByStatus = $remember('dashboard_cases_by_status' . $cacheSuffix, fn () =>
+        $casesByStatus = Cache::remember('dashboard_cases_by_status' . $cacheSuffix, 300, fn () =>
             (clone $caseBase)->selectRaw('status, count(*) as count')
                 ->groupBy('status')
                 ->pluck('count', 'status')
         );
 
-        $casesByPriority = $remember('dashboard_cases_by_priority' . $cacheSuffix, fn () =>
+        $casesByPriority = Cache::remember('dashboard_cases_by_priority' . $cacheSuffix, 300, fn () =>
             (clone $caseBase)->selectRaw('priority, count(*) as count')
                 ->groupBy('priority')
                 ->pluck('count', 'priority')
         );
 
         // Monthly cases trend (last 6 months)
-        $monthlyTrend = $remember('dashboard_monthly_trend' . $cacheSuffix, function () use ($now, $caseBase) {
+        $monthlyTrend = Cache::remember('dashboard_monthly_trend' . $cacheSuffix, 300, function () use ($now, $caseBase) {
             $trend = [];
             for ($i = 5; $i >= 0; $i--) {
                 $month = $now->copy()->subMonths($i);
@@ -133,7 +131,7 @@ class DashboardController extends Controller
         });
 
         // Cases by lawyer
-        $casesByLawyer = $remember('dashboard_cases_by_lawyer' . $cacheSuffix, fn () =>
+        $casesByLawyer = Cache::remember('dashboard_cases_by_lawyer' . $cacheSuffix, 300, fn () =>
             (clone $caseBase)->join('users', 'cases.lawyer_id', '=', 'users.id')
                 ->selectRaw('users.name, count(*) as count')
                 ->groupBy('users.name')
@@ -222,7 +220,7 @@ class DashboardController extends Controller
             ->get();
 
         // === Top performing lawyer (cached 5 min) ===
-        $topLawyer = $remember('dashboard_top_lawyer', fn () =>
+        $topLawyer = Cache::remember('dashboard_top_lawyer', 300, fn () =>
             LegalCase::where('status', 'won')
                 ->selectRaw('lawyer_id, count(*) as wins')
                 ->groupBy('lawyer_id')

@@ -62,11 +62,6 @@ class LegalCase extends Model
         ];
     }
 
-    protected static function booted(): void
-    {
-        static::addGlobalScope(new \App\Models\Scopes\GuestScope);
-    }
-
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
