@@ -53,4 +53,10 @@ return [
         'template' => env('WHATSAPP_TEMPLATE_NAME', ''),
     ],
 
+    'discord' => [
+        'webhook_url' => env('DISCORD_WEBHOOK_URL', ''),
+        'bot_token' => env('DISCORD_BOT_TOKEN', ''),
+        'channel_id' => env('DISCORD_CHANNEL_ID', ''),
+    ],
+
 ];

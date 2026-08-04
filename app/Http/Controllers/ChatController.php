@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
+use App\Services\DiscordNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -78,13 +79,15 @@ class ChatController extends Controller
         }
 
         if ($request->filled('message')) {
-            Message::create([
+            $message = Message::create([
                 'conversation_id' => $conversation->id,
                 'user_id' => $user->id,
                 'message' => $request->message,
             ]);
             $conversation->touch();
-            $this->notifyParticipants($conversation, $user, $request->message);
+            if (!$this->forwardToDevelopers($conversation, $user, $message)) {
+                $this->notifyParticipants($conversation, $user, $request->message);
+            }
         }
 
         return redirect()->route('chat.show', $conversation);
@@ -124,7 +127,9 @@ class ChatController extends Controller
         $conversation->touch();
 
         $notifyText = $request->message ?: ($request->hasFile('attachment') ? $file->getClientOriginalName() : 'مرفق');
-        $this->notifyParticipants($conversation, $user, $notifyText);
+        if (!$this->forwardToDevelopers($conversation, $user, $message)) {
+            $this->notifyParticipants($conversation, $user, $notifyText);
+        }
 
         $message->load('replyTo');
         return response()->json([
@@ -140,6 +145,7 @@ class ChatController extends Controller
             'reply_to_id' => $message->reply_to_id,
             'reply_message' => $message->replyTo?->message,
             'edited_at' => $message->edited_at?->diffForHumans(),
+            'discord_pending' => (bool) $message->discord_message_id && !$message->discord_replied_at,
         ]);
     }
 
@@ -224,6 +230,30 @@ class ChatController extends Controller
             ->sum('unread_count');
 
         return response()->json(['count' => $count]);
+    }
+
+    private function forwardToDevelopers(Conversation $conversation, User $sender, Message $message): bool
+    {
+        if ($sender->isDeveloper()) {
+            return false;
+        }
+
+        $hasDeveloperRecipient = $conversation->participants()
+            ->where('role', 'developer')
+            ->where('user_id', '!=', $sender->id)
+            ->exists();
+
+        if (!$hasDeveloperRecipient) {
+            return false;
+        }
+
+        $discordId = DiscordNotifier::sendChatMessage($message);
+        if ($discordId) {
+            $message->update(['discord_message_id' => $discordId]);
+            return true;
+        }
+
+        return false;
     }
 
     private function notifyParticipants(Conversation $conversation, User $sender, string $message): void

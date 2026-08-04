@@ -10,3 +10,6 @@ Schedule::command('backup:auto')->everyThirtyMinutes();
 
 // Server status to Discord every 5 minutes
 Schedule::command('discord:status')->everyFiveMinutes();
+
+// Poll Discord channel for developer replies (webhook is send-only, bot reads replies)
+Schedule::command('discord:poll')->everyMinute()->withoutOverlapping();

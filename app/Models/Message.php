@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 
 class Message extends Model
 {
-    protected $fillable = ['conversation_id', 'user_id', 'message', 'attachment_path', 'attachment_name', 'attachment_type', 'attachment_size', 'reply_to_id', 'edited_at'];
+    protected $fillable = ['conversation_id', 'user_id', 'message', 'attachment_path', 'attachment_name', 'attachment_type', 'attachment_size', 'reply_to_id', 'edited_at', 'discord_message_id', 'discord_replied_at'];
 
     protected $appends = ['attachment_url', 'is_image'];
 
@@ -16,6 +16,7 @@ class Message extends Model
     {
         return [
             'edited_at' => 'datetime',
+            'discord_replied_at' => 'datetime',
         ];
     }
 

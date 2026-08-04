@@ -105,7 +105,11 @@ function roleAvatar($user, $size = 9) {
                                 </div>
                             @endif
                             <div class="flex items-center justify-between mt-1">
-                                <p class="text-[10px] {{ $isOwn ? 'text-amber-200' : 'text-gray-400' }}">{{ $msg->created_at->diffForHumans() }}</p>
+                                <p class="text-[10px] {{ $isOwn ? 'text-amber-200' : 'text-gray-400' }}">{{ $msg->created_at->diffForHumans() }}
+                                    @if($msg->discord_message_id)
+                                        <span class="font-medium {{ $msg->discord_replied_at ? ($isOwn ? 'text-green-200' : 'text-green-600') : ($isOwn ? 'text-amber-100' : 'text-amber-600') }}">— @if($msg->discord_replied_at) تم الرد من المطور @else بانتظار رد المطور @endif</span>
+                                    @endif
+                                </p>
                                 <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
                                     @if($isOwn)
                                         <button type="button" data-msg-action="edit" class="text-[10px] {{ $isOwn ? 'text-amber-200 hover:text-white' : 'text-amber-600/50 hover:text-amber-700' }} transition" title="تعديل">
@@ -476,6 +480,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const editedHtml = data.edited_at ? '<span class="text-[10px] text-gray-400">(تم التعديل)</span>' : '';
 
+        const pendingHtml = data.discord_pending ? '<p class="text-[10px] text-amber-600 font-medium mt-1">↦ أُرسلت للمطورين — بانتظار الرد</p>' : '';
+
         const senderNameDisplay = !isOwn ? `<p class="text-[11px] text-amber-600/60 font-medium mb-1" data-sender-name="${data.user_name.replace(/"/g, '&quot;')}">${data.user_name}</p>` : '';
 
         const actionsHtml = `<div class="flex items-center justify-between mt-1">
@@ -500,6 +506,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ${replyHtml}
             ${data.message ? '<p class="text-sm text-gray-800" data-message-text="' + data.message.replace(/"/g, '&quot;') + '">' + data.message.replace(/</g, '&lt;') + ' ' + editedHtml + '</p>' : ''}
             ${attachmentHtml}
+            ${pendingHtml}
             ${actionsHtml}
         </div>`;
         messagesEl.insertBefore(div, anchor);
