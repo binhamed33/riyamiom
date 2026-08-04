@@ -237,10 +237,11 @@
                 <div>
                     <label for="lawyer_id" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.case_lawyer') }}</label>
                     <select name="lawyer_id" id="lawyer_id"
-                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('lawyer_id') border-red-500/50 @enderror">
+                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('lawyer_id') border-red-500/50 @enderror"
+                        {{ auth()->user()->isAdmin() || auth()->user()->isDeveloper() ? '' : 'disabled' }}>
                         <option value="">اختر محامي القضية</option>
                         @foreach($users ?? [] as $user)
-                            <option value="{{ $user->id }}" {{ old('lawyer_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                            <option value="{{ $user->id }}" {{ old('lawyer_id', auth()->id()) == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
                         @endforeach
                     </select>
                     @error('lawyer_id')

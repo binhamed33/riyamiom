@@ -122,17 +122,17 @@ class HrController extends Controller
     public function storeLeave(Request $request)
     {
         $user = auth()->user();
-        $isAdmin = $this->isAdmin();
+        $canAssign = in_array($user->role, ['developer', 'admin']);
 
         $data = $request->validate([
-            'employee_id' => $isAdmin ? 'required|exists:users,id' : 'nullable',
+            'employee_id' => $canAssign ? 'required|exists:users,id' : 'nullable',
             'type' => 'required|in:annual,sick,emergency,maternity,unpaid,other',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'reason' => 'nullable|string',
         ]);
 
-        $data['employee_id'] = $isAdmin ? $data['employee_id'] : $user->id;
+        $data['employee_id'] = $canAssign ? $data['employee_id'] : $user->id;
         $data['status'] = 'pending';
         $leave = HrLeave::create($data);
 

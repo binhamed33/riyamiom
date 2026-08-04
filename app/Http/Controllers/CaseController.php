@@ -99,7 +99,7 @@ class CaseController extends Controller
         $maxOffice = LegalCase::max(DB::raw('office_case_number + 0'));
         $validated['office_case_number'] = (string) ((int) ($maxOffice ?? 0) + 1);
 
-        if (auth()->user()->isLawyer() && empty($validated['lawyer_id'])) {
+        if (!in_array(auth()->user()->role, ['developer', 'admin']) && empty($validated['lawyer_id'])) {
             $validated['lawyer_id'] = auth()->id();
         }
 

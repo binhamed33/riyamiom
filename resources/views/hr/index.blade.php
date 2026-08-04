@@ -347,13 +347,17 @@
         </div>
         <form method="POST" action="{{ route('hr.leaves.store') }}" class="px-6 py-5 space-y-4">
             @csrf
-            @if($isAdmin && count($employees) > 0)
+            @if(auth()->user()->isAdmin() || auth()->user()->isDeveloper())
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">الموظف <span class="text-red-700">*</span></label>
                 <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
             </div>
             @else
             <input type="hidden" name="employee_id" value="{{ auth()->id() }}">
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1.5">الموظف</label>
+                <input type="text" value="{{ auth()->user()->name }}" disabled class="w-full rounded-lg bg-gray-100 border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
+            </div>
             @endif
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">النوع <span class="text-red-700">*</span></label>
