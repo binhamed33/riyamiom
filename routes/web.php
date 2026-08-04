@@ -259,7 +259,7 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     // Backup - developer, admin (أو بصلاحية backup.manage)
     Route::get('/backup', [BackupController::class, 'index'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.index');
-    Route::post('/backup/create', [BackupController::class, 'create'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:3,10')->name('backup.create');
+    Route::post('/backup/create', [BackupController::class, 'create'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:30,10')->name('backup.create');
     Route::get('/backup/{filename}/download', [BackupController::class, 'download'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.download');
     Route::post('/backup/upload-restore', [BackupController::class, 'uploadRestore'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:10,60')->name('backup.upload-restore');
     Route::post('/backup/{filename}/restore', [BackupController::class, 'restore'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:10,60')->name('backup.restore');
