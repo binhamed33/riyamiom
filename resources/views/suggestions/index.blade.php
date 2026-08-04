@@ -45,7 +45,27 @@
         <h2 class="text-base font-bold text-gray-700 mb-3">اقتراحاتي السابقة</h2>
         @forelse($suggestions as $suggestion)
             <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-3">
+                <div class="flex items-center gap-2 mb-2">
+                    @if($suggestion->status === 'implemented')
+                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            تم التنفيذ
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            قيد الدراسة أو التنفيذ
+                        </span>
+                    @endif
+                </div>
                 <p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{{ $suggestion->content }}</p>
+                @if($suggestion->developer_reply)
+                    <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p class="text-[11px] font-bold text-green-700">ردّ المطوّر:</p>
+                        <p class="text-sm text-gray-800 whitespace-pre-wrap mt-1">{{ $suggestion->developer_reply }}</p>
+                        <p class="text-[11px] text-gray-400 mt-1">{{ $suggestion->replied_at?->diffForHumans() }}</p>
+                    </div>
+                @endif
                 <p class="text-[11px] text-gray-400 mt-2">{{ $suggestion->created_at->diffForHumans() }}</p>
             </div>
         @empty

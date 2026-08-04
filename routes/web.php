@@ -263,6 +263,13 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/suggestions', [App\Http\Controllers\SuggestionController::class, 'store'])->middleware('throttle:5,10')->name('suggestions.store');
     });
 
+    // Suggestions - developer only
+    Route::middleware(['role:developer'])->group(function () {
+        Route::get('/suggestions/developers', [App\Http\Controllers\SuggestionController::class, 'developersIndex'])->name('suggestions.developers');
+        Route::post('/suggestions/{suggestion}/reply', [App\Http\Controllers\SuggestionController::class, 'reply'])->name('suggestions.reply');
+        Route::post('/suggestions/{suggestion}/status', [App\Http\Controllers\SuggestionController::class, 'setStatus'])->name('suggestions.status');
+    });
+
     // Backup - developer, admin (أو بصلاحية backup.manage)
     Route::get('/backup', [BackupController::class, 'index'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.index');
     Route::post('/backup/create', [BackupController::class, 'create'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:30,10')->name('backup.create');
