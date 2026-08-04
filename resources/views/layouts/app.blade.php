@@ -774,14 +774,14 @@
                 if ($todayMsg && !Auth::user()->isClient() && !$todayMsgSeen) {
                     $todayMsgHtml = preg_replace(
                         '/الاقتراحات/u',
-                        '<a href="' . e(route('suggestions.index')) . '" data-seen="' . e(route('announcements.seen', $todayMsg)) . '" class="underline font-bold" @click="fetch($el.dataset.seen, { method: \'POST\', headers: { \'X-CSRF-TOKEN\': document.querySelector(\'meta[name="csrf-token"]\')?.content } }).catch(() => {})">$0</a>',
+                        '<a href="' . e(route('suggestions.index')) . '" data-seen="' . e(route('announcements.seen', $todayMsg)) . '" class="underline font-bold" @click="fetch($el.dataset.seen, { method: \'POST\', headers: { \'X-CSRF-TOKEN\': document.querySelector(\'meta[name=csrf-token]\')?.content } }).catch(() => {})">$0</a>',
                         $todayMsgHtml
                     );
                 }
             @endphp
             @if($todayMsg && !$todayMsgSeen)
                 <div x-data="{ hidden: false, locked: false }" x-show="!hidden" x-cloak x-transition:leave="transition ease-in duration-300" x-transition:leave-end="opacity-0 scale-95" class="fixed inset-0 z-[100] flex items-center justify-center p-4" dir="rtl">
-                    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content } }).catch(() => {}).finally(() => { hidden = true; })"></div>
+                    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content } }).catch(() => {}).finally(() => { hidden = true; })"></div>
                     <div class="relative w-full max-w-sm rounded-2xl bg-gradient-to-b from-[#2b261e] to-[#17130d] border border-amber-400/25 shadow-[0_30px_90px_-15px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(251,191,36,0.12)] overflow-hidden">
                         <div class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-l from-amber-600/70 via-amber-400/80 to-amber-600/70"></div>
                         <div class="p-7 text-center">
@@ -793,7 +793,7 @@
                             <p class="text-[11px] tracking-[0.35em] text-amber-400/80 font-bold mb-2">رسالة اليوم</p>
                             <div class="w-12 h-px mx-auto bg-gradient-to-l from-transparent via-amber-400/60 to-transparent mb-5"></div>
                             <p class="text-sm text-amber-50 leading-relaxed whitespace-pre-wrap">{!! $todayMsgHtml !!}</p>
-                            <button type="button" x-bind:class="locked ? 'bg-amber-500 text-[#17130d] border-amber-500' : 'text-amber-300 border-amber-400/40 hover:bg-amber-400/10'" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content } }).catch(() => {}).finally(() => { locked = true; setTimeout(() => hidden = true, 350); })" class="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-full border font-bold text-xs transition-all duration-300" title="قفل الرسالة">
+                            <button type="button" x-bind:class="locked ? 'bg-amber-500 text-[#17130d] border-amber-500' : 'text-amber-300 border-amber-400/40 hover:bg-amber-400/10'" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content } }).catch(() => {}).finally(() => { locked = true; setTimeout(() => hidden = true, 350); })" class="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-full border font-bold text-xs transition-all duration-300" title="قفل الرسالة">
                                 <svg x-show="!locked" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
                                 <svg x-show="locked" x-cloak class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
                                 <span x-text="locked ? 'تم القفل' : 'قفل الرسالة'"></span>
