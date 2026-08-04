@@ -38,7 +38,7 @@ class DiscordPoll extends Command
             $query['after'] = $cursor;
         }
 
-        $response = Http::withToken($token)
+        $response = Http::withHeaders(['Authorization' => 'Bot ' . $token])
             ->timeout(20)
             ->get("https://discord.com/api/v10/channels/{$channelId}/messages", $query);
 
