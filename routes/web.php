@@ -13,6 +13,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\FeasibilityController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\HealthController;
 
 Route::get('/health', HealthController::class)->name('health');
@@ -177,6 +178,9 @@ Route::middleware(['auth', 'active'])->group(function () {
     // Profile - all roles
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    // Announcements - all roles
+    Route::post('/announcements/{announcement}/seen', [AnnouncementController::class, 'markSeen'])->name('announcements.seen');
     
     // Cases - developer, admin, lawyer, staff
     Route::middleware(['role:developer,admin,lawyer,staff', 'feature:cases'])->group(function () {
@@ -333,6 +337,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/storage-link', [App\Http\Controllers\DeveloperController::class, 'storageLink'])->name('developer.storage-link');
         Route::get('/features', [App\Http\Controllers\DeveloperController::class, 'features'])->name('developer.features');
         Route::post('/features/toggle', [App\Http\Controllers\DeveloperController::class, 'toggleFeature'])->name('developer.features.toggle');
+        Route::post('/announcement', [App\Http\Controllers\AnnouncementController::class, 'publish'])->name('announcements.publish');
     });
 
     }); // end throttle group

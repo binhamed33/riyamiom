@@ -767,6 +767,25 @@
                 <x-alert type="info" :message="session('info')" />
             @endif
 
+            @php
+                $todayMsg = \App\Models\Announcement::latest()->first();
+                $todayMsgSeen = $todayMsg && \App\Models\AnnouncementRead::where('announcement_id', $todayMsg->id)->where('user_id', auth()->id())->exists();
+            @endphp
+            @if($todayMsg && !$todayMsgSeen)
+                <div x-data="{ hidden: false }" x-show="!hidden" x-cloak class="mb-4 p-4 rounded-2xl bg-gradient-to-l from-amber-500 to-amber-400 border border-amber-300 shadow-lg shadow-amber-200/30 flex items-start gap-3">
+                    <svg class="w-5 h-5 text-white flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                    </svg>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[11px] font-bold text-amber-100 mb-1">رسالة اليوم</p>
+                        <p class="text-sm text-white leading-relaxed whitespace-pre-wrap">{{ $todayMsg->content }}</p>
+                    </div>
+                    <button type="button" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content } }).catch(() => {}).finally(() => { hidden = true; })" class="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition" title="تمت القراءة">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            @endif
+
             @yield('content')
         </main>
 

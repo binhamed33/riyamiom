@@ -137,6 +137,39 @@
         </div>
     </div>
 
+    {{-- Announcement of the Day --}}
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-amber-600 font-bold text-sm uppercase tracking-wider">📢 رسالة اليوم</h2>
+        </div>
+
+        @if($currentAnnouncement)
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                <p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{{ $currentAnnouncement->content }}</p>
+                <p class="text-[11px] text-gray-400 mt-2">
+                    نُشرت {{ $currentAnnouncement->created_at->diffForHumans() }} • شاهدها {{ $currentAnnouncement->reads_count }} مستخدم حتى الآن
+                </p>
+            </div>
+        @else
+            <div class="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-4 text-center">
+                <p class="text-sm text-gray-400">لا توجد رسالة حالية — انشر أول رسالة اليوم</p>
+            </div>
+        @endif
+
+        <p class="text-xs text-gray-500 mb-2">اكتب رسالة جديدة لتعريف المستخدمين بالإضافات الجديدة — ستظهر لكل مستخدم مرة واحدة فقط، ولن تظهر مجدداً حتى تكتب رسالة جديدة.</p>
+
+        <form method="POST" action="{{ route('announcements.publish') }}">
+            @csrf
+            <textarea name="content" rows="3" minlength="5" maxlength="2000" placeholder="اكتب رسالة اليوم..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-300 focus:bg-amber-50 transition resize-y"></textarea>
+            <div class="flex justify-end mt-2">
+                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+                    نشر رسالة اليوم
+                </button>
+            </div>
+        </form>
+    </div>
+
     {{-- Suggestions --}}
     <div class="bg-white rounded-xl border border-gray-200 p-5">
         <div class="flex items-center justify-between mb-4">
