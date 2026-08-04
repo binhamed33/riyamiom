@@ -257,6 +257,12 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/chat/unread/count', [App\Http\Controllers\ChatController::class, 'unreadCount'])->name('chat.unread');
     });
 
+    // Suggestions - all team roles
+    Route::middleware(['role:developer,admin,lawyer,staff'])->group(function () {
+        Route::get('/suggestions', [App\Http\Controllers\SuggestionController::class, 'index'])->name('suggestions.index');
+        Route::post('/suggestions', [App\Http\Controllers\SuggestionController::class, 'store'])->middleware('throttle:5,10')->name('suggestions.store');
+    });
+
     // Backup - developer, admin (أو بصلاحية backup.manage)
     Route::get('/backup', [BackupController::class, 'index'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.index');
     Route::post('/backup/create', [BackupController::class, 'create'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:30,10')->name('backup.create');

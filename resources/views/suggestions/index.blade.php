@@ -1,0 +1,59 @@
+@extends('layouts.app')
+
+@section('title', 'صندوق الاقتراحات')
+
+@section('content')
+<div class="max-w-2xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-amber-600">صندوق الاقتراحات</h1>
+        <p class="text-sm text-gray-500 mt-1">شاركنا بفكرتك أو ملاحظتك — تصل مباشرة إلى المطوّرين ويتم مراجعتها.</p>
+    </div>
+
+    @if(session('success'))
+        <div class="mb-4 p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm font-medium">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
+        <form method="POST" action="{{ route('suggestions.store') }}" x-data="{ len: 0 }">
+            @csrf
+            <label for="content" class="block text-sm font-semibold text-gray-700 mb-2">اقتراحك <span class="text-red-500">*</span></label>
+            <textarea
+                id="content" name="content" rows="5" required minlength="20" maxlength="2000"
+                x-model="content"
+                @input="len = $event.target.value.length"
+                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-300 focus:bg-amber-50 transition resize-y @error('content') border-red-300 @enderror"
+                placeholder="صف اقتراحك بوصف واضح... ماذا تقترح ولماذا؟"></textarea>
+            <div class="flex items-center justify-between mt-2">
+                <div>
+                    @error('content')
+                        <p class="text-xs text-red-600 font-medium">{{ $message }}</p>
+                    @enderror
+                    <p class="text-xs text-gray-400" x-show="len > 0 && len < 20">يجب وصف الاقتراح بوصف جيد — 20 حرفاً على الأقل</p>
+                </div>
+                <p class="text-xs text-gray-400" x-text="'عدد الأحرف: ' + len"></p>
+            </div>
+            <button type="submit" class="mt-4 bg-gradient-to-l from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-500 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-amber-200/30 hover:shadow-amber-300/30 text-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                إرسال الاقتراح
+            </button>
+        </form>
+    </div>
+
+    <div>
+        <h2 class="text-base font-bold text-gray-700 mb-3">اقتراحاتي السابقة</h2>
+        @forelse($suggestions as $suggestion)
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-3">
+                <p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{{ $suggestion->content }}</p>
+                <p class="text-[11px] text-gray-400 mt-2">{{ $suggestion->created_at->diffForHumans() }}</p>
+            </div>
+        @empty
+            <div class="bg-gray-50 rounded-xl border border-gray-100 p-8 text-center">
+                <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                <p class="text-gray-400 text-sm">لم ترسل أي اقتراح بعد — كن أول من يشارك</p>
+            </div>
+        @endforelse
+    </div>
+</div>
+@endsection
