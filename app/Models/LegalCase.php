@@ -52,6 +52,7 @@ class LegalCase extends Model
         'priority',
         'client_id',
         'lawyer_id',
+        'created_by',
         'ai_analysis',
     ];
 
@@ -69,6 +70,11 @@ class LegalCase extends Model
     public function lawyer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'lawyer_id');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function sessions(): HasMany

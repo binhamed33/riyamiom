@@ -103,6 +103,8 @@ class CaseController extends Controller
             $validated['lawyer_id'] = auth()->id();
         }
 
+        $validated['created_by'] = auth()->id();
+
         $sessionErrors = [];
         $sessionsData = $request->input('sessions', []);
         if (is_array($sessionsData)) {
@@ -341,6 +343,9 @@ class CaseController extends Controller
     public function destroy(LegalCase $case): RedirectResponse
     {
         $this->authorizeCaseAccess($case);
+
+        $user = auth()->user();
+        abort_unless($case->created_by === $user->id || in_array($user->role, ['developer', 'admin']), 403);
 
         $oldValues = $case->toArray();
         $caseNumber = $case->case_number;

@@ -322,13 +322,31 @@ document.addEventListener('alpine:init', () => {
             <a href="{{ route('cases.edit', $case->id) }}" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                 {{ __('app.edit') }}
             </a>
-            <form action="{{ route('cases.destroy', $case->id) }}" method="POST" class="contents" x-data @submit.prevent="if(confirm('{{ __('app.confirm_delete_case_full') }}')) $el.submit()">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm">
+            @if($case->created_by === auth()->id() || in_array(auth()->user()->role, ['developer', 'admin']))
+            <span class="inline-block" x-data="{ open: false }">
+                <button type="button" @click="open = true" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm">
                     {{ __('app.delete') }}
                 </button>
-            </form>
+                <form id="delete-case-{{ $case->id }}" action="{{ route('cases.destroy', $case->id) }}" method="POST" class="hidden">
+                    @csrf
+                    @method('DELETE')
+                </form>
+                <div x-show="open" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4" @keydown.escape="open = false">
+                    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+                    <div class="relative bg-white border border-red-300 rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
+                        <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 text-red-700 flex items-center justify-center">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">تأكيد حذف القضية</h3>
+                        <p class="text-sm text-gray-500 mb-6">هل أنت متأكد من حذف القضية <span class="font-semibold text-gray-900">{{ $case->case_number }}</span>؟ لا يمكن التراجع عن هذا الإجراء.</p>
+                        <div class="flex gap-3 justify-center">
+                            <button type="button" @click="document.getElementById('delete-case-{{ $case->id }}').submit()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">نعم، احذف</button>
+                            <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">إلغاء</button>
+                        </div>
+                    </div>
+                </div>
+            </span>
+            @endif
         </div>
     </div>
 
