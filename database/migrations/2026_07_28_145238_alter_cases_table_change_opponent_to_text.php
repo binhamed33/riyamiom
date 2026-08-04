@@ -9,11 +9,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement('ALTER TABLE cases MODIFY opponent TEXT');
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE cases MODIFY opponent TEXT');
+        }
     }
 
     public function down(): void
     {
-        DB::statement('ALTER TABLE cases MODIFY opponent VARCHAR(255)');
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE cases MODIFY opponent VARCHAR(255)');
+        }
     }
 };
