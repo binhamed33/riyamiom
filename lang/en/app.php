@@ -73,6 +73,8 @@ return [
     'status_closed' => 'Closed',
     'status_won' => 'Won',
     'status_lost' => 'Lost',
+    'status_adjudicated' => 'Adjudicated',
+    'status_fees_pending' => 'Fees Pending',
 
     // Priority labels
     'priority_low' => 'Low',

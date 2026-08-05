@@ -45,6 +45,8 @@
                         @elseif($case->status === 'closed') <span class="badge badge-closed">مغلقة</span>
                         @elseif($case->status === 'won') <span class="badge badge-won">مكتسبة</span>
                         @elseif($case->status === 'lost') <span class="badge badge-lost">خاسرة</span>
+                        @elseif($case->status === 'adjudicated') <span class="badge badge-adjudicated">محكومة</span>
+                        @elseif($case->status === 'fees_pending') <span class="badge badge-fees-pending">في انتظار دفع الأتعاب</span>
                         @else {{ $case->status }}
                         @endif
                     </td>

@@ -175,10 +175,13 @@ function monthlyCases() {
             closed: 'bg-gray-100 text-gray-400',
             won: 'bg-emerald-100 text-emerald-700',
             lost: 'bg-red-100 text-red-700',
+            adjudicated: 'bg-emerald-100 text-emerald-700',
+            fees_pending: 'bg-red-100 text-red-700',
         },
         statusLabels: {
             active: 'نشطة', pending: 'معلقة', overdue: 'متأخرة',
             closed: 'مغلقة', won: 'مربوحة', lost: 'خاسرة',
+            adjudicated: 'محكومة', fees_pending: 'في انتظار دفع الأتعاب',
         },
         init() {},
         fetchData() {

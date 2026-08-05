@@ -29,6 +29,8 @@ class LegalCase extends Model
     const STATUS_CLOSED = 'closed';
     const STATUS_WON = 'won';
     const STATUS_LOST = 'lost';
+    const STATUS_ADJUDICATED = 'adjudicated';
+    const STATUS_FEES_PENDING = 'fees_pending';
 
     const PRIORITY_LOW = 'low';
     const PRIORITY_MEDIUM = 'medium';

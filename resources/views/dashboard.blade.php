@@ -396,10 +396,13 @@ document.addEventListener('DOMContentLoaded', function () {
             closed: '{{ __("app.status_closed") }}',
             won: '{{ __("app.status_won") }}',
             lost: '{{ __("app.status_lost") }}',
+            adjudicated: '{{ __("app.status_adjudicated") }}',
+            fees_pending: '{{ __("app.status_fees_pending") }}',
         };
         const colors = {
             active: '#22c55e', pending: '#eab308', overdue: '#ef4444',
             closed: '#6b7280', won: '#3b82f6', lost: '#dc2626',
+            adjudicated: '#10b981', fees_pending: '#ef4444',
         };
         const data = Object.keys(chartData).filter(k => chartData[k] > 0);
         new Chart(statusCtx.getContext('2d'), {

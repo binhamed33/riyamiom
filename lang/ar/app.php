@@ -73,6 +73,8 @@ return [
     'status_closed' => 'مغلقة',
     'status_won' => 'مكتسبة',
     'status_lost' => 'خاسرة',
+    'status_adjudicated' => 'محكومة',
+    'status_fees_pending' => 'في انتظار دفع الأتعاب',
 
     // Priority labels
     'priority_low' => 'منخفضة',

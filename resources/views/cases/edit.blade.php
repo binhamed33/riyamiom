@@ -232,6 +232,8 @@
                         <option value="closed" {{ old('status', $case->status) === 'closed' ? 'selected' : '' }}>{{ __('app.status_closed') }}</option>
                         <option value="won" {{ old('status', $case->status) === 'won' ? 'selected' : '' }}>{{ __('app.status_won') }}</option>
                         <option value="lost" {{ old('status', $case->status) === 'lost' ? 'selected' : '' }}>{{ __('app.status_lost') }}</option>
+                        <option value="adjudicated" {{ old('status', $case->status) === 'adjudicated' ? 'selected' : '' }}>{{ __('app.status_adjudicated') }}</option>
+                        <option value="fees_pending" {{ old('status', $case->status) === 'fees_pending' ? 'selected' : '' }}>{{ __('app.status_fees_pending') }}</option>
                     </select>
                     @error('status')
                         <p class="mt-1 text-xs text-red-700">{{ $message }}</p>

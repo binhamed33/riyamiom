@@ -392,6 +392,8 @@ document.addEventListener('alpine:init', () => {
                     @elseif($case->status === 'closed') bg-gray-100 text-gray-400 border border-gray-200
                     @elseif($case->status === 'won') bg-blue-100 text-blue-700 border border-blue-200
                     @elseif($case->status === 'lost') bg-red-100 text-red-700 border border-red-200
+                    @elseif($case->status === 'adjudicated') bg-emerald-100 text-emerald-700 border border-emerald-200
+                    @elseif($case->status === 'fees_pending') bg-red-100 text-red-700 border border-red-200
                     @else bg-gray-100 text-gray-400 border border-gray-200 @endif">
                     @if($case->status === 'active') {{ __('app.status_active') }}
                     @elseif($case->status === 'pending') {{ __('app.status_pending') }}
@@ -399,6 +401,8 @@ document.addEventListener('alpine:init', () => {
                     @elseif($case->status === 'closed') {{ __('app.status_closed') }}
                     @elseif($case->status === 'won') {{ __('app.status_won') }}
                     @elseif($case->status === 'lost') {{ __('app.status_lost') }}
+                    @elseif($case->status === 'adjudicated') {{ __('app.status_adjudicated') }}
+                    @elseif($case->status === 'fees_pending') {{ __('app.status_fees_pending') }}
                     @else {{ $case->status }}
                     @endif
                 </span>
@@ -745,8 +749,8 @@ document.addEventListener('alpine:init', () => {
                     <div class="bg-white rounded-xl p-3 border border-gray-100">
                         <p class="text-xs text-gray-500 mb-1">{{ __('app.status') }}</p>
                         @php
-                            $statusMap = ['active'=>__('app.status_active'),'pending'=>__('app.status_pending'),'overdue'=>__('app.status_overdue'),'closed'=>__('app.status_closed'),'won'=>__('app.status_won'),'lost'=>__('app.status_lost')];
-                            $statusColors = ['active'=>'text-emerald-700','pending'=>'text-amber-700','overdue'=>'text-red-700','closed'=>'text-gray-400','won'=>'text-green-700','lost'=>'text-red-700'];
+                            $statusMap = ['active'=>__('app.status_active'),'pending'=>__('app.status_pending'),'overdue'=>__('app.status_overdue'),'closed'=>__('app.status_closed'),'won'=>__('app.status_won'),'lost'=>__('app.status_lost'),'adjudicated'=>__('app.status_adjudicated'),'fees_pending'=>__('app.status_fees_pending')];
+                            $statusColors = ['active'=>'text-emerald-700','pending'=>'text-amber-700','overdue'=>'text-red-700','closed'=>'text-gray-400','won'=>'text-green-700','lost'=>'text-red-700','adjudicated'=>'text-emerald-700','fees_pending'=>'text-red-700'];
                         @endphp
                         <p class="font-bold {{ $statusColors[$case->status] ?? 'text-gray-900' }}">{{ $statusMap[$case->status] ?? $case->status }}</p>
                     </div>

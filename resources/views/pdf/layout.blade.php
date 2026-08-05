@@ -43,6 +43,8 @@
         .badge-won { background: #cce5ff; color: #004085; }
         .badge-lost { background: #f8d7da; color: #721c24; }
         .badge-overdue { background: #f8d7da; color: #721c24; }
+        .badge-adjudicated { background: #d4edda; color: #155724; }
+        .badge-fees-pending { background: #f8d7da; color: #721c24; }
         .badge-completed { background: #d4edda; color: #155724; }
         .badge-upcoming { background: #cce5ff; color: #004085; }
         .badge-cancelled { background: #e2e3e5; color: #383d41; }

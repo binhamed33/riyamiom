@@ -46,6 +46,8 @@
                                     @elseif($case->status === 'closed') bg-gray-100 text-gray-400 border border-gray-200
                                     @elseif($case->status === 'won') bg-blue-100 text-blue-700 border border-blue-200
                                     @elseif($case->status === 'lost') bg-red-600/15 text-red-300 border border-red-600/30
+                                    @elseif($case->status === 'adjudicated') bg-emerald-600/15 text-emerald-300 border border-emerald-600/30
+                                    @elseif($case->status === 'fees_pending') bg-red-600/15 text-red-300 border border-red-600/30
                                     @else bg-gray-100 text-gray-400 border border-gray-200 @endif">
                                     @if($case->status === 'active') {{ __('app.status_active') }}
                                     @elseif($case->status === 'pending') {{ __('app.status_pending') }}
@@ -53,6 +55,8 @@
                                     @elseif($case->status === 'closed') {{ __('app.status_closed') }}
                                     @elseif($case->status === 'won') {{ __('app.status_won') }}
                                     @elseif($case->status === 'lost') {{ __('app.status_lost') }}
+                                    @elseif($case->status === 'adjudicated') {{ __('app.status_adjudicated') }}
+                                    @elseif($case->status === 'fees_pending') {{ __('app.status_fees_pending') }}
                                     @else {{ $case->status }}
                                     @endif
                                 </span>
