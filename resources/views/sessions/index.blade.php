@@ -57,7 +57,6 @@
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.case_principal') }}</th>
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.case_opponent') }}</th>
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.date') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.location') }}</th>
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.status') }}</th>
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.actions') }}</th>
                 </tr>
@@ -79,9 +78,6 @@
                         </td>
                         <td class="px-6 py-4 text-gray-600">
                             {{ $session->date->format('Y-m-d') }}
-                        </td>
-                        <td class="px-6 py-4 text-gray-600">
-                            {{ $session->location }}
                         </td>
                         <td class="px-6 py-4">
                             @switch($session->status)
