@@ -756,6 +756,7 @@ SYSTEM;
                             'language' => ['code' => 'ar'],
                             'components' => [
                                 ['type' => 'body', 'parameters' => [
+                                    ['type' => 'text', 'text' => $case->client?->name ?: 'الموكل'],
                                     ['type' => 'text', 'text' => $case->case_number ?: '—'],
                                     ['type' => 'text', 'text' => 'https://office.riyami.om/client-access'],
                                 ]],
