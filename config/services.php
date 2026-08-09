@@ -41,6 +41,7 @@ return [
         'webhook_url' => env('DISCORD_WEBHOOK_URL', ''),
         'bot_token' => env('DISCORD_BOT_TOKEN', ''),
         'channel_id' => env('DISCORD_CHANNEL_ID', ''),
+        'staff_webhook' => env('DISCORD_STAFF_WEBHOOK', ''),
     ],
 
     'gemini' => [

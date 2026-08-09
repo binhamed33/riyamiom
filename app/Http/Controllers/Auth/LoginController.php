@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Services\StaffDiscordService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -83,6 +84,11 @@ class LoginController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
+        app(StaffDiscordService::class)->reportLogin(
+            auth()->user(),
+            $request->ip(),
+            $request->userAgent()
+        );
 
         return redirect()->intended(route('dashboard'));
     }
@@ -117,9 +123,13 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
+        $user = auth()->user();
         $userId = auth()->id();
-        $name = auth()->user()?->name;
-        $email = auth()->user()?->email;
+        $name = $user?->name;
+        $email = $user?->email;
+        $ip = $request->ip();
+
+        app(StaffDiscordService::class)->reportLogout($user, $ip);
 
         auth()->logout();
         $request->session()->invalidate();

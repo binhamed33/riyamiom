@@ -43,7 +43,6 @@ class WhatsappTest extends Command
                     ['type' => 'body', 'parameters' => [
                         ['type' => 'text', 'text' => $this->option('name')],
                         ['type' => 'text', 'text' => $this->option('case')],
-                        ['type' => 'text', 'text' => 'https://office.riyami.om/client-access'],
                     ]],
                 ],
             ],

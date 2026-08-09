@@ -10,3 +10,6 @@ Schedule::command('backup:auto')->everyThirtyMinutes();
 
 // Server status to Discord every 5 minutes
 Schedule::command('discord:status')->everyFiveMinutes();
+
+// Staff presence board to Discord every 5 minutes
+Schedule::command('discord:staff-status')->everyFiveMinutes();
