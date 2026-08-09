@@ -37,7 +37,7 @@ class CourtSessionController extends Controller
             $query->where('date', '<=', $request->date_to);
         }
 
-        $sessions = $query->orderBy('date', 'desc')->orderBy('id', 'desc')->paginate(15)->withQueryString();
+        $sessions = $query->orderBy('date', 'asc')->orderBy('id', 'asc')->paginate(15)->withQueryString();
 
         return view('sessions.index', compact('sessions'));
     }
