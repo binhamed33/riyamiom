@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\PreventBrowserCache::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SecurityHeaders::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\TrackUserActivity::class);
         $middleware->appendToGroup('web', \Illuminate\Http\Middleware\HandleCors::class);
         $middleware->replaceInGroup('web', \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \App\Http\Middleware\VerifyCsrfToken::class);
 

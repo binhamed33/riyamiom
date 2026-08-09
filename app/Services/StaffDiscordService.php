@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\LoginSession;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -190,55 +191,57 @@ class StaffDiscordService
 
     protected function statusEmbed(): array
     {
-        $online = LoginSession::whereNull('logout_at')
-            ->whereHas('user', fn($q) => $q->where('role', '!=', 'client'))
-            ->with('user')
-            ->orderBy('login_at')
-            ->get();
-
         $todayStart = now()->startOfDay();
 
-        $attendance = LoginSession::where('login_at', '>=', $todayStart)
-            ->whereHas('user', fn($q) => $q->where('role', '!=', 'client'))
+        $staff = User::where('role', '!=', 'client')->orderBy('name')->get();
+
+        $open = LoginSession::whereNull('logout_at')
             ->with('user')
+            ->orderBy('login_at')
+            ->get()
+            ->where('user.role', '!=', 'client')
+            ->groupBy('user_id');
+
+        $today = LoginSession::where('login_at', '>=', $todayStart)
+            ->whereHas('user', fn($q) => $q->where('role', '!=', 'client'))
             ->get()
             ->groupBy('user_id');
 
-        $onlineLines = $online->map(fn($s) => sprintf(
-            '%s — متصل منذ %s',
-            $s->user?->name ?: 'موظف',
-            $this->formatDuration((int) $s->login_at->diffInSeconds(now()))
-        ))->values();
+        $lines = $staff->map(function (User $u) use ($open, $today) {
+            $openSessions = $open->get($u->id, collect());
+            $isOpen = $openSessions->isNotEmpty();
 
-        if ($onlineLines->isEmpty()) {
-            $onlineLines = collect(['لا يوجد أي موظف متصل الآن']);
-        }
+            $lastAct = Cache::get('staff_active_' . $u->id);
+            $icon = '🔴';
+            if ($isOpen && $lastAct && $lastAct->gte(now()->subMinutes(5))) {
+                $icon = '🟢';
+            } elseif ($isOpen) {
+                $icon = '🌙';
+            }
 
-        $hourLines = [];
-        foreach ($attendance as $userId => $sessions) {
-            $user = $sessions->first()->user;
-            $total = $sessions->sum(function ($s) {
+            $hours = $today->get($u->id, collect())->sum(function ($s) {
                 $end = $s->logout_at ?? now();
                 $start = $s->login_at ?? $end;
                 return (int) $start->diffInSeconds($end);
             });
-            $hourLines[] = sprintf('%s: %s', $user?->name ?: 'موظف', $this->formatDuration($total));
-        }
 
-        if (!$hourLines) {
-            $hourLines[] = 'لا توجد سجلات دخول اليوم بعد';
+            return sprintf('%s **%s** — %s', $icon, $u->name, $this->formatDuration($hours));
+        });
+
+        if ($lines->isEmpty()) {
+            $lines = collect(['لا يوجد موظفون']);
         }
 
         $fields = [
-            ['name' => '👥 المتصلون الآن (' . $online->unique('user_id')->count() . ')', 'value' => $onlineLines->implode("\n") ?: '—', 'inline' => false],
-            ['name' => '⏱️ إجمالي ساعات الدخول اليوم', 'value' => implode("\n", $hourLines), 'inline' => false],
+            ['name' => '👥 حالة الموظفين', 'value' => $lines->implode("\n"), 'inline' => false],
+            ['name' => '🟢 متصل  •  🌙 داخل الموقع دون نشاط آخر 5 دقائق  •  🔴 غير متصل', 'value' => 'آخر تحديث: ' . now()->format('Y-m-d H:i:s'), 'inline' => false],
         ];
 
         return [
             'title' => '📊 لوحة تواجد الموظفين',
             'color' => 0x3498DB,
             'fields' => $fields,
-            'footer' => ['text' => 'آخر تحديث: ' . now()->format('Y-m-d H:i:s') . ' • يحدث تلقائياً'],
+            'footer' => ['text' => 'يحدَّث تلقائياً عند الدخول/الخروج وكل 5 دقائق'],
             'timestamp' => now()->toIso8601String(),
         ];
     }
