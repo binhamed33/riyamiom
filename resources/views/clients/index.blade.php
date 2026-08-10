@@ -6,7 +6,7 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <h1 class="text-3xl font-bold text-amber-600">{{ __('app.page_clients') }}</h1>
-        <a href="{{ route('clients.create') }}" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+        <a href="{{ route('clients.create') }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
             {{ __('app.new_client_button') }}
         </a>
     </div>
@@ -20,7 +20,7 @@
                 placeholder="{{ __('app.search_placeholder') }}"
                 class="flex-1 rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
             >
-            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.search') }}</button>
+            <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.search') }}</button>
             @if(request('search'))
                 <a href="{{ route('clients.index') }}" class="text-gray-500 hover:text-gray-900 transition px-3 py-2.5">{{ __('app.clear') }}</a>
             @endif

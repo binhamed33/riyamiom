@@ -9,7 +9,7 @@
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
         <h1 class="text-2xl font-bold text-amber-600">📋 {{ __('app.monthly_cases_view') }} <span x-text="monthNames[month]"></span> <span x-text="year"></span></h1>
         <div class="flex items-center gap-3">
-            <button id="printBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+            <button id="printBtn" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                 </svg>
@@ -132,22 +132,22 @@
     h1, h2, h3, h4, h5, h6, p, span, div:not(.print\\:hidden) { color: #000 !important; }
     .text-gold, .text-ivory, .text-ivory\\/50, .text-ivory\\/60, .text-ivory\\/70, .text-ivory\\/80, .text-ivory\\/30, .text-white { color: #000 !important; }
     table { width: 100%; border-collapse: collapse; }
-    th { background: #C9A55A !important; color: #000 !important; padding: 10px 14px !important; font-size: 13px !important; font-weight: 700 !important; border: 2px solid #000 !important; }
+    th { background: #B89B5E !important; color: #000 !important; padding: 10px 14px !important; font-size: 13px !important; font-weight: 700 !important; border: 2px solid #000 !important; }
     td { padding: 8px 14px !important; border: 1px solid #000 !important; font-size: 12px !important; color: #000 !important; }
-    tr:nth-child(even) td { background: #f0ead6 !important; }
+    tr:nth-child(even) td { background: #EFE7D3 !important; }
     tr:nth-child(odd) td { background: #fff !important; }
     a { color: #000 !important; text-decoration: underline !important; font-weight: 600 !important; }
     .bg-navy-light, .bg-navy, .bg-navy-darker { background: #fff !important; border: 1px solid #000 !important; }
-    .bg-gold { background: #C9A55A !important; color: #000 !important; }
-    .bg-gold\\/10, .bg-gold\\/15, .bg-gold\\/20 { background: #f0ead6 !important; }
-    .text-green-400 { color: #0a5a0a !important; font-weight: 700 !important; }
-    .text-blue-400 { color: #0a2a6a !important; font-weight: 700 !important; }
-    .text-red-400 { color: #8a1010 !important; font-weight: 700 !important; }
-    .bg-green-500\\/15 { background: #c8e6c9 !important; color: #000 !important; }
-    .bg-yellow-500\\/15 { background: #fff9c4 !important; color: #000 !important; }
-    .bg-red-500\\/15 { background: #ffcdd2 !important; color: #000 !important; }
-    .bg-gray-500\\/15 { background: #d5d5d5 !important; color: #000 !important; }
-    .bg-emerald-500\\/15 { background: #c8e6c9 !important; color: #000 !important; }
+    .bg-gold { background: #B89B5E !important; color: #000 !important; }
+    .bg-gold\\/10, .bg-gold\\/15, .bg-gold\\/20 { background: #EFE7D3 !important; }
+    .text-green-400 { color: #327F55 !important; font-weight: 700 !important; }
+    .text-blue-400 { color: #456B97 !important; font-weight: 700 !important; }
+    .text-red-400 { color: #A94848 !important; font-weight: 700 !important; }
+    .bg-green-500\\/15 { background: #DCEFE3 !important; color: #000 !important; }
+    .bg-yellow-500\\/15 { background: #F4E8CC !important; color: #000 !important; }
+    .bg-red-500\\/15 { background: #F5DEDE !important; color: #000 !important; }
+    .bg-gray-500\\/15 { background: #DDD8CD !important; color: #000 !important; }
+    .bg-emerald-500\\/15 { background: #DCEFE3 !important; color: #000 !important; }
     .inline-block { border: 1px solid #000 !important; font-weight: 700 !important; }
 }
 </style>

@@ -121,7 +121,7 @@ class DiscordNotifier
             'username' => 'نظام المكتب — LexPro',
             'embeds' => [[
                 'title' => 'اقتراح',
-                'color' => 0x3B82F6,
+                'color' => 0x5B86B8,
                 'description' => $description,
                 'fields' => [
                     ['name' => 'الاسم الكامل', 'value' => $user->name, 'inline' => true],

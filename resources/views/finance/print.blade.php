@@ -13,24 +13,24 @@
             font-family: 'DejaVu Sans', 'Tajawal', 'Cairo', sans-serif;
             font-size: 12px;
             line-height: 1.6;
-            color: #1a1a2e;
+            color: #191A18;
             padding: 20px;
         }
-        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #C9A55A; padding-bottom: 15px; }
-        .header h1 { font-size: 20px; color: #1a1a2e; margin-bottom: 4px; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #B89B5E; padding-bottom: 15px; }
+        .header h1 { font-size: 20px; color: #191A18; margin-bottom: 4px; }
         .header p { font-size: 11px; color: #666; }
         .title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .title-row h2 { font-size: 16px; color: #C9A55A; }
+        .title-row h2 { font-size: 16px; color: #B89B5E; }
         .title-row .badge {
             display: inline-block; padding: 4px 12px; border-radius: 4px;
             font-size: 11px; font-weight: bold;
         }
-        .badge-income { background: #d4edda; color: #155724; }
-        .badge-expense { background: #f8d7da; color: #721c24; }
-        .badge-paid { background: #d4edda; color: #155724; }
-        .badge-unpaid { background: #f8d7da; color: #721c24; }
-        .badge-partial { background: #fff3cd; color: #856404; }
-        .badge-cancelled { background: #e2e3e5; color: #383d41; }
+        .badge-income { background: #DCEFE3; color: #327F55; }
+        .badge-expense { background: #F5DEDE; color: #A94848; }
+        .badge-paid { background: #DCEFE3; color: #327F55; }
+        .badge-unpaid { background: #F5DEDE; color: #A94848; }
+        .badge-partial { background: #F4E8CC; color: #9F7935; }
+        .badge-cancelled { background: #E4DFD4; color: #4A4A45; }
         table.details { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         table.details td, table.details th {
             padding: 8px 12px; border: 1px solid #ddd; text-align: {{ $isRtl ? 'right' : 'left' }};
@@ -38,11 +38,11 @@
         table.details th {
             background: #f5f5f5; font-weight: bold; font-size: 11px; color: #555; width: 35%;
         }
-        table.details td { font-size: 12px; color: #1a1a2e; }
+        table.details td { font-size: 12px; color: #191A18; }
         .description { margin-top: 15px; padding: 12px; background: #f9f9f9; border-radius: 4px; }
         .description h4 { font-size: 11px; color: #555; margin-bottom: 4px; }
         .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 15px; }
-        .print-btn { display: block; margin: 20px auto; padding: 10px 30px; background: #C9A55A; color: #fff; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+        .print-btn { display: block; margin: 20px auto; padding: 10px 30px; background: #B89B5E; color: #fff; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
         @media print { .print-btn { display: none; } }
     </style>
 </head>

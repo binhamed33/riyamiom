@@ -99,12 +99,12 @@ class SummarySheet implements FromArray, WithHeadings, ShouldAutoSize, WithEvent
 
                 $titleCell = $sheet->getStyle('A2');
                 $titleCell->getFont()->setBold(true)->setSize(16);
-                $titleCell->getFont()->getColor()->setARGB('C9A55A');
+                $titleCell->getFont()->getColor()->setARGB('B89B5E');
 
                 $headerStyle = $sheet->getStyle('A4:B4');
                 $headerStyle->getFont()->setBold(true)->setSize(12);
                 $headerStyle->getFont()->getColor()->setARGB('FFFFFF');
-                $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('C9A55A');
+                $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('B89B5E');
                 $headerStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $sheet->getRowDimension(4)->setRowHeight(28);
 
@@ -160,7 +160,7 @@ class CasesSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHead
             $s->setRightToLeft(true); $s->freezePane('A2');
             $h = "A1:{$c}1";
             $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
-            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('C9A55A');
+            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('B89B5E');
             $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $s->getRowDimension(1)->setRowHeight(32);
             $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');
@@ -206,7 +206,7 @@ class SessionsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithH
             $s->setRightToLeft(true); $s->freezePane('A2');
             $h = "A1:{$c}1";
             $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
-            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('C9A55A');
+            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('B89B5E');
             $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $s->getRowDimension(1)->setRowHeight(32);
             $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');
@@ -252,7 +252,7 @@ class TasksSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHead
             $s->setRightToLeft(true); $s->freezePane('A2');
             $h = "A1:{$c}1";
             $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
-            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('C9A55A');
+            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('B89B5E');
             $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $s->getRowDimension(1)->setRowHeight(32);
             $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');
@@ -303,7 +303,7 @@ class ClientsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHe
             $s->setRightToLeft(true); $s->freezePane('A2');
             $h = "A1:{$c}1";
             $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
-            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('C9A55A');
+            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('B89B5E');
             $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $s->getRowDimension(1)->setRowHeight(32);
             $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');

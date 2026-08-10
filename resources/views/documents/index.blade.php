@@ -7,7 +7,7 @@
     <div class="flex items-center justify-between">
         <h2 class="text-2xl font-bold text-gray-900">{{ __('app.page_documents') }} ({{ $documents->total() }})</h2>
         <button @click="showUpload = true"
-            class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+            class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
             </svg>
@@ -53,7 +53,7 @@
                     <div>
                         <label for="doc_title" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.title') }} <span class="text-red-500">*</span></label>
                         <input type="text" id="doc_title" name="title" value="{{ old('title') }}"
-                               class="w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('title') border-red-500 @enderror"
+                               class="w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#B89B5E] focus:border-[#B89B5E] @error('title') border-red-500 @enderror"
                                placeholder="{{ __('app.document_title_placeholder') }}" required>
                         @error('title')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -63,7 +63,7 @@
                     <div>
                         <label for="file" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.document_file') }} <span class="text-red-500">*</span></label>
                         <input type="file" id="file" name="file"
-                               class="w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('file') border-red-500 @enderror"
+                               class="w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#B89B5E] focus:border-[#B89B5E] @error('file') border-red-500 @enderror"
                                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" required>
                         <p class="mt-1 text-xs text-gray-500">{{ __('app.allowed_formats') }}</p>
                         @error('file')
@@ -73,7 +73,7 @@
 
                     <div>
                         <label for="case_id" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case') }}</label>
-                        <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#C9A55A] focus:border-[#C9A55A] @error('case_id') border-red-500 @enderror">
+                        <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#B89B5E] focus:border-[#B89B5E] @error('case_id') border-red-500 @enderror">
                             <option value="">{{ __('app.no_case') }}</option>
                             @foreach ($cases as $case)
                                 <option value="{{ $case->id }}" {{ old('case_id', $selectedCaseId ?? '') == $case->id ? 'selected' : '' }}>
@@ -92,19 +92,19 @@
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" name="access_level" value="all"
                                        {{ old('access_level', 'all') === 'all' ? 'checked' : '' }}
-                                       class="w-4 h-4 text-[#C9A55A] focus:ring-[#C9A55A] border-gray-300">
+                                       class="w-4 h-4 text-[#B89B5E] focus:ring-[#B89B5E] border-gray-300">
                                 <span class="text-sm text-gray-700">{{ __('app.access_public') }}</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" name="access_level" value="team"
                                        {{ old('access_level') === 'team' ? 'checked' : '' }}
-                                       class="w-4 h-4 text-[#C9A55A] focus:ring-[#C9A55A] border-gray-300">
+                                       class="w-4 h-4 text-[#B89B5E] focus:ring-[#B89B5E] border-gray-300">
                                 <span class="text-sm text-gray-700">{{ __('app.access_team') }}</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" name="access_level" value="private"
                                        {{ old('access_level') === 'private' ? 'checked' : '' }}
-                                       class="w-4 h-4 text-[#C9A55A] focus:ring-[#C9A55A] border-gray-300">
+                                       class="w-4 h-4 text-[#B89B5E] focus:ring-[#B89B5E] border-gray-300">
                                 <span class="text-sm text-gray-700">{{ __('app.access_private') }}</span>
                             </label>
                         </div>
@@ -114,7 +114,7 @@
                     </div>
 
                     <div class="flex items-center gap-3 pt-2">
-                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                             {{ __('app.upload') }}
                         </button>
                         <button type="button" @click="showUpload = false"

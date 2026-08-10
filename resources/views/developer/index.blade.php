@@ -162,7 +162,7 @@
             @csrf
             <textarea name="content" rows="3" minlength="5" maxlength="2000" placeholder="اكتب رسالة اليوم..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-300 focus:bg-amber-50 transition resize-y">{{ $currentAnnouncement ? '' : 'أهلاً بالجميع! أضفنا زرّ تقديم الاقتراحات في القائمة الجانبية. اضغط على كلمة اقتراحات لتفتح صفحة الاقتراحات مباشرة، واكتب اقتراحك أو ملاحظتك بوصف واضح — سيصلنا فوراً، وستصلك رسالة بردّ المطور وحالة اقتراحك (منفّذ أو قيد الدراسة).' }}</textarea>
             <div class="flex justify-end mt-2">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
                     نشر رسالة اليوم
                 </button>
@@ -214,7 +214,7 @@
                     @method('PUT')
                     <textarea name="content" rows="3" minlength="20" maxlength="2000" class="w-full bg-gray-50 border border-amber-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none transition resize-y">{{ $suggestion->content }}</textarea>
                     <div class="flex gap-2 mt-2">
-                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition">حفظ التعديل</button>
+                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-1.5 rounded-lg text-xs transition">حفظ التعديل</button>
                         <button type="button" @click="editing = false" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-1.5 rounded-lg text-xs transition">إلغاء</button>
                     </div>
                 </form>
@@ -241,7 +241,7 @@
                     @csrf
                     <textarea name="reply" rows="2" placeholder="اكتب ردّك لصاحب الاقتراح..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-300 focus:bg-amber-50 transition resize-y">{{ old('reply', $suggestion->developer_reply) }}</textarea>
                     <div class="flex justify-end mt-2">
-                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
+                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
                             إرسال الرد
                         </button>

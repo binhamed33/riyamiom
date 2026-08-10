@@ -43,7 +43,7 @@
         <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-amber-700">المعاملات المالية</h2>
-                <button @click="$dispatch('open-modal', 'txModal')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ معاملة</button>
+                <button @click="$dispatch('open-modal', 'txModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ معاملة</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -78,7 +78,7 @@
         <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-amber-700">الفواتير</h2>
-                <button @click="$dispatch('open-modal', 'invModal')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ فاتورة</button>
+                <button @click="$dispatch('open-modal', 'invModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ فاتورة</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -114,7 +114,7 @@
         <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-amber-700">رسوم القضايا</h2>
-                <button @click="$dispatch('open-modal', 'feeModal')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ رسم</button>
+                <button @click="$dispatch('open-modal', 'feeModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ رسم</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -149,7 +149,7 @@
 
 {{-- Add Transaction Modal --}}
 <div id="txModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'txModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-on:click.away="open = false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-amber-700">إضافة معاملة</h3>
@@ -192,7 +192,7 @@
                 <input type="file" name="attachment" class="w-full text-gray-500 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-amber-100 file:text-amber-600 hover:file:bg-amber-200">
             </div>
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
                 <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">إلغاء</button>
             </div>
         </form>
@@ -202,7 +202,7 @@
 @if($isFinAdmin)
 {{-- Edit Transaction Modal --}}
 <div id="txEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, tx: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'txEditModal') open = true" x-on:set-tx.window="tx = $event.detail" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-amber-700">تعديل المعاملة</h3>
@@ -246,7 +246,7 @@
                 <input type="file" name="attachment" class="w-full text-gray-500 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-amber-100 file:text-amber-600">
             </div>
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ التغييرات</button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ التغييرات</button>
                 <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">إلغاء</button>
             </div>
         </form>
@@ -256,7 +256,7 @@
 
 {{-- Add Invoice Modal --}}
 <div id="invModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'invModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-amber-700">إضافة فاتورة</h3>
@@ -299,7 +299,7 @@
                 <input type="file" name="attachment" class="w-full text-gray-500 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-amber-100 file:text-amber-600">
             </div>
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
                 <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">إلغاء</button>
             </div>
         </form>
@@ -309,7 +309,7 @@
 @if($isFinAdmin)
 {{-- Edit Invoice Modal --}}
 <div id="invEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, inv: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'invEditModal') open = true" x-on:set-inv.window="inv = $event.detail" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-amber-700">تعديل الفاتورة</h3>
@@ -349,7 +349,7 @@
                 <input type="file" name="attachment" class="w-full text-gray-500 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-amber-100 file:text-amber-600">
             </div>
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold text-sm">حفظ</button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold text-sm">حفظ</button>
                 <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium text-sm">إلغاء</button>
             </div>
         </form>
@@ -359,7 +359,7 @@
 
 {{-- Add Fee Modal --}}
 <div id="feeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'feeModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-amber-700">إضافة رسم قضية</h3>
@@ -394,7 +394,7 @@
                 <textarea name="description" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"></textarea>
             </div>
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold text-sm">حفظ</button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold text-sm">حفظ</button>
                 <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium text-sm">إلغاء</button>
             </div>
         </form>
@@ -404,7 +404,7 @@
 @if($isFinAdmin)
 {{-- Edit Fee Modal --}}
 <div id="feeEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, fee: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'feeEditModal') open = true" x-on:set-fee.window="fee = $event.detail" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-amber-700">تعديل الرسم</h3>
@@ -440,7 +440,7 @@
                 <textarea name="description" rows="2" x-model="fee.description" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"></textarea>
             </div>
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold text-sm">حفظ</button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold text-sm">حفظ</button>
                 <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium text-sm">إلغاء</button>
             </div>
         </form>

@@ -49,7 +49,7 @@
                     <p class="text-gray-400 text-xs">{{ $counts['sessions'] }} {{ __('app.record') }}</p>
                 </div>
             </div>
-            <a href="{{ route('export.sessions') }}" class="block w-full text-center px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg transition-colors">
+            <a href="{{ route('export.sessions') }}" class="block w-full text-center px-4 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm rounded-lg transition-colors">
                 {{ __('app.export_excel') }}
             </a>
         </div>
@@ -65,7 +65,7 @@
                     <p class="text-gray-400 text-xs">{{ $counts['tasks'] }} {{ __('app.record') }}</p>
                 </div>
             </div>
-            <a href="{{ route('export.tasks') }}" class="block w-full text-center px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition-colors">
+            <a href="{{ route('export.tasks') }}" class="block w-full text-center px-4 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm rounded-lg transition-colors">
                 {{ __('app.export_excel') }}
             </a>
         </div>
@@ -99,7 +99,7 @@
                     <p class="text-gray-500 text-xs">{{ __('app.export_all_desc') }}</p>
                 </div>
             </div>
-            <a href="{{ route('export.all') }}" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+            <a href="{{ route('export.all') }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                 {{ __('app.export_excel') }}
             </a>
         </div>

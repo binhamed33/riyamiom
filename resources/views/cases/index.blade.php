@@ -53,7 +53,7 @@ document.addEventListener('alpine:init', () => {
                     {{ __('app.overdue_report') }}
                 </button>
             </form>
-            <a href="{{ route('cases.create') }}" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+            <a href="{{ route('cases.create') }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -124,7 +124,7 @@ document.addEventListener('alpine:init', () => {
 
             {{-- Submit --}}
             <div class="flex items-center gap-2">
-                <button type="submit" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+                <button type="submit" class="flex-1 bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                     {{ __('app.filter') }}
                 </button>
                 <a href="{{ route('cases.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">
@@ -275,7 +275,7 @@ document.addEventListener('alpine:init', () => {
                                             @method('DELETE')
                                         </form>
                                         <div x-show="open" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4" @keydown.escape="open = false">
-                                            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+                                            <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
                                             <div class="relative bg-white border border-red-300 rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
                                                 <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 text-red-700 flex items-center justify-center">
                                                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>

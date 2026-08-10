@@ -75,7 +75,7 @@
             </table>
             @if($case->description)
                 <div class="note-text">
-                    <strong style="color: #111B2E;">وصف القضية:</strong><br>
+                    <strong style="color: #191C1B;">وصف القضية:</strong><br>
                     {{ $case->description }}
                 </div>
             @endif
@@ -253,7 +253,7 @@
         <table class="pdf-footer-table">
             <tr>
                 <td style="text-align: right; width: 33%;">تاريخ الإنشاء: {{ $case->created_at?->format('Y/m/d H:i') ?? '—' }}</td>
-                <td style="text-align: center; width: 34%; color: #C9A55A; font-weight: bold;">{{ \App\Models\Setting::get('office_name', 'مكتب حمد الريامي للمحاماة') }}</td>
+                <td style="text-align: center; width: 34%; color: #B89B5E; font-weight: bold;">{{ \App\Models\Setting::get('office_name', 'مكتب حمد الريامي للمحاماة') }}</td>
                 <td style="text-align: left; width: 33%;">آخر تعديل: {{ $case->updated_at?->format('Y/m/d H:i') ?? '—' }}</td>
             </tr>
         </table>

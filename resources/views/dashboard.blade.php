@@ -56,7 +56,7 @@
 {{-- Attention Center --}}
 @if($attentionItems->isNotEmpty())
     <div class="bg-white rounded-2xl border border-amber-200 overflow-hidden">
-        <div class="flex items-center justify-between px-5 py-3" style="background: linear-gradient(90deg, rgba(201,165,90,0.12), rgba(201,165,90,0.03)); border-bottom: 1px solid rgba(201,165,90,0.18);">
+        <div class="flex items-center justify-between px-5 py-3" style="background: linear-gradient(90deg, rgba(184,155,94,0.12), rgba(184,155,94,0.03)); border-bottom: 1px solid rgba(184,155,94,0.18);">
             <div class="flex items-center gap-2.5">
                 <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
@@ -471,8 +471,8 @@
 @push('scripts')
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
-    const goldColor = '#C9A55A';
-    const bgColor = '#FFFFFF';
+    const goldColor = '#B89B5E';
+    const bgColor = '#FBF9F5';
 
     // === Cases by Status (Doughnut) ===
     const statusCtx = document.getElementById('casesStatusChart');
@@ -489,9 +489,9 @@ document.addEventListener('DOMContentLoaded', function () {
             fees_pending: '{{ __("app.status_fees_pending") }}',
         };
         const colors = {
-            active: '#22c55e', pending: '#eab308', overdue: '#ef4444',
-            closed: '#6b7280', won: '#3b82f6', lost: '#dc2626',
-            adjudicated: '#10b981', fees_pending: '#ef4444',
+            active: '#3FA66B', pending: '#C89A45', overdue: '#C95C5C',
+            closed: '#8A8B84', won: '#5B86B8', lost: '#A94848',
+            adjudicated: '#3FA66B', fees_pending: '#C95C5C',
         };
         const data = Object.keys(chartData).filter(k => chartData[k] > 0);
         new Chart(statusCtx.getContext('2d'), {
@@ -500,7 +500,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: data.map(k => labels[k] || k),
                 datasets: [{
                     data: data.map(k => chartData[k]),
-                    backgroundColor: data.map(k => colors[k] || '#6b7280'),
+                    backgroundColor: data.map(k => colors[k] || '#8A8B84'),
                     borderColor: bgColor, borderWidth: 3,
                     hoverBorderColor: goldColor, hoverBorderWidth: 2,
                 }]
@@ -510,10 +510,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { color: '#6b7280', padding: 12, font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8 }
+                        labels: { color: '#8A8B84', padding: 12, font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8 }
                     },
                     tooltip: {
-                        backgroundColor: '#1f2937', titleColor: goldColor, bodyColor: '#fff',
+                        backgroundColor: '#252825', titleColor: goldColor, bodyColor: '#fff',
                         borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
                     }
                 }
@@ -539,7 +539,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     {
                         label: '{{ __("app.closed") }}',
                         data: trendData.map(d => d.closed),
-                        backgroundColor: '#6b728099',
+                        backgroundColor: '#8A8B8499',
                         borderRadius: 4,
                     }
                 ]
@@ -547,15 +547,15 @@ document.addEventListener('DOMContentLoaded', function () {
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: {
-                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#9ca3af', font: { size: 11 } } },
-                    y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#9ca3af', font: { size: 11 }, stepSize: 1 } }
+                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#8A8B84', font: { size: 11 } } },
+                    y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#8A8B84', font: { size: 11 }, stepSize: 1 } }
                 },
                 plugins: {
                     legend: {
-                        labels: { color: '#6b7280', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8, padding: 12 }
+                        labels: { color: '#8A8B84', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8, padding: 12 }
                     },
                     tooltip: {
-                        backgroundColor: '#1f2937', titleColor: goldColor, bodyColor: '#fff',
+                        backgroundColor: '#252825', titleColor: goldColor, bodyColor: '#fff',
                         borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
                     }
                 }
@@ -583,13 +583,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 indexAxis: 'y',
                 responsive: true, maintainAspectRatio: false,
                 scales: {
-                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#9ca3af', font: { size: 11 }, stepSize: 1 } },
-                    y: { grid: { display: false }, ticks: { color: '#6b7280', font: { size: 11 } } }
+                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#8A8B84', font: { size: 11 }, stepSize: 1 } },
+                    y: { grid: { display: false }, ticks: { color: '#8A8B84', font: { size: 11 } } }
                 },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: '#1f2937', titleColor: goldColor, bodyColor: '#fff',
+                        backgroundColor: '#252825', titleColor: goldColor, bodyColor: '#fff',
                         borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
                     }
                 }

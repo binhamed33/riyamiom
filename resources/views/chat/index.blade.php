@@ -163,7 +163,7 @@ function roleAvatar($user, $size = 9) {
                                     </button>
                                 </div>
                             </div>
-                            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2">
+                            <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
                             </button>
                         </div>
@@ -210,7 +210,7 @@ function roleAvatar($user, $size = 9) {
 </div>
 
 {{-- Custom Confirm Modal --}}
-<div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+<div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/45 backdrop-blur-sm">
     <div class="bg-white border border-gray-200 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl shadow-gray-500/30">
         <div class="text-center">
             <svg class="w-14 h-14 mx-auto mb-4 text-amber-600/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">

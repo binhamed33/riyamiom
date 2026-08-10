@@ -281,7 +281,7 @@ document.addEventListener('alpine:init', () => {
             win.document.write('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap">');
             win.document.write('</head><body>');
             win.document.write('<div style="max-width:700px;margin:30px auto;font-family:Tajawal,Cairo,sans-serif;direction:rtl;padding:20px;color:#333;">');
-            win.document.write('<h2 style="color:#C9A55A;border-bottom:2px solid #C9A55A;padding-bottom:10px;">{{ __("app.case_summary") }} - {{ $case->case_number }}</h2>');
+            win.document.write('<h2 style="color:#B89B5E;border-bottom:2px solid #B89B5E;padding-bottom:10px;">{{ __("app.case_summary") }} - {{ $case->case_number }}</h2>');
             win.document.write(printContent.innerHTML);
             win.document.write('</div></body></html>');
             win.document.close();
@@ -300,7 +300,7 @@ document.addEventListener('alpine:init', () => {
         [dir="ltr"] .content-area { margin: 0 !important; }
         main { padding: 0 !important; }
         * { box-shadow: none !important; text-shadow: none !important; }
-        .print-header { border-bottom: 2px solid #C9A55A; padding-bottom: 10px; margin-bottom: 20px; }
+        .print-header { border-bottom: 2px solid #B89B5E; padding-bottom: 10px; margin-bottom: 20px; }
         .print-footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 5px; }
     }
     .print-only { display: none; }
@@ -324,7 +324,7 @@ document.addEventListener('alpine:init', () => {
 
     {{-- Print Header (visible only in print) --}}
     <div class="print-only print-header">
-        <h1 style="font-size:20px;color:#C9A55A;margin:0;">{{ __('app.case_number') }}: {{ $case->case_number }}</h1>
+        <h1 style="font-size:20px;color:#B89B5E;margin:0;">{{ __('app.case_number') }}: {{ $case->case_number }}</h1>
         <p style="color:#666;font-size:12px;margin:2px 0;">{{ $case->created_at->format('Y-m-d') }}</p>
     </div>
 
@@ -348,7 +348,7 @@ document.addEventListener('alpine:init', () => {
                 إجراءات سريعة
             </button>
             {{-- Summarize Button --}}
-            <button @click="showSummary = true" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
+            <button @click="showSummary = true" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -380,13 +380,13 @@ document.addEventListener('alpine:init', () => {
                 {{ __('app.print') }}
             </button>
             {{-- Download PDF Button --}}
-            <a href="{{ route('cases.file', $case) }}" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+            <a href="{{ route('cases.file', $case) }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 {{ __('app.download_case_pdf') }}
             </a>
-            <a href="{{ route('cases.edit', $case->id) }}" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+            <a href="{{ route('cases.edit', $case->id) }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                 {{ __('app.edit') }}
             </a>
             @if($case->created_by === auth()->id() || in_array(auth()->user()->role, ['developer', 'admin']))
@@ -399,7 +399,7 @@ document.addEventListener('alpine:init', () => {
                     @method('DELETE')
                 </form>
                 <div x-show="open" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4" @keydown.escape="open = false">
-                    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+                    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
                     <div class="relative bg-white border border-red-300 rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
                         <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 text-red-700 flex items-center justify-center">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -800,7 +800,7 @@ document.addEventListener('alpine:init', () => {
     <div x-show="reportModal" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="reportModal = false"></div>
+        <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="reportModal = false"></div>
         <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
             x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
             x-transition:enter-end="opacity-100 scale-100">
@@ -822,7 +822,7 @@ document.addEventListener('alpine:init', () => {
                     {{ __('app.cancel') }}
                 </button>
                 <button @click="saveReport()" :disabled="reportSaving"
-                    class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm disabled:opacity-50">
+                    class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm disabled:opacity-50">
                     <span x-text="reportSaving ? '{{ __("app.saving") }}' : '{{ __("app.save") }}'"></span>
                 </button>
             </div>
@@ -834,7 +834,7 @@ document.addEventListener('alpine:init', () => {
         x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
         {{-- Backdrop --}}
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showSummary = false"></div>
+        <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="showSummary = false"></div>
 
         {{-- Modal --}}
         <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
@@ -974,7 +974,7 @@ document.addEventListener('alpine:init', () => {
                     </svg>
                     {{ __('app.print_summary') }}
                 </button>
-                <button @click="copySummary()" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
+                <button @click="copySummary()" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                     </svg>
@@ -988,7 +988,7 @@ document.addEventListener('alpine:init', () => {
 <div x-show="chatOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
     x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
     x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="chatOpen = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="chatOpen = false"></div>
     <div class="relative bg-white border border-emerald-300 rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col"
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
         x-transition:enter-end="opacity-100 scale-100">
@@ -1071,7 +1071,7 @@ document.addEventListener('alpine:init', () => {
 <div x-show="quickOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
     x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
     x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="quickOpen = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="quickOpen = false"></div>
 
     <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
@@ -1128,7 +1128,7 @@ document.addEventListener('alpine:init', () => {
                         <textarea x-model="activityForm.content" rows="4" placeholder="تفاصيل إضافية..." class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"></textarea>
                     </div>
                 </div>
-                <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
+                <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
                     <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                     <span x-text="quickBusy ? 'حفظ...' : 'حفظ في سجل القضية'"></span>
                 </button>
@@ -1161,7 +1161,7 @@ document.addEventListener('alpine:init', () => {
                         </div>
                     </div>
                 </div>
-                <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
+                <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
                     <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                     <span x-text="quickBusy ? 'إنشاء...' : 'إنشاء المهمة'"></span>
                 </button>
@@ -1179,7 +1179,7 @@ document.addEventListener('alpine:init', () => {
                         <input type="file" @change="docForm.file = $event.target.files[0]; if (!docForm.title.trim()) { docForm.title = ($event.target.files[0].name || '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(); }" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-amber-700 hover:file:bg-amber-200">
                     </div>
                 </div>
-                <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
+                <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
                     <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                     <span x-text="quickBusy ? 'رفع...' : 'رفع المستند'"></span>
                 </button>
@@ -1198,15 +1198,15 @@ document.addEventListener('alpine:init', () => {
 <style>
     [x-cloak] { display: none !important; }
     .ai-content { line-height: 1.9; }
-    .ai-content strong { color: #6d28d9; font-weight: 700; }
-    .ai-content h1, .ai-content h2, .ai-content h3 { color: #5b21b6; font-weight: 700; margin: 1rem 0 0.5rem; line-height: 1.5; }
+    .ai-content strong { color: #756A9A; font-weight: 700; }
+    .ai-content h1, .ai-content h2, .ai-content h3 { color: #5F567E; font-weight: 700; margin: 1rem 0 0.5rem; line-height: 1.5; }
     .ai-content h1 { font-size: 1.05rem; }
     .ai-content h2 { font-size: 1rem; }
     .ai-content h3 { font-size: 0.95rem; }
     .ai-content ul { list-style: disc; padding-inline-start: 1.25rem; margin: 0.5rem 0; }
     .ai-content li { margin: 0.3rem 0; }
     .ai-content p { margin: 0.5rem 0; }
-    .ai-content hr { border: 0; border-top: 1px dashed #c7d2fe; margin: 0.75rem 0; }
-    .ai-content code { background: #ede9fe; color: #5b21b6; padding: 0 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
+    .ai-content hr { border: 0; border-top: 1px dashed #DDD9EA; margin: 0.75rem 0; }
+    .ai-content code { background: #E9E6F2; color: #5F567E; padding: 0 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
 </style>
 @endsection

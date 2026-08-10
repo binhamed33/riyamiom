@@ -63,7 +63,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-3 mt-4">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.apply_filter') }}</button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.apply_filter') }}</button>
                 <a href="{{ route('audit-log.index') }}" class="text-gray-500 hover:text-gray-900 transition text-sm">{{ __('app.reset_filter') }}</a>
             </div>
         </div>

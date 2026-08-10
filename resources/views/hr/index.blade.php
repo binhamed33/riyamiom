@@ -89,7 +89,7 @@
             @if($isAdmin)
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-amber-700">التقييمات</h2>
-                <button @click="$dispatch('open-modal', 'perfModal')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ تقييم</button>
+                <button @click="$dispatch('open-modal', 'perfModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ تقييم</button>
             </div>
             @endif
             <div class="overflow-x-auto">
@@ -123,7 +123,7 @@
             @if($isAdmin)
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-amber-700">المكافآت</h2>
-                <button @click="$dispatch('open-modal', 'bonusModal')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ مكافأة</button>
+                <button @click="$dispatch('open-modal', 'bonusModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ مكافأة</button>
             </div>
             @endif
             <div class="overflow-x-auto">
@@ -157,7 +157,7 @@
             @if($isAdmin)
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-amber-700">الجزاءات</h2>
-                <button @click="$dispatch('open-modal', 'penaltyModal')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ جزاء</button>
+                <button @click="$dispatch('open-modal', 'penaltyModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ جزاء</button>
             </div>
             @endif
             <div class="overflow-x-auto">
@@ -190,7 +190,7 @@
         <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-amber-700">الإجازات</h2>
-                <button @click="$dispatch('open-modal', 'leaveModal')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ طلب إجازة</button>
+                <button @click="$dispatch('open-modal', 'leaveModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ طلب إجازة</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -230,7 +230,7 @@
 {{-- Performance Modal --}}
 @if($isAdmin)
 <div id="perfModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'perfModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-amber-700">إضافة تقييم</h3>
@@ -257,7 +257,7 @@
                 <textarea name="notes" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"></textarea>
             </div>
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
                 <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">إلغاء</button>
             </div>
         </form>
@@ -266,7 +266,7 @@
 
 {{-- Bonus Modal --}}
 <div id="bonusModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'bonusModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-amber-700">إضافة مكافأة</h3>
@@ -293,7 +293,7 @@
                 <textarea name="reason" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required></textarea>
             </div>
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
                 <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">إلغاء</button>
             </div>
         </form>
@@ -302,7 +302,7 @@
 
 {{-- Penalty Modal --}}
 <div id="penaltyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'penaltyModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-amber-700">إضافة جزاء</h3>
@@ -329,7 +329,7 @@
                 <textarea name="reason" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required></textarea>
             </div>
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
                 <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">إلغاء</button>
             </div>
         </form>
@@ -339,7 +339,7 @@
 
 {{-- Leave Modal --}}
 <div id="leaveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'leaveModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-amber-700">طلب إجازة</h3>
@@ -378,7 +378,7 @@
                 <textarea name="reason" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"></textarea>
             </div>
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">إرسال الطلب</button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">إرسال الطلب</button>
                 <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">إلغاء</button>
             </div>
         </form>
@@ -396,8 +396,8 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: ['ممتاز (4-5)', 'جيد (3-4)', 'ضعيف (>3)'],
             datasets: [{
                 data: [{{ $ratingDistribution['excellent'] }}, {{ $ratingDistribution['good'] }}, {{ $ratingDistribution['poor'] }}],
-                backgroundColor: ['#4ADE80', '#FBBF24', '#F87171'],
-                borderColor: '#D1D5DB',
+                backgroundColor: ['#7FBF99', '#C9A971', '#D98F8F'],
+                borderColor: '#DDD8CD',
                 borderWidth: 3
             }]
         },

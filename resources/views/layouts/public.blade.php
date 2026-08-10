@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#B45309">
+    <meta name="theme-color" content="#8F7745">
     <title>@yield('title', $officeName) - {{ $officeName }}</title>
 
     <link rel="icon" href="/favicon.ico">
@@ -37,7 +37,7 @@
             theme: {
                 extend: {
                     colors: {
-                        gold: { DEFAULT: '#C9A55A', light: '#E0C878', dark: '#A8903E' },
+                        gold: { DEFAULT: '#B89B5E', light: '#D4B978', dark: '#8F7745' },
                     },
                     fontFamily: {
                         body: ['Tajawal', 'sans-serif'],
@@ -67,7 +67,7 @@
 
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #C9A55A; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #B89B5E; border-radius: 3px; }
     </style>
 
     @stack('styles')

@@ -279,10 +279,10 @@
 @push('scripts')
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
-    const goldColor = '#C9A55A';
-    const bgColor = '#FFFFFF';
+    const goldColor = '#B89B5E';
+    const bgColor = '#FBF9F5';
     const gridColor = 'rgba(0,0,0,0.06)';
-    const tickColor = '#555555';
+    const tickColor = '#686963';
 
     // === Efficiency Comparison (Grouped Bar) ===
     const effCtx = document.getElementById('efficiencyChart');
@@ -294,8 +294,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: data.map(d => d.user.name),
                 datasets: [
                     { label: '{{ __("app.efficiency_rate") }}', data: data.map(d => d.overall), backgroundColor: goldColor + 'cc', borderRadius: 4 },
-                    { label: '{{ __("app.success_rate") }}', data: data.map(d => d.success_rate), backgroundColor: '#22c55e99', borderRadius: 4 },
-                    { label: '{{ __("app.task_completion") }}', data: data.map(d => d.task_completion), backgroundColor: '#a855f799', borderRadius: 4 },
+                    { label: '{{ __("app.success_rate") }}', data: data.map(d => d.success_rate), backgroundColor: '#3FA66B99', borderRadius: 4 },
+                    { label: '{{ __("app.task_completion") }}', data: data.map(d => d.task_completion), backgroundColor: '#756A9A99', borderRadius: 4 },
                 ]
             },
             options: {
@@ -322,8 +322,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: trend.map(t => t.label),
                 datasets: [
                     { label: '{{ __("app.new_cases") }}', data: trend.map(t => t.new), borderColor: goldColor, backgroundColor: goldColor + '22', fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: goldColor },
-                    { label: '{{ __("app.won") }}', data: trend.map(t => t.won), borderColor: '#22c55e', backgroundColor: '#22c55e22', fill: false, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#22c55e' },
-                    { label: '{{ __("app.lost") }}', data: trend.map(t => t.lost), borderColor: '#ef4444', backgroundColor: '#ef444422', fill: false, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#ef4444' },
+                    { label: '{{ __("app.won") }}', data: trend.map(t => t.won), borderColor: '#3FA66B', backgroundColor: '#3FA66B22', fill: false, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#3FA66B' },
+                    { label: '{{ __("app.lost") }}', data: trend.map(t => t.lost), borderColor: '#C95C5C', backgroundColor: '#C95C5C22', fill: false, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#C95C5C' },
                 ]
             },
             options: {
@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const typeCtx = document.getElementById('casesTypeChart');
     if (typeCtx) {
         const typeData = @json($casesByType);
-        const typeColors = ['#C9A55A', '#22c55e', '#3b82f6', '#a855f7', '#ef4444', '#f59e0b', '#06b6d4', '#ec4899'];
+        const typeColors = ['#B89B5E', '#3FA66B', '#5B86B8', '#756A9A', '#C95C5C', '#B89B5E', '#5F97B3', '#BC849C'];
         const labels = @json($casesByType);
         const keys = Object.keys(labels);
         new Chart(typeCtx.getContext('2d'), {
@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const radarCtx = document.getElementById('radarChart');
     if (radarCtx) {
         const radarData = @json($efficiencyData);
-        const radarColors = ['#C9A55A', '#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#ef4444'];
+        const radarColors = ['#B89B5E', '#3FA66B', '#5B86B8', '#756A9A', '#B89B5E', '#C95C5C'];
         new Chart(radarCtx.getContext('2d'), {
             type: 'radar',
             data: {

@@ -50,7 +50,7 @@ class SessionsExport implements FromCollection, WithHeadings, ShouldAutoSize, Wi
 
     public function registerEvents(): array
     {
-        $gold = 'C9A55A';
+        $gold = 'B89B5E';
         $navy = '0A1628';
         $altRow = '1A2D4A';
         $white = 'FFFFFF';

@@ -343,7 +343,7 @@
                         @endif
                         <div x-show="error" class="text-xs text-red-700" x-text="error"></div>
                         <button type="button" @click="saveClient()" :disabled="saving || !nc.name.trim()"
-                            class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm disabled:opacity-50">
+                            class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm disabled:opacity-50">
                             <span x-text="saving ? '{{ __("app.saving") }}' : '{{ __("app.save_client_add") }}'"></span>
                         </button>
                     </div>
@@ -426,7 +426,7 @@
         <div class="bg-white rounded-xl border border-amber-200 p-6 space-y-4" x-data="sessionsManager()">
             <div class="flex items-center justify-between border-b border-gray-200 pb-3">
                 <h2 class="text-lg font-bold text-amber-700">{{ __('app.sessions') }}</h2>
-                <button type="button" @click="addSession()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+                <button type="button" @click="addSession()" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
@@ -532,7 +532,7 @@
 
         {{-- Actions --}}
         <div class="flex items-center gap-3">
-            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+            <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                 {{ __('app.add_case_button') }}
             </button>
             <a href="{{ route('cases.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">

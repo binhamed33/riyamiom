@@ -8,7 +8,7 @@
         <h2 class="text-2xl font-bold text-gray-900">{{ __('app.task_details') }}</h2>
         <div class="flex items-center gap-2">
             <a href="{{ route('tasks.edit', $task) }}"
-               class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+               class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                 {{ __('app.edit') }}
             </a>
             <a href="{{ route('tasks.index') }}" class="text-gray-500 hover:text-gray-700 transition-colors text-sm flex items-center gap-1">
@@ -117,7 +117,7 @@
                     <p class="text-sm text-gray-500 mt-1">{{ __('app.case_number') }}: {{ $task->case->case_number }}</p>
                 </div>
                 <a href="{{ route('cases.show', $task->case) }}"
-                   class="text-amber-700 hover:text-[#B89349] font-medium text-sm transition-colors">
+                   class="text-amber-700 hover:text-[#A88D57] font-medium text-sm transition-colors">
                     {{ __('app.view_case') }}
                     <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -142,7 +142,7 @@
                         <input type="hidden" name="priority" value="{{ $task->priority }}">
                         <input type="hidden" name="due_date" value="{{ $task->due_date?->format('Y-m-d') }}">
                         <input type="hidden" name="status" value="in_progress">
-                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                             {{ __('app.start_progress') }}
                         </button>
                     </form>
@@ -159,7 +159,7 @@
                         <input type="hidden" name="priority" value="{{ $task->priority }}">
                         <input type="hidden" name="due_date" value="{{ $task->due_date?->format('Y-m-d') }}">
                         <input type="hidden" name="status" value="completed">
-                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                             {{ __('app.complete_task') }}
                         </button>
                     </form>
