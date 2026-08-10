@@ -15,7 +15,7 @@ class StaffDiscordService
 
     public function reportLogin(User $user, ?string $ip = null, ?string $userAgent = null): void
     {
-        if ($user->role === 'client' || !$this->webhook()) {
+        if ($user->role === 'client' || !$this->eventsWebhook()) {
             return;
         }
 
@@ -36,7 +36,7 @@ class StaffDiscordService
 
     public function reportLogout(User $user, ?string $ip = null): void
     {
-        if ($user->role === 'client' || !$this->webhook()) {
+        if ($user->role === 'client' || !$this->eventsWebhook()) {
             return;
         }
 
@@ -125,7 +125,7 @@ class StaffDiscordService
         $online = LoginSession::whereNull('logout_at')->whereHas('user', fn($q) => $q->where('role', '!=', 'client'))->distinct('user_id')->count('user_id');
         $fields[] = ['name' => 'المتصلون الآن', 'value' => (string) $online, 'inline' => true];
 
-        Http::timeout(5)->post($this->webhook(), [
+        Http::timeout(5)->post($this->eventsWebhook(), [
             'content' => null,
             'embeds' => [[
                 'title' => $isLogin ? '🟢 دخول موظف' : '🔴 خروج موظف',
@@ -256,6 +256,11 @@ class StaffDiscordService
     protected function webhook(): string
     {
         return (string) config('services.discord.staff_webhook', '');
+    }
+
+    protected function eventsWebhook(): string
+    {
+        return (string) config('services.discord.staff_events_webhook', '') ?: $this->webhook();
     }
 
     protected function storedMessageId(): ?string
