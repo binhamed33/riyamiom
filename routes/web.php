@@ -166,9 +166,6 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/nl/actions/parse', [App\Http\Controllers\NaturalActionController::class, 'parse'])->name('nl.parse');
     Route::post('/nl/actions/confirm', [App\Http\Controllers\NaturalActionController::class, 'confirm'])->name('nl.confirm');
 
-    // Case-aware Calendar
-    Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'index'])->name('calendar.index');
-
     // Sync - lightweight polling endpoint for real-time updates
     Route::get('/sync', function () {
         $tables = ['cases', 'tasks', 'sessions', 'clients', 'notifications'];

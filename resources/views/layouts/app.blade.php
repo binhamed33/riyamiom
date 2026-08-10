@@ -1308,7 +1308,7 @@
     @auth
         @if (!auth()->user()->isClient())
             {{-- Speech-to-Action floating button (global) --}}
-            <div class="fixed bottom-5 left-5 z-[250] hidden md:block">
+            <div class="fixed bottom-5 left-5 z-[250] block">
                 <x-nl-action-modal />
             </div>
             <x-doc-viewer />
