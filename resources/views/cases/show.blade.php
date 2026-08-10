@@ -1067,11 +1067,15 @@ document.addEventListener('alpine:init', () => {
     </div>
 </div>
 
-{{-- Quick Actions Drawer --}}
-<div x-show="quickOpen" x-cloak class="fixed inset-0 z-[110]" >
+{{-- Quick Actions Modal --}}
+<div x-show="quickOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="quickOpen = false"></div>
-    <div class="absolute inset-y-0 {{ app()->getLocale() === 'ar' ? 'left-0' : 'right-0' }} w-full max-w-md bg-white shadow-2xl flex flex-col" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="{{ app()->getLocale() === 'ar' ? '-translate-x-full' : 'translate-x-full' }}" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="{{ app()->getLocale() === 'ar' ? '-translate-x-full' : 'translate-x-full' }}">
-        {{-- Drawer Header --}}
+
+    <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-amber-700">إجراءات سريعة</h3>
             <button @click="quickOpen = false" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
@@ -1082,95 +1086,104 @@ document.addEventListener('alpine:init', () => {
         </div>
 
         {{-- Feedback --}}
-        <div x-show="quickMsg" x-cloak class="mx-5 mt-4 flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-sm">
+        <div x-show="quickMsg" x-cloak class="mx-6 mt-4 flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-sm">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
             <span x-text="quickMsg"></span>
         </div>
-        <div x-show="quickErr" x-cloak class="mx-5 mt-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl text-sm">
+        <div x-show="quickErr" x-cloak class="mx-6 mt-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl text-sm">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
             <span x-text="quickErr"></span>
         </div>
 
-        {{-- Tabs --}}
-        <div class="flex border-b border-gray-200">
-            <button @click="quickTab = 'note'" :class="quickTab === 'note' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
-                class="flex-1 px-4 py-3 text-xs font-bold transition-colors">ملاحظة / اتصال</button>
-            <button @click="quickTab = 'task'" :class="quickTab === 'task' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
-                class="flex-1 px-4 py-3 text-xs font-bold transition-colors">مهمة</button>
-            <button @click="quickTab = 'doc'" :class="quickTab === 'doc' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
-                class="flex-1 px-4 py-3 text-xs font-bold transition-colors">مستند</button>
-        </div>
+        {{-- Body --}}
+        <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+            {{-- Tabs --}}
+            <div class="flex border-b border-gray-200">
+                <button @click="quickTab = 'note'" :class="quickTab === 'note' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
+                    class="flex-1 px-4 py-3 text-xs font-bold transition-colors">ملاحظة / اتصال</button>
+                <button @click="quickTab = 'task'" :class="quickTab === 'task' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
+                    class="flex-1 px-4 py-3 text-xs font-bold transition-colors">مهمة</button>
+                <button @click="quickTab = 'doc'" :class="quickTab === 'doc' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
+                    class="flex-1 px-4 py-3 text-xs font-bold transition-colors">مستند</button>
+            </div>
 
-        {{-- Panel: Activity --}}
-        <div x-show="quickTab === 'note'" x-cloak class="flex-1 overflow-y-auto p-5 space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1.5">النوع</label>
-                <select x-model="activityForm.type" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
-                    <option value="note">ملاحظة</option>
-                    <option value="call">اتصال هاتفي</option>
-                    <option value="appointment">موعد</option>
-                    <option value="other">إجراء عام</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1.5">العنوان *</label>
-                <input type="text" x-model="activityForm.title" placeholder="مثال: مكالمة مع الموكل حول التأجيل" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1.5">التفاصيل</label>
-                <textarea x-model="activityForm.content" rows="4" placeholder="تفاصيل إضافية..." class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"></textarea>
-            </div>
-            <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
-                <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span x-text="quickBusy ? 'حفظ...' : 'حفظ في سجل القضية'"></span>
-            </button>
-        </div>
-
-        {{-- Panel: Task --}}
-        <div x-show="quickTab === 'task'" x-cloak class="flex-1 overflow-y-auto p-5 space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1.5">عنوان المهمة *</label>
-                <input type="text" x-model="taskForm.title" placeholder="مثال: تجهيز مذكرة الرد" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1.5">الوصف</label>
-                <textarea x-model="taskForm.description" rows="2" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"></textarea>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1.5">الأولوية</label>
-                    <select x-model="taskForm.priority" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
-                        <option value="low">منخفضة</option>
-                        <option value="medium">متوسطة</option>
-                        <option value="high">عالية</option>
-                        <option value="urgent">عاجلة</option>
-                    </select>
+            {{-- Panel: Activity --}}
+            <div x-show="quickTab === 'note'" x-cloak class="space-y-3">
+                <div class="bg-white rounded-xl p-4 border border-gray-100 space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1.5">النوع</label>
+                        <select x-model="activityForm.type" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                            <option value="note">ملاحظة</option>
+                            <option value="call">اتصال هاتفي</option>
+                            <option value="appointment">موعد</option>
+                            <option value="other">إجراء عام</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1.5">العنوان *</label>
+                        <input type="text" x-model="activityForm.title" placeholder="مثال: مكالمة مع الموكل حول التأجيل" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1.5">التفاصيل</label>
+                        <textarea x-model="activityForm.content" rows="4" placeholder="تفاصيل إضافية..." class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"></textarea>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1.5">الاستحقاق</label>
-                    <input type="date" x-model="taskForm.due_date" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
-                </div>
+                <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
+                    <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    <span x-text="quickBusy ? 'حفظ...' : 'حفظ في سجل القضية'"></span>
+                </button>
             </div>
-            <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
-                <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span x-text="quickBusy ? 'إنشاء...' : 'إنشاء المهمة'"></span>
-            </button>
-        </div>
 
-        {{-- Panel: Document --}}
-        <div x-show="quickTab === 'doc'" x-cloak class="flex-1 overflow-y-auto p-5 space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1.5">العنوان</label>
-                <input type="text" x-model="docForm.title" placeholder="اتركه فارغًا لاستخدام اسم الملف" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+            {{-- Panel: Task --}}
+            <div x-show="quickTab === 'task'" x-cloak class="space-y-3">
+                <div class="bg-white rounded-xl p-4 border border-gray-100 space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1.5">عنوان المهمة *</label>
+                        <input type="text" x-model="taskForm.title" placeholder="مثال: تجهيز مذكرة الرد" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1.5">الوصف</label>
+                        <textarea x-model="taskForm.description" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1.5">الأولوية</label>
+                            <select x-model="taskForm.priority" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                                <option value="low">منخفضة</option>
+                                <option value="medium">متوسطة</option>
+                                <option value="high">عالية</option>
+                                <option value="urgent">عاجلة</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1.5">الاستحقاق</label>
+                            <input type="date" x-model="taskForm.due_date" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                        </div>
+                    </div>
+                </div>
+                <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
+                    <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    <span x-text="quickBusy ? 'إنشاء...' : 'إنشاء المهمة'"></span>
+                </button>
             </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1.5">الملف *</label>
-                <input type="file" @change="docForm.file = $event.target.files[0]; if (!docForm.title.trim()) { docForm.title = ($event.target.files[0].name || '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(); }" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-amber-700 hover:file:bg-amber-200">
+
+            {{-- Panel: Document --}}
+            <div x-show="quickTab === 'doc'" x-cloak class="space-y-3">
+                <div class="bg-white rounded-xl p-4 border border-gray-100 space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1.5">العنوان</label>
+                        <input type="text" x-model="docForm.title" placeholder="اتركه فارغًا لاستخدام اسم الملف" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1.5">الملف *</label>
+                        <input type="file" @change="docForm.file = $event.target.files[0]; if (!docForm.title.trim()) { docForm.title = ($event.target.files[0].name || '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(); }" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-amber-700 hover:file:bg-amber-200">
+                    </div>
+                </div>
+                <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
+                    <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    <span x-text="quickBusy ? 'رفع...' : 'رفع المستند'"></span>
+                </button>
             </div>
-            <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
-                <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span x-text="quickBusy ? 'رفع...' : 'رفع المستند'"></span>
-            </button>
         </div>
     </div>
 </div>
