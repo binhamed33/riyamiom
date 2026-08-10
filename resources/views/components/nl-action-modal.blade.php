@@ -117,7 +117,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ $cspNonce }}">
     function nlAction(caseId) {
         return {
             nlOpen: false,

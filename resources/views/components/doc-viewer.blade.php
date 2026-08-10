@@ -53,7 +53,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ $cspNonce }}">
     function docViewer() {
         return {
             viewerOpen: false,
