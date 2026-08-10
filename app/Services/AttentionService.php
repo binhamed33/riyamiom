@@ -30,10 +30,12 @@ class AttentionService
 
         $now = now();
         $items = collect();
+        $isLawyer = $user && $user->isLawyer();
 
         // 1. Session today/upcoming within 48h with no open prep task (critical if today)
         $window = $now->copy()->addHours(48);
         $sessions = Session::with('case')
+            ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)))
             ->where('date', '>=', $now)
             ->where('date', '<=', $window)
             ->where('status', 'upcoming')
@@ -61,6 +63,7 @@ class AttentionService
 
         // 2. Overdue tasks
         Task::with(['case', 'assignee'])
+            ->when($isLawyer, fn ($q) => $q->where('assigned_to', $user->id))
             ->where('status', '!=', 'completed')
             ->where('due_date', '<', $now)
             ->orderBy('due_date')
@@ -79,7 +82,9 @@ class AttentionService
             });
 
         // 3. Cases flagged overdue
-        LegalCase::where('status', 'overdue')->limit(5)->get()
+        LegalCase::where('status', 'overdue')
+            ->when($isLawyer, fn ($q) => $q->where('lawyer_id', $user->id))
+            ->limit(5)->get()
             ->each(function ($c) use ($items) {
                 $items->push([
                     'severity' => 'warning',

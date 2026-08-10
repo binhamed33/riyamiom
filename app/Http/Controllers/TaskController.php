@@ -19,6 +19,10 @@ class TaskController extends Controller
     {
         $query = Task::with(['assignee', 'creator', 'case']);
 
+        if (auth()->user() && auth()->user()->isLawyer()) {
+            $query->where('assigned_to', auth()->id());
+        }
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }

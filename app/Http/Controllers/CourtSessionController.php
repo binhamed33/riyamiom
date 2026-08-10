@@ -21,6 +21,10 @@ class CourtSessionController extends Controller
     {
         $query = Session::with(['case.client', 'case.lawyer']);
 
+        if (auth()->user() && auth()->user()->isLawyer()) {
+            $query->whereHas('case', fn ($q) => $q->where('lawyer_id', auth()->id()));
+        }
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -220,8 +224,13 @@ class CourtSessionController extends Controller
 
     public function today(): View
     {
-        $query = Session::with(['case.client', 'case.lawyer'])
-            ->whereDate('date', Carbon::today())
+        $query = Session::with(['case.client', 'case.lawyer']);
+
+        if (auth()->user() && auth()->user()->isLawyer()) {
+            $query->whereHas('case', fn ($q) => $q->where('lawyer_id', auth()->id()));
+        }
+
+        $query->whereDate('date', Carbon::today())
             ->where('status', 'upcoming')
             ->orderBy('date');
 
