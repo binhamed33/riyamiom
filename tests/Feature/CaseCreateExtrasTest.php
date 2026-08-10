@@ -108,4 +108,39 @@ class CaseCreateExtrasTest extends TestCase
             ->assertSee('task_title', false)
             ->assertSee('note_title', false);
     }
+
+    public function test_store_sets_opened_at_and_monthly_report_filters_by_month(): void
+    {
+        $developer = User::factory()->create(['role' => 'developer', 'is_active' => true]);
+        $client = Client::factory()->create();
+
+        $this->actingAs($developer)->post('/cases', [
+            'case_number' => 'CASE-MONTHLY-1',
+            'title'       => 'Case This Month',
+            'description' => 'Description here',
+            'type'        => 'مدني',
+            'court'       => 'المحكمة الابتدائية',
+            'opponent'    => 'Opponent',
+            'status'      => 'active',
+            'priority'    => 'medium',
+            'client_id'   => $client->id,
+        ])->assertRedirect();
+
+        $case = LegalCase::where('case_number', 'CASE-MONTHLY-1')->first();
+        $this->assertNotNull($case->opened_at);
+
+        $now = now();
+        $thisMonth = $now->month;
+        $thisYear = $now->year;
+        $nextMonth = $now->copy()->addMonth()->month;
+        $nextYear = $now->copy()->addMonth()->year;
+
+        $this->actingAs($developer)->getJson("/cases/monthly/data?month={$thisMonth}&year={$thisYear}")
+            ->assertOk()
+            ->assertJsonPath('cases.0.case_number', 'CASE-MONTHLY-1');
+
+        $this->actingAs($developer)->getJson("/cases/monthly/data?month={$nextMonth}&year={$nextYear}")
+            ->assertOk()
+            ->assertJsonMissing(['cases' => [['case_number' => 'CASE-MONTHLY-1']]]);
+    }
 }

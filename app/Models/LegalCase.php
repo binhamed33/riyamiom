@@ -55,6 +55,7 @@ class LegalCase extends Model
         'client_id',
         'lawyer_id',
         'created_by',
+        'opened_at',
         'ai_analysis',
     ];
 

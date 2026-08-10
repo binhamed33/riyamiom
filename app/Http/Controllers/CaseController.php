@@ -99,10 +99,15 @@ class CaseController extends Controller
             'task_assigned_to'    => 'nullable|exists:users,id',
             'note_title'          => 'nullable|string|max:255',
             'note_content'        => 'nullable|string|max:2000',
+            'opened_at'           => 'nullable|date',
         ]);
 
         if (empty($validated['title'])) {
             $validated['title'] = $validated['case_number'];
+        }
+
+        if (empty($validated['opened_at'])) {
+            $validated['opened_at'] = now()->toDateString();
         }
 
         if (empty($validated['type']) && !empty($validated['case_type'])) {
@@ -575,8 +580,8 @@ class CaseController extends Controller
 
     public function monthly(Request $request): View
     {
-        $month = $request->input('month', now()->month);
-        $year = $request->input('year', now()->year);
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
 
         $cases = LegalCase::with(['client', 'lawyer', 'sessions' => fn($q) => $q->orderBy('date', 'desc')])
             ->whereYear('opened_at', $year)
@@ -619,8 +624,8 @@ class CaseController extends Controller
 
     public function monthlyData(Request $request): JsonResponse
     {
-        $month = $request->input('month', now()->month);
-        $year = $request->input('year', now()->year);
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
 
         $cases = LegalCase::with(['client', 'lawyer', 'sessions' => fn($q) => $q->orderBy('date', 'desc')])
             ->whereYear('opened_at', $year)
