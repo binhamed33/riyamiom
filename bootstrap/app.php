@@ -42,6 +42,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 || $e instanceof \Illuminate\Validation\ValidationException) {
                 return;
             }
+            $route = $request->route();
+            if ($route && $route->getName() === 'dashboard') {
+                logger()->error('Dashboard render failed, returning 500 to avoid redirect loop: ' . $e->getMessage(), ['exception' => $e]);
+
+                return response('تعذر تحميل لوحة التحكم، يرجى مراجعة السجلات.', 500);
+            }
             return redirect()->route('dashboard')
                 ->with('error', 'حدث خطأ أثناء تنفيذ العملية: ' . $e->getMessage());
         });
