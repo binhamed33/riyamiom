@@ -597,7 +597,7 @@ class CaseController extends Controller
         });
 
         return redirect()->back()
-            ->with('success', "{$updated} cases marked as overdue.");
+            ->with('success', $updated > 0 ? "تم تحديد {$updated} قضية متأخرة." : 'لا توجد قضايا متأخرة.');
     }
 
     public function trashed(): View
