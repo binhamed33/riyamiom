@@ -3,14 +3,12 @@
 @section('title', __('app.page_documents'))
 
 @section('content')
-<div class="space-y-5" x-data="{ showUpload: false }">
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-            <h1 class="page-title">{{ __('app.page_documents') }} <span class="text-[var(--gold-dark)]">({{ $documents->total() }})</span></h1>
-            <p class="page-subtitle">المستندات والأوراق القانونية</p>
-        </div>
-        <button @click="showUpload = true" class="btn btn-primary">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div class="space-y-6" x-data="{ showUpload: false }">
+    <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-gray-900">{{ __('app.page_documents') }} ({{ $documents->total() }})</h2>
+        <button @click="showUpload = true"
+            class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
             </svg>
             {{ __('app.upload_document') }}

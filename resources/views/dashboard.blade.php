@@ -20,12 +20,12 @@
         </div>
         <div class="flex items-center gap-2">
             @if(!auth()->user()->isClient())
-            <a href="{{ route('cases.create') }}" class="btn btn-primary btn-sm">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            <a href="{{ route('cases.create') }}" class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                 {{ __('app.add_new_case') }}
             </a>
             @endif
-            <a href="{{ route('attention.index') }}" class="btn btn-secondary btn-sm">
+            <a href="{{ route('attention.index') }}" class="flex-shrink-0 text-xs font-bold text-amber-600 hover:text-amber-700 transition inline-flex items-center gap-1 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                 {{ __('app.view_all') }}
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ app()->getLocale() === 'ar' ? 'M15 12h4m0 0l-2-2m2 2l-2 2M5 12h10m-6-4l4 4-4 4' : 'M9 12h4m0 0l-2-2m2 2l-2 2m10 0a7 7 0 11-14 0 7 7 0 0114 0z' }}"/></svg>
             </a>
@@ -92,7 +92,7 @@
 <div class="card">
     <div class="card-header">
         <h2 class="section-title">{{ __('app.recent_cases') }}</h2>
-        <a href="{{ route('cases.index') }}" class="btn btn-ghost-btn btn-sm">{{ __('app.view_all') }} ←</a>
+        <a href="{{ route('cases.index') }}" class="text-xs text-gray-600 hover:text-amber-700 font-bold">{{ __('app.view_all') }}</a>
     </div>
     @if($recentCases->isNotEmpty())
         <div class="divide-y divide-gray-50">
@@ -120,7 +120,7 @@
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
             </div>
             <p class="empty-title">{{ __('app.no_cases') }}</p>
-            <a href="{{ route('cases.create') }}" class="btn btn-primary btn-sm mt-4">{{ __('app.add_new_case') }}</a>
+            <a href="{{ route('cases.create') }}" class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-lg font-semibold transition-colors text-sm mt-4">{{ __('app.add_new_case') }}</a>
         </div>
     @endif
 </div>
@@ -130,7 +130,7 @@
     <div class="card lg:col-span-1">
         <div class="card-header">
             <h2 class="section-title">{{ __('app.upcoming_sessions') }}</h2>
-            <a href="{{ route('sessions.index') }}" class="btn btn-ghost-btn btn-sm">{{ __('app.view_all') }}</a>
+            <a href="{{ route('sessions.index') }}" class="text-xs text-gray-600 hover:text-amber-700 font-bold">{{ __('app.view_all') }}</a>
         </div>
         <div class="card-body space-y-2">
             @forelse($upcomingSessions->take(5) as $session)
@@ -187,7 +187,7 @@
     <div class="card lg:col-span-1">
         <div class="card-header">
             <h2 class="section-title">{{ __('app.pending_tasks') }}</h2>
-            <a href="{{ route('tasks.index') }}" class="btn btn-ghost-btn btn-sm">{{ __('app.view_all') }}</a>
+            <a href="{{ route('tasks.index') }}" class="text-xs text-gray-600 hover:text-amber-700 font-bold">{{ __('app.view_all') }}</a>
         </div>
         <div class="card-body space-y-2">
             @forelse($pendingTasksList->take(5) as $task)

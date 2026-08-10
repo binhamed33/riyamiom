@@ -3,14 +3,12 @@
 @section('title', __('app.page_tasks'))
 
 @section('content')
-<div class="space-y-5">
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-            <h1 class="page-title">{{ __('app.tasks') }}</h1>
-            <p class="page-subtitle">متابعة مهام الفريق ومواعيدها</p>
-        </div>
-        <a href="{{ route('tasks.create') }}" class="btn btn-primary">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-gray-900">{{ __('app.tasks') }}</h2>
+        <a href="{{ route('tasks.create') }}"
+           class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
             {{ __('app.new_task') }}

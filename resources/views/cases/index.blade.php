@@ -38,44 +38,42 @@ document.addEventListener('alpine:init', () => {
 @endpush
 
 @section('content')
-<div class="space-y-5" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+<div class="space-y-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
-    {{-- Header: primary + secondary actions --}}
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-            <h1 class="page-title">{{ __('app.manage_cases') }}</h1>
-            <p class="page-subtitle">إدارة القضايا ومتابعة الجلسات والموكلين</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
+    {{-- Header --}}
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 class="text-2xl font-bold text-amber-700">{{ __('app.manage_cases') }}</h1>
+        <div class="flex flex-wrap items-center gap-3">
             <form action="{{ route('cases.detectOverdue') }}" method="POST" class="contents">
                 @csrf
-                <button type="submit" class="btn btn-outline-danger btn-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-lg font-medium transition-colors text-sm inline-flex items-center gap-2">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
                     {{ __('app.overdue_report') }}
                 </button>
             </form>
-            <a href="{{ route('cases.monthly') }}" class="btn btn-secondary btn-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                القضايا الشهرية
-            </a>
-            <a href="{{ route('cases.create') }}" class="btn btn-primary">
+            <a href="{{ route('cases.create') }}" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
                 {{ __('app.add_new_case') }}
             </a>
+            <a href="{{ route('cases.monthly') }}" class="bg-white hover:bg-gray-100 text-gray-600 border border-amber-200 px-5 py-2.5 rounded-lg font-medium transition-colors text-sm inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                القضايا الشهرية
+            </a>
         </div>
     </div>
 
-    {{-- Compact filter bar --}}
-    <div class="card">
-        <div class="card-body">
-            <form method="GET" action="{{ route('cases.index') }}" class="flex flex-wrap items-center gap-2.5">
-                <div class="relative flex-1 min-w-[220px]" x-data="{ open: false, results: [], selected: -1 }">
+    {{-- Filter Bar --}}
+    <form method="GET" action="{{ route('cases.index') }}" class="bg-white rounded-xl border border-amber-200 p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {{-- Search --}}
+            <div class="lg:col-span-1">
+                <div class="relative" x-data="{ open: false, results: [], selected: -1 }">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('app.search_placeholder_general') }}"
                         x-on:input.debounce.300ms="if ($el.value.length > 1) { fetch('{{ route('search') }}?q=' + encodeURIComponent($el.value)).then(r => r.json()).then(d => { results = d.filter(r => r.type === 'case'); open = results.length > 0; selected = -1; }) } else { open = false }"
                         x-on:keydown.down.prevent="if (open) { selected = Math.min(selected + 1, results.length - 1) }"
@@ -84,8 +82,8 @@ document.addEventListener('alpine:init', () => {
                         x-on:blur="setTimeout(() => open = false, 200)"
                         x-on:focus="if (results.length > 0) open = true"
                         autocomplete="off"
-                        class="input pr-9">
-                    <svg class="absolute start-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="w-full rounded-lg bg-white border border-gray-200 pr-10 pl-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                     <div x-show="open" x-cloak class="absolute z-50 top-full mt-1 w-full bg-white border border-amber-200 rounded-lg shadow-lg overflow-hidden">
@@ -96,8 +94,12 @@ document.addEventListener('alpine:init', () => {
                         </template>
                     </div>
                 </div>
-                <select name="status" class="select w-auto min-w-[130px]">
-                    <option value="">{{ __('app.all') }} (الحالة)</option>
+            </div>
+
+            {{-- Status --}}
+            <div>
+                <select name="status" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    <option value="">{{ __('app.all') }}</option>
                     <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>{{ __('app.status_active') }}</option>
                     <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>{{ __('app.status_pending') }}</option>
                     <option value="overdue" {{ request('status') === 'overdue' ? 'selected' : '' }}>{{ __('app.status_overdue') }}</option>
@@ -107,68 +109,73 @@ document.addEventListener('alpine:init', () => {
                     <option value="adjudicated" {{ request('status') === 'adjudicated' ? 'selected' : '' }}>{{ __('app.status_adjudicated') }}</option>
                     <option value="fees_pending" {{ request('status') === 'fees_pending' ? 'selected' : '' }}>{{ __('app.status_fees_pending') }}</option>
                 </select>
-                <select name="priority" class="select w-auto min-w-[120px]">
+            </div>
+
+            {{-- Priority --}}
+            <div>
+                <select name="priority" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                     <option value="">{{ __('app.all') }}</option>
                     <option value="low" {{ request('priority') === 'low' ? 'selected' : '' }}>{{ __('app.priority_low') }}</option>
                     <option value="medium" {{ request('priority') === 'medium' ? 'selected' : '' }}>{{ __('app.priority_medium') }}</option>
                     <option value="high" {{ request('priority') === 'high' ? 'selected' : '' }}>{{ __('app.priority_high') }}</option>
                     <option value="urgent" {{ request('priority') === 'urgent' ? 'selected' : '' }}>{{ __('app.priority_urgent') }}</option>
                 </select>
-                <select name="lawyer_id" class="select w-auto min-w-[130px]">
-                    <option value="">{{ __('app.all') }} (المحامي)</option>
-                    @foreach($users ?? [] as $user)
-                        <option value="{{ $user->id }}" {{ request('lawyer_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
-                    @endforeach
-                </select>
-                <button type="submit" class="btn btn-primary btn-sm">{{ __('app.filter') }}</button>
-                <a href="{{ route('cases.index') }}" class="btn btn-ghost-btn btn-sm">{{ __('app.reset') }}</a>
-            </form>
-        </div>
-    </div>
+            </div>
 
-    {{-- Cases table --}}
-    <div class="card">
-        <div class="table-wrap">
-            <table class="table">
+            {{-- Submit --}}
+            <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+                    {{ __('app.filter') }}
+                </button>
+                <a href="{{ route('cases.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">
+                    {{ __('app.reset') }}
+                </a>
+            </div>
+        </div>
+    </form>
+
+    {{-- Cases Table --}}
+    <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-right">
                 <thead>
-                    <tr>
-                        <th>{{ __('app.office_case_number') }}</th>
-                        <th>{{ __('app.case_court_with_number') }}</th>
-                        <th>{{ __('app.case_principal') }}</th>
-                        <th>{{ __('app.case_lawyer') }}</th>
-                        <th>{{ __('app.status') }}</th>
-                        <th>الجلسة القادمة</th>
-                        <th>{{ __('app.priority') }}</th>
-                        <th>{{ __('app.actions') }}</th>
+                    <tr class="border-b border-gray-200">
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.office_case_number') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_court_with_number') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_principal') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_opponent') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_type') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_lawyer') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.status') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.priority') }}</th>
+                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-100">
                     @forelse($cases ?? [] as $case)
-                        @php($nextSession = $case->sessions->first())
-                        <tr>
-                            <td class="whitespace-nowrap">
-                                <a href="{{ route('cases.show', $case->id) }}" class="font-mono font-bold text-[0.8rem] text-[var(--gold-dark)] hover:underline">{{ $case->office_case_number }}</a>
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-3 py-2 text-gray-900 font-mono font-medium text-xs whitespace-nowrap">{{ $case->office_case_number }}</td>
+                            <td class="px-3 py-2 text-gray-900 text-xs whitespace-nowrap">
+                                {{ $case->court }}
                                 @if(!empty($case->case_number))
-                                    <span class="block text-[0.68rem] text-[var(--ink-muted)] font-mono">{{ $case->case_number }}</span>
+                                    <span class="block text-gray-400 font-normal">{{ $case->case_number }}</span>
                                 @endif
                             </td>
-                            <td class="max-w-[240px]">
-                                <a href="{{ route('cases.show', $case->id) }}" class="font-semibold text-[var(--ink)] hover:text-[var(--gold-dark)] leading-snug block truncate" title="{{ $case->title }}">{{ $case->title }}</a>
-                                <span class="block text-[0.68rem] text-[var(--ink-muted)] truncate">{{ $case->court }}{{ !empty($case->case_type) ? ' • ' . $case->case_type : '' }}</span>
-                            </td>
-                            <td class="whitespace-nowrap text-[var(--ink-soft)]">{{ $case->client->name ?? '—' }}</td>
-                            <td class="whitespace-nowrap text-[var(--ink-soft)]">{{ $case->lawyer->name ?? '—' }}</td>
-                            <td>
-                                <span class="chip
-                                    @if($case->status === 'active') bg-green-100 text-green-700
-                                    @elseif($case->status === 'pending') bg-yellow-100 text-yellow-700
-                                    @elseif($case->status === 'overdue') bg-red-100 text-red-700
-                                    @elseif($case->status === 'closed') bg-gray-100 text-gray-500
-                                    @elseif($case->status === 'won') bg-blue-100 text-blue-700
-                                    @elseif($case->status === 'lost') bg-red-100 text-red-700
-                                    @elseif($case->status === 'adjudicated') bg-emerald-100 text-emerald-700
-                                    @elseif($case->status === 'fees_pending') bg-red-100 text-red-700
-                                    @else bg-gray-100 text-gray-500 @endif">
+                            <td class="px-3 py-2 text-gray-900 text-xs">{{ $case->client->name ?? '—' }}</td>
+                            <td class="px-3 py-2 text-gray-400 text-xs">{{ $case->opponent ?? '—' }}</td>
+                            <td class="px-3 py-2 text-gray-400 text-xs">{{ $case->case_type ?? '—' }}</td>
+                            <td class="px-3 py-2 text-gray-400 text-xs">{{ $case->lawyer->name ?? '—' }}</td>
+                            <td class="px-3 py-2">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap
+                                    @if($case->status === 'active') bg-green-100 text-green-700 border border-green-200
+                                    @elseif($case->status === 'pending') bg-yellow-100 text-yellow-700 border border-yellow-200
+                                    @elseif($case->status === 'overdue') bg-red-100 text-red-700 border border-red-200
+                                    @elseif($case->status === 'closed') bg-gray-100 text-gray-400 border border-gray-200
+                                    @elseif($case->status === 'won') bg-blue-100 text-blue-700 border border-blue-200
+                                    @elseif($case->status === 'lost') bg-red-100 text-red-700 border border-red-200
+                                    @elseif($case->status === 'adjudicated') bg-emerald-100 text-emerald-700 border border-emerald-200
+                                    @elseif($case->status === 'fees_pending') bg-red-100 text-red-700 border border-red-200
+                                    @else bg-gray-100 text-gray-400 border border-gray-200 @endif">
                                     @if($case->status === 'active') {{ __('app.status_active') }}
                                     @elseif($case->status === 'pending') {{ __('app.status_pending') }}
                                     @elseif($case->status === 'overdue') {{ __('app.status_overdue') }}
@@ -181,23 +188,13 @@ document.addEventListener('alpine:init', () => {
                                     @endif
                                 </span>
                             </td>
-                            <td class="whitespace-nowrap">
-                                @if($nextSession)
-                                    <span class="text-[var(--ink-soft)] font-semibold">{{ $nextSession->date?->format('d/m/Y') }}</span>
-                                    @if($nextSession->location)
-                                        <span class="block text-[0.68rem] text-[var(--ink-muted)]">{{ $nextSession->location }}</span>
-                                    @endif
-                                @else
-                                    <span class="text-[var(--ink-muted)]">—</span>
-                                @endif
-                            </td>
-                            <td>
-                                <span class="chip
-                                    @if($case->priority === 'low') bg-gray-100 text-gray-500
-                                    @elseif($case->priority === 'medium') bg-yellow-100 text-yellow-700
-                                    @elseif($case->priority === 'high') bg-orange-100 text-orange-700
-                                    @elseif($case->priority === 'urgent') bg-red-100 text-red-700
-                                    @else bg-gray-100 text-gray-500 @endif">
+                            <td class="px-3 py-2">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap
+                                    @if($case->priority === 'low') bg-gray-100 text-gray-400 border border-gray-200
+                                    @elseif($case->priority === 'medium') bg-yellow-100 text-yellow-700 border border-yellow-200
+                                    @elseif($case->priority === 'high') bg-orange-100 text-orange-700 border border-orange-200
+                                    @elseif($case->priority === 'urgent') bg-red-100 text-red-700 border border-red-200
+                                    @else bg-gray-100 text-gray-400 border border-gray-200 @endif">
                                     @if($case->priority === 'low') {{ __('app.priority_low') }}
                                     @elseif($case->priority === 'medium') {{ __('app.priority_medium') }}
                                     @elseif($case->priority === 'high') {{ __('app.priority_high') }}
@@ -265,18 +262,12 @@ document.addEventListener('alpine:init', () => {
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8">
-                                <x-empty-state :title="__('app.no_cases')" sub="ابدأ بإضافة أول قضية لتظهر هنا">
-                                    <x-slot name="icon">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                                        </svg>
-                                    </x-slot>
-                                    <a href="{{ route('cases.create') }}" class="btn btn-primary btn-sm">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                        {{ __('app.add_case_prompt') }}
-                                    </a>
-                                </x-empty-state>
+                            <td colspan="9" class="px-4 py-12 text-center text-gray-500">
+                                <svg class="w-16 h-16 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                </svg>
+                                <p class="text-lg">{{ __('app.no_cases') }}</p>
+                                <a href="{{ route('cases.create') }}" class="mt-3 inline-block text-amber-700 hover:underline text-sm">{{ __('app.add_case_prompt') }}</a>
                             </td>
                         </tr>
                     @endforelse
@@ -286,7 +277,7 @@ document.addEventListener('alpine:init', () => {
 
         {{-- Pagination --}}
         @if(isset($cases) && $cases instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator && $cases->hasPages())
-            <div class="px-4 py-3 border-t border-[var(--line-soft)]">
+            <div class="px-4 py-3 border-t border-gray-200">
                 {{ $cases->withQueryString()->links() }}
             </div>
         @endif
