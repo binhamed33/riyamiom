@@ -1,8 +1,9 @@
 @php
     $officeName = \App\Models\Setting::get('office_name', 'LexPro');
+    $isRtl = app()->getLocale() === 'ar';
 @endphp
 <!DOCTYPE html>
-<html dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}" lang="{{ app()->getLocale() }}">
+<html dir="{{ $isRtl ? 'rtl' : 'ltr' }}" lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,312 +15,592 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <script nonce="{{ $cspNonce }}" src="https://cdn.tailwindcss.com"></script>
     <script nonce="{{ $cspNonce }}">
         tailwind.config = {
-            theme: { extend: { colors: { gold: { DEFAULT: '#C9A55A', light: '#E0C878', dark: '#A8903E' } } } }
+            theme: { extend: { colors: {
+                obsidian: '#08090B', navy: '#0B1220', charcoal: '#11151C',
+                gold: { DEFAULT: '#C8A96B', soft: '#E0C98A', dim: '#9A7B45' },
+                ivory: '#F4F0E8', muted: '#9299A5'
+            } } }
         }
     </script>
-    <script nonce="{{ $cspNonce }}" defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
-        * { font-family: 'Tajawal', sans-serif; }
-        h1, h2, h3, h4, h5, h6 { font-family: 'Cairo', sans-serif; }
-        body { background: #F4F2EE; min-height: 100vh; overflow: hidden; }
+        :root {
+            --obsidian: #08090B;
+            --navy: #0B1220;
+            --charcoal: #11151C;
+            --gold: #C8A96B;
+            --gold-soft: #E0C98A;
+            --gold-dim: #9A7B45;
+            --ivory: #F4F0E8;
+            --muted: #9299A5;
+        }
 
-        .login-bg { position: fixed; inset: 0; z-index: 0; }
-        .login-bg::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 120% 80% at 70% 10%, rgba(191,155,48,0.04) 0%, transparent 50%), radial-gradient(ellipse 80% 60% at 20% 90%, rgba(191,155,48,0.03) 0%, transparent 50%), radial-gradient(ellipse 100% 100% at 50% 50%, rgba(244,242,238,1) 0%, rgba(237,232,220,1) 100%); }
+        body {
+            background: var(--obsidian);
+            color: var(--ivory);
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
 
-        .particle { position: absolute; border-radius: 50%; pointer-events: none; opacity: 0; animation: particleFloat linear infinite; }
-        @keyframes particleFloat { 0% { opacity: 0; transform: translateY(100vh) scale(0); } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10vh) scale(1); } }
+        h1, h2, h3, .font-verse, .font-editorial { font-family: 'Amiri', serif; }
 
-        @keyframes floatOrb1 { 0%,100% { transform: translate(0,0) scale(1); opacity: 0.08; } 50% { transform: translate(-30px,20px) scale(1.08); opacity: 0.14; } }
-        @keyframes floatOrb2 { 0%,100% { transform: translate(0,0) scale(1); opacity: 0.05; } 50% { transform: translate(20px,-30px) scale(1.05); opacity: 0.1; } }
+        ::selection { background: rgba(200,169,107,0.25); color: var(--ivory); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(200,169,107,0.22); border-radius: 3px; }
 
-        .grid-pattern { position: absolute; inset: 0; background-image: linear-gradient(rgba(191,155,48,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(191,155,48,0.04) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 30%, transparent 70%); -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 30%, transparent 70%); }
+        /* ============ CINEMATIC BASE ============ */
+        .scene { position: fixed; inset: 0; overflow: hidden; background:
+            radial-gradient(120% 90% at 78% 12%, rgba(200,169,107,0.07) 0%, transparent 45%),
+            radial-gradient(90% 70% at 15% 85%, rgba(11,18,32,0.9) 0%, transparent 60%),
+            linear-gradient(165deg, #0B1220 0%, #08090B 55%, #07080A 100%);
+            z-index: 0;
+        }
 
-        .card-luxury { background: #FFFFFF; border: 1px solid #E2DED6; box-shadow: 0 4px 24px rgba(0,0,0,0.04); }
+        .noise-layer { position: absolute; inset: 0; opacity: 0.035; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+        }
 
-        .input-luxury { background: #FFFFFF; border: 1px solid #D4CFC7; transition: all 0.4s cubic-bezier(0.16,1,0.3,1); color: #111111; }
-        .input-luxury:focus { border-color: rgba(191,155,48,0.5); box-shadow: 0 0 0 4px rgba(191,155,48,0.08); outline: none; }
-        .input-luxury::placeholder { color: #B0ABA3; }
-        .input-luxury:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px white inset !important; -webkit-text-fill-color: #111111 !important; caret-color: #111111; }
+        .grid-faint { position: absolute; inset: 0; opacity: 0.05;
+            background-image: linear-gradient(rgba(200,169,107,0.25) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(200,169,107,0.25) 1px, transparent 1px);
+            background-size: 72px 72px;
+            mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, black 20%, transparent 75%);
+            -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, black 20%, transparent 75%);
+        }
 
-        .btn-login { background: linear-gradient(135deg, #C9A55A 0%, #B89545 50%, #C9A55A 100%); background-size: 200% 200%; animation: btnGradient 4s ease infinite; position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.16,1,0.3,1); color: #FFFFFF; }
-        @keyframes btnGradient { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-        .btn-login::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 20%, rgba(255,255,255,0.2) 50%, transparent 80%); background-size: 250% 250%; animation: btnShimmer 3s ease-in-out infinite; }
-        @keyframes btnShimmer { 0% { background-position: 250% 0; } 100% { background-position: -250% 0; } }
-        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 16px 48px rgba(201,165,90,0.3); }
-        .btn-login:active { transform: translateY(0); box-shadow: 0 4px 16px rgba(201,165,90,0.15); }
+        .ambient-orb { position: absolute; border-radius: 50%; filter: blur(110px); pointer-events: none; }
 
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(35px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
-        @keyframes glowPulse { 0%,100% { opacity: 0.2; } 50% { opacity: 0.4; } }
+        .light-sweep { position: absolute; inset: -20%; pointer-events: none;
+            background: linear-gradient(105deg, transparent 42%, rgba(224,201,138,0.05) 50%, transparent 58%);
+            transform: translateX(-60%);
+            animation: sweep 9s cubic-bezier(0.4,0,0.2,1) infinite;
+        }
+        @keyframes sweep { 0% { transform: translateX(-60%); } 55% { transform: translateX(40%); } 100% { transform: translateX(100%); } }
 
-        .anim-up { animation: fadeInUp 0.8s cubic-bezier(0.16,1,0.3,1) forwards; }
-        .anim-left { animation: fadeInLeft 0.8s cubic-bezier(0.16,1,0.3,1) forwards; }
-        .anim-scale { animation: scaleIn 0.6s cubic-bezier(0.16,1,0.3,1) forwards; }
+        /* cursor-following ambient glow */
+        #cursorGlow { position: fixed; width: 540px; height: 540px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(200,169,107,0.055) 0%, rgba(200,169,107,0.02) 35%, transparent 65%);
+            transform: translate(-270px, -270px); pointer-events: none; z-index: 1;
+            left: 0; top: 0; will-change: transform; }
 
-        .d1 { animation-delay: 0.08s; opacity: 0; } .d2 { animation-delay: 0.15s; opacity: 0; }
-        .d3 { animation-delay: 0.22s; opacity: 0; } .d4 { animation-delay: 0.29s; opacity: 0; }
-        .d5 { animation-delay: 0.36s; opacity: 0; } .d6 { animation-delay: 0.43s; opacity: 0; }
-        .d7 { animation-delay: 0.5s; opacity: 0; }  .d8 { animation-delay: 0.57s; opacity: 0; }
+        /* gold dust */
+        .dust { position: absolute; bottom: -8px; border-radius: 50%; pointer-events: none; opacity: 0;
+            animation: dustRise linear infinite; }
+        @keyframes dustRise {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            12% { opacity: 0.5; }
+            85% { opacity: 0.4; }
+            100% { transform: translateY(-110vh) translateX(24px); opacity: 0; }
+        }
 
-        @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
-        .shake { animation: shake 0.5s ease-in-out; }
-        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(191,155,48,0.15); border-radius: 3px; }
-        .deco-line { position: absolute; background: linear-gradient(180deg, transparent, rgba(191,155,48,0.08), transparent); }
-        .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #FFFFFF; border-radius: 50%; animation: spinAnim 0.6s linear infinite; }
+        /* ============ INTRO TIMELINE ============ */
+        .reveal { opacity: 0; animation: fadeUp 1s cubic-bezier(0.16,1,0.3,1) forwards; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: translateY(0); } }
+
+        .reveal-bg { opacity: 0; animation: fadeIn 1.4s ease 0.1s forwards; }
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        .hairline-gold { position: absolute; height: 1px; width: 70%; max-width: 300px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            transform: scaleX(0); animation: hairlineIn 1.1s cubic-bezier(0.16,1,0.3,1) 0.35s forwards; }
+        @keyframes hairlineIn { to { transform: scaleX(1); } }
+
+        .scales-wrap { opacity: 0; animation: scalesIn 2.4s cubic-bezier(0.16,1,0.3,1) 0.4s forwards; }
+        @keyframes scalesIn { 0% { opacity: 0; transform: translateY(40px) scale(0.94); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+
+        .scales-sway { transform-origin: 50% 30%; animation: swaySettle 1.6s cubic-bezier(0.34,1.2,0.4,1) 1.1s forwards; }
+        @keyframes swaySettle { 0% { transform: rotate(-2.4deg); } 50% { transform: rotate(1.3deg); } 100% { transform: rotate(0deg); } }
+
+        .scales-float { animation: scalaFloat 10s ease-in-out 4.5s infinite; }
+        @keyframes scalaFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+
+        /* ============ VISUAL SIDE ============ */
+        .visual-frame { position: absolute; inset: 22px; pointer-events: none;
+            border: 1px solid rgba(200,169,107,0.10); opacity: 0;
+            animation: frameIn 2s ease 0.8s forwards; }
+        @keyframes frameIn { to { opacity: 1; } }
+        .visual-frame::before, .visual-frame::after {
+            content: ''; position: absolute; width: 34px; height: 34px;
+            border: 1px solid rgba(224,201,138,0.35); opacity: 0;
+            animation: frameIn 1.4s ease 1.1s forwards; }
+        .visual-frame::before { top: -1px; inset-inline-start: -1px; border-inline-end: 0; border-bottom: 0; }
+        .visual-frame::after { bottom: -1px; inset-inline-end: -1px; border-inline-start: 0; border-top: 0; }
+
+        .watermark-word { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            font-family: 'Amiri', serif; font-size: clamp(11rem, 26vw, 24rem); line-height: 1;
+            color: transparent; -webkit-text-stroke: 1px rgba(200,169,107,0.10);
+            text-stroke: 1px rgba(200,169,107,0.10); user-select: none; pointer-events: none;
+            opacity: 0; animation: fadeIn 3s ease 1.6s forwards; }
+
+        .seal-rotor { position: absolute; top: 8%; inset-inline-start: 7%; width: 150px; height: 150px;
+            pointer-events: none; animation: sealSpin 46s linear infinite;
+            opacity: 0; animation: sealSpin 46s linear infinite, fadeIn 2.4s ease 1.2s forwards; }
+        @keyframes sealSpin { to { transform: rotate(360deg); } }
+        .seal-rotor svg { width: 100%; height: 100%; }
+
+        .article-marks { position: absolute; bottom: 12%; inset-inline-end: 6%; text-align: center;
+            font-family: 'Amiri', serif; color: rgba(200,169,107,0.30); font-size: 0.85rem; line-height: 2.1;
+            letter-spacing: 0.4em; user-select: none; opacity: 0; animation: fadeIn 2.5s ease 1.4s forwards; }
+
+        .arch-trace { position: absolute; inset: 0; pointer-events: none; opacity: 0.055; }
+
+        .verses-box { position: relative; }
+        .verse-ring { position: absolute; inset: -22px; border-radius: 50%;
+            border: 1px solid rgba(200,169,107,0.10); opacity: 0; animation: fadeIn 2.5s ease 1.3s forwards; }
+
+        /* ============ LOGIN PANEL ============ */
+        .panel-glass { position: relative;
+            background: linear-gradient(158deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.022) 55%, rgba(224,201,138,0.025) 100%);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border-radius: 26px;
+            box-shadow: 0 40px 90px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07);
+            background-clip: padding-box; }
+        .panel-glass::before { content: ''; position: absolute; inset: 0; border-radius: 26px; padding: 1px;
+            background: linear-gradient(150deg, rgba(224,201,138,0.32), rgba(224,201,138,0.05) 32%, rgba(255,255,255,0.05) 58%, rgba(200,169,107,0.22));
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+        .panel-glass .top-hair { position: absolute; top: 0; inset-inline: 12%; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(224,201,138,0.55), transparent); }
+
+        .field-wrap { position: relative; }
+        .field { width: 100%;
+            background: rgba(8,9,11,0.42);
+            border: 1px solid rgba(146,153,165,0.20);
+            border-radius: 14px;
+            color: var(--ivory);
+            padding: 0.95rem 2.9rem 0.95rem 2.9rem;
+            font-size: 0.95rem;
+            transition: border-color 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s cubic-bezier(0.16,1,0.3,1), background 0.45s;
+            outline: none; }
+        .field::placeholder { color: rgba(146,153,165,0.55); }
+        .field:hover { border-color: rgba(146,153,165,0.38); }
+        .field:focus, .field-wrap:focus-within .field {
+            border-color: rgba(224,201,138,0.55);
+            box-shadow: 0 0 0 3px rgba(200,169,107,0.08), 0 0 26px rgba(200,169,107,0.07);
+            background: rgba(10,12,16,0.55); }
+        .field:-webkit-autofill, .field:-webkit-autofill:hover, .field:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 60px #0b0e13 inset !important;
+            -webkit-text-fill-color: var(--ivory) !important; caret-color: var(--ivory); }
+
+        .field-underline { position: absolute; bottom: -1px; inset-inline: 14px; height: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+            transform: scaleX(0); transform-origin: center;
+            transition: transform 0.55s cubic-bezier(0.16,1,0.3,1); pointer-events: none; }
+        .field-wrap:focus-within .field-underline { transform: scaleX(1); }
+
+        .field-icon { position: absolute; top: 50%; transform: translateY(-50%); inset-inline-start: 1.05rem;
+            color: rgba(146,153,165,0.65); pointer-events: none; transition: color 0.4s; }
+        .field-wrap:focus-within .field-icon, .field-wrap:hover .field-icon { color: var(--gold-soft); }
+
+        .field-eye { position: absolute; top: 50%; transform: translateY(-50%); inset-inline-end: 0.85rem;
+            color: rgba(146,153,165,0.65); cursor: pointer; padding: 0.35rem; border-radius: 8px;
+            transition: color 0.3s; background: none; border: none; }
+        .field-eye:hover { color: var(--gold-soft); }
+        .field-eye:focus-visible { outline: 2px solid rgba(224,201,138,0.5); outline-offset: 2px; }
+
+        .btn-enter { position: relative; width: 100%; overflow: hidden;
+            background: linear-gradient(120deg, var(--gold-soft) 0%, var(--gold) 50%, #B8955C 100%);
+            background-size: 200% 200%; color: #0B1220;
+            border-radius: 14px; padding: 1rem; font-weight: 700; font-size: 1rem;
+            transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s, background-position 1.2s ease;
+            animation: btnBreath 5s ease-in-out infinite; border: none; cursor: pointer; }
+        @keyframes btnBreath { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        .btn-enter:hover { transform: translateY(-2px);
+            box-shadow: 0 14px 44px rgba(200,169,107,0.32), 0 0 0 1px rgba(224,201,138,0.35); }
+        .btn-enter:active { transform: translateY(0); }
+        .btn-enter:focus-visible { outline: 2px solid rgba(224,201,138,0.7); outline-offset: 3px; }
+        .btn-enter[disabled] { cursor: not-allowed; opacity: 0.82; }
+        .btn-enter .btn-arrow { transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.35s; opacity: 0.35; }
+        .btn-enter:hover .btn-arrow { opacity: 1; transform: translateX(-4px); }
+
+        .spinner-min { width: 17px; height: 17px; border-radius: 50%;
+            border: 2px solid rgba(11,18,32,0.25); border-top-color: #0B1220;
+            animation: spinAnim 0.7s linear infinite; }
         @keyframes spinAnim { to { transform: rotate(360deg); } }
+
+        .check-custom { appearance: none; width: 18px; height: 18px; border-radius: 5px;
+            border: 1px solid rgba(146,153,165,0.4); background: rgba(8,9,11,0.4); cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: all 0.3s; position: relative; }
+        .check-custom:checked { background: var(--gold); border-color: var(--gold); }
+        .check-custom:checked::after { content: ''; width: 9px; height: 5px;
+            border-inline-start: 2px solid #0B1220; border-bottom: 2px solid #0B1220;
+            transform: rotate(-45deg) translate(0.5px, -1px); }
+        .check-custom:focus-visible { outline: 2px solid rgba(224,201,138,0.6); outline-offset: 2px; }
+
+        .alert-error { background: rgba(200,60,60,0.08); border: 1px solid rgba(200,90,90,0.28);
+            backdrop-filter: blur(8px); color: #F0A9A0; border-radius: 14px; }
+
+        .link-soft { color: var(--gold); transition: color 0.3s; }
+        .link-soft:hover { color: var(--gold-soft); }
+
+        /* ============ LOADING STATE ============ */
+        .btn-loading .btn-label { display: none; }
+        .btn-loading .btn-loader { display: inline-flex !important; }
+
+        /* ============ REDUCED MOTION ============ */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            .reveal, .reveal-bg, .scales-wrap, .visual-frame, .watermark-word, .article-marks, .verses-box .verse-ring,
+            .hairline-gold, .seal-rotor, #cursorGlow, .dust { opacity: 1; animation: none !important; }
+            #cursorGlow { display: none; }
+        }
+    @keyframes orbFloat { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-28px, 22px); } }
+        @keyframes glowPulse { 0%,100% { opacity: 0.12; } 50% { opacity: 0.3; } }
     </style>
 </head>
 <body>
-    <div class="login-bg"><div class="grid-pattern"></div></div>
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-[1]" id="particles"></div>
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-[1]">
-        <div class="absolute w-[500px] h-[500px] rounded-full blur-[120px]" style="background:rgba(191,155,48,0.06);top:-15%;right:20%;animation:floatOrb1 20s ease-in-out infinite;"></div>
-        <div class="absolute w-[400px] h-[400px] rounded-full blur-[100px]" style="background:rgba(191,155,48,0.04);bottom:-10%;left:10%;animation:floatOrb2 25s ease-in-out infinite 5s;"></div>
+    {{-- ===== CINEMATIC BACKGROUND ===== --}}
+    <div class="scene">
+        <div class="noise-layer"></div>
+        <div class="grid-faint"></div>
+        <div class="ambient-orb reveal-bg" style="width:520px;height:520px;background:radial-gradient(circle, rgba(200,169,107,0.14), transparent 65%);top:-12%;inset-inline-start:60%;animation:fadeIn 1.4s ease 0.1s forwards, orbFloat 22s ease-in-out infinite;"></div>
+        <div class="ambient-orb reveal-bg" style="width:460px;height:460px;background:radial-gradient(circle, rgba(32,58,100,0.5), transparent 70%);bottom:-15%;inset-inline-end:55%;animation:fadeIn 1.4s ease 0.1s forwards, orbFloat 26s ease-in-out 6s infinite;"></div>
+        <div class="light-sweep"></div>
+        <div id="dustLayer" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
     </div>
-    <div class="fixed inset-0 pointer-events-none z-[1] hidden lg:block">
-        <div class="deco-line w-px h-36" style="top:10%;right:15%;"></div>
-        <div class="deco-line w-px h-28" style="top:20%;right:25%;"></div>
-        <div class="deco-line w-px h-40" style="top:8%;left:20%;"></div>
-        <div class="deco-line w-px h-32" style="top:30%;left:12%;"></div>
-    </div>
+    <div id="cursorGlow" aria-hidden="true"></div>
 
-    <div class="relative z-10 min-h-screen flex">
+    <div class="relative z-10 min-h-screen flex flex-col-reverse lg:flex-row">
 
-        {{-- LEFT: Brand --}}
-        <div class="hidden lg:flex lg:w-1/2 items-center justify-center p-14 relative">
-            <div class="max-w-sm text-center anim-left d2">
+        {{-- ===== LOGIN SIDE (right in RTL, left in LTR) ===== --}}
+        <main class="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 sm:px-12 py-14 pb-28 lg:py-10 relative">
+            <div class="w-full max-w-md mx-auto">
 
-                <a href="{{ url('/portfolio') }}" target="_blank" class="w-24 h-24 mx-auto mb-10 relative block">
-                    <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-amber-400 to-amber-600 opacity-10 blur-2xl" style="animation:glowPulse 4s ease-in-out infinite;"></div>
-                    <div class="relative w-full h-full rounded-3xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-2xl overflow-hidden">
-                        @php
-                            $loginLogo = null;
-                            foreach (['svg', 'png', 'jpg', 'jpeg'] as $ext) {
-                                if (is_file(public_path("img/office-logo.{$ext}"))) {
-                                    $loginLogo = asset("img/office-logo.{$ext}") . '?v=' . @filemtime(public_path("img/office-logo.{$ext}"));
-                                    break;
+                {{-- brand --}}
+                <div class="text-center mb-10 reveal" style="animation-delay:0.5s;">
+                    <div class="relative inline-block mb-5">
+                        <div class="absolute inset-0 rounded-full bg-gold/15 blur-2xl" style="animation:glowPulse 5s ease-in-out infinite;"></div>
+                        <div class="relative w-16 h-16 mx-auto rounded-full border border-gold/40 bg-gradient-to-br from-charcoal to-navy flex items-center justify-center shadow-[0_0_40px_rgba(200,169,107,0.12)]">
+                            @php
+                                $loginLogo = null;
+                                foreach (['svg', 'png', 'jpg', 'jpeg'] as $ext) {
+                                    if (is_file(public_path("img/office-logo.{$ext}"))) {
+                                        $loginLogo = asset("img/office-logo.{$ext}") . '?v=' . @filemtime(public_path("img/office-logo.{$ext}"));
+                                        break;
+                                    }
                                 }
-                            }
-                        @endphp
-                        @if($loginLogo)
-                            <img src="{{ $loginLogo }}" alt="{{ $officeName }}" class="w-full h-full object-cover">
-                        @else
-                            <svg class="w-14 h-14 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                            </svg>
-                        @endif
-                    </div>
-                </a>
-
-                <h1 class="text-4xl font-black text-gray-900 mb-3 tracking-tight">{{ $officeName }}</h1>
-
-                <div class="flex items-center justify-center gap-3 mb-6">
-                    <div class="h-px flex-1 max-w-[60px] bg-gradient-to-r from-transparent to-amber-300"></div>
-                    <svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
-                    <div class="h-px flex-1 max-w-[60px] bg-gradient-to-l from-transparent to-amber-300"></div>
-                </div>
-
-                <a href="{{ url('/portfolio') }}" target="_blank" class="inline-flex items-center gap-1.5 text-gray-400 hover:text-amber-600 transition-all duration-300 text-xs font-mono tracking-[0.15em] uppercase mb-12 group">
-                    <span>Powered by</span>
-                    <span class="text-amber-600 group-hover:text-amber-700">LexPro</span>
-                    <svg class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8l-4 4m0 0l4 4m-4-4H21"/></svg>
-                </a>
-
-                <div class="space-y-3">
-                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white/80 border border-gray-200" style="text-align:{{ app()->getLocale() === 'ar' ? 'right' : 'left' }}">
-                        <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-4.5 h-4.5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                        </div>
-                        <div>
-                            <h3 class="text-gray-800 font-semibold text-sm">إدارة القضايا</h3>
-                            <p class="text-gray-500 text-xs mt-0.5">تتبع شامل للقضايا والجلسات</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white/80 border border-gray-200" style="text-align:{{ app()->getLocale() === 'ar' ? 'right' : 'left' }}">
-                        <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-4.5 h-4.5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        </div>
-                        <div>
-                            <h3 class="text-gray-800 font-semibold text-sm">إدارة المستندات</h3>
-                            <p class="text-gray-500 text-xs mt-0.5">تنظيم وحفظ الملفات القانونية</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white/80 border border-gray-200" style="text-align:{{ app()->getLocale() === 'ar' ? 'right' : 'left' }}">
-                        <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-4.5 h-4.5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        </div>
-                        <div>
-                            <h3 class="text-gray-800 font-semibold text-sm">التقارير</h3>
-                            <p class="text-gray-500 text-xs mt-0.5">تحليلات ولوحات تفاعلية</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- RIGHT: Login --}}
-        <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-10 relative">
-
-            <a href="{{ route('language.switch', app()->getLocale() === 'ar' ? 'en' : 'ar') }}"
-                class="fixed top-6 left-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-all text-sm border border-gray-300 backdrop-blur-sm anim-up d1">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
-                {{ app()->getLocale() === 'ar' ? 'English' : 'العربية' }}
-            </a>
-
-            <a href="{{ url('/portfolio') }}" target="_blank" class="lg:hidden fixed top-6 right-6 z-50 anim-up d1">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                    </svg>
-                </div>
-            </a>
-
-            <div class="w-full max-w-md anim-up d3">
-                <div class="card-luxury rounded-3xl overflow-hidden relative">
-                    <div class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-400/30 to-transparent"></div>
-
-                    <div class="px-10 pt-12 pb-8">
-
-                        <div class="text-center mb-8 anim-scale d4">
-                            <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-2xl lg:hidden">
-                                <svg class="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                            @endphp
+                            @if($loginLogo)
+                                <img src="{{ $loginLogo }}" alt="{{ $officeName }}" class="w-full h-full object-cover rounded-full">
+                            @else
+                                <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2.6L9.4 8.7 5 9.4l3.2 3.1L7.6 17 12 14.7 16.4 17l-.6-4.5L19 9.4l-4.4-.7L12 4.6z" fill="url(#lgGold)"/>
+                                    <defs><linearGradient id="lgGold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#E0C98A"/><stop offset="1" stop-color="#9A7B45"/></linearGradient></defs>
                                 </svg>
-                            </div>
-                            <h2 class="text-2xl font-bold text-gray-900 mb-1.5 anim-up d5" style="font-family:'Cairo',sans-serif;">{{ __('app.login_title') }}</h2>
-                            <p class="text-gray-500 text-sm anim-up d5">{{ __('app.login_subtitle') ?? 'أدخل بياناتك للوصول إلى النظام' }}</p>
+                            @endif
                         </div>
+                    </div>
+                    <h1 class="font-editorial text-4xl sm:text-[2.6rem] font-bold leading-snug mb-2" style="color:var(--ivory);" dir="rtl">{{ $officeName }}</h1>
+                    <p class="text-muted text-sm tracking-wide" style="color:var(--muted);">{{ __('app.login_title') }} · LexPro ⚖</p>
+                </div>
+
+                <div class="reveal" style="animation-delay:0.85s;">
+                    <div class="panel-glass px-6 sm:px-9 py-9 relative overflow-hidden">
+                        <div class="top-hair"></div>
+
+                        <h2 class="font-editorial text-2xl sm:text-[1.7rem] font-bold leading-relaxed mb-2" style="color:var(--ivory);">مرحبًا بك في منظومتك القانونية</h2>
+                        <p class="text-sm leading-relaxed mb-8" style="color:var(--muted);">سجّل الدخول للوصول الآمن إلى قضاياك ومستنداتك ومعلوماتك القانونية.</p>
 
                         @php $loginError = session('login_error'); @endphp
                         @if($errors->any() || $loginError)
-                            <div class="mb-6 p-4 rounded-2xl border border-red-200 bg-red-50">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                        <svg class="w-4 h-4 text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    </div>
-                                    <div>
-                                        @if($loginError)
-                                            <p class="text-sm text-red-700 font-medium">{{ $loginError }}</p>
-                                        @endif
-                                        @foreach($errors->all() as $error)
-                                            <p class="text-sm text-red-700 font-medium">{{ $error }}</p>
-                                        @endforeach
-                                    </div>
+                            <div class="alert-error mb-6 p-4 flex items-start gap-3" role="alert">
+                                <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <div class="text-sm font-medium leading-relaxed">
+                                    @if($loginError)
+                                        <p>{{ $loginError }}</p>
+                                    @endif
+                                    @foreach($errors->all() as $error)
+                                        <p>{{ $error }}</p>
+                                    @endforeach
                                 </div>
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('login') }}" class="space-y-5">
+                        <form method="POST" action="{{ route('login') }}" id="loginForm" class="space-y-5">
                             @csrf
 
-                            <div class="anim-up d5">
-                                <label for="email" class="block text-sm font-medium text-gray-600 mb-2">{{ __('app.email') }}</label>
-                                <div class="relative group">
-                                    <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus
-                                        class="input-luxury w-full px-5 py-3.5 {{ app()->getLocale() === 'ar' ? 'pr-12' : 'pl-12' }} rounded-2xl text-sm" placeholder="name@example.com">
-                                    <div class="absolute inset-y-0 {{ app()->getLocale() === 'ar' ? 'right-0 pr-4' : 'left-0 pl-4' }} flex items-center pointer-events-none">
-                                        <svg class="w-4 h-4 text-gray-400 group-focus-within:text-amber-600 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                        </svg>
-                                    </div>
+                            {{-- email --}}
+                            <div class="reveal" style="animation-delay:1.0s;">
+                                <label for="email" class="block text-sm font-medium mb-2" style="color:rgba(244,240,232,0.75);">{{ __('app.email') }}</label>
+                                <div class="field-wrap">
+                                    <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="email"
+                                        class="field" placeholder="name@example.com" aria-label="{{ __('app.email') }}">
+                                    <span class="field-underline" aria-hidden="true"></span>
+                                    <svg class="field-icon w-[17px] h-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
                                 </div>
                             </div>
 
-                            <div class="anim-up d6">
-                                <label for="password" class="block text-sm font-medium text-gray-600 mb-2">{{ __('app.password') }}</label>
-                                <div class="relative group" x-data="{ show: false }">
-                                    <input :type="show ? 'text' : 'password'" id="password" name="password" required
-                                        class="input-luxury w-full px-5 py-3.5 {{ app()->getLocale() === 'ar' ? 'pr-12 pl-12' : 'pl-12 pr-12' }} rounded-2xl text-sm" placeholder="••••••••">
-                                    <div class="absolute inset-y-0 {{ app()->getLocale() === 'ar' ? 'right-0 pr-4' : 'left-0 pl-4' }} flex items-center pointer-events-none">
-                                        <svg class="w-4 h-4 text-gray-400 group-focus-within:text-amber-600 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            {{-- password --}}
+                            <div class="reveal" style="animation-delay:1.12s;">
+                                <label for="password" class="block text-sm font-medium mb-2" style="color:rgba(244,240,232,0.75);">{{ __('app.password') }}</label>
+                                <div class="field-wrap">
+                                    <input type="password" id="password" name="password" required autocomplete="current-password"
+                                        class="field" placeholder="{{ __('app.password') }}"
+                                        aria-label="{{ __('app.password') }}" data-password-toggle>
+                                    <span class="field-underline" aria-hidden="true"></span>
+                                    <svg class="field-icon w-[17px] h-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                    <button type="button" class="field-eye" aria-label="{{ $isRtl ? 'إظهار كلمة المرور' : 'Show password' }}" aria-pressed="false" data-eye-btn>
+                                        <svg data-eye-open class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
-                                    </div>
-                                    <button type="button" @click="show = !show"
-                                        class="absolute inset-y-0 {{ app()->getLocale() === 'ar' ? 'left-0 pl-4' : 'right-0 pr-4' }} flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200">
-                                        <svg x-show="!show" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <svg x-show="show" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="display:none"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                                        <svg data-eye-closed class="w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>
+                                        </svg>
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between pt-1 anim-up d6">
-                                <label class="flex items-center gap-2.5 cursor-pointer group">
-                                    <div class="relative" x-data="{ checked: {{ old('remember') ? 'true' : 'false' }} }">
-                                        <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}
-                                            class="sr-only peer" @change="checked = $event.target.checked">
-                                        <div class="w-4.5 h-4.5 rounded-lg border border-gray-300 bg-white peer-checked:bg-amber-500 peer-checked:border-amber-500 transition-all duration-200 flex items-center justify-center">
-                                            <svg x-show="checked" class="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                        </div>
-                                    </div>
-                                    <span class="text-sm text-gray-500 group-hover:text-gray-700 transition-colors">{{ __('app.remember_me') }}</span>
+                            {{-- remember / forgot --}}
+                            <div class="flex items-center justify-between pt-1 reveal" style="animation-delay:1.24s;">
+                                <label class="flex items-center gap-2.5 cursor-pointer select-none group">
+                                    <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }} class="check-custom">
+                                    <span class="text-sm" style="color:var(--muted);">{{ __('app.remember_me') }}</span>
                                 </label>
                                 @if(Route::has('password.request'))
-                                    <a href="{{ route('password.request') }}" class="text-sm text-amber-600 hover:text-amber-700 transition-colors duration-200">{{ __('app.forgot_password') }}</a>
+                                    <a href="{{ route('password.request') }}" class="link-soft text-sm">{{ __('app.forgot_password') }}</a>
                                 @endif
                             </div>
 
-                            <div class="pt-3 anim-up d7">
-                                <button type="submit" id="loginBtn"
-                                    class="btn-login w-full py-4 px-6 text-white font-bold text-base rounded-2xl relative" style="font-family:'Cairo',sans-serif;">
-                                    <span id="btnText" class="relative z-10 flex items-center justify-center gap-2.5">
-                                        {{ __('app.login_button') }}
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8l-4 4m0 0l4 4m-4-4H21"/></svg>
-                                    </span>
-                                    <span id="btnSpinner" class="relative z-10 hidden items-center justify-center gap-2">
-                                        <div class="spinner"></div>
-                                        <span class="text-sm">جاري تسجيل الدخول...</span>
-                                    </span>
+                            {{-- submit --}}
+                            <div class="pt-2 reveal" style="animation-delay:1.38s;">
+                                <button type="submit" id="loginBtn" class="btn-enter flex items-center justify-center gap-2.5">
+                                    <span class="btn-label">{{ __('app.login_button') }}</span>
+                                    <span class="btn-loader hidden items-center gap-2.5"><span class="spinner-min"></span><span>جارٍ التحقق من بيانات الدخول...</span></span>
+                                    <svg class="btn-arrow w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="{{ $isRtl ? '' : 'transform:rotate(180deg);' }}">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l-7 7 7 7"/>
+                                    </svg>
                                 </button>
                             </div>
                         </form>
-                    </div>
 
-                    <div class="mx-10 h-px bg-gradient-to-r from-transparent via-amber-200 to-transparent"></div>
-                    <div class="px-10 py-4 text-center">
-                        <p class="text-gray-400 text-xs">{{ $officeName }} — Powered by <a href="{{ url('/portfolio') }}" target="_blank" class="text-amber-600 hover:text-amber-700 transition-colors">LexPro</a></p>
+                        <div class="mt-8 pt-5 border-t text-center" style="border-color:rgba(146,153,165,0.14);">
+                            <p class="text-xs" style="color:rgba(146,153,165,0.6);">{{ $officeName }} — <a href="{{ url('/portfolio') }}" target="_blank" class="link-soft" rel="noopener">LexPro</a> · منظومة قانونية متكاملة</p>
+                        </div>
                     </div>
-                </div>
-
-                <div class="text-center mt-8 anim-up d8">
-                    <p class="text-gray-400 text-xs">&copy; {{ date('Y') }} {{ $officeName }}. جميع الحقوق محفوظة.</p>
                 </div>
             </div>
-        </div>
+        </main>
+
+        {{-- ===== VISUAL SIDE (left in RTL) ===== --}}
+        <aside class="w-full lg:w-1/2 relative flex flex-col items-center justify-center min-h-[38vh] lg:min-h-screen px-6 py-14 lg:py-0 overflow-hidden" aria-hidden="true">
+
+            <div class="visual-frame"></div>
+            <div class="watermark-word">عدل</div>
+
+            <div class="seal-rotor" data-depth="0.02">
+                <div style="opacity:0.16;">
+                    <svg viewBox="0 0 100 100" fill="none">
+                        <circle cx="50" cy="50" r="46" stroke="rgba(200,169,107,0.5)" stroke-width="0.7"/>
+                        <circle cx="50" cy="50" r="41" stroke="rgba(200,169,107,0.35)" stroke-width="0.5" stroke-dasharray="2 3"/>
+                        <path d="M50 20 L56 40 L76 44 L60 58 L64 80 L50 70 L36 80 L40 58 L24 44 L44 40 Z" fill="none" stroke="rgba(200,169,107,0.55)" stroke-width="0.6"/>
+                        <circle cx="50" cy="50" r="8" stroke="rgba(200,169,107,0.5)" stroke-width="0.6"/>
+                        <path d="M50 45a5 5 0 000 10z" fill="rgba(200,169,107,0.35)"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="article-marks" dir="rtl">م ٥٨<br>م ٤٤<br>م ٢٥<br>م ١٢</div>
+
+            {{-- Oman arch traces --}}
+            <svg class="arch-trace" data-depth="0.03" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M12 100 V62 Q12 22 50 22 Q88 22 88 62 V100" fill="none" stroke="rgba(224,201,138,0.7)" stroke-width="0.3"/>
+                <path d="M23 100 V66 Q23 36 50 36 Q77 36 77 66 V100" fill="none" stroke="rgba(224,201,138,0.45)" stroke-width="0.25"/>
+            </svg>
+
+            {{-- gold hairline --}}
+            <div class="hairline-gold" style="top:24%;"></div>
+
+            {{-- scales --}}
+            <div class="scales-wrap relative z-10">
+                <div class="scales-sway">
+                    <div class="scales-float">
+                        {{-- halo --}}
+                        <div class="absolute inset-0 -m-16 rounded-full opacity-40" style="background:radial-gradient(circle, rgba(200,169,107,0.10), transparent 65%);"></div>
+                        <svg class="w-[230px] sm:w-[270px] lg:w-[330px] h-auto relative" viewBox="0 0 320 300" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ $isRtl ? 'ميزان العدالة' : 'Scales of Justice' }}">
+                            <defs>
+                                <linearGradient id="lexGold" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0" stop-color="#E0C98A"/>
+                                    <stop offset="0.5" stop-color="#C8A96B"/>
+                                    <stop offset="1" stop-color="#96783F"/>
+                                </linearGradient>
+                                <linearGradient id="lexGoldV" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0" stop-color="#E8D5A4"/>
+                                    <stop offset="1" stop-color="#A8874B"/>
+                                </linearGradient>
+                                <linearGradient id="lexPan" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0" stop-color="#E0C98A" stop-opacity="0.6"/>
+                                    <stop offset="1" stop-color="#C8A96B" stop-opacity="0.10"/>
+                                </linearGradient>
+                                <filter id="lexGlow" x="-40%" y="-40%" width="180%" height="180%">
+                                    <feGaussianBlur stdDeviation="5" result="b"/>
+                                    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                </filter>
+                            </defs>
+
+                            {{-- ground glow --}}
+                            <ellipse cx="160" cy="262" rx="100" ry="12" fill="rgba(200,169,107,0.15)" filter="url(#lexGlow)"/>
+
+                            {{-- finial --}}
+                            <rect x="157" y="38" width="6" height="26" rx="3" fill="url(#lexGoldV)"/>
+                            <circle cx="160" cy="32" r="7" fill="url(#lexGold)"/>
+                            <circle cx="160" cy="71" r="9" fill="url(#lexGold)"/>
+
+                            {{-- pillar --}}
+                            <rect x="150" y="78" width="20" height="122" rx="4" fill="url(#lexGoldV)"/>
+                            <rect x="144" y="90" width="32" height="5" rx="2.5" fill="rgba(232,213,164,0.55)"/>
+                            <rect x="144" y="118" width="32" height="4" rx="2" fill="rgba(232,213,164,0.4)"/>
+                            <rect x="144" y="146" width="32" height="4" rx="2" fill="rgba(232,213,164,0.4)"/>
+
+                            {{-- base --}}
+                            <path d="M126 200 h68 l-9 18 h-50 z" fill="url(#lexGoldV)"/>
+                            <rect x="108" y="218" width="104" height="9" rx="4" fill="url(#lexGold)"/>
+                            <rect x="122" y="227" width="76" height="6" rx="3" fill="rgba(168,135,75,0.5)"/>
+
+                            {{-- beam --}}
+                            <line x1="52" y1="96" x2="268" y2="96" stroke="url(#lexGold)" stroke-width="9" stroke-linecap="round"/>
+                            <circle cx="52" cy="96" r="6" fill="url(#lexGoldV)"/>
+                            <circle cx="268" cy="96" r="6" fill="url(#lexGoldV)"/>
+
+                            {{-- left chains + pan --}}
+                            <path d="M66 96 L66 118 M66 118 L40 134 M66 118 L92 134" stroke="url(#lexGold)" stroke-width="2.6" stroke-linecap="round"/>
+                            <path d="M24 132 L100 132 Q96 160 62 160 Q28 160 24 132 Z" fill="url(#lexPan)" stroke="url(#lexGold)" stroke-width="2.4"/>
+                            <path d="M30 132 Q62 150 94 132" stroke="rgba(232,213,164,0.5)" stroke-width="0.9" fill="none"/>
+
+                            {{-- right chains + pan --}}
+                            <path d="M254 96 L254 118 M254 118 L228 134 M254 118 L280 134" stroke="url(#lexGold)" stroke-width="2.6" stroke-linecap="round"/>
+                            <path d="M220 132 L296 132 Q292 160 258 160 Q224 160 220 132 Z" fill="url(#lexPan)" stroke="url(#lexGold)" stroke-width="2.4"/>
+                            <path d="M226 132 Q258 150 290 132" stroke="rgba(232,213,164,0.5)" stroke-width="0.9" fill="none"/>
+
+                            {{-- specks --}}
+                            <circle cx="160" cy="192" r="2" fill="rgba(224,201,138,0.5)"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            {{-- verse --}}
+            <div class="verses-box mt-9 text-center px-8 max-w-xl relative">
+                <div class="verse-ring"></div>
+                <p class="reveal font-verse text-2xl sm:text-3xl lg:text-[2.1rem] leading-[1.9]" dir="rtl" style="animation-delay:1.5s;color:var(--gold-soft); text-shadow:0 0 30px rgba(200,169,107,0.18);">﴿وَإِذَا حَكَمْتُم بَيْنَ النَّاسِ أَن تَحْكُمُوا بِالْعَدْلِ﴾</p>
+                <p class="reveal font-verse text-sm mt-3" style="animation-delay:1.85s;color:rgba(146,153,165,0.7);">سورة النساء — 58</p>
+                <div class="mt-6 mx-auto h-px w-24" style="background:linear-gradient(90deg, transparent, rgba(200,169,107,0.4), transparent);"></div>
+            </div>
+        </aside>
     </div>
 
-    <script nonce="{{ $cspNonce }}">
-        document.addEventListener('DOMContentLoaded', function() {
-            const c = document.getElementById('particles'); if (!c) return;
-            for (let i = 0; i < 20; i++) { const p = document.createElement('div'); p.className = 'particle'; const s = Math.random() * 3 + 1; p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;background:rgba(191,155,48,${Math.random()*0.2+0.06});animation-duration:${Math.random()*20+15}s;animation-delay:${Math.random()*15}s;`; c.appendChild(p); }
+    {{-- ===== FOOTER ===== --}}
+    <footer class="absolute bottom-0 inset-x-0 z-20 py-5 px-6">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 text-xs" style="color:rgba(146,153,165,0.65);">
+            <p class="flex items-center gap-2"><span style="color:var(--gold);">◆</span> {{ $officeName }} — © 2026 جميع الحقوق محفوظة</p>
+            <a href="{{ route('language.switch', $isRtl ? 'en' : 'ar') }}" class="link-soft font-medium" aria-label="{{ $isRtl ? 'Switch to English' : 'التبديل إلى العربية' }}">
+                {{ $isRtl ? 'English' : 'العربية' }}
+            </a>
+        </div>
+    </footer>
 
+    <script nonce="{{ $cspNonce }}">
+        (function () {
+            'use strict';
+            const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            /* ---------- gold dust (very subtle) ---------- */
+            const dustLayer = document.getElementById('dustLayer');
+            if (dustLayer && !reduced && window.matchMedia('(pointer: fine)').matches) {
+                for (let i = 0; i < 14; i++) {
+                    const d = document.createElement('span');
+                    const size = (Math.random() * 2 + 0.6).toFixed(1);
+                    d.className = 'dust';
+                    d.style.cssText = 'left:' + (Math.random() * 100).toFixed(1) + '%;width:' + size + 'px;height:' + size + 'px;' +
+                        'background:rgba(224,201,138,' + (Math.random() * 0.35 + 0.15).toFixed(2) + ');' +
+                        'box-shadow:0 0 6px rgba(224,201,138,0.35);' +
+                        'animation-duration:' + (Math.random() * 18 + 16).toFixed(1) + 's;' +
+                        'animation-delay:-' + (Math.random() * 30).toFixed(1) + 's;';
+                    dustLayer.appendChild(d);
+                }
+            }
+
+            /* ---------- cursor-following ambient glow + parallax ---------- */
+            const glow = document.getElementById('cursorGlow');
+            const fine = window.matchMedia('(pointer: fine)').matches;
+            if (glow && fine && !reduced) {
+                let tx = window.innerWidth / 2, ty = window.innerHeight / 2, cx = tx, cy = ty, raf = null;
+                const depthEls = document.querySelectorAll('[data-depth]');
+                window.addEventListener('mousemove', function (e) {
+                    tx = e.clientX; ty = e.clientY;
+                    depthEls.forEach(function (el) {
+                        const dp = parseFloat(el.getAttribute('data-depth')) || 0;
+                        el.style.transform = 'translate(' + ((tx - window.innerWidth / 2) * dp).toFixed(1) + 'px,' + ((ty - window.innerHeight / 2) * dp).toFixed(1) + 'px)';
+                    });
+                    if (!raf) {
+                        raf = requestAnimationFrame(function tick() {
+                            cx += (tx - cx) * 0.08; cy += (ty - cy) * 0.08;
+                            glow.style.transform = 'translate(' + (cx - 270) + 'px,' + (cy - 270) + 'px)';
+                            raf = null;
+                        });
+                    }
+                });
+            } else if (glow) { glow.style.display = 'none'; }
+
+            /* ---------- password visibility ---------- */
+            const pwd = document.querySelector('[data-password-toggle]');
+            const eyeBtn = document.querySelector('[data-eye-btn]');
+            if (pwd && eyeBtn) {
+                const openIcon = eyeBtn.querySelector('[data-eye-open]');
+                const closedIcon = eyeBtn.querySelector('[data-eye-closed]');
+                eyeBtn.addEventListener('click', function () {
+                    const show = pwd.type === 'password';
+                    pwd.type = show ? 'text' : 'password';
+                    eyeBtn.setAttribute('aria-pressed', String(show));
+                    openIcon.classList.toggle('hidden', show);
+                    closedIcon.classList.toggle('hidden', !show);
+                });
+            }
+
+            /* ---------- remember me (localStorage, unchanged logic) ---------- */
             const emailInput = document.getElementById('email');
             const rememberCheck = document.getElementById('remember');
-            const savedEmail = localStorage.getItem('lexpro_remembered_email');
-            if (savedEmail && emailInput) {
-                emailInput.value = savedEmail;
+            const saved = localStorage.getItem('lexpro_remembered_email');
+            if (saved && emailInput) {
+                emailInput.value = saved;
                 if (rememberCheck) rememberCheck.checked = true;
             }
-        });
-        document.querySelector('form')?.addEventListener('submit', function() {
-            const btn = document.getElementById('loginBtn'); const t = document.getElementById('btnText'); const s = document.getElementById('btnSpinner');
-            if (btn && t && s) { t.classList.add('hidden'); s.classList.remove('hidden'); btn.style.pointerEvents = 'none'; }
 
-            const emailInput = document.getElementById('email');
-            const rememberCheck = document.getElementById('remember');
-            if (rememberCheck && rememberCheck.checked && emailInput) {
-                localStorage.setItem('lexpro_remembered_email', emailInput.value);
-            } else {
-                localStorage.removeItem('lexpro_remembered_email');
+            /* ---------- loading state ---------- */
+            document.getElementById('loginForm').addEventListener('submit', function () {
+                const btn = document.getElementById('loginBtn');
+                if (!btn) return;
+                btn.classList.add('btn-loading');
+                btn.setAttribute('disabled', 'disabled');
+                if (rememberCheck && rememberCheck.checked && emailInput) {
+                    localStorage.setItem('lexpro_remembered_email', emailInput.value);
+                } else {
+                    localStorage.removeItem('lexpro_remembered_email');
+                }
+            });
+
+            /* ---------- error shake ---------- */
+            const alertBox = document.querySelector('.alert-error');
+            if (alertBox && !reduced) {
+                alertBox.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-7px)' }, { transform: 'translateX(7px)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(0)' }], { duration: 450, easing: 'ease-in-out' });
             }
-        });
+        })();
     </script>
 </body>
 </html>
