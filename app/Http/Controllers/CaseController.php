@@ -28,7 +28,11 @@ class CaseController extends Controller
 
     public function index(Request $request): View
     {
-        $query = LegalCase::with(['client', 'lawyer']);
+        $query = LegalCase::with([
+            'client',
+            'lawyer',
+            'sessions' => fn($q) => $q->where('status', 'upcoming')->where('date', '>=', now())->orderBy('date'),
+        ]);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);

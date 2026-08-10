@@ -666,4 +666,13 @@ return [
     'continue' => 'متابعة',
     'logout' => 'تسجيل خروج',
     'account_deactivated' => 'تم تعطيل حسابك.',
+
+    // Dashboard v2
+    'items' => 'عنصر',
+    'recent_cases' => 'آخر القضايا',
+    'all_under_control' => 'كل شيء تحت السيطرة',
+    'no_attention_today' => 'لا شيء يحتاج انتباهك اليوم',
+    'show_brief' => 'عرض الملخص',
+    'hide' => 'إخفاء',
+    'total' => 'الإجمالي',
 ];

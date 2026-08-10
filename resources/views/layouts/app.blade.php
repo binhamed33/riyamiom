@@ -1,4 +1,4 @@
-@php
+﻿@php
     $officeName = \App\Models\Setting::get('office_name', 'LexPro');
     $isRtl = app()->getLocale() === 'ar';
     $officeLogo = null;
@@ -55,6 +55,105 @@
         [x-cloak] { display: none !important; }
         * { font-family: 'Tajawal', sans-serif; }
         h1, h2, h3, h4, h5, h6, .font-heading { font-family: 'Cairo', sans-serif; }
+
+        /* ============ Design System Tokens ============ */
+        :root {
+            --gold: #C9A55A; --gold-dark: #B8933E; --gold-light: #E0C878;
+            --navy: #16213E; --obsidian: #1A1A2E; --ivory: #F4F2EE;
+            --ink: #111827; --ink-soft: #4B5563; --ink-muted: #9CA3AF;
+            --line: #E5E7EB; --line-soft: #F3F4F6;
+            --radius: 14px; --radius-sm: 10px;
+            --ring: 0 0 0 3px rgba(201,165,90,0.18);
+            --shadow-card: 0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.06);
+        }
+
+        /* ============ Typography ============ */
+        .page-title { font-size: 1.5rem; line-height: 1.3; font-weight: 800; color: var(--ink); font-family: 'Cairo', sans-serif; }
+        .page-subtitle { font-size: 0.8rem; color: var(--ink-muted); margin-top: 2px; }
+        .section-title { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 800; color: var(--ink); font-family: 'Cairo', sans-serif; }
+        .section-title::before { content: ''; width: 3px; height: 16px; border-radius: 2px; background: var(--gold); flex-shrink: 0; }
+        .muted { color: var(--ink-muted); }
+
+        /* ============ Cards ============ */
+        .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); }
+        .card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line-soft); }
+        .card-body { padding: 16px 18px; }
+        @media (max-width: 640px) { .card-header { padding: 12px 14px; } .card-body { padding: 12px 14px; } }
+
+        /* ============ Buttons ============ */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: var(--radius-sm); font-size: 0.83rem; font-weight: 700; white-space: nowrap; transition: all .15s ease; cursor: pointer; border: 1px solid transparent; }
+        .btn:focus-visible { outline: none; }
+        .btn-sm { height: 32px; padding: 0 12px; font-size: 0.75rem; border-radius: 8px; }
+        .btn-lg { height: 46px; padding: 0 22px; font-size: 0.9rem; }
+        .btn-primary { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: #fff; box-shadow: 0 1px 2px rgba(184,147,62,.4), 0 4px 12px -4px rgba(201,165,90,.45); }
+        .btn-primary:hover { filter: brightness(1.06); box-shadow: 0 2px 4px rgba(184,147,62,.45), 0 6px 18px -4px rgba(201,165,90,.55); transform: translateY(-1px); }
+        .btn-primary:active { transform: translateY(0); }
+        .btn-secondary { background: #fff; border-color: var(--line); color: var(--ink-soft); }
+        .btn-secondary:hover { border-color: var(--gold); color: var(--gold-dark); background: #FDFBF7; }
+        .btn-ghost-btn { background: transparent; color: var(--ink-soft); }
+        .btn-ghost-btn:hover { background: rgba(17,24,39,.06); color: var(--ink); }
+        .btn-danger { background: #EF4444; color: #fff; }
+        .btn-danger:hover { background: #DC2626; }
+        .btn-outline-danger { background: #fff; border-color: #FECACA; color: #DC2626; }
+        .btn-outline-danger:hover { background: #FEF2F2; border-color: #FCA5A5; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+
+        /* ============ Inputs (Ø±Ø³Ù…ÙŠØ© Ù…ÙˆØ­Ø¯Ø©) ============ */
+        .input, .select { height: 40px; padding: 0 12px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: #fff; color: var(--ink); font-size: 0.83rem; width: 100%; transition: border-color .15s, box-shadow .15s; }
+        .input:focus, .select:focus, textarea.input:focus { outline: none; border-color: var(--gold); box-shadow: var(--ring); }
+        textarea.input { height: auto; padding: 10px 12px; }
+        .input-label { display: block; font-size: 0.72rem; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; }
+        .input-label .req { color: #EF4444; }
+        .input-hint { font-size: .68rem; color: var(--ink-muted); margin-top: 4px; }
+
+        /* ============ Tables ============ */
+        .table-wrap { overflow-x: auto; }
+        .table { width: 100%; font-size: 0.82rem; }
+        .table th { padding: 10px 14px; font-size: 0.68rem; font-weight: 800; color: var(--ink-muted); text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line-soft); background: #FAFAF9; letter-spacing: .01em; }
+        .table td { padding: 12px 14px; color: var(--ink); border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+        .table tbody tr { transition: background .12s ease; }
+        .table tbody tr:hover { background: #FBF9F5; }
+        .table tbody tr:last-child td { border-bottom: none; }
+
+        /* ============ Chips & Badges ============ */
+        .chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: .7rem; font-weight: 700; white-space: nowrap; }
+
+        /* ============ Menu dropdown (â‹¯) ============ */
+        .menu { position: absolute; z-index: 60; min-width: 190px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px -8px rgba(16,24,40,.18); padding: 6px; }
+        .menu-item { display: flex; align-items: center; gap: 9px; width: 100%; padding: 8px 10px; border-radius: 8px; font-size: .8rem; font-weight: 600; color: var(--ink-soft); text-align: right; transition: background .12s, color .12s; }
+        .menu-item:hover { background: #F3F4F6; color: var(--ink); }
+        .menu-item.danger { color: #DC2626; }
+        .menu-item.danger:hover { background: #FEF2F2; }
+        .menu-sep { height: 1px; background: var(--line-soft); margin: 5px 8px; }
+
+        /* ============ Tabs ============ */
+        .tabs-scroll { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+        .tabs-scroll::-webkit-scrollbar { display: none; }
+        .tab { display: inline-flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 10px 10px 0 0; font-size: .8rem; font-weight: 700; color: var(--ink-muted); white-space: nowrap; border-bottom: 2px solid transparent; transition: color .15s, background .15s; cursor: pointer; }
+        .tab:hover { color: var(--ink); background: rgba(201,165,90,.06); }
+        .tab.active { color: var(--gold-dark); border-bottom-color: var(--gold); background: rgba(201,165,90,.08); }
+
+        /* ============ Empty state ============ */
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 44px 20px; text-align: center; }
+        .empty-icon { width: 52px; height: 52px; border-radius: 16px; background: #F5F3EF; border: 1px dashed #DCD6CC; display: flex; align-items: center; justify-content: center; color: #B9B2A4; margin-bottom: 14px; }
+        .empty-title { font-size: .9rem; font-weight: 800; color: var(--ink-soft); }
+        .empty-sub { font-size: .78rem; color: var(--ink-muted); margin-top: 4px; max-width: 320px; }
+
+        /* ============ Skeleton ============ */
+        .skeleton { border-radius: 8px; background: linear-gradient(90deg, #EDEBE7 25%, #F7F5F1 50%, #EDEBE7 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+
+        /* ============ Row actions primary button ============ */
+        .row-action { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; color: var(--ink-muted); transition: all .12s ease; }
+        .row-action:hover { background: rgba(201,165,90,.15); color: var(--gold-dark); }
+
+        /* ============ Bottom mobile nav ============ */
+        .bottom-nav { position: fixed; inset-inline: 0; bottom: 0; z-index: 80; display: flex; background: rgba(255,255,255,.96); backdrop-filter: blur(20px); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+        .bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px 6px; font-size: .6rem; font-weight: 800; color: var(--ink-muted); transition: color .15s; }
+        .bottom-nav a.active { color: var(--gold-dark); }
+        .bottom-nav a:active { opacity: .7; }
+        body { padding-bottom: 0; }
+        @media (max-width: 767px) { .bottom-nav-wrap + * { margin-bottom: 0; } body { padding-bottom: 56px; } }
+        @media (min-width: 768px) { .bottom-nav { display: none; } }
 
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #E8E4DE; }
@@ -323,7 +422,7 @@
 </style>
     @stack('styles')
 </head>
-<body class="font-body min-h-screen" style="background-color: #F4F2EE; color: #111111;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: localStorage.getItem('theme') || 'light' }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
+<body class="font-body min-h-screen" style="background-color: #F4F2EE; color: #111111;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: localStorage.getItem('theme') || 'light', sideGroups: JSON.parse(localStorage.getItem('sideGroups') || '{\"main\":true,\"work\":true,\"fin\":true,\"rep\":true,\"adm\":false}') }" x-init="$el.closest('html').setAttribute('data-theme', theme)" @toggle-group.window="sideGroups[$event.detail] = !sideGroups[$event.detail]; localStorage.setItem('sideGroups', JSON.stringify(sideGroups))">
 
     {{-- Mobile Overlay --}}
     <div
@@ -367,182 +466,169 @@
         </div>
 
         {{-- Navigation --}}
-        <nav class="flex-1 overflow-y-auto py-4 px-2 space-y-0.5">
-            <p class="sidebar-section-title text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-3">{{ __('app.main_section') }}</p>
-
-            <a href="{{ route('dashboard') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                <span>{{ __('app.dashboard') }}</span>
-            </a>
-
-            <a href="{{ route('attention.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('attention.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                </svg>
-                <span>مركز الانتباه</span>
-                @php $attCount = \App\Services\AttentionService::itemsCount(); @endphp
-                @if($attCount > 0)
-                    <span class="ms-auto text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-bold">{{ $attCount }}</span>
-                @endif
-            </a>
-
-            <a href="{{ route('cases.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('cases.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                <span>{{ __('app.cases') }}</span>
-            </a>
-
-            <a href="{{ route('sessions.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('sessions.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>{{ __('app.sessions') }}</span>
-            </a>
-
-            <a href="{{ route('tasks.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('tasks.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-                <span>{{ __('app.tasks') }}</span>
-            </a>
-
-            <a href="{{ route('documents.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('documents.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>{{ __('app.documents') }}</span>
-            </a>
-
-            <a href="{{ route('clients.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('clients.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <span>{{ __('app.clients') }}</span>
-            </a>
-
-            <a href="{{ route('chat.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('chat.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <span>{{ __('app.chat') ?? 'المحادثات' }}</span>
-                <span id="chatUnreadBadge" class="hidden mr-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none" style="line-height:14px;">0</span>
-            </a>
-
-            @if(!Auth::user()->isClient())
-            <a href="{{ route('suggestions.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('suggestions.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                <span>صندوق الاقتراحات</span>
-                @php $suggestionUnread = \App\Models\Suggestion::where('user_id', auth()->id())->whereNotNull('developer_reply')->where('reply_read', false)->count(); @endphp
-                @if($suggestionUnread > 0)
-                    <span class="mr-auto bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none badge-pulse" style="line-height:14px;">{{ $suggestionUnread > 9 ? '9+' : $suggestionUnread }}</span>
-                @endif
-            </a>
-            @endif
-
-            @if(!Auth::user()->isClient())
-            <div class="pt-5 pb-2">
-                <p class="sidebar-section-title text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-3">الشؤون الإدارية</p>
-            </div>
-            <a href="{{ route('hr.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('hr.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                <span>{{ __('app.hr') }}</span>
-            </a>
-            <a href="{{ route('finance.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('finance.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <span>{{ __('app.finance') }}</span>
-            </a>
-            @endif
-
-            {{-- Admin Section --}}
+        <nav class="flex-1 overflow-y-auto py-3 px-2 space-y-1">
             @php
-                $adminRole = Auth::check() && (in_array(Auth::user()->role, ['admin', 'developer']) || Auth::user()->hasPermission('feasibility.view') || Auth::user()->hasPermission('audit_log.view') || Auth::user()->hasPermission('settings.manage') || Auth::user()->hasPermission('backup.manage'));
+                $attCountTmp = \App\Services\AttentionService::itemsCount();
+                $suggestionUnread = \App\Models\Suggestion::where('user_id', auth()->id())->whereNotNull('developer_reply')->where('reply_read', false)->count();
             @endphp
-            @if($adminRole)
-                <div class="pt-5 pb-2">
-                    <p class="sidebar-section-title text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-3">{{ __('app.admin_section') }}</p>
-                </div>
 
-                @if(in_array(Auth::user()->role, ['admin', 'developer']))
+            {{-- ===== Section: الرئيسية ===== --}}
+            <button type="button" @click="$dispatch('toggle-group', 'main')" class="sidebar-section-title flex items-center justify-between w-full px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-amber-600 transition-colors">
+                <span>{{ __('app.main_section') }}</span>
+                <svg class="w-3 h-3 transition-transform duration-200" :class="sideGroups.main ? '' : '-rotate-90'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/></svg>
+            </button>
+            <div x-show="sideGroups.main" class="space-y-0.5">
+                <a href="{{ route('dashboard') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <span>{{ __('app.dashboard') }}</span>
+                </a>
+                <a href="{{ route('attention.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('attention.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
+                    <span>مركز الانتباه</span>
+                    @if($attCountTmp > 0)
+                        <span class="ms-auto text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-bold">{{ $attCountTmp }}</span>
+                    @endif
+                </a>
+            </div>
+
+            {{-- ===== Section: العمل ===== --}}
+            <div class="pt-2">
+                <button type="button" @click="$dispatch('toggle-group', 'work')" class="sidebar-section-title flex items-center justify-between w-full px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-amber-600 transition-colors">
+                    <span>العمل</span>
+                    <svg class="w-3 h-3 transition-transform duration-200" :class="sideGroups.work ? '' : '-rotate-90'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/></svg>
+                </button>
+            </div>
+            <div x-show="sideGroups.work" class="space-y-0.5">
+                <a href="{{ route('cases.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('cases.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    <span>{{ __('app.cases') }}</span>
+                </a>
+                <a href="{{ route('sessions.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('sessions.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span>{{ __('app.sessions') }}</span>
+                </a>
+                <a href="{{ route('tasks.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('tasks.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    <span>{{ __('app.tasks') }}</span>
+                </a>
+                <a href="{{ route('clients.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('clients.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    <span>{{ __('app.clients') }}</span>
+                </a>
+                <a href="{{ route('documents.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('documents.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>{{ __('app.documents') }}</span>
+                </a>
+                <a href="{{ route('chat.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('chat.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    <span>{{ __('app.chat') ?? 'المحادثات' }}</span>
+                    <span id="chatUnreadBadge" class="hidden mr-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none" style="line-height:14px;">0</span>
+                </a>
+            </div>
+
+            @if(!Auth::user()->isClient())
+            {{-- ===== Section: المالية ===== --}}
+            <div class="pt-2">
+                <button type="button" @click="$dispatch('toggle-group', 'fin')" class="sidebar-section-title flex items-center justify-between w-full px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-amber-600 transition-colors">
+                    <span>المالية</span>
+                    <svg class="w-3 h-3 transition-transform duration-200" :class="sideGroups.fin ? '' : '-rotate-90'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/></svg>
+                </button>
+            </div>
+            <div x-show="sideGroups.fin" class="space-y-0.5">
+                <a href="{{ route('finance.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('finance.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>{{ __('app.finance') }}</span>
+                </a>
+            </div>
+            @endif
+
+            @php
+                $canReports = in_array(Auth::user()->role, ['admin', 'developer', 'lawyer', 'staff']);
+            @endphp
+            @if($canReports)
+            {{-- ===== Section: التقارير ===== --}}
+            <div class="pt-2">
+                <button type="button" @click="$dispatch('toggle-group', 'rep')" class="sidebar-section-title flex items-center justify-between w-full px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-amber-600 transition-colors">
+                    <span>التقارير</span>
+                    <svg class="w-3 h-3 transition-transform duration-200" :class="sideGroups.rep ? '' : '-rotate-90'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/></svg>
+                </button>
+            </div>
+            <div x-show="sideGroups.rep" class="space-y-0.5">
+                <a href="{{ route('reports.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('reports.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>{{ __('app.reports') }}</span>
+                </a>
+                <a href="{{ route('evaluations.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('evaluations.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8m-4-4v4m-7-4h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span>{{ __('app.evaluations') }}</span>
+                </a>
+            </div>
+            @endif
+
+            @php
+                $adminRole = Auth::check() && (in_array(Auth::user()->role, ['admin', 'developer']) || Auth::user()->hasPermission('users.view') || Auth::user()->hasPermission('feasibility.view') || Auth::user()->hasPermission('audit_log.view') || Auth::user()->hasPermission('settings.manage') || Auth::user()->hasPermission('backup.manage'));
+            @endphp
+            @if($adminRole || !Auth::user()->isClient())
+            {{-- ===== Section: الإدارة ===== --}}
+            <div class="pt-2">
+                <button type="button" @click="$dispatch('toggle-group', 'adm')" class="sidebar-section-title flex items-center justify-between w-full px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-amber-600 transition-colors">
+                    <span>الإدارة</span>
+                    <svg class="w-3 h-3 transition-transform duration-200" :class="sideGroups.adm ? '' : '-rotate-90'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/></svg>
+                </button>
+            </div>
+            <div x-show="sideGroups.adm" class="space-y-0.5">
+                @if(in_array(Auth::user()->role, ['admin', 'developer']) || Auth::user()->hasPermission('users.view'))
                 <a href="{{ route('users.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                     <span>{{ __('app.users') }}</span>
                 </a>
                 @endif
-
+                @if(!Auth::user()->isClient())
+                <a href="{{ route('hr.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('hr.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span>{{ __('app.hr') }}</span>
+                </a>
+                @endif
                 @if(Auth::user()->hasPermission('feasibility.view') || in_array(Auth::user()->role, ['admin', 'developer']))
                 <a href="{{ route('feasibility.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('feasibility.*') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                     <span>{{ __('app.feasibility_study') }}</span>
                 </a>
                 @endif
-
                 @if(Auth::user()->hasPermission('audit_log.view') || in_array(Auth::user()->role, ['admin', 'developer']))
                 <a href="{{ route('audit-log.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('audit-log.*') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
                     <span>{{ __('app.audit_log') }}</span>
                 </a>
                 @endif
-
+                @if(!Auth::user()->isClient())
+                <a href="{{ route('suggestions.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('suggestions.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    <span>صندوق الاقتراحات</span>
+                    @if($suggestionUnread > 0)
+                        <span class="mr-auto bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none badge-pulse" style="line-height:14px;">{{ $suggestionUnread > 9 ? '9+' : $suggestionUnread }}</span>
+                    @endif
+                </a>
+                @endif
                 @if(Auth::user()->hasPermission('settings.manage') || in_array(Auth::user()->role, ['admin', 'developer']))
                 <a href="{{ route('settings.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     <span>{{ __('app.settings') }}</span>
                 </a>
                 @endif
-
                 @if(Auth::user()->hasPermission('backup.manage') || in_array(Auth::user()->role, ['admin', 'developer']))
                 <a href="{{ route('backup.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('backup.*') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
-                    </svg>
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
                     <span>{{ __('app.backup') }}</span>
                 </a>
                 @endif
-
-                @if(in_array(Auth::user()->role, ['admin', 'developer', 'lawyer', 'staff']))
-                <a href="{{ route('reports.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('reports.*') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <span>{{ __('app.reports') }}</span>
-                </a>
-                @endif
-
-                @if(in_array(Auth::user()->role, ['admin', 'developer', 'lawyer', 'staff']))
-                <a href="{{ route('evaluations.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('evaluations.*') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8m-4-4v4m-7-4h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                    <span>{{ __('app.evaluations') }}</span>
-                </a>
-                @endif
-
                 @if(Auth::user()->role === 'developer')
                 <a href="{{ route('developer.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('developer.*') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                    </svg>
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
                     <span>لوحة المطور</span>
                 </a>
                 @endif
+            </div>
             @endif
         </nav>
 
@@ -552,7 +638,7 @@
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                 </svg>
-                <span class="sidebar-footer-text">دليل الاستخدام</span>
+                <span class="sidebar-footer-text">Ø¯Ù„ÙŠÙ„ Ø§Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù…</span>
             </a>
 
             <a href="{{ route('language.switch', app()->getLocale() === 'ar' ? 'en' : 'ar') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm">
@@ -610,8 +696,13 @@
 
                 {{-- Left Side --}}
                 <div class="flex items-center gap-1">
+                    <a href="{{ route('guide') }}" class="hidden sm:inline-flex p-2 rounded-xl text-gray-400 hover:text-amber-700 transition" title="{{ app()->getLocale() === 'ar' ? 'مساعدة' : 'Help' }}">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>
+                        </svg>
+                    </a>
                     <a href="{{ route('language.switch', app()->getLocale() === 'ar' ? 'en' : 'ar') }}"
-                        class="p-2 rounded-xl text-gray-400 hover:text-amber-700 transition" title="{{ app()->getLocale() === 'ar' ? 'English' : 'العربية' }}">
+                        class="p-2 rounded-xl text-gray-400 hover:text-amber-700 transition" title="{{ app()->getLocale() === 'ar' ? 'English' : 'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©' }}">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                         </svg>
@@ -619,7 +710,7 @@
 
                     {{-- Theme Toggle --}}
                     <button @click="theme = theme === 'dark' ? 'light' : 'dark'; $el.closest('html').setAttribute('data-theme', theme); localStorage.setItem('theme', theme)"
-                        class="p-2 rounded-xl transition" :class="theme === 'dark' ? 'text-amber-400 hover:text-amber-300' : 'text-gray-400 hover:text-amber-700'" title="{{ app()->getLocale() === 'ar' ? 'تغيير السمة' : 'Toggle Theme' }}">
+                        class="p-2 rounded-xl transition" :class="theme === 'dark' ? 'text-amber-400 hover:text-amber-300' : 'text-gray-400 hover:text-amber-700'" title="{{ app()->getLocale() === 'ar' ? 'ØªØºÙŠÙŠØ± Ø§Ù„Ø³Ù…Ø©' : 'Toggle Theme' }}">
                         <svg x-show="theme === 'light'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
                         </svg>
@@ -665,7 +756,7 @@
                             <div class="max-h-80 overflow-y-auto">
                                 @forelse($recentNotifications as $notification)
                                     @php
-                                        $notifTitle = $notification->title ?? ($notification->type === 'chat' ? 'رسالة جديدة' : null);
+                                        $notifTitle = $notification->title ?? ($notification->type === 'chat' ? 'Ø±Ø³Ø§Ù„Ø© Ø¬Ø¯ÙŠØ¯Ø©' : null);
                                     @endphp
                                         @if($notification->is_read)
                                         <div class="block px-4 py-3 transition" style="border-bottom: 1px solid rgba(201,165,90,0.04);">
@@ -766,7 +857,7 @@
                 $todayMsgHtml = $todayMsg ? e($todayMsg->content) : '';
                 if ($todayMsg && !Auth::user()->isClient() && !$todayMsgSeen) {
                     $todayMsgHtml = preg_replace(
-                        '/الاقتراحات/u',
+                        '/Ø§Ù„Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª/u',
                         '<a href="' . e(route('suggestions.index')) . '" data-seen="' . e(route('announcements.seen', $todayMsg)) . '" class="underline font-bold" @click="fetch($el.dataset.seen, { method: \'POST\', headers: { \'X-CSRF-TOKEN\': document.querySelector(\'meta[name=csrf-token]\')?.content } }).catch(() => {})">$0</a>',
                         $todayMsgHtml
                     );
@@ -783,13 +874,13 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
                                 </svg>
                             </div>
-                            <p class="text-[11px] tracking-[0.35em] text-amber-400/80 font-bold mb-2">رسالة اليوم</p>
+                            <p class="text-[11px] tracking-[0.35em] text-amber-400/80 font-bold mb-2">Ø±Ø³Ø§Ù„Ø© Ø§Ù„ÙŠÙˆÙ…</p>
                             <div class="w-12 h-px mx-auto bg-gradient-to-l from-transparent via-amber-400/60 to-transparent mb-5"></div>
                             <p class="text-sm text-amber-50 leading-relaxed whitespace-pre-wrap">{!! $todayMsgHtml !!}</p>
-                            <button type="button" x-bind:class="locked ? 'bg-amber-500 text-[#17130d] border-amber-500' : 'text-amber-300 border-amber-400/40 hover:bg-amber-400/10'" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content } }).catch(() => {}).finally(() => { locked = true; setTimeout(() => hidden = true, 350); })" class="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-full border font-bold text-xs transition-all duration-300" title="قفل الرسالة">
+                            <button type="button" x-bind:class="locked ? 'bg-amber-500 text-[#17130d] border-amber-500' : 'text-amber-300 border-amber-400/40 hover:bg-amber-400/10'" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content } }).catch(() => {}).finally(() => { locked = true; setTimeout(() => hidden = true, 350); })" class="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-full border font-bold text-xs transition-all duration-300" title="Ù‚ÙÙ„ Ø§Ù„Ø±Ø³Ø§Ù„Ø©">
                                 <svg x-show="!locked" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
                                 <svg x-show="locked" x-cloak class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
-                                <span x-text="locked ? 'تم القفل' : 'قفل الرسالة'"></span>
+                                <span x-text="locked ? 'ØªÙ… Ø§Ù„Ù‚ÙÙ„' : 'Ù‚ÙÙ„ Ø§Ù„Ø±Ø³Ø§Ù„Ø©'"></span>
                             </button>
                         </div>
                     </div>
@@ -810,11 +901,37 @@
                 <div class="flex items-center gap-2">
                     <p class="text-xs text-gray-400">{{ $officeName }}</p>
                     <span class="text-gray-300">|</span>
-                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-xs text-gray-400 hover:text-amber-600 transition">المطور عبدالرحمن الريامي</a>
+                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-xs text-gray-400 hover:text-amber-600 transition">Ø§Ù„Ù…Ø·ÙˆØ± Ø¹Ø¨Ø¯Ø§Ù„Ø±Ø­Ù…Ù† Ø§Ù„Ø±ÙŠØ§Ù…ÙŠ</a>
                 </div>
             </div>
         </footer>
     </div>
+
+    {{-- Mobile Bottom Navigation --}}
+    @auth
+    <nav class="bottom-nav" aria-label="التنقل السريع">
+        <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span>الرئيسية</span>
+        </a>
+        <a href="{{ route('cases.index') }}" class="{{ request()->routeIs('cases.*') ? 'active' : '' }}">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            <span>القضايا</span>
+        </a>
+        <a href="{{ route('sessions.index') }}" class="{{ request()->routeIs('sessions.*') ? 'active' : '' }}">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span>الجلسات</span>
+        </a>
+        <a href="{{ route('tasks.index') }}" class="{{ request()->routeIs('tasks.*') ? 'active' : '' }}">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            <span>المهام</span>
+        </a>
+        <button type="button" @click="mobileOpen = true" class="flex-1 flex flex-col items-center gap-1 pt-2 pb-1.5 text-[.6rem] font-extrabold text-gray-400 transition-colors" style="font-size:.6rem;">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+            <span>المزيد</span>
+        </button>
+    </nav>
+    @endauth
 
     @auth
     <form id="autoLogoutForm" action="{{ route('logout') }}" method="POST" style="display:none;">
@@ -890,8 +1007,8 @@
                     document.getElementById('autoLogoutForm').submit();
                 }
             }, 1000);
-            // كل 10 ثوانٍ أثناء التنبيه نجدد الجلسة عند السيرفر حتى يُسجَّل
-            // الخروج التلقائي بشكل صحيح عند انتهاء العد
+            // ÙƒÙ„ 10 Ø«ÙˆØ§Ù†Ù Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„ØªÙ†Ø¨ÙŠÙ‡ Ù†Ø¬Ø¯Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø© Ø¹Ù†Ø¯ Ø§Ù„Ø³ÙŠØ±ÙØ± Ø­ØªÙ‰ ÙŠÙØ³Ø¬ÙŽÙ‘Ù„
+            // Ø§Ù„Ø®Ø±ÙˆØ¬ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ Ø¨Ø´ÙƒÙ„ ØµØ­ÙŠØ­ Ø¹Ù†Ø¯ Ø§Ù†ØªÙ‡Ø§Ø¡ Ø§Ù„Ø¹Ø¯
             clearInterval(keepAliveTimer);
             keepAliveTimer = setInterval(function() { sendKeepAlive(); }, 10000);
         }
@@ -937,7 +1054,7 @@
         document.body.appendChild(indicator);
 
         function showIndicator() {
-            indicator.textContent = '🔄 جاري التحديث...';
+            indicator.textContent = 'ðŸ”„ Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ø¯ÙŠØ«...';
             indicator.style.display = 'block';
             indicator.style.opacity = '1';
         }
@@ -1011,7 +1128,7 @@
             } catch(_) {}
             var toast = document.createElement('div');
             toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;background:rgba(245,158,11,0.95);color:#FFFFFF;padding:16px 24px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,0.4);max-width:400px;text-align:center;direction:rtl;';
-            toast.textContent = '🔐 هذا البريد الإلكتروني وجميع البيانات في الموقع مشفرة للحماية. للتواصل يرجى مراسلة المطور.';
+            toast.textContent = 'ðŸ” Ù‡Ø°Ø§ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ ÙˆØ¬Ù…ÙŠØ¹ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª ÙÙŠ Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ù…Ø´ÙØ±Ø© Ù„Ù„Ø­Ù…Ø§ÙŠØ©. Ù„Ù„ØªÙˆØ§ØµÙ„ ÙŠØ±Ø¬Ù‰ Ù…Ø±Ø§Ø³Ù„Ø© Ø§Ù„Ù…Ø·ÙˆØ±.';
             document.body.appendChild(toast);
             setTimeout(function() {
                 toast.style.transition = 'opacity 0.5s';
@@ -1050,7 +1167,7 @@
         var t = document.createElement('div');
         t.id = 'notifToast';
         t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:99998;background:linear-gradient(135deg,rgba(244,242,238,0.95),rgba(255,255,255,0.95));backdrop-filter:blur(12px);border:1px solid rgba(245,158,11,0.3);color:#111111;padding:16px 24px;border-radius:16px;font-size:14px;font-weight:500;box-shadow:0 12px 48px rgba(0,0,0,0.6);max-width:420px;text-align:center;direction:rtl;opacity:0;transition:all 0.4s cubic-bezier(0.22,1,0.36,1);';
-        t.innerHTML = '<div style="display:flex;align-items:center;gap:12px"><div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#F59E0B,#D97706);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(245,158,11,0.3)">🔔</div><div style="flex:1;text-align:right"><div style="font-weight:700;color:#D97706;margin-bottom:4px">' + title + '</div><div style="font-size:12px;color:#D97706">' + msg + '</div></div></div>';
+        t.innerHTML = '<div style="display:flex;align-items:center;gap:12px"><div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#F59E0B,#D97706);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(245,158,11,0.3)">ðŸ””</div><div style="flex:1;text-align:right"><div style="font-weight:700;color:#D97706;margin-bottom:4px">' + title + '</div><div style="font-size:12px;color:#D97706">' + msg + '</div></div></div>';
         document.body.appendChild(t);
         requestAnimationFrame(function() {
             t.style.transform = 'translateX(-50%) translateY(0)';
@@ -1072,7 +1189,7 @@
             if (data.has_new && data.notification && data.notification.id !== lastNotifId) {
                 lastNotifId = data.notification.id;
                 notifSound();
-                showNotifToast(data.notification.title || 'إشعار جديد', data.notification.message || '');
+                showNotifToast(data.notification.title || 'Ø¥Ø´Ø¹Ø§Ø± Ø¬Ø¯ÙŠØ¯', data.notification.message || '');
             }
         })
         .catch(function() {});
@@ -1091,7 +1208,7 @@
                 maxOptions: 100,
                 render: {
                     option_create: function(data, escape) {
-                        return '<div class="create">إضافة: <strong>' + escape(data.input) + '</strong></div>';
+                        return '<div class="create">Ø¥Ø¶Ø§ÙØ©: <strong>' + escape(data.input) + '</strong></div>';
                     }
                 }
             });
@@ -1308,7 +1425,7 @@
     @auth
         @if (!auth()->user()->isClient())
             {{-- Speech-to-Action floating button (global) --}}
-            <div class="fixed bottom-5 left-5 z-[250] block">
+            <div class="fixed bottom-[72px] md:bottom-5 left-5 z-[250] block">
                 <x-nl-action-modal :case-id="request()->route()?->parameter('case')?->id" />
             </div>
             <x-doc-viewer />

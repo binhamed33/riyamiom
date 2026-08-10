@@ -317,9 +317,31 @@ class DashboardController extends Controller
                     'icon' => 'call',
                 ]);
             }
+
+            // دمج عناصر مركز الانتباه غير المكررة داخل البطل (بدون تكرار عناوين)
+            $briefTitles = $brief->pluck('title')->map(fn ($t) => mb_strtolower(trim($t)))->all();
+            $attentionItems->filter(function ($a) use ($briefTitles) {
+                return !in_array(mb_strtolower(trim($a['title'] ?? '')), $briefTitles);
+            })->each(function ($a) use ($brief) {
+                $brief->push([
+                    'sev' => ['critical' => 1, 'warning' => 2][$a['severity'] ?? 'info'] ?? 3,
+                    'title' => $a['title'] ?? 'تنبيه',
+                    'sub' => $a['description'] ?? '',
+                    'url' => !empty($a['action']) ? $a['action']['url'] : ($a['url'] ?? route('attention.index')),
+                    'icon' => 'bell',
+                ]);
+            });
         } else {
             $greeting = 'مرحباً؛';
         }
+
+        // === آخر القضايا (خمس أحدث قضايا) ===
+        $recentCases = LegalCase::with(['client'])
+            ->latest('created_at')
+            ->limit(6)
+            ->get();
+
+        $brief = $brief->sortBy('sev')->values();
 
         return view('dashboard', compact(
             'totalCases',
@@ -357,7 +379,8 @@ class DashboardController extends Controller
             'topLawyer',
             'attentionItems',
             'brief',
-            'greeting'
+            'greeting',
+            'recentCases'
         ));
     }
 }

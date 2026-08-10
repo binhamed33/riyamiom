@@ -4,9 +4,12 @@
 
 @section('content')
 @php $isFinAdmin = in_array(auth()->user()->role, ['developer', 'admin']); @endphp
-<div class="">
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-amber-700">{{ __('app.finance') }}</h1>
+<div class="space-y-5">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="page-title">{{ __('app.finance') }}</h1>
+            <p class="page-subtitle">الإيرادات والمصروفات والفواتير</p>
+        </div>
     </div>
 
     @if($isFinAdmin)

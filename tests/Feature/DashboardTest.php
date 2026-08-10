@@ -41,7 +41,7 @@ class DashboardTest extends TestCase
         $response = $this->actingAs($developer)->get('/dashboard');
 
         $response->assertStatus(200);
-        $response->assertSee('ما يحتاج انتباهك اليوم');
-        $response->assertSee('عرض كل شيء');
+        $response->assertSee($developer->name);
+        $response->assertSee('عرض الكل');
     }
 }
