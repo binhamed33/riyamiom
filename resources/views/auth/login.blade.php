@@ -245,6 +245,84 @@
         .btn-loading .btn-label { display: none; }
         .btn-loading .btn-loader { display: inline-flex !important; }
 
+        /* ============ AUTH CINEMATIC (loading / success / error) ============ */
+        main { transition: opacity 0.5s ease, filter 0.5s ease; }
+        body.is-verifying main { opacity: 0.55; filter: blur(1.5px); }
+        body.is-verifying #authLoadGlow { opacity: 1 !important; }
+
+        .btn-enter::after { content: ''; position: absolute; top: 0; bottom: 0; width: 45%;
+            left: -40%; background: linear-gradient(105deg, transparent, rgba(255,255,255,0.25) 45%, rgba(255,255,255,0.5) 50%, transparent 60%);
+            transform: skewX(-18deg); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .btn-enter.btn-loading::after { opacity: 1; animation: btnGoldLine 1.15s linear infinite; }
+        @keyframes btnGoldLine { 0% { left: -40%; } 100% { left: 120%; } }
+
+        /* ---- success overlay ---- */
+        .auth-overlay { position: fixed; inset: 0; z-index: 9000; display: none; flex-direction: column;
+            align-items: center; justify-content: center; gap: 1.75rem;
+            background: rgba(5,6,8,0.62); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+            opacity: 0; transition: opacity 0.4s ease; }
+        .auth-overlay.show { display: flex; opacity: 1; }
+        .auth-overlay.fade-black { animation: fadeBlack 0.5s ease forwards; }
+        @keyframes fadeBlack { to { background: rgba(5,6,8,0.98); backdrop-filter: blur(0px); } }
+
+        .judge-scene { position: relative; opacity: 0; transform: scale(0.95); filter: blur(4px);
+            transition: opacity 0.65s ease, transform 0.65s cubic-bezier(0.16,1,0.3,1), filter 0.65s ease; }
+        .judge-scene.show { opacity: 1; transform: scale(1); filter: blur(0); }
+        .judge-scene.strike { animation: camShake 0.13s linear; }
+        @keyframes camShake {
+            0%,100% { transform: translate(0,0); }
+            25% { transform: translate(-3px,2px); }
+            50% { transform: translate(3px,-1px); }
+            75% { transform: translate(-2px,-2px); }
+        }
+
+        .judge-scene .gavel { transform: rotate(-34deg); transform-box: view-box; transform-origin: 329px 240px; }
+        .judge-scene.strike .gavel { animation: gavelHit 0.26s cubic-bezier(0.3,1.3,0.4,1) forwards; }
+        @keyframes gavelHit {
+            0% { transform: rotate(-34deg); }
+            70% { transform: rotate(4deg) translateY(6px); }
+            100% { transform: rotate(2deg) translateY(10px); }
+        }
+
+        .judge-scene .strike-flash { opacity: 0; transform: scale(0.4); transform-box: view-box; transform-origin: 334px 242px; }
+        .judge-scene.strike .strike-flash { animation: flashBurst 0.45s ease-out forwards; }
+        @keyframes flashBurst { 0% { opacity: 1; transform: scale(0.4); } 100% { opacity: 0; transform: scale(2.6); } }
+
+        .judge-scene .strike-ripple { opacity: 0; transform: scale(0.3); transform-box: view-box; transform-origin: 334px 242px; }
+        .judge-scene.strike .strike-ripple { animation: rippleOut 0.75s ease-out forwards; }
+        @keyframes rippleOut { 0% { opacity: 0.9; transform: scale(0.3); } 100% { opacity: 0; transform: scale(2.9); } }
+
+        .success-msg { opacity: 0; text-align: center; padding: 0 1.5rem; }
+        .success-msg.show { opacity: 1; transition: opacity 0.5s ease; }
+        .success-msg .msg1 { opacity: 0; }
+        .success-msg .msg2 { opacity: 0; }
+        .success-msg.show .msg1 { animation: msgIn 0.55s cubic-bezier(0.16,1,0.3,1) forwards; }
+        .success-msg.show .msg2 { animation: msgIn 0.55s cubic-bezier(0.16,1,0.3,1) 0.28s forwards; }
+        @keyframes msgIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+        .gold-wipe { position: absolute; inset: -60%; pointer-events: none; opacity: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(232,213,164,0.85) 0%, rgba(200,169,107,0.35) 40%, transparent 72%);
+            transform: scale(0.2); }
+        .gold-wipe.go { animation: goldWipeOut 0.6s ease-in forwards; }
+        @keyframes goldWipeOut { 0% { opacity: 0; transform: scale(0.2); } 55% { opacity: 1; } 100% { opacity: 0; transform: scale(3); } }
+
+        /* ---- error state ---- */
+        .panel-shake { animation: panelNudge 0.5s cubic-bezier(0.36,0.07,0.19,0.97); }
+        @keyframes panelNudge {
+            0%,100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(5px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(2px); }
+        }
+        .field-error { border-color: rgba(200,90,90,0.55) !important;
+            box-shadow: 0 0 0 3px rgba(200,90,90,0.10), 0 0 22px rgba(200,90,90,0.07) !important; }
+        .error-sweep { position: absolute; top: -1px; inset-inline: 8%; height: 1px; opacity: 0;
+            background: linear-gradient(90deg, transparent, rgba(200,90,90,0.75), transparent);
+            transform: scaleX(0.2); }
+        .error-sweep.animate { animation: errSweep 0.45s ease-in-out forwards; }
+        @keyframes errSweep { 0% { opacity: 0; transform: scaleX(0.2); } 40% { opacity: 1; } 100% { opacity: 0; transform: scaleX(1); } }
+
         /* ============ REDUCED MOTION ============ */
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
@@ -271,6 +349,7 @@
         <div id="dustLayer" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
     </div>
     <div id="cursorGlow" aria-hidden="true"></div>
+    <div id="authLoadGlow" aria-hidden="true" style="position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity 0.7s ease;background:radial-gradient(circle at 50% 42%, rgba(200,169,107,0.10), transparent 60%);"></div>
 
     <div class="relative z-10 min-h-screen flex flex-col-reverse lg:flex-row">
 
@@ -331,6 +410,17 @@
                         <form method="POST" action="{{ route('login') }}" id="loginForm" class="space-y-5">
                             @csrf
 
+                            {{-- dynamic error box (shown by JS после проверки данных) --}}
+                            <div id="jsErrorBox" class="hidden alert-error mb-2 p-4 flex items-start gap-3" role="alert" aria-live="polite" style="opacity:0;transform:translateY(-6px);transition:opacity 0.35s ease, transform 0.35s ease;">
+                                <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                                </svg>
+                                <div class="text-sm font-medium leading-relaxed">
+                                    <p id="jsErrorTitle"></p>
+                                    <p id="jsErrorDetail" class="text-[13px] mt-1 opacity-85" style="font-weight:400;"></p>
+                                </div>
+                            </div>
+
                             {{-- email --}}
                             <div class="reveal" style="animation-delay:1.0s;">
                                 <label for="email" class="block text-sm font-medium mb-2" style="color:rgba(244,240,232,0.75);">{{ __('app.email') }}</label>
@@ -390,7 +480,7 @@
                             </div>
                         </form>
 
-                        <div class="mt-8 pt-5 border-t text-center" style="border-color:rgba(146,153,165,0.14);">
+                        <div class="mt-5 pt-5 border-t text-center" style="border-color:rgba(146,153,165,0.14);">
                             <p class="text-xs" style="color:rgba(146,153,165,0.6);">{{ $officeName }} — <a href="{{ url('/portfolio') }}" target="_blank" class="link-soft" rel="noopener">LexPro</a> · منظومة قانونية متكاملة</p>
                         </div>
                     </div>
@@ -505,13 +595,88 @@
         </aside>
     </div>
 
+    {{-- ===== SUCCESS CINEMATIC OVERLAY (Judge / Hammer Strike) ===== --}}
+    <div id="successOverlay" class="auth-overlay" role="status" aria-live="polite" aria-hidden="true">
+        <div class="judge-scene" id="judgeScene">
+            <svg class="w-[min(400px,80vw)] h-auto relative" viewBox="0 0 420 320" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                    <radialGradient id="judgeHalo" cx="0.5" cy="0.35" r="0.8">
+                        <stop offset="0" stop-color="rgba(200,169,107,0.16)"/>
+                        <stop offset="0.6" stop-color="rgba(200,169,107,0.05)"/>
+                        <stop offset="1" stop-color="rgba(200,169,107,0)"/>
+                    </radialGradient>
+                    <linearGradient id="judgeGold" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#E0C98A"/>
+                        <stop offset="1" stop-color="#9A7B45"/>
+                    </linearGradient>
+                    <filter id="judgeSoft" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="4" result="b"/>
+                        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                </defs>
+
+                {{-- halo --}}
+                <circle cx="210" cy="150" r="170" fill="url(#judgeHalo)"/>
+
+                {{-- bench (منصة القضاء) --}}
+                <rect x="74" y="224" width="272" height="9" rx="4" fill="url(#judgeGold)" opacity="0.65"/>
+                <rect x="66" y="233" width="288" height="16" rx="3" fill="#131820"/>
+                <rect x="66" y="249" width="288" height="10" rx="3" fill="#0D1117"/>
+                <line x1="74" y1="228" x2="346" y2="228" stroke="rgba(224,201,138,0.5)" stroke-width="1"/>
+                <circle cx="210" cy="248" r="4.5" fill="rgba(224,201,138,0.45)"/>
+                <circle cx="210" cy="248" r="10.5" fill="none" stroke="rgba(200,169,107,0.25)"/>
+
+                {{-- judge silhouette: shoulder + head --}}
+                <path d="M150 176 Q150 150 178 146 Q196 144 210 144 Q224 144 242 146 Q270 150 270 176 L272 220 L148 220 Z" fill="#0A0E14"/>
+                <path d="M146 176 L274 176 L272 222 L148 222 Z" fill="#0D131B"/>
+                <path d="M196 146 Q205 152 210 152 Q215 152 224 146" stroke="rgba(224,201,138,0.35)" stroke-width="2" fill="none"/>
+                <ellipse cx="210" cy="132" rx="27" ry="29" fill="#0A0E14"/>
+                <ellipse cx="210" cy="132" rx="27" ry="29" fill="none" stroke="rgba(224,201,138,0.18)" stroke-width="1"/>
+                <path d="M196 128 Q210 136 224 128" stroke="rgba(224,201,138,0.25)" stroke-width="1.5" fill="none"/>
+                <rect x="204" y="152" width="12" height="10" fill="#0A0E14"/>
+
+                {{-- hammer (raised) --}}
+                <g class="gavel">
+                    <rect x="326.5" y="172" width="5.5" height="62" rx="2.7" fill="url(#judgeGold)"/>
+                    <rect x="307" y="164" width="46" height="12" rx="3" fill="url(#judgeGold)"/>
+                    <rect x="307" y="164" width="46" height="4" rx="2" fill="rgba(255,248,228,0.5)"/>
+                </g>
+
+                {{-- impact point --}}
+                <circle class="strike-flash" cx="334" cy="242" r="6" fill="none" stroke="#F0DCA5" stroke-width="3"/>
+                <circle class="strike-ripple" cx="334" cy="242" r="6" fill="none" stroke="rgba(224,201,138,0.8)" stroke-width="2"/>
+
+                {{-- base glow under bench --}}
+                <ellipse cx="210" cy="272" rx="150" ry="10" fill="rgba(200,169,107,0.10)" filter="url(#judgeSoft)"/>
+            </svg>
+        </div>
+
+        <div class="success-msg" id="successMsg">
+            <p class="msg1 font-verse text-2xl sm:text-[1.8rem] font-bold" style="color:var(--gold-soft);">تم التحقق بنجاح</p>
+            <p class="msg2 font-editorial text-lg sm:text-xl mt-3" style="color:var(--ivory);">مرحبًا بك في منظومتك القانونية</p>
+        </div>
+
+        <div class="gold-wipe" id="goldWipe" aria-hidden="true"></div>
+    </div>
+
     {{-- ===== FOOTER ===== --}}
     <footer class="absolute bottom-0 inset-x-0 z-20 py-5 px-6">
         <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 text-xs" style="color:rgba(146,153,165,0.65);">
             <p class="flex items-center gap-2"><span style="color:var(--gold);">◆</span> {{ $officeName }} — © 2026 جميع الحقوق محفوظة</p>
-            <a href="{{ route('language.switch', $isRtl ? 'en' : 'ar') }}" class="link-soft font-medium" aria-label="{{ $isRtl ? 'Switch to English' : 'التبديل إلى العربية' }}">
-                {{ $isRtl ? 'English' : 'العربية' }}
-            </a>
+            <div class="flex items-center gap-5">
+                <button type="button" id="soundToggle" class="link-soft font-medium flex items-center gap-1.5" aria-pressed="false" aria-label="{{ $isRtl ? 'تفعيل صوت ضربة المطرقة' : 'Enable hammer sound' }}" title="{{ $isRtl ? 'صوت ضربة المطرقة' : 'Hammer strike sound' }}">
+                    <svg class="w-4 h-4" id="soundOnIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="display:none;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15.54 8.46a5 5 0 010 7.07"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.07 4.93a10 10 0 010 14.14"/>
+                    </svg>
+                    <svg class="w-4 h-4" id="soundOffIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 9l-6 6M16 9l6 6"/>
+                    </svg>
+                    <span id="soundLabel">{{ $isRtl ? 'الصوت' : 'Sound' }}</span>
+                </button>
+                <a href="{{ route('language.switch', $isRtl ? 'en' : 'ar') }}" class="link-soft font-medium" aria-label="{{ $isRtl ? 'Switch to English' : 'التبديل إلى العربية' }}">
+                    {{ $isRtl ? 'English' : 'العربية' }}
+                </a>
+            </div>
         </div>
     </footer>
 
@@ -583,16 +748,149 @@
             }
 
             /* ---------- loading state ---------- */
-            document.getElementById('loginForm').addEventListener('submit', function () {
-                const btn = document.getElementById('loginBtn');
-                if (!btn) return;
-                btn.classList.add('btn-loading');
-                btn.setAttribute('disabled', 'disabled');
+            const loginForm = document.getElementById('loginForm');
+            const loginBtn = document.getElementById('loginBtn');
+            const jsErrorBox = document.getElementById('jsErrorBox');
+            const successOverlay = document.getElementById('successOverlay');
+            const judgeScene = document.getElementById('judgeScene');
+            const successMsg = document.getElementById('successMsg');
+            const goldWipe = document.getElementById('goldWipe');
+            const authLoadGlow = document.getElementById('authLoadGlow');
+
+            /* ---------- sound (Web Audio, OFF by default) ---------- */
+            const soundToggle = document.getElementById('soundToggle');
+            let soundOn = localStorage.getItem('lexpro_sound_hammer') === '1';
+            let audioCtx = null;
+            function refreshSoundUI() {
+                if (!soundToggle) return;
+                document.getElementById('soundOnIcon').style.display = soundOn ? 'block' : 'none';
+                document.getElementById('soundOffIcon').style.display = soundOn ? 'none' : 'block';
+                soundToggle.setAttribute('aria-pressed', String(soundOn));
+            }
+            refreshSoundUI();
+            if (soundToggle) soundToggle.addEventListener('click', function () {
+                soundOn = !soundOn;
+                localStorage.setItem('lexpro_sound_hammer', soundOn ? '1' : '0');
+                refreshSoundUI();
+            });
+            function playHammerSound() {
+                if (!soundOn || reduced) return;
+                try {
+                    const Ctx = window.AudioContext || window.webkitAudioContext;
+                    if (!Ctx) return;
+                    audioCtx = audioCtx || new Ctx();
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    const t = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(220, t);
+                    osc.frequency.exponentialRampToValueAtTime(70, t + 0.12);
+                    gain.gain.setValueAtTime(0.0001, t);
+                    gain.gain.exponentialRampToValueAtTime(0.3, t + 0.005);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(t); osc.stop(t + 0.2);
+                    const thump = audioCtx.createOscillator();
+                    const tg = audioCtx.createGain();
+                    thump.type = 'triangle';
+                    thump.frequency.setValueAtTime(120, t + 0.02);
+                    thump.frequency.exponentialRampToValueAtTime(50, t + 0.15);
+                    tg.gain.setValueAtTime(0.0001, t + 0.02);
+                    tg.gain.exponentialRampToValueAtTime(0.18, t + 0.03);
+                    tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+                    thump.connect(tg); tg.connect(audioCtx.destination);
+                    thump.start(t + 0.02); thump.stop(t + 0.22);
+                } catch (e) { /* sound unavailable — flow continues */ }
+            }
+
+            /* ---------- success cinematic ---------- */
+            function playSuccess(navigateTo) {
+                if (reduced) { navigateTo(); return; }
+                successOverlay.setAttribute('aria-hidden', 'false');
+                successOverlay.classList.add('show');
+                goldWipe.classList.remove('go');
+                successMsg.classList.remove('show');
+                setTimeout(function () { judgeScene.classList.add('show'); }, 150);
+                setTimeout(function () {
+                    judgeScene.classList.add('strike');
+                    playHammerSound();
+                }, 1100);
+                setTimeout(function () { successMsg.classList.add('show'); }, 1550);
+                setTimeout(function () { goldWipe.classList.add('go'); }, 2150);
+                setTimeout(function () { navigateTo(); }, 2750);
+            }
+
+            /* ---------- error presentation ---------- */
+            function showAuthError(title, detail) {
+                document.getElementById('jsErrorTitle').textContent = title;
+                document.getElementById('jsErrorDetail').textContent = detail;
+                jsErrorBox.classList.remove('hidden');
+                requestAnimationFrame(function () {
+                    jsErrorBox.style.opacity = '1';
+                    jsErrorBox.style.transform = 'translateY(0)';
+                });
+                const panel = document.querySelector('.panel-glass');
+                if (!reduced) {
+                    panel.classList.remove('panel-shake', 'error-sweep');
+                    void panel.offsetWidth;
+                    panel.classList.add('panel-shake');
+                    document.querySelectorAll('.field').forEach(function (f) {
+                        f.classList.add('field-error');
+                        setTimeout(function () { f.classList.remove('field-error'); }, 2600);
+                    });
+                    setTimeout(function () { panel.classList.remove('panel-shake'); }, 650);
+                }
+            }
+
+            /* ---------- submit via AJAX (same route, logic untouched) ---------- */
+            loginForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                if (loginBtn.hasAttribute('disabled')) return;
+                loginBtn.setAttribute('disabled', 'disabled');
+                loginBtn.classList.add('btn-loading');
+                document.body.classList.add('is-verifying');
+                jsErrorBox.classList.add('hidden');
+                jsErrorBox.style.opacity = '0';
+
                 if (rememberCheck && rememberCheck.checked && emailInput) {
                     localStorage.setItem('lexpro_remembered_email', emailInput.value);
                 } else {
                     localStorage.removeItem('lexpro_remembered_email');
                 }
+
+                const form = loginForm;
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
+                    credentials: 'same-origin',
+                    redirect: 'follow'
+                }).then(function (res) {
+                    const finalUrl = res.url || window.location.href;
+                    if (res.redirected && finalUrl.indexOf('/dashboard') !== -1) {
+                        playSuccess(function () { window.location.href = finalUrl; });
+                        return;
+                    }
+                    /* authentication failed — server bounced back to /login */
+                    return res.text().then(function (html) {
+                        const doc = new DOMParser().parseFromString(html, 'text/html');
+                        let title = 'بيانات الدخول غير صحيحة';
+                        let detail = 'يرجى التحقق من البريد الإلكتروني وكلمة المرور والمحاولة مرة أخرى.';
+                        const msg = doc.body.textContent || '';
+                        if (msg.indexOf('قفل الحساب') !== -1 || msg.indexOf('تعطيل حسابك') !== -1) {
+                            title = 'تم تعليق تسجيل الدخول مؤقتًا';
+                            detail = 'لأسباب أمنية، يرجى المحاولة لاحقًا أو التواصل مع إدارة النظام.';
+                        }
+                        showAuthError(title, detail);
+                        loginBtn.removeAttribute('disabled');
+                        loginBtn.classList.remove('btn-loading');
+                        document.body.classList.remove('is-verifying');
+                    });
+                }).catch(function () {
+                    /* network failure — fall back to native submit */
+                    form.submit();
+                });
             });
 
             /* ---------- error shake ---------- */
