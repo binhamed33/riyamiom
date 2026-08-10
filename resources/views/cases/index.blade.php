@@ -140,14 +140,46 @@ document.addEventListener('alpine:init', () => {
             <table class="w-full text-sm text-right">
                 <thead>
                     <tr class="border-b border-gray-200">
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.office_case_number') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_court_with_number') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_principal') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_opponent') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_type') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.case_lawyer') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.status') }}</th>
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.priority') }}</th>
+                        @php
+                            $sortableCols = ['number', 'court', 'client', 'opponent', 'type', 'lawyer', 'status', 'priority', 'created'];
+                            $arrowCls = 'inline-flex items-center gap-1 font-bold whitespace-nowrap text-xs transition-colors';
+                        @endphp
+                        @foreach($sortableCols as $colKey)
+                            @php
+                                $isActive = $sort === $colKey;
+                                $nextDir = ($isActive && $dir === 'asc') ? 'desc' : 'asc';
+                                $label = [
+                                    'number' => __('app.office_case_number'),
+                                    'court' => __('app.case_court_with_number'),
+                                    'client' => __('app.case_principal'),
+                                    'opponent' => __('app.case_opponent'),
+                                    'type' => __('app.case_type'),
+                                    'lawyer' => __('app.case_lawyer'),
+                                    'status' => __('app.status'),
+                                    'priority' => __('app.priority'),
+                                    'created' => __('app.created_at'),
+                                ][$colKey];
+                            @endphp
+                            <th class="px-3 py-2 whitespace-nowrap text-xs">
+                                <a href="{{ request()->fullUrlWithQuery(['sort' => $colKey, 'dir' => $nextDir]) }}"
+                                    class="{{ $arrowCls }} {{ $isActive ? 'text-amber-600 bg-amber-100/80 rounded-lg px-2 py-1' : 'text-amber-700 hover:text-amber-600' }}">
+                                    {{ $label }}
+                                    @if($isActive)
+                                        <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            @if($dir === 'asc')
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/>
+                                            @else
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                            @endif
+                                        </svg>
+                                    @else
+                                        <svg class="w-3 h-3 flex-shrink-0 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l4-4 4 4M8 15l4 4 4-4"/>
+                                        </svg>
+                                    @endif
+                                </a>
+                            </th>
+                        @endforeach
                         <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
@@ -203,6 +235,7 @@ document.addEventListener('alpine:init', () => {
                                     @endif
                                 </span>
                             </td>
+                            <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">{{ $case->created_at?->format('Y-m-d') }}</td>
                             <td class="px-3 py-2">
                                 <div class="flex items-center gap-1">
                                     <a href="{{ route('cases.show', $case->id) }}" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors" title="{{ __('app.view') }}">
@@ -262,7 +295,7 @@ document.addEventListener('alpine:init', () => {
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-4 py-12 text-center text-gray-500">
+                            <td colspan="10" class="px-4 py-12 text-center text-gray-500">
                                 <svg class="w-16 h-16 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                 </svg>

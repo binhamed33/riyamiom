@@ -33,34 +33,64 @@ class CaseController extends Controller
 
     public function index(Request $request): View
     {
-        $query = LegalCase::with(['client', 'lawyer']);
+        $sortMap = [
+            'number' => 'legal_cases.office_case_number',
+            'created' => 'legal_cases.created_at',
+            'priority' => 'priority',
+            'status' => 'legal_cases.status',
+            'type' => 'legal_cases.case_type',
+            'court' => 'legal_cases.court',
+            'opponent' => 'legal_cases.opponent',
+            'client' => 'clients.name',
+            'lawyer' => 'users.name',
+        ];
+
+        $sort = $request->get('sort', 'number');
+        if (!array_key_exists($sort, $sortMap)) {
+            $sort = 'number';
+        }
+        $dir = strtolower($request->get('dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+        $query = LegalCase::with(['client', 'lawyer'])
+            ->leftJoin('clients', 'legal_cases.client_id', '=', 'clients.id')
+            ->leftJoin('users', 'legal_cases.lawyer_id', '=', 'users.id')
+            ->select('legal_cases.*');
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $query->where('legal_cases.status', $request->status);
         }
 
         if ($request->filled('priority')) {
-            $query->where('priority', $request->priority);
+            $query->where('legal_cases.priority', $request->priority);
         }
 
         if ($request->filled('lawyer_id')) {
-            $query->where('lawyer_id', $request->lawyer_id);
+            $query->where('legal_cases.lawyer_id', $request->lawyer_id);
         }
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('case_number', 'like', "%{$search}%")
-                    ->orWhere('office_case_number', 'like', "%{$search}%")
-                    ->orWhere('opponent_phone', 'like', "%{$search}%")
-                    ->orWhere('title', 'like', "%{$search}%");
+                $q->where('legal_cases.case_number', 'like', "%{$search}%")
+                    ->orWhere('legal_cases.office_case_number', 'like', "%{$search}%")
+                    ->orWhere('legal_cases.opponent_phone', 'like', "%{$search}%")
+                    ->orWhere('legal_cases.title', 'like', "%{$search}%");
             });
         }
 
-        $cases = $query->orderBy(DB::raw('CAST(office_case_number AS UNSIGNED)'))->paginate(15)->withQueryString();
+        if ($sort === 'priority') {
+            $query->orderByRaw("CASE legal_cases.priority WHEN 'low' THEN 1 WHEN 'medium' THEN 2 WHEN 'high' THEN 3 WHEN 'urgent' THEN 4 ELSE 0 END {$dir}")
+                ->orderBy('legal_cases.id', $dir);
+        } elseif ($sort === 'number') {
+            $query->orderBy(DB::raw('CAST(legal_cases.office_case_number AS UNSIGNED)'), $dir);
+        } else {
+            $query->orderBy($sortMap[$sort], $dir)->orderBy('legal_cases.id', $dir);
+        }
+
+        $cases = $query->paginate(15)->withQueryString();
         $users = User::where('is_active', true)->orderBy('name')->get();
 
-        return view('cases.index', compact('cases', 'users'));
+        return view('cases.index', compact('cases', 'users', 'sort', 'dir'));
     }
 
     public function create(): View
