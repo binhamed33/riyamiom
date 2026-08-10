@@ -1307,10 +1307,6 @@
 
     @auth
         @if (!auth()->user()->isClient())
-            {{-- Speech-to-Action floating button (global) --}}
-            <div class="fixed bottom-5 left-5 z-[250] block">
-                <x-nl-action-modal :case-id="request()->route()?->parameter('case')?->id" />
-            </div>
             <x-doc-viewer />
         @endif
     @endauth
