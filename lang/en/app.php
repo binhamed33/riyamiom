@@ -666,13 +666,4 @@ return [
     'continue' => 'Continue',
     'logout' => 'Log Out',
     'account_deactivated' => 'Your account has been deactivated.',
-
-    // Dashboard v2
-    'items' => 'items',
-    'recent_cases' => 'Recent Cases',
-    'all_under_control' => 'All under control',
-    'no_attention_today' => 'Nothing needs your attention today',
-    'show_brief' => 'Show brief',
-    'hide' => 'Hide',
-    'total' => 'Total',
 ];
