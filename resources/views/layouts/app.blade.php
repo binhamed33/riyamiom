@@ -380,6 +380,8 @@
         [data-theme="dark"] .ts-wrapper .ts-control, [data-theme="dark"] .ts-wrapper .ts-dropdown { background: #0D1321 !important; border-color: rgba(201,165,90,0.15) !important; color: #F4E8C1 !important; }
         [data-theme="dark"] .guide-card { background-color: #111B2E !important; background-image: linear-gradient(135deg, #111B2E, #1a2744) !important; }
         [data-theme="dark"] .guide-glass { background-color: rgba(17, 27, 46, 0.6) !important; }
+        .font-pill { background-color: rgba(255, 255, 255, 0.72); border-color: rgba(201, 165, 90, 0.35); }
+        [data-theme="dark"] .font-pill { background-color: rgba(13, 19, 33, 0.72); border-color: rgba(201, 165, 90, 0.28); }
         [data-theme="dark"] .ts-wrapper .ts-control input { color: #F4E8C1 !important; }
         [data-theme="dark"] .ts-wrapper .ts-control input::placeholder { color: #9CA3AF !important; }
         [data-theme="dark"] .ts-wrapper .ts-control .item { color: #F4E8C1 !important; }
@@ -685,7 +687,7 @@
                     </a>
 
                     {{-- Font Size Control --}}
-                    <div class="hidden sm:inline-flex items-center gap-0.5 rounded-xl border border-amber-200 bg-white/70 px-1 py-1" title="{{ __('app.font_size') }}">
+                    <div class="hidden sm:inline-flex items-center gap-0.5 rounded-xl border font-pill px-1 py-1" title="{{ __('app.font_size') }}">
                         <button @click="fontStep(-1)" :disabled="fontSize === 100"
                             class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-gray-500 transition hover:bg-amber-100 hover:text-amber-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-500" title="{{ __('app.font_decrease') }}">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
