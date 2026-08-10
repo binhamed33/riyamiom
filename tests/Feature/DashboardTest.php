@@ -33,4 +33,15 @@ class DashboardTest extends TestCase
     {
         $this->get('/dashboard')->assertRedirect('/login');
     }
+
+    public function test_dashboard_shows_today_brief_for_team()
+    {
+        $developer = User::factory()->create(['role' => 'developer', 'is_active' => true]);
+
+        $response = $this->actingAs($developer)->get('/dashboard');
+
+        $response->assertStatus(200);
+        $response->assertSee('ما يحتاج انتباهك اليوم');
+        $response->assertSee('عرض كل شيء');
+    }
 }

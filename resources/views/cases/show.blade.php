@@ -342,6 +342,8 @@ document.addEventListener('alpine:init', () => {
             @endif
         </div>
         <div class="flex items-center gap-3">
+            {{-- NL to Action (case context) --}}
+            <x-nl-action-modal :case-id="$case->id" />
             {{-- Quick Actions Button --}}
             <button @click="quickOpen = true" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 shadow-lg shadow-amber-500/25">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>

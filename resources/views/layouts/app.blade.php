@@ -1305,5 +1305,14 @@
     </script>
     @endauth
 
+    @auth
+        @if (!auth()->user()->isClient())
+            {{-- Speech-to-Action floating button (global) --}}
+            <div class="fixed bottom-5 left-5 z-[250] hidden md:block">
+                <x-nl-action-modal />
+            </div>
+        @endif
+    @endauth
+
 </body>
 </html>

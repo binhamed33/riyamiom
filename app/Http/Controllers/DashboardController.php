@@ -232,6 +232,95 @@ class DashboardController extends Controller
         // === Attention Center (smart alerts) ===
         $attentionItems = app(AttentionService::class)->items(5);
 
+        // === Today's Brief (ما يحتاج انتباهك اليوم) ===
+        $brief = collect();
+        if (!$user->isClient()) {
+            $hour = (int) $now->format('H');
+            $greeting = $hour < 12 ? 'صباح الخير' : ($hour < 18 ? 'مساء الخير' : 'مساء الخير');
+
+            $todaySessions = (clone $sessionBase)->with('case')
+                ->whereDate('date', $now->toDateString())
+                ->where('status', 'upcoming')
+                ->orderBy('date')
+                ->get();
+            $todaySessions->each(function ($s) use ($brief) {
+                $case = $s->case;
+                $brief->push([
+                    'sev' => 1,
+                    'title' => 'جلسة الآن/اليوم — ' . ($case->case_number ?? 'قضية') . ($s->location ? ' (' . $s->location . ')' : ''),
+                    'sub' => $s->date->format('H:i') . ($case?->client?->name ? ' — ' . $case->client->name : ''),
+                    'url' => route('sessions.show', $s),
+                    'icon' => 'gavel',
+                ]);
+            });
+
+            $dueTasks = (clone $taskBase)->with('case')
+                ->where('status', '!=', 'completed')
+                ->whereDate('due_date', $now->toDateString())
+                ->limit(8)
+                ->get();
+            $dueTasks->each(function ($t) use ($brief, $now) {
+                $brief->push([
+                    'sev' => 2,
+                    'title' => ($t->due_date < $now ? 'مهمة متأخرة — ' : 'مهمة مستحقة اليوم — ') . $t->title,
+                    'sub' => $t->case?->case_number ? '#' . $t->case->case_number : '—',
+                    'url' => route('tasks.show', $t),
+                    'icon' => 'task',
+                ]);
+            });
+
+            $upcomingAppointments = \App\Models\CaseActivity::with('case')
+                ->where('type', 'appointment')
+                ->where('occurred_at', '>=', $now)
+                ->where('occurred_at', '<=', $now->copy()->addDays(7))
+                ->orderBy('occurred_at')
+                ->limit(5)
+                ->get();
+            $upcomingAppointments->each(function ($a) use ($brief) {
+                $brief->push([
+                    'sev' => 3,
+                    'title' => 'موعد — ' . $a->title,
+                    'sub' => $a->occurred_at->format('Y/m/d H:i') . ($a->case ? ' — ' . $a->case->case_number : ''),
+                    'url' => $a->case_id ? route('cases.show', $a->case_id) : route('dashboard'),
+                    'icon' => 'calendar',
+                ]);
+            });
+
+            $dueInvoices = \App\Models\FinanceInvoice::with('client')
+                ->where('status', '!=', 'paid')
+                ->where(function ($q) use ($now) {
+                    $q->whereNull('due_date')->orWhere('due_date', '<=', $now->copy()->addDays(7));
+                })
+                ->orderBy('due_date')
+                ->limit(5)
+                ->get();
+            $dueInvoices->each(function ($i) use ($brief) {
+                $overdue = $i->due_date && $i->due_date->isPast();
+                $brief->push([
+                    'sev' => $overdue ? 2 : 3,
+                    'title' => ($overdue ? 'فاتورة متأخرة — ' : 'فاتورة مستحقة — ') . $i->invoice_number,
+                    'sub' => ($i->client->name ?? '') . ' — باقي ' . number_format((float) ($i->amount - $i->paid_amount), 2),
+                    'url' => route('finance.invoices.show', $i),
+                    'icon' => 'invoice',
+                ]);
+            });
+
+            $todayCalls = \App\Models\CaseActivity::where('type', 'call')
+                ->whereDate('occurred_at', $now->toDateString())
+                ->count();
+            if ($todayCalls > 0) {
+                $brief->push([
+                    'sev' => 4,
+                    'title' => $todayCalls . ' اتصال مسجل اليوم',
+                    'sub' => 'توثيق تلقائي ضمن الخط الزمني للقضايا',
+                    'url' => route('attention.index'),
+                    'icon' => 'call',
+                ]);
+            }
+        } else {
+            $greeting = 'مرحباً؛';
+        }
+
         return view('dashboard', compact(
             'totalCases',
             'activeCases',
@@ -266,7 +355,9 @@ class DashboardController extends Controller
             'overdueTasksList',
             'pendingTasksList',
             'topLawyer',
-            'attentionItems'
+            'attentionItems',
+            'brief',
+            'greeting'
         ));
     }
 }

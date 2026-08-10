@@ -7,6 +7,52 @@
 
 @php $isMgmt = auth()->user()->isAdmin() || auth()->user()->isDeveloper() || auth()->user()->hasPermission('users.view') || auth()->user()->hasPermission('feasibility.view') || auth()->user()->hasPermission('audit_log.view') || auth()->user()->hasPermission('settings.manage') || auth()->user()->hasPermission('backup.manage'); @endphp
 
+{{-- Today's Brief --}}
+<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between gap-3">
+        <div>
+            <h1 class="text-xl font-heading font-bold text-gray-900">{{ $greeting }}، {{ auth()->user()->name }}</h1>
+            <p class="text-xs text-gray-400 mt-0.5">إليك ما يحتاج انتباهك اليوم — {{ now()->format('l d F Y') }}</p>
+        </div>
+        <a href="{{ route('attention.index') }}" class="flex-shrink-0 text-xs font-bold text-amber-600 hover:text-amber-700 transition inline-flex items-center gap-1 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+            عرض كل شيء
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ app()->getLocale() === 'ar' ? 'M15 12h4m0 0l-2-2m2 2l-2 2M5 12h10m-6-4l4 4-4 4' : 'M9 12h4m0 0l-2-2m2 2l-2 2m10 0a7 7 0 11-14 0 7 7 0 0114 0z' }}"/></svg>
+        </a>
+    </div>
+    <div x-data="{ briefOpen: true }">
+        <template x-if="briefOpen">
+            <div class="divide-y divide-gray-50">
+                @forelse($brief as $item)
+                    @php
+                        $sev = [
+                            1 => ['dot' => 'bg-red-500', 'text' => 'text-red-700', 'bg' => 'bg-red-50'],
+                            2 => ['dot' => 'bg-orange-500', 'text' => 'text-orange-700', 'bg' => 'bg-orange-50'],
+                            3 => ['dot' => 'bg-amber-500', 'text' => 'text-amber-700', 'bg' => 'bg-amber-50'],
+                            4 => ['dot' => 'bg-emerald-500', 'text' => 'text-emerald-700', 'bg' => 'bg-emerald-50'],
+                        ][$item['sev']] ?? ['dot' => 'bg-gray-400', 'text' => 'text-gray-600', 'bg' => 'bg-gray-50'];
+                    @endphp
+                    <a href="{{ $item['url'] }}" class="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50/70 transition-colors group">
+                        <span class="w-2.5 h-2.5 rounded-full {{ $sev['dot'] }} flex-shrink-0"></span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-800 group-hover:text-amber-700 transition truncate">{{ $item['title'] }}</p>
+                            <p class="text-xs text-gray-400 truncate">{{ $item['sub'] }}</p>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-300 group-hover:text-amber-600 transition flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ app()->getLocale() === 'ar' ? 'm11 19-7-7 7-7m8 14-7-7 7-7' : 'm9 5 7 7-7 7m8-14-7 7 7 7' }}"/></svg>
+                    </a>
+                @empty
+                    <div class="px-5 py-6 text-center">
+                        <p class="text-sm text-gray-400">لا يوجد ما يحتاج انتباهك اليوم — كل شيء تحت السيطرة.</p>
+                    </div>
+                @endforelse
+            </div>
+        </template>
+        <button x-on:click="briefOpen = !briefOpen" class="w-full flex items-center justify-center gap-1 py-1.5 text-[10px] font-bold text-gray-400 hover:text-amber-600 transition">
+            <span x-text="briefOpen ? 'إخفاء القائمة' : 'إظهار اليوم باختصار'"></span>
+            <svg class="w-3 h-3" :class="briefOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/></svg>
+        </button>
+    </div>
+</div>
+
 {{-- Attention Center --}}
 @if($attentionItems->isNotEmpty())
     <div class="bg-white rounded-2xl border border-amber-200 overflow-hidden">
