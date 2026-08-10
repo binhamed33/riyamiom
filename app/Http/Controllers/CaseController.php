@@ -193,7 +193,61 @@ class CaseController extends Controller
     {
         $this->authorizeCaseAccess($case);
 
-        $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader', 'aiMessages']);
+        $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader', 'aiMessages', 'activities.user']);
+
+        $events = collect();
+
+        $case->activities->each(function ($a) use ($events) {
+            $typeLabel = [
+                'note' => 'ملاحظة',
+                'call' => 'اتصال',
+                'appointment' => 'موعد',
+                'document' => 'مستند',
+                'task' => 'مهمة',
+                'session' => 'جلسة',
+                'payment' => 'دفعة',
+                'other' => 'إجراء',
+            ][$a->type] ?? $a->type;
+            $events->push([
+                'kind' => 'activity',
+                'label' => $a->title,
+                'sub' => $typeLabel . ($a->user ? ' • ' . $a->user->name : ''),
+                'date' => $a->occurred_at,
+                'key' => 'a' . $a->id,
+            ]);
+        });
+
+        $case->sessions->each(function ($s) use ($events) {
+            $events->push([
+                'kind' => 'session',
+                'label' => 'جلسة — ' . ($s->location ?? '-'),
+                'sub' => $s->status . ($s->notes ? ' • ' . $s->notes : ''),
+                'date' => $s->date,
+                'key' => 's' . $s->id,
+            ]);
+        });
+
+        $case->tasks->each(function ($t) use ($events) {
+            $events->push([
+                'kind' => 'task',
+                'label' => ($t->status === 'completed' ? '✓ ' : '') . $t->title,
+                'sub' => $t->status . ($t->due_date ? ' • ' . $t->due_date->format('Y/m/d') : ''),
+                'date' => $t->created_at,
+                'key' => 't' . $t->id,
+            ]);
+        });
+
+        $case->documents->each(function ($d) use ($events) {
+            $events->push([
+                'kind' => 'document',
+                'label' => $d->title,
+                'sub' => $d->file_type,
+                'date' => $d->created_at,
+                'key' => 'd' . $d->id,
+            ]);
+        });
+
+        $timeline = $events->sortByDesc('date')->values();
 
         $sessionsData = $case->sessions->map(fn($s) => [
             'id' => $s->id,
@@ -212,7 +266,7 @@ class CaseController extends Controller
             'created_at' => $m->created_at?->format('Y/m/d H:i'),
         ])->values();
 
-        return view('cases.show', compact('case', 'sessionsData', 'aiMessagesData'));
+        return view('cases.show', compact('case', 'sessionsData', 'aiMessagesData', 'timeline'));
     }
 
     public function edit(LegalCase $case): View

@@ -7,6 +7,49 @@
 
 @php $isMgmt = auth()->user()->isAdmin() || auth()->user()->isDeveloper() || auth()->user()->hasPermission('users.view') || auth()->user()->hasPermission('feasibility.view') || auth()->user()->hasPermission('audit_log.view') || auth()->user()->hasPermission('settings.manage') || auth()->user()->hasPermission('backup.manage'); @endphp
 
+{{-- Attention Center --}}
+@if($attentionItems->isNotEmpty())
+    <div class="bg-white rounded-2xl border border-amber-200 overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3" style="background: linear-gradient(90deg, rgba(201,165,90,0.12), rgba(201,165,90,0.03)); border-bottom: 1px solid rgba(201,165,90,0.18);">
+            <div class="flex items-center gap-2.5">
+                <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
+                </svg>
+                <h2 class="font-heading font-bold text-gray-900 text-sm">مركز الانتباه</h2>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold">{{ $attentionItems->count() }} تنبيه</span>
+            </div>
+            <a href="{{ route('attention.index') }}" class="text-xs font-bold text-amber-600 hover:text-amber-700 transition inline-flex items-center gap-1">
+                عرض الكل
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $isRtl ? 'M15 12h4m0 0l-2-2m2 2l-2 2M5 12h10m-6-4l4 4-4 4' : 'M9 12h4m0 0l-2-2m2 2l-2 2m10 0a7 7 0 11-14 0 7 7 0 0114 0z' }}"/></svg>
+            </a>
+        </div>
+        <div class="divide-y divide-gray-50">
+            @php
+                $sevMap = [
+                    'critical' => ['border' => 'border-red-200', 'bg' => 'bg-red-50', 'dot' => 'bg-red-500', 'text' => 'text-red-700'],
+                    'warning'  => ['border' => 'border-orange-200', 'bg' => 'bg-orange-50', 'dot' => 'bg-orange-500', 'text' => 'text-orange-700'],
+                    'info'     => ['border' => 'border-amber-200', 'bg' => 'bg-amber-50', 'dot' => 'bg-amber-500', 'text' => 'text-amber-700'],
+                ];
+            @endphp
+            @foreach($attentionItems as $item)
+                @php $s = $sevMap[$item['severity']] ?? $sevMap['info']; @endphp
+                <div class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50/60 transition-colors">
+                    <span class="w-2.5 h-2.5 rounded-full {{ $s['dot'] }} flex-shrink-0"></span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium {{ $s['text'] }} truncate">{{ $item['title'] }}</p>
+                        <p class="text-xs text-gray-400 truncate">{{ $item['description'] }}</p>
+                    </div>
+                    @if(!empty($item['action']))
+                        <a href="{{ $item['action']['url'] }}" class="flex-shrink-0 text-xs font-bold text-amber-600 hover:text-amber-700 transition">{{ $item['action']['label'] }}</a>
+                    @elseif(!empty($item['url']))
+                        <a href="{{ $item['url'] }}" class="flex-shrink-0 text-xs font-bold text-gray-400 hover:text-amber-600 transition">{{ __('app.open') }}</a>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    </div>
+@endif
+
 @if($isMgmt)
     {{-- Row 1: Key Metrics (Management only) --}}
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

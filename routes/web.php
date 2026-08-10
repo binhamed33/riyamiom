@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LanguageController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AttentionController;
 use App\Http\Controllers\CaseController;
 use App\Http\Controllers\CourtSessionController;
 use App\Http\Controllers\TaskController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\CaseFileController;
+use App\Http\Controllers\CaseActivityController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\LawyerEvaluationController;
@@ -84,6 +86,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     
     // Dashboard - all roles
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/attention', [AttentionController::class, 'index'])->name('attention.index');
 
     // Global AI legal assistant - all roles
     Route::get('/ai-assistant/history', [App\Http\Controllers\AssistantController::class, 'history'])->name('assistant.history');
@@ -156,6 +159,9 @@ Route::middleware(['auth', 'active'])->group(function () {
         return response()->json($results->take(15)->values());
     })->name('search');
 
+    // Command Palette - unified search + actions
+    Route::get('/command', App\Http\Controllers\CommandController::class)->name('command');
+
     // Sync - lightweight polling endpoint for real-time updates
     Route::get('/sync', function () {
         $tables = ['cases', 'tasks', 'sessions', 'clients', 'notifications'];
@@ -202,6 +208,9 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/cases/{case}/analyze', [CaseController::class, 'analyze'])->name('cases.analyze');
         Route::post('/cases/{case}/ai-chat', [CaseController::class, 'aiChat'])->name('cases.ai_chat');
         Route::post('/cases/{case}/send-portal-message', [CaseController::class, 'sendPortalMessage'])->name('cases.sendPortalMessage');
+        Route::post('/cases/{case}/activities', [CaseActivityController::class, 'store'])->name('cases.activities.store');
+        Route::get('/cases/{case}/timeline', [CaseActivityController::class, 'timeline'])->name('cases.timeline');
+        Route::delete('/cases/{case}/activities/{activity}', [CaseActivityController::class, 'destroy'])->name('cases.activities.destroy');
     });
     
     // Court Sessions - developer, admin, lawyer, staff

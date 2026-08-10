@@ -98,4 +98,9 @@ class LegalCase extends Model
     {
         return $this->hasMany(CaseAiMessage::class, 'case_id');
     }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(CaseActivity::class, 'case_id');
+    }
 }

@@ -11,6 +11,7 @@ use App\Models\Task;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use App\Services\AttentionService;
 
 class DashboardController extends Controller
 {
@@ -228,6 +229,9 @@ class DashboardController extends Controller
                 ->first()
         );
 
+        // === Attention Center (smart alerts) ===
+        $attentionItems = app(AttentionService::class)->items(5);
+
         return view('dashboard', compact(
             'totalCases',
             'activeCases',
@@ -261,7 +265,8 @@ class DashboardController extends Controller
             'recentActivity',
             'overdueTasksList',
             'pendingTasksList',
-            'topLawyer'
+            'topLawyer',
+            'attentionItems'
         ));
     }
 }

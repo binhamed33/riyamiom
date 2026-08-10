@@ -377,6 +377,17 @@
                 <span>{{ __('app.dashboard') }}</span>
             </a>
 
+            <a href="{{ route('attention.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('attention.*') ? 'active' : '' }}">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                </svg>
+                <span>مركز الانتباه</span>
+                @php $attCount = \App\Services\AttentionService::itemsCount(); @endphp
+                @if($attCount > 0)
+                    <span class="ms-auto text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-bold">{{ $attCount }}</span>
+                @endif
+            </a>
+
             <a href="{{ route('cases.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('cases.*') ? 'active' : '' }}">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -594,26 +605,8 @@
                     @yield('breadcrumb')
                 </div>
 
-                {{-- Global Search --}}
-                <div x-data="{ open: false, query: '', results: [], searching: false }" class="relative mx-2 flex-1 max-w-md">
-                    <div class="relative">
-                        <svg class="absolute {{ $isRtl ? 'right-3' : 'left-3' }} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        <input x-ref="searchInput" x-model="query" @input.debounce.300ms="if(query.length>1){searching=true;fetch('/search?q='+encodeURIComponent(query)).then(r=>r.json()).then(d=>{results=d;searching=false;open=true}).catch(()=>{searching=false})}else{results=[];open=false}" @focus="if(query.length>1)open=true" @click.away="open=false" @keydown.escape="open=false" @keydown.enter="if(results.length)window.location=results[0].url" type="text" placeholder="{{ __('app.search') }}..." class="w-full bg-gray-100 border border-gray-200 rounded-xl {{ $isRtl ? 'pr-9 pl-4' : 'pl-9 pr-4' }} py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-amber-500/50 focus:bg-white transition-all">
-                    </div>
-                    <div x-show="open && results.length > 0" x-cloak class="absolute top-full right-0 left-0 mt-2 bg-white border border-amber-200 rounded-xl shadow-xl overflow-hidden z-50 max-h-80 overflow-y-auto">
-                        <template x-for="r in results" :key="r.url">
-                            <a :href="r.url" @click="open = false" class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition border-b border-gray-100 last:border-0">
-                                <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold" :class="{'bg-blue-500/15 text-blue-400': r.type === 'case', 'bg-amber-500/15 text-amber-400': r.type === 'client', 'bg-purple-500/15 text-purple-400': r.type === 'session', 'bg-emerald-500/15 text-emerald-400': r.type === 'task'}">
-                                    <span x-text="r.type === 'case' ? 'ق' : r.type === 'client' ? 'ع' : r.type === 'session' ? 'ج' : 'م'"></span>
-                                </span>
-                                <span x-text="r.label"></span>
-                            </a>
-                        </template>
-                    </div>
-                    <div x-show="open && query.length > 1 && results.length === 0 && !searching" class="absolute top-full right-0 left-0 mt-2 bg-white border border-amber-200 rounded-xl shadow-xl overflow-hidden z-50">
-                        <div class="p-4 text-xs text-gray-400 text-center">لا توجد نتائج</div>
-                    </div>
-                </div>
+                {{-- Command Palette --}}
+                <x-command-palette />
 
                 {{-- Left Side --}}
                 <div class="flex items-center gap-1">

@@ -8,11 +8,73 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('caseDetail', () => ({
         activeTab: 'sessions',
         showSummary: false,
+        quickOpen: false,
+        quickTab: 'note',
+        quickBusy: false,
+        quickMsg: null,
+        quickErr: null,
+        activityForm: { type: 'note', title: '', content: '' },
+        taskForm: { title: '', description: '', priority: 'medium', due_date: '' },
+        docForm: { title: '', file: null },
+        async quickSubmit() {
+            if (this.quickBusy) return;
+            this.quickBusy = true;
+            this.quickMsg = null;
+            this.quickErr = null;
+            try {
+                if (this.quickTab === 'note') {
+                    if (!this.activityForm.title.trim()) { this.quickErr = 'أدخل عنوانًا للملاحظة'; return; }
+                    const res = await fetch('{{ route('cases.activities.store', $case) }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                        body: JSON.stringify(this.activityForm)
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.ok) { this.quickErr = data.message || '{{ __("app.save_error") }}'; return; }
+                    this.activityForm = { type: 'note', title: '', content: '' };
+                } else if (this.quickTab === 'task') {
+                    if (!this.taskForm.title.trim()) { this.quickErr = 'أدخل عنوان المهمة'; return; }
+                    const res = await fetch('{{ route('tasks.store') }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                        body: JSON.stringify({ ...this.taskForm, case_id: {{ $case->id }}, assigned_to: {{ auth()->id() }}, status: 'pending' })
+                    });
+                    if (!res.ok) { this.quickErr = 'تعذر إنشاء المهمة'; return; }
+                    this.taskForm = { title: '', description: '', priority: 'medium', due_date: '' };
+                } else if (this.quickTab === 'doc') {
+                    if (!this.docForm.file) { this.quickErr = 'اختر ملفًا أولاً'; return; }
+                    const fd = new FormData();
+                    fd.append('case_id', '{{ $case->id }}');
+                    fd.append('title', this.docForm.title || this.docForm.file.name);
+                    fd.append('file', this.docForm.file);
+                    fd.append('access_level', 'team');
+                    const res = await fetch('{{ route('documents.store') }}', {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                        body: fd
+                    });
+                    if (!res.ok) { this.quickErr = 'تعذر رفع المستند'; return; }
+                    this.docForm = { title: '', file: null };
+                }
+                this.quickMsg = 'تم الحفظ بنجاح';
+                this.$nextTick(() => setTimeout(() => { this.quickMsg = null; }, 4000));
+            } catch (e) {
+                this.quickErr = '{{ __("app.connection_error") }}';
+            } finally {
+                this.quickBusy = false;
+            }
+        },
         reportModal: false,
         reportSessionId: null,
         reportText: '',
         reportSaving: false,
         analyzing: false,
+        init() {
+            if (window.location.hash === '#quick') {
+                this.quickOpen = true;
+                this.quickTab = 'note';
+            }
+        },
         analysis: @json($case->ai_analysis),
         analysisError: null,
         chatOpen: false,
@@ -280,6 +342,11 @@ document.addEventListener('alpine:init', () => {
             @endif
         </div>
         <div class="flex items-center gap-3">
+            {{-- Quick Actions Button --}}
+            <button @click="quickOpen = true" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 shadow-lg shadow-amber-500/25">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+                إجراءات سريعة
+            </button>
             {{-- Summarize Button --}}
             <button @click="showSummary = true" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -498,6 +565,10 @@ document.addEventListener('alpine:init', () => {
                 class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
                 {{ __('app.documents_tab') }} ({{ $case->documents->count() ?? 0 }})
             </button>
+            <button @click="activeTab = 'timeline'" :class="activeTab === 'timeline' ? 'text-amber-700 border-b-2 border-amber-700 bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
+                class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
+                الخط الزمني ({{ $timeline->count() }})
+            </button>
         </div>
 
         {{-- Tab Content: Sessions --}}
@@ -685,6 +756,43 @@ document.addEventListener('alpine:init', () => {
                     <p class="text-sm">{{ __('app.no_documents_attached') }}</p>
                 </div>
             @endif
+        </div>
+
+        {{-- Tab Content: Timeline --}}
+        <div x-show="activeTab === 'timeline'" x-cloak class="p-4">
+            <div id="caseTimeline" class="relative ps-6">
+                @php
+                    $kindStyles = [
+                        'activity'  => ['dot' => 'bg-amber-500', 'text' => 'text-amber-700', 'bg' => 'bg-amber-50', 'border' => 'border-amber-200'],
+                        'session'   => ['dot' => 'bg-purple-500', 'text' => 'text-purple-700', 'bg' => 'bg-purple-50', 'border' => 'border-purple-200'],
+                        'task'      => ['dot' => 'bg-emerald-500', 'text' => 'text-emerald-700', 'bg' => 'bg-emerald-50', 'border' => 'border-emerald-200'],
+                        'document'  => ['dot' => 'bg-blue-500', 'text' => 'text-blue-700', 'bg' => 'bg-blue-50', 'border' => 'border-blue-200'],
+                    ];
+                @endphp
+                <span class="absolute top-0 bottom-0 start-3 w-px bg-gradient-to-b from-amber-300 via-gray-200 to-transparent"></span>
+                @forelse($timeline as $ev)
+                    @php $k = $kindStyles[$ev['kind']] ?? $kindStyles['activity']; @endphp
+                    <div class="relative mb-5 last:mb-0">
+                        <span class="absolute -start-6 top-1.5 w-2.5 h-2.5 rounded-full {{ $k['dot'] }} ring-4 ring-white"></span>
+                        <div class="bg-white border {{ $k['border'] }} rounded-xl px-4 py-3">
+                            <div class="flex items-start justify-between gap-3 flex-wrap">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-bold text-gray-900 truncate">{{ $ev['label'] }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5 truncate">{{ $ev['sub'] }}</p>
+                                </div>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full {{ $k['bg'] }} {{ $k['text'] }} font-bold">
+                                    {{ $ev['date']?->format('Y/m/d H:i') ?? '—' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-center py-10 text-gray-400">
+                        <p class="text-sm">لا توجد أحداث بعد</p>
+                        <p class="text-xs mt-1">استخدم زر الإجراءات السريعة ⚡ لتسجيل أول ملاحظة</p>
+                    </div>
+                @endforelse
+            </div>
         </div>
     </div>
 
@@ -955,6 +1063,120 @@ document.addEventListener('alpine:init', () => {
                     {{ __('app.ai_chat_send') }}
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+{{-- Quick Actions Drawer --}}
+<div x-show="quickOpen" x-cloak class="fixed inset-0 z-[110]" >
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="quickOpen = false"></div>
+    <div class="absolute inset-y-0 {{ app()->getLocale() === 'ar' ? 'left-0' : 'right-0' }} w-full max-w-md bg-white shadow-2xl flex flex-col" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="{{ app()->getLocale() === 'ar' ? '-translate-x-full' : 'translate-x-full' }}" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="{{ app()->getLocale() === 'ar' ? '-translate-x-full' : 'translate-x-full' }}">
+        {{-- Drawer Header --}}
+        <div class="px-5 py-4 flex items-center justify-between" style="background: linear-gradient(120deg, #2b261e, #17130d);">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
+                    <svg class="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+                </div>
+                <div>
+                    <h3 class="font-heading font-bold text-amber-50 text-sm">إجراءات سريعة</h3>
+                    <p class="text-[10px] text-amber-100/50">بدون مغادرة صفحة القضية</p>
+                </div>
+            </div>
+            <button @click="quickOpen = false" class="p-1.5 rounded-lg hover:bg-amber-400/10 text-amber-100/60 hover:text-amber-50 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        {{-- Feedback --}}
+        <div x-show="quickMsg" x-cloak class="mx-5 mt-4 flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-sm">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+            <span x-text="quickMsg"></span>
+        </div>
+        <div x-show="quickErr" x-cloak class="mx-5 mt-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl text-sm">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+            <span x-text="quickErr"></span>
+        </div>
+
+        {{-- Tabs --}}
+        <div class="flex border-b border-gray-200">
+            <button @click="quickTab = 'note'" :class="quickTab === 'note' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
+                class="flex-1 px-4 py-3 text-xs font-bold transition-colors">ملاحظة / اتصال</button>
+            <button @click="quickTab = 'task'" :class="quickTab === 'task' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
+                class="flex-1 px-4 py-3 text-xs font-bold transition-colors">مهمة</button>
+            <button @click="quickTab = 'doc'" :class="quickTab === 'doc' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
+                class="flex-1 px-4 py-3 text-xs font-bold transition-colors">مستند</button>
+        </div>
+
+        {{-- Panel: Activity --}}
+        <div x-show="quickTab === 'note'" x-cloak class="flex-1 overflow-y-auto p-5 space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">النوع</label>
+                <select x-model="activityForm.type" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                    <option value="note">ملاحظة</option>
+                    <option value="call">اتصال هاتفي</option>
+                    <option value="appointment">موعد</option>
+                    <option value="other">إجراء عام</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">العنوان *</label>
+                <input type="text" x-model="activityForm.title" placeholder="مثال: مكالمة مع الموكل حول التأجيل" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">التفاصيل</label>
+                <textarea x-model="activityForm.content" rows="4" placeholder="تفاصيل إضافية..." class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"></textarea>
+            </div>
+            <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
+                <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span x-text="quickBusy ? 'حفظ...' : 'حفظ في سجل القضية'"></span>
+            </button>
+        </div>
+
+        {{-- Panel: Task --}}
+        <div x-show="quickTab === 'task'" x-cloak class="flex-1 overflow-y-auto p-5 space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">عنوان المهمة *</label>
+                <input type="text" x-model="taskForm.title" placeholder="مثال: تجهيز مذكرة الرد" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">الوصف</label>
+                <textarea x-model="taskForm.description" rows="2" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1.5">الأولوية</label>
+                    <select x-model="taskForm.priority" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                        <option value="low">منخفضة</option>
+                        <option value="medium">متوسطة</option>
+                        <option value="high">عالية</option>
+                        <option value="urgent">عاجلة</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1.5">الاستحقاق</label>
+                    <input type="date" x-model="taskForm.due_date" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                </div>
+            </div>
+            <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
+                <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span x-text="quickBusy ? 'إنشاء...' : 'إنشاء المهمة'"></span>
+            </button>
+        </div>
+
+        {{-- Panel: Document --}}
+        <div x-show="quickTab === 'doc'" x-cloak class="flex-1 overflow-y-auto p-5 space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">العنوان</label>
+                <input type="text" x-model="docForm.title" placeholder="اتركه فارغًا لاستخدام اسم الملف" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1.5">الملف *</label>
+                <input type="file" @change="docForm.file = $event.target.files[0]; if (!docForm.title.trim()) { docForm.title = ($event.target.files[0].name || '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(); }" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-amber-700 hover:file:bg-amber-200">
+            </div>
+            <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
+                <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span x-text="quickBusy ? 'رفع...' : 'رفع المستند'"></span>
+            </button>
         </div>
     </div>
 </div>
