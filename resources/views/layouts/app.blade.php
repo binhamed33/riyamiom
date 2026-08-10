@@ -1086,9 +1086,10 @@
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('select.ts').forEach(function(el) {
             new TomSelect(el, {
-                create: true,
-                createOnBlur: true,
+                create: !el.hasAttribute('data-no-create'),
+                createOnBlur: !el.hasAttribute('data-no-create'),
                 maxOptions: 100,
+                placeholder: el.getAttribute('placeholder') || '',
                 render: {
                     option_create: function(data, escape) {
                         return '<div class="create">إضافة: <strong>' + escape(data.input) + '</strong></div>';

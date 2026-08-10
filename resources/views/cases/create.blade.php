@@ -266,8 +266,14 @@
                         if (res.ok) {
                             const data = await res.json();
                             const sel = document.getElementById('client_id');
-                            const opt = new Option(data.name, data.id, true, true);
-                            sel.appendChild(opt);
+                            if (sel.tomselect) {
+                                sel.tomselect.addOption({ value: data.id, text: data.name });
+                                sel.tomselect.addItem(data.id);
+                                sel.tomselect.clear(true);
+                            } else {
+                                const opt = new Option(data.name, data.id, true, true);
+                                sel.appendChild(opt);
+                            }
                             this.nc = { name: '', phone: '', email: '', national_id: '', address: '' };
                             this.newMode = false;
                         } else {
@@ -290,8 +296,8 @@
                     </div>
 
                     <div x-show="!newMode">
-                        <select name="client_id" id="client_id" required
-                            class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('client_id') border-red-500/50 @enderror">
+                        <select name="client_id" id="client_id" required data-no-create placeholder="اكتب لتبحث عن عميل..."
+                            class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('client_id') border-red-500/50 @enderror">
                             <option value="">{{ __('app.choose_client') }}</option>
                             @foreach($clients ?? [] as $client)
                                 <option value="{{ $client->id }}" {{ old('client_id') == $client->id ? 'selected' : '' }}>{{ $client->name }}</option>
