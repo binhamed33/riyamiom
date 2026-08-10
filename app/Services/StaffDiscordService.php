@@ -70,13 +70,18 @@ class StaffDiscordService
         }
 
         try {
-            $cutoff = now()->subHours(12);
+            $cutoff = now()->subHour();
             $stale = LoginSession::whereNull('logout_at')
                 ->where('login_at', '<', $cutoff)
                 ->with('user')
                 ->get();
 
             foreach ($stale as $session) {
+                $lastAct = Cache::get('staff_active_' . $session->user_id);
+                if ($lastAct && $lastAct->gte(now()->subMinutes(10))) {
+                    continue;
+                }
+
                 $end = now();
                 $duration = $session->login_at ? max(0, (int) $session->login_at->diffInSeconds($end)) : null;
                 $session->update([

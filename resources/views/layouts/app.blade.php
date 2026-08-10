@@ -852,9 +852,28 @@
     (function() {
         var timer = null;
         var countdownTimer = null;
+        var keepAliveTimer = null;
         var countdownVal = 60;
         var TIMEOUT = 10 * 60 * 1000;
         var WARNING = 60;
+
+        function sendKeepAlive(onDone) {
+            var form = document.getElementById('autoLogoutForm');
+            if (!form) return;
+            var tokenInput = form.querySelector('input[name="_token"]');
+            if (!tokenInput) return;
+            fetch("{{ route('session.keepalive') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': tokenInput.value
+                },
+                body: '{}'
+            })
+            .then(function(res) { if (onDone) onDone(res.status); })
+            .catch(function() { if (onDone) onDone(0); });
+        }
 
         function resetTimer() {
             if (document.getElementById('autoLogoutOverlay').style.display !== 'none') return;
@@ -873,9 +892,15 @@
                 countdownVal--;
                 updateDisplay();
                 if (countdownVal <= 0) {
+                    clearInterval(countdownTimer);
+                    clearInterval(keepAliveTimer);
                     document.getElementById('autoLogoutForm').submit();
                 }
             }, 1000);
+            // كل 10 ثوانٍ أثناء التنبيه نجدد الجلسة عند السيرفر حتى يُسجَّل
+            // الخروج التلقائي بشكل صحيح عند انتهاء العد
+            clearInterval(keepAliveTimer);
+            keepAliveTimer = setInterval(function() { sendKeepAlive(); }, 10000);
         }
 
         function updateDisplay() {
@@ -889,6 +914,8 @@
             var overlay = document.getElementById('autoLogoutOverlay');
             if (overlay) overlay.style.display = 'none';
             clearInterval(countdownTimer);
+            clearInterval(keepAliveTimer);
+            sendKeepAlive();
             resetTimer();
         };
 

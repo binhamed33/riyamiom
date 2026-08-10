@@ -39,6 +39,13 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
+// Keep-alive لتجديد الجلسة عند السيرفر أثناء تنبيه انتهاء الجلسة
+Route::post('/session/keepalive', function (Illuminate\Http\Request $request) {
+    $request->session()->put('_keepalive', now()->timestamp);
+
+    return response()->json(['ok' => true]);
+})->name('session.keepalive')->middleware('auth');
+
 // Portfolio site
 Route::get('/portfolio/{path?}', function ($path = null) {
     $base = realpath(public_path('portfolio'));
