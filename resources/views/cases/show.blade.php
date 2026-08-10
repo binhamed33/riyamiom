@@ -1072,18 +1072,12 @@ document.addEventListener('alpine:init', () => {
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="quickOpen = false"></div>
     <div class="absolute inset-y-0 {{ app()->getLocale() === 'ar' ? 'left-0' : 'right-0' }} w-full max-w-md bg-white shadow-2xl flex flex-col" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="{{ app()->getLocale() === 'ar' ? '-translate-x-full' : 'translate-x-full' }}" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="{{ app()->getLocale() === 'ar' ? '-translate-x-full' : 'translate-x-full' }}">
         {{-- Drawer Header --}}
-        <div class="px-5 py-4 flex items-center justify-between" style="background: linear-gradient(120deg, #2b261e, #17130d);">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
-                    <svg class="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
-                </div>
-                <div>
-                    <h3 class="font-heading font-bold text-amber-50 text-sm">إجراءات سريعة</h3>
-                    <p class="text-[10px] text-amber-100/50">بدون مغادرة صفحة القضية</p>
-                </div>
-            </div>
-            <button @click="quickOpen = false" class="p-1.5 rounded-lg hover:bg-amber-400/10 text-amber-100/60 hover:text-amber-50 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-amber-700">إجراءات سريعة</h3>
+            <button @click="quickOpen = false" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
             </button>
         </div>
 
