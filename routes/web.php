@@ -110,6 +110,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         $query = str_replace(['%', '_'], ['\\%', '\\_'], $raw);
 
         $user = auth()->user();
+        $isLawyer = $user && $user->isLawyer();
         $results = collect();
 
         if (in_array($user->role, ['developer', 'admin', 'lawyer', 'staff'])) {
@@ -136,6 +137,7 @@ Route::middleware(['auth', 'active'])->group(function () {
             }
 
             $sessions = \App\Models\Session::with('case')
+                ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)))
                 ->where(function ($q) use ($query) {
                     $q->where('location', 'like', "%{$query}%")
                       ->orWhere('notes', 'like', "%{$query}%");
@@ -146,6 +148,7 @@ Route::middleware(['auth', 'active'])->group(function () {
             }
 
             $tasks = \App\Models\Task::with('case')
+                ->when($isLawyer, fn ($q) => $q->where('assigned_to', $user->id))
                 ->where(function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
                       ->orWhere('description', 'like', "%{$query}%");

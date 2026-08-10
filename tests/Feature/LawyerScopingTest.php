@@ -79,6 +79,16 @@ class LawyerScopingTest extends TestCase
             ->assertOk()
             ->assertSee('A-100')
             ->assertDontSee('B-200');
+
+        $this->actingAs($lawyerA)
+            ->getJson('/command?q=مهمة')
+            ->assertOk()
+            ->assertJsonPath('groups.task.0.label', 'مهمة المحامي أ');
+
+        $this->actingAs($lawyerA)
+            ->getJson('/search?q=مهمة')
+            ->assertOk()
+            ->assertJsonMissing([['type' => 'task', 'label' => 'مهمة - مهمة المحامي ب']]);
     }
 
     public function test_admin_still_sees_everything(): void

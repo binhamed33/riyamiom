@@ -33,6 +33,7 @@ class CommandController extends Controller
         $raw = trim($request->get('q', ''));
         $query = str_replace(['%', '_'], ['\\%', '\\_'], $raw);
         $user = $request->user();
+        $isLawyer = $user && $user->isLawyer();
 
         $groups = [];
 
@@ -78,7 +79,9 @@ class CommandController extends Controller
                 ];
             }
 
-            $sessions = Session::with('case')->where('location', 'like', "%{$query}%")
+            $sessions = Session::with('case')
+                ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)))
+                ->where('location', 'like', "%{$query}%")
                 ->orderByDesc('date')->limit(5)->get();
             foreach ($sessions as $s) {
                 $groups['session'][] = [
@@ -89,8 +92,12 @@ class CommandController extends Controller
                 ];
             }
 
-            $tasks = Task::with('case')->where('title', 'like', "%{$query}%")
-                ->orWhere('description', 'like', "%{$query}%")
+            $tasks = Task::with('case')
+                ->when($isLawyer, fn ($q) => $q->where('assigned_to', $user->id))
+                ->where(function ($q) use ($query) {
+                    $q->where('title', 'like', "%{$query}%")
+                        ->orWhere('description', 'like', "%{$query}%");
+                })
                 ->limit(5)->get();
             foreach ($tasks as $t) {
                 $groups['task'][] = [
@@ -102,8 +109,11 @@ class CommandController extends Controller
             }
 
             $documents = Document::with('case')
-                ->where('title', 'like', "%{$query}%")
-                ->orWhere('file_path', 'like', "%{$query}%")
+                ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)))
+                ->where(function ($q) use ($query) {
+                    $q->where('title', 'like', "%{$query}%")
+                        ->orWhere('file_path', 'like', "%{$query}%");
+                })
                 ->limit(5)->get();
             foreach ($documents as $d) {
                 $groups['document'][] = [
@@ -129,8 +139,11 @@ class CommandController extends Controller
         }
 
         $activities = CaseActivity::with(['case', 'user'])
-            ->where('title', 'like', "%{$query}%")
-            ->orWhere('content', 'like', "%{$query}%")
+            ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)))
+            ->where(function ($q) use ($query) {
+                $q->where('title', 'like', "%{$query}%")
+                    ->orWhere('content', 'like', "%{$query}%");
+            })
             ->latest('occurred_at')->limit(5)->get();
         foreach ($activities as $a) {
             $groups['activity'][] = [
@@ -154,8 +167,10 @@ class CommandController extends Controller
     private function recentGroups($user): array
     {
         $groups = [];
+        $isLawyer = $user && $user->isLawyer();
 
         $cases = LegalCase::with('client')
+            ->when($isLawyer, fn ($q) => $q->where('lawyer_id', $user->id))
             ->whereIn('status', ['active', 'pending', 'overdue', 'fees_pending'])
             ->latest()->limit(4)->get();
         foreach ($cases as $c) {
@@ -167,7 +182,9 @@ class CommandController extends Controller
             ];
         }
 
-        $upcoming = Session::with('case')->where('date', '>=', now())->orderBy('date')->limit(3)->get();
+        $upcoming = Session::with('case')
+            ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)))
+            ->where('date', '>=', now())->orderBy('date')->limit(3)->get();
         foreach ($upcoming as $s) {
             $groups['recent-session'][] = [
                 'label' => ($s->case->case_number ?? 'قضية') . ' - ' . ($s->location ?? ''),
@@ -178,6 +195,7 @@ class CommandController extends Controller
         }
 
         $overdueTasks = Task::where('status', '!=', 'completed')
+            ->when($isLawyer, fn ($q) => $q->where('assigned_to', $user->id))
             ->where('due_date', '<', now())
             ->orderBy('due_date')->limit(3)->get();
         foreach ($overdueTasks as $t) {
