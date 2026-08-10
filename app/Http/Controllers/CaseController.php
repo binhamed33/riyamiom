@@ -743,6 +743,11 @@ SYSTEM;
         $phoneDigits = preg_replace('/[^0-9+]/', '', (string) $client->phone);
         $phoneDigits = ltrim($phoneDigits, '+');
 
+        $infobipConfigured = config('services.infobip.base_url')
+            && config('services.infobip.api_key')
+            && config('services.infobip.sender')
+            && config('services.infobip.template');
+
         if ($client->phone && $metaToken && $metaPhoneId && $waTemplate) {
             try {
                 $response = Http::withToken($metaToken)
@@ -779,6 +784,20 @@ SYSTEM;
                 Log::error('Portal invite whatsapp (meta) failed: ' . $e->getMessage());
                 $failures[] = 'الواتساب: ' . $e->getMessage();
             }
+
+            if (!in_array('whatsapp', $sentChannels) && $infobipConfigured) {
+                if ($this->sendInfobipMessage($phoneDigits, $case->client?->name ?: 'الموكل', $case->case_number ?: '—')) {
+                    $sentChannels[] = 'whatsapp';
+                } else {
+                    $failures[] = 'الواتساب (Infobip): فشل الإرسال';
+                }
+            }
+        } elseif ($client->phone && $infobipConfigured) {
+            if ($this->sendInfobipMessage($phoneDigits, $case->client?->name ?: 'الموكل', $case->case_number ?: '—')) {
+                $sentChannels[] = 'whatsapp';
+            } else {
+                $failures[] = 'الواتساب (Infobip): فشل الإرسال';
+            }
         } elseif ($client->phone && $waUrl && $waToken) {
             try {
                 $phone = preg_replace('/^\+/', '', $client->phone);
@@ -805,6 +824,52 @@ SYSTEM;
         }
 
         return ['sent' => $sentChannels, 'failures' => $failures, 'fallback_wa_link' => $fallbackWaLink];
+    }
+
+    protected function sendInfobipMessage(string $to, string $name, string $caseNumber): bool
+    {
+        $baseUrl = rtrim((string) config('services.infobip.base_url'), '/');
+        $apiKey = (string) config('services.infobip.api_key');
+        $sender = (string) config('services.infobip.sender');
+        $template = (string) config('services.infobip.template');
+        $language = (string) config('services.infobip.language');
+
+        $vars = array_filter(array_map('trim', explode(',', (string) config('services.infobip.template_vars'))));
+        $values = ['name' => $name, 'case' => $caseNumber];
+        $placeholders = [];
+        foreach ($vars as $var) {
+            $placeholders[] = $values[$var] ?? '';
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'App ' . $apiKey,
+                'Accept' => 'application/json',
+            ])->timeout(30)->post("{$baseUrl}/whatsapp/1/message/template", [
+                'messages' => [[
+                    'from' => $sender,
+                    'to' => $to,
+                    'messageId' => (string) \Illuminate\Support\Str::uuid(),
+                    'content' => [
+                        'templateName' => $template,
+                        'templateData' => [
+                            'body' => ['placeholders' => $placeholders],
+                        ],
+                        'language' => $language,
+                    ],
+                ]],
+            ]);
+
+            if ($response->successful()) {
+                return true;
+            }
+
+            Log::error('Portal invite whatsapp (infobip) failed: status=' . $response->status() . ' body=' . $response->body());
+            return false;
+        } catch (\Throwable $e) {
+            Log::error('Portal invite whatsapp (infobip) failed: ' . $e->getMessage());
+            return false;
+        }
     }
 
     protected function portalInviteMessage(): string

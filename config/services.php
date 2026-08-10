@@ -45,6 +45,15 @@ return [
         'staff_events_webhook' => env('DISCORD_STAFF_EVENTS_WEBHOOK', ''),
     ],
 
+    'infobip' => [
+        'base_url' => env('INFOBIP_BASE_URL', ''),
+        'api_key' => env('INFOBIP_API_KEY', ''),
+        'sender' => env('INFOBIP_SENDER', ''),
+        'template' => env('INFOBIP_TEMPLATE_NAME', ''),
+        'language' => env('INFOBIP_LANGUAGE', 'ar'),
+        'template_vars' => env('INFOBIP_TEMPLATE_VARS', 'name,case'),
+    ],
+
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-flash-latest'),
