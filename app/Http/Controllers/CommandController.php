@@ -16,6 +16,20 @@ class CommandController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
+        try {
+            return $this->search($request);
+        } catch (\Throwable $e) {
+            logger()->warning('CommandController degraded: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json([
+                'groups' => [],
+                'actions' => $this->actions($request->user()),
+                'empty' => true,
+            ]);
+        }
+    }
+
+    private function search(Request $request): JsonResponse
+    {
         $raw = trim($request->get('q', ''));
         $query = str_replace(['%', '_'], ['\\%', '\\_'], $raw);
         $user = $request->user();

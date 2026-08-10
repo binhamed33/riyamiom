@@ -13,6 +13,16 @@ class AttentionService
 {
     public function items(?int $limit = null): Collection
     {
+        try {
+            return $this->buildItems($limit);
+        } catch (\Throwable $e) {
+            logger()->warning('AttentionService failed (degraded): ' . $e->getMessage(), ['exception' => $e]);
+            return collect();
+        }
+    }
+
+    private function buildItems(?int $limit = null): Collection
+    {
         $user = auth()->user();
         if ($user && $user->isClient()) {
             return collect();

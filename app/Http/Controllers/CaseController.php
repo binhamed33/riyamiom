@@ -193,11 +193,13 @@ class CaseController extends Controller
     {
         $this->authorizeCaseAccess($case);
 
-        $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader', 'aiMessages', 'activities.user']);
+        $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader', 'aiMessages']);
 
         $events = collect();
 
-        $case->activities->each(function ($a) use ($events) {
+        try {
+            $case->load('activities.user');
+            $case->activities->each(function ($a) use ($events) {
             $typeLabel = [
                 'note' => 'ملاحظة',
                 'call' => 'اتصال',
@@ -248,6 +250,10 @@ class CaseController extends Controller
         });
 
         $timeline = $events->sortByDesc('date')->values();
+        } catch (\Throwable $e) {
+            logger()->warning('Timeline degraded (case ' . $case->id . '): ' . $e->getMessage());
+            $timeline = collect();
+        }
 
         $sessionsData = $case->sessions->map(fn($s) => [
             'id' => $s->id,
