@@ -31,7 +31,7 @@
     @endif
 
     {{-- Form --}}
-    <form action="{{ route('cases.store') }}" method="POST" class="space-y-6">
+    <form action="{{ route('cases.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
 
         {{-- Case Details Card --}}
@@ -127,6 +127,119 @@
                 @error('description')
                     <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
                 @enderror
+            </div>
+        </div>
+
+        {{-- Optional Additions Card --}}
+        <div class="bg-white rounded-xl border border-amber-200 p-6 space-y-4" x-data="{ showDoc: false, showTask: false, showNote: false }">
+            <div class="border-b border-gray-200 pb-3">
+                <h2 class="text-lg font-bold text-amber-700">{{ __('app.add_optional') }}</h2>
+                <p class="text-xs text-gray-400 mt-1">{{ __('app.add_optional_hint') }}</p>
+            </div>
+
+            {{-- Document --}}
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <button type="button" @click="showDoc = !showDoc" class="w-full flex items-center justify-between gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 transition">
+                    <span class="text-sm font-bold text-gray-700">{{ __('app.add_document') }}</span>
+                    <svg class="w-4 h-4 text-gray-400 transition-transform text-amber-600" :class="showDoc ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div x-show="showDoc" class="px-4 py-4 space-y-3 border-t border-gray-100">
+                    <div>
+                        <label for="doc_title" class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.document_title') }}</label>
+                        <input type="text" name="doc_title" id="doc_title" value="{{ old('doc_title') }}"
+                            class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            placeholder="مثال: مذكرة دفاع / البطاقة الشخصية / عقد الإيجار">
+                    </div>
+                    <div>
+                        <label for="doc_file" class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.document_file') }}</label>
+                        <input type="file" name="doc_file" id="doc_file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                            class="w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-50 file:px-4 file:py-2 file:text-amber-700 file:font-semibold hover:file:bg-amber-100">
+                    </div>
+                    <div>
+                        <label for="doc_access_level" class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.access_level') }}</label>
+                        <select name="doc_access_level" id="doc_access_level"
+                            class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                            <option value="all" {{ old('doc_access_level', 'all') === 'all' ? 'selected' : '' }}>{{ __('app.access_all') }}</option>
+                            <option value="team" {{ old('doc_access_level') === 'team' ? 'selected' : '' }}>{{ __('app.access_team') }}</option>
+                            <option value="private" {{ old('doc_access_level') === 'private' ? 'selected' : '' }}>{{ __('app.access_private') }}</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Task --}}
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <button type="button" @click="showTask = !showTask" class="w-full flex items-center justify-between gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 transition">
+                    <span class="text-sm font-bold text-gray-700">{{ __('app.add_task') }}</span>
+                    <svg class="w-4 h-4 text-gray-400 transition-transform text-amber-600" :class="showTask ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div x-show="showTask" class="px-4 py-4 space-y-3 border-t border-gray-100">
+                    <div>
+                        <label for="task_title" class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.task_title') }}</label>
+                        <input type="text" name="task_title" id="task_title" value="{{ old('task_title') }}"
+                            class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            placeholder="مثال: إعداد مذكرة الدفاع / مراجعة المستندات">
+                    </div>
+                    <div>
+                        <label for="task_description" class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.task_description') }}</label>
+                        <textarea name="task_description" id="task_description" rows="2"
+                            class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-y">{{ old('task_description') }}</textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label for="task_due_date" class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.task_due_date') }}</label>
+                            <input type="date" name="task_due_date" id="task_due_date" value="{{ old('task_due_date') }}"
+                                class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label for="task_priority" class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.priority') }}</label>
+                            <select name="task_priority" id="task_priority"
+                                class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                                <option value="low" {{ old('task_priority') === 'low' ? 'selected' : '' }}>{{ __('app.priority_low') }}</option>
+                                <option value="medium" {{ old('task_priority', 'medium') === 'medium' ? 'selected' : '' }}>{{ __('app.priority_medium') }}</option>
+                                <option value="high" {{ old('task_priority') === 'high' ? 'selected' : '' }}>{{ __('app.priority_high') }}</option>
+                                <option value="urgent" {{ old('task_priority') === 'urgent' ? 'selected' : '' }}>{{ __('app.priority_urgent') }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="task_assigned_to" class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.task_assigned_to') }}</label>
+                            <select name="task_assigned_to" id="task_assigned_to"
+                                class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                                <option value="">{{ __('app.choose_assignee') }}</option>
+                                @foreach($users ?? [] as $user)
+                                    <option value="{{ $user->id }}" {{ old('task_assigned_to', auth()->id()) == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Note --}}
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <button type="button" @click="showNote = !showNote" class="w-full flex items-center justify-between gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 transition">
+                    <span class="text-sm font-bold text-gray-700">{{ __('app.add_note') }}</span>
+                    <svg class="w-4 h-4 text-gray-400 transition-transform text-amber-600" :class="showNote ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div x-show="showNote" class="px-4 py-4 space-y-3 border-t border-gray-100">
+                    <div>
+                        <label for="note_title" class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.note_title') }}</label>
+                        <input type="text" name="note_title" id="note_title" value="{{ old('note_title') }}"
+                            class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            placeholder="مثال: اتفاق شفهي مع الموكل">
+                    </div>
+                    <div>
+                        <label for="note_content" class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.note_content') }}</label>
+                        <textarea name="note_content" id="note_content" rows="2"
+                            class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-y">{{ old('note_content') }}</textarea>
+                    </div>
+                </div>
             </div>
         </div>
 

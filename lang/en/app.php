@@ -666,4 +666,16 @@ return [
     'continue' => 'Continue',
     'logout' => 'Log Out',
     'account_deactivated' => 'Your account has been deactivated.',
+    // Add-case optional additions
+    'add_optional' => 'Optional Additions',
+    'add_optional_hint' => 'Add a document, task or note together with the case',
+    'add_document' => 'Upload document',
+    'document_title' => 'Document title',
+    'document_file' => 'File',
+    'access_all' => 'All',
+    'add_task' => 'Add task',
+    'task_due_date' => 'Due date',
+    'add_note' => 'Add note',
+    'note_title' => 'Note title',
+    'note_content' => 'Note content',
 ];

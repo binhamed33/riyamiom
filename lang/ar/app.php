@@ -666,4 +666,16 @@ return [
     'continue' => 'متابعة',
     'logout' => 'تسجيل خروج',
     'account_deactivated' => 'تم تعطيل حسابك.',
+    // Add-case optional additions
+    'add_optional' => 'إضافات (اختياري)',
+    'add_optional_hint' => 'أضف مستنداً أو مهمة أو ملاحظة مع القضية مباشرة',
+    'add_document' => 'رفع مستند',
+    'document_title' => 'عنوان المستند',
+    'document_file' => 'الملف',
+    'access_all' => 'الكل',
+    'add_task' => 'إضافة مهمة',
+    'task_due_date' => 'تاريخ الاستحقاق',
+    'add_note' => 'إضافة ملاحظة',
+    'note_title' => 'عنوان الملاحظة',
+    'note_content' => 'نص الملاحظة',
 ];

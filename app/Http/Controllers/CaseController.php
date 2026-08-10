@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\CaseActivity;
 use App\Models\CaseAiMessage;
 use App\Models\Client;
+use App\Models\Document;
 use App\Models\LegalCase;
 use App\Models\Notification;
 use App\Models\Session;
+use App\Models\Task;
 use App\Models\User;
+use App\Services\DocumentSmartService;
 use App\Services\GeminiService;
 
 use App\Traits\AuditLoggable;
@@ -19,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 use Illuminate\View\View;
 
@@ -84,6 +89,16 @@ class CaseController extends Controller
             'priority'            => 'required|in:low,medium,high,urgent',
             'client_id'           => 'required|exists:clients,id',
             'lawyer_id'           => 'nullable|exists:users,id',
+            'doc_file'            => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:20480',
+            'doc_title'           => 'nullable|string|max:255',
+            'doc_access_level'    => 'nullable|in:all,team,private',
+            'task_title'          => 'nullable|string|max:255',
+            'task_description'    => 'nullable|string|max:2000',
+            'task_due_date'       => 'nullable|date',
+            'task_priority'       => 'nullable|in:low,medium,high,urgent',
+            'task_assigned_to'    => 'nullable|exists:users,id',
+            'note_title'          => 'nullable|string|max:255',
+            'note_content'        => 'nullable|string|max:2000',
         ]);
 
         if (empty($validated['title'])) {
@@ -120,6 +135,8 @@ class CaseController extends Controller
             return redirect()->back()->withInput()->with('error', implode('<br>', $sessionErrors));
         }
 
+        $storedDocPath = null;
+
         DB::beginTransaction();
         try {
             $legalCase = LegalCase::create($validated);
@@ -138,6 +155,89 @@ class CaseController extends Controller
                 }
             }
 
+            // Optional document upload
+            if ($request->hasFile('doc_file')) {
+                $file = $request->file('doc_file');
+                $extension = strtolower($file->getClientOriginalExtension());
+                $storedDocPath = $file->store('documents', 'private');
+
+                $inferred = DocumentSmartService::inferFromFilename($file->getClientOriginalName());
+
+                $document = Document::create([
+                    'case_id'      => $legalCase->id,
+                    'uploaded_by'  => auth()->id(),
+                    'title'        => $request->filled('doc_title') ? $request->input('doc_title') : $file->getClientOriginalName(),
+                    'doc_type'     => $inferred['type'],
+                    'doc_date'     => $inferred['date'],
+                    'file_path'    => $storedDocPath,
+                    'file_type'    => $extension,
+                    'file_size'    => $file->getSize(),
+                    'access_level' => $request->input('doc_access_level', 'all'),
+                ]);
+
+                $this->logAudit(
+                    AuditLog::ACTION_CREATE,
+                    Document::class,
+                    $document->id,
+                    null,
+                    $document->toArray()
+                );
+            }
+
+            // Optional task
+            if ($request->filled('task_title')) {
+                $task = Task::create([
+                    'title'        => $request->input('task_title'),
+                    'description'  => $request->input('task_description'),
+                    'case_id'      => $legalCase->id,
+                    'assigned_to'  => $request->filled('task_assigned_to') ? $request->input('task_assigned_to') : auth()->id(),
+                    'created_by'   => auth()->id(),
+                    'status'       => 'pending',
+                    'priority'     => $request->input('task_priority', 'medium'),
+                    'due_date'     => $request->filled('task_due_date') ? $request->input('task_due_date') : null,
+                ]);
+
+                $this->logAudit(
+                    AuditLog::ACTION_CREATE,
+                    Task::class,
+                    $task->id,
+                    null,
+                    $task->toArray()
+                );
+
+                if ($task->assigned_to && $task->assigned_to !== auth()->id()) {
+                    Notification::create([
+                        'user_id'         => $task->assigned_to,
+                        'title'           => 'New Task Assigned',
+                        'message'         => "You have been assigned a new task: '{$task->title}'.",
+                        'type'            => Notification::TYPE_INFO,
+                        'is_read'         => false,
+                        'notifiable_type' => Task::class,
+                        'notifiable_id'   => $task->id,
+                    ]);
+                }
+            }
+
+            // Optional note
+            if ($request->filled('note_title')) {
+                $activity = CaseActivity::create([
+                    'case_id'     => $legalCase->id,
+                    'user_id'     => auth()->id(),
+                    'type'        => CaseActivity::TYPE_NOTE,
+                    'title'       => $request->input('note_title'),
+                    'content'     => $request->input('note_content'),
+                    'occurred_at' => now(),
+                ]);
+
+                $this->logAudit(
+                    AuditLog::ACTION_CREATE,
+                    CaseActivity::class,
+                    $activity->id,
+                    null,
+                    ['case_id' => $legalCase->id, 'type' => $activity->type, 'title' => $activity->title]
+                );
+            }
+
             DB::commit();
 
             $this->logAudit(
@@ -151,6 +251,9 @@ class CaseController extends Controller
             return $this->redirectAfterStore($legalCase);
         } catch (\Exception $e) {
             DB::rollBack();
+            if ($storedDocPath && Storage::disk('private')->exists($storedDocPath)) {
+                Storage::disk('private')->delete($storedDocPath);
+            }
             return redirect()->back()->withInput()->with('error', 'حدث خطأ أثناء حفظ القضية والجلسات: ' . $e->getMessage());
         }
     }
