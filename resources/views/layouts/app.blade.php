@@ -374,6 +374,8 @@
         [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background-color: #0D1321 !important; border-color: rgba(201,165,90,0.15) !important; color: #F4E8C1 !important; }
         [data-theme="dark"] table thead { border-bottom-color: rgba(201,165,90,0.1) !important; }
         [data-theme="dark"] .ts-wrapper .ts-control, [data-theme="dark"] .ts-wrapper .ts-dropdown { background: #0D1321 !important; border-color: rgba(201,165,90,0.15) !important; color: #F4E8C1 !important; }
+        [data-theme="dark"] .guide-card { background-color: #111B2E !important; background-image: linear-gradient(135deg, #111B2E, #1a2744) !important; }
+        [data-theme="dark"] .guide-glass { background-color: rgba(17, 27, 46, 0.6) !important; }
 </style>
     @stack('styles')
 </head>

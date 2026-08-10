@@ -17,7 +17,7 @@
     </div>
 
     {{-- Quick Nav --}}
-    <div class="bg-white/60 backdrop-blur-sm rounded-2xl border border-gray-100 p-6">
+    <div class="guide-glass bg-white/60 backdrop-blur-sm rounded-2xl border border-gray-100 p-6">
         <p class="text-amber-600 font-bold mb-4 text-sm uppercase tracking-wider">محتويات الدليل</p>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             <a href="#dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
@@ -73,7 +73,7 @@
 
     {{-- Section: Dashboard --}}
     <section id="dashboard" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">🏠</span>
                 <h2 class="text-2xl font-bold text-amber-600">لوحة التحكم</h2>
@@ -107,7 +107,7 @@
 
     {{-- Section: Cases --}}
     <section id="cases" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">📁</span>
                 <h2 class="text-2xl font-bold text-amber-600">إدارة القضايا</h2>
@@ -132,7 +132,7 @@
 
     {{-- Section: Clients --}}
     <section id="clients" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">👥</span>
                 <h2 class="text-2xl font-bold text-amber-600">إدارة العملاء</h2>
@@ -159,7 +159,7 @@
 
     {{-- Section: Sessions --}}
     <section id="sessions" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">📅</span>
                 <h2 class="text-2xl font-bold text-amber-600">الجلسات القضائية</h2>
@@ -187,7 +187,7 @@
 
     {{-- Section: Tasks --}}
     <section id="tasks" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">✅</span>
                 <h2 class="text-2xl font-bold text-amber-600">المهام</h2>
@@ -217,7 +217,7 @@
 
     {{-- Section: Documents --}}
     <section id="documents" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">📄</span>
                 <h2 class="text-2xl font-bold text-amber-600">المستندات</h2>
@@ -244,7 +244,7 @@
 
     {{-- Section: Chat --}}
     <section id="chat" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">💬</span>
                 <h2 class="text-2xl font-bold text-amber-600">المحادثات</h2>
@@ -277,7 +277,7 @@
 
     {{-- Section: HR --}}
     <section id="hr" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">👔</span>
                 <h2 class="text-2xl font-bold text-amber-600">الموارد البشرية</h2>
@@ -304,7 +304,7 @@
 
     {{-- Section: Finance --}}
     <section id="finance" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">💰</span>
                 <h2 class="text-2xl font-bold text-amber-600">المالية</h2>
@@ -331,7 +331,7 @@
 
     {{-- Section: Reports --}}
     <section id="reports" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">📊</span>
                 <h2 class="text-2xl font-bold text-amber-600">التقارير والتصدير</h2>
@@ -358,7 +358,7 @@
 
     {{-- Section: Profile --}}
     <section id="profile" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">⚙️</span>
                 <h2 class="text-2xl font-bold text-amber-600">الملف الشخصي والإعدادات</h2>
@@ -385,7 +385,7 @@
 
     {{-- Section: Tips --}}
     <section id="tips" class="scroll-mt-24">
-        <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
+        <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">💡</span>
                 <h2 class="text-2xl font-bold text-amber-600">نصائح سريعة</h2>
