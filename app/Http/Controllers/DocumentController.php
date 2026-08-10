@@ -74,8 +74,8 @@ class DocumentController extends Controller
             'access_level' => 'required|in:all,team,private',
         ]);
 
-        if ($validated['case_id']) {
-            $case = LegalCase::find($validated['case_id']);
+        if ($request->filled('case_id')) {
+            $case = LegalCase::find($request->input('case_id'));
         }
 
         $file = $request->file('file');
@@ -87,10 +87,17 @@ class DocumentController extends Controller
 
         $path = $file->store('documents', 'private');
 
+        // Smart Documents: استنتاج نوع المستند وتاريخه من اسم الملف
+        $inferred = \App\Services\DocumentSmartService::inferFromFilename($file->getClientOriginalName());
+        $docType = $request->filled('doc_type') ? $request->input('doc_type') : $inferred['type'];
+        $docDate = $request->filled('doc_date') ? $request->input('doc_date') : $inferred['date'];
+
         $document = Document::create([
             'case_id'      => $validated['case_id'] ?? null,
             'uploaded_by'  => auth()->id(),
             'title'        => $validated['title'],
+            'doc_type'     => $docType,
+            'doc_date'     => $docDate,
             'file_path'    => $path,
             'file_type'    => $extension,
             'file_size'    => $file->getSize(),

@@ -120,6 +120,7 @@ class NaturalActionController extends Controller
         return response()->json([
             'ok' => true,
             'created' => $created,
+            'case_id' => $case?->id,
             'message' => 'تم إنشاء ' . count($created) . ' إجراء بنجاح',
         ]);
     }

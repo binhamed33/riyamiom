@@ -18,11 +18,20 @@ class Document extends Model
         'case_id',
         'uploaded_by',
         'title',
+        'doc_type',
+        'doc_date',
         'file_path',
         'file_type',
         'file_size',
         'access_level',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'doc_date' => 'date',
+        ];
+    }
 
     public function case(): BelongsTo
     {
