@@ -19,6 +19,17 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <script nonce="{{ $cspNonce }}">
+        (function () {
+            try {
+                if (localStorage.getItem('theme') === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <title>@yield('title', __('app.dashboard')) - {{ $officeName }}</title>
 
     <link rel="icon" href="/favicon.ico">
@@ -106,6 +117,49 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+
+        @supports not (view-transition-name: root) {
+            .page-enter { animation: fadeIn 0.25s ease-out; }
+        }
+
+        /* --- Theme base (applied before first paint) --- */
+        html { background-color: #F4F2EE; }
+        html[data-theme="dark"] { background-color: #0A0F1E; color-scheme: dark; }
+
+        /* --- Premium page transitions (View Transitions API) --- */
+        @view-transition { navigation: auto; }
+
+        ::view-transition-old(root) {
+            animation: pageOut 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+        ::view-transition-new(root) {
+            animation: pageIn 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        ::view-transition-new(root)::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(105deg, transparent 35%, rgba(201, 165, 90, 0.22) 50%, transparent 65%);
+            animation: goldSweep 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes pageOut {
+            to { opacity: 0; transform: translateY(8px) scale(0.992); filter: saturate(0.7) brightness(0.85); }
+        }
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(18px) scale(0.995); filter: saturate(0.8) brightness(1.05); }
+            to { opacity: 1; transform: translateY(0) scale(1); filter: none; }
+        }
+        @keyframes goldSweep {
+            0% { transform: translateX(-100%); opacity: 0; }
+            45% { opacity: 1; }
+            100% { transform: translateX(100%); opacity: 0; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+            ::view-transition-new(root)::after { display: none; }
+        }
 
         @keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
         .animate-slide-down { animation: slideDown 0.15s ease-out; }
@@ -746,7 +800,7 @@
         </header>
 
         {{-- Page Content --}}
-        <main class="p-4 sm:p-6 lg:p-8 animate-fade-in">
+        <main class="p-4 sm:p-6 lg:p-8 page-enter">
             @if(session('success'))
                 <x-alert type="success" :message="session('success')" />
             @endif
