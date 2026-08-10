@@ -422,7 +422,7 @@
                         </svg>
                     @endif
                 </div>
-                <span class="sidebar-logo-text text-amber-600 font-heading font-bold text-[10px] leading-tight whitespace-normal max-w-[160px]" style="background: linear-gradient(135deg, #C9A55A, #E0C878); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $officeName }}</span>
+                <span class="sidebar-logo-text text-amber-600 font-heading font-bold text-[10px] leading-tight whitespace-normal max-w-[160px]" style="color: #C9A55A;">{{ $officeName }}</span>
             </div>
             <button @click="mobileOpen = false" class="md:hidden text-gray-400 hover:text-gray-800 transition">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
