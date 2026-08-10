@@ -376,6 +376,13 @@
         [data-theme="dark"] .ts-wrapper .ts-control, [data-theme="dark"] .ts-wrapper .ts-dropdown { background: #0D1321 !important; border-color: rgba(201,165,90,0.15) !important; color: #F4E8C1 !important; }
         [data-theme="dark"] .guide-card { background-color: #111B2E !important; background-image: linear-gradient(135deg, #111B2E, #1a2744) !important; }
         [data-theme="dark"] .guide-glass { background-color: rgba(17, 27, 46, 0.6) !important; }
+        [data-theme="dark"] .ts-wrapper .ts-control input { color: #F4E8C1 !important; }
+        [data-theme="dark"] .ts-wrapper .ts-control input::placeholder { color: #9CA3AF !important; }
+        [data-theme="dark"] .ts-wrapper .ts-control .item { color: #F4E8C1 !important; }
+        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option { color: #D1C9A5 !important; }
+        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option:hover,
+        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option.active { background-color: rgba(201, 165, 90, 0.18) !important; color: #E0C878 !important; }
+        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option.selected { color: #C9A55A !important; }
 </style>
     @stack('styles')
 </head>
