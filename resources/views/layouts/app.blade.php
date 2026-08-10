@@ -26,6 +26,10 @@
                 if (localStorage.getItem('theme') === 'dark') {
                     document.documentElement.setAttribute('data-theme', 'dark');
                 }
+                var fs = parseInt(localStorage.getItem('fontSize') || '100', 10);
+                if (fs !== 100 && [100, 110, 125].indexOf(fs) !== -1) {
+                    document.documentElement.style.fontSize = (16 * fs / 100) + 'px';
+                }
             } catch (e) {}
         })();
     </script>
@@ -386,7 +390,7 @@
 </style>
     @stack('styles')
 </head>
-<body class="font-body min-h-screen" style="background-color: #F4F2EE; color: #111111;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: localStorage.getItem('theme') || 'light' }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
+<body class="font-body min-h-screen" style="background-color: #F4F2EE; color: #111111;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: localStorage.getItem('theme') || 'light', fontSize: parseInt(localStorage.getItem('fontSize') || '100', 10) || 100, fontStep(step) { const levels = [100, 110, 125]; let i = levels.indexOf(this.fontSize); if (i === -1) i = 0; const ni = Math.max(0, Math.min(levels.length - 1, i + step)); this.fontSize = levels[ni]; localStorage.setItem('fontSize', this.fontSize); document.documentElement.style.fontSize = (16 * this.fontSize / 100) + 'px'; } }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
 
     {{-- Mobile Overlay --}}
     <div
@@ -444,7 +448,7 @@
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                 </svg>
-                <span>مركز الانتباه</span>
+                <span>{{ __('app.attention_center') }}</span>
                 @php $attCount = \App\Services\AttentionService::itemsCount(); @endphp
                 @if($attCount > 0)
                     <span class="ms-auto text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-bold">{{ $attCount }}</span>
@@ -499,7 +503,7 @@
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
-                <span>صندوق الاقتراحات</span>
+                <span>{{ __('app.suggestions_box') }}</span>
                 @php $suggestionUnread = \App\Models\Suggestion::where('user_id', auth()->id())->whereNotNull('developer_reply')->where('reply_read', false)->count(); @endphp
                 @if($suggestionUnread > 0)
                     <span class="mr-auto bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none badge-pulse" style="line-height:14px;">{{ $suggestionUnread > 9 ? '9+' : $suggestionUnread }}</span>
@@ -509,7 +513,7 @@
 
             @if(!Auth::user()->isClient())
             <div class="pt-5 pb-2">
-                <p class="sidebar-section-title text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-3">الشؤون الإدارية</p>
+                <p class="sidebar-section-title text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-3">{{ __('app.admin_affairs') }}</p>
             </div>
             <a href="{{ route('hr.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('hr.*') ? 'active' : '' }}">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -603,7 +607,7 @@
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
                     </svg>
-                    <span>لوحة المطور</span>
+                    <span>{{ __('app.developer_panel') }}</span>
                 </a>
                 @endif
             @endif
@@ -615,7 +619,7 @@
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                 </svg>
-                <span class="sidebar-footer-text">دليل الاستخدام</span>
+                <span class="sidebar-footer-text">{{ __('app.usage_guide') }}</span>
             </a>
 
             <a href="{{ route('language.switch', app()->getLocale() === 'ar' ? 'en' : 'ar') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm">
@@ -680,6 +684,20 @@
                         </svg>
                     </a>
 
+                    {{-- Font Size Control --}}
+                    <div class="hidden sm:inline-flex items-center gap-0.5 rounded-xl border border-amber-200 bg-white/70 px-1 py-1" title="{{ __('app.font_size') }}">
+                        <button @click="fontStep(-1)" :disabled="fontSize === 100"
+                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-gray-500 transition hover:bg-amber-100 hover:text-amber-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-500" title="{{ __('app.font_decrease') }}">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
+                        </button>
+                        <button @click="fontSize = 100; localStorage.setItem('fontSize', 100); document.documentElement.style.fontSize = '16px'"
+                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-sm font-black text-amber-700 transition hover:bg-amber-100" title="{{ __('app.font_reset') }}">A</button>
+                        <button @click="fontStep(1)" :disabled="fontSize === 125"
+                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-gray-500 transition hover:bg-amber-100 hover:text-amber-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-500" title="{{ __('app.font_increase') }}">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                        </button>
+                    </div>
+
                     {{-- Theme Toggle --}}
                     <button @click="theme = theme === 'dark' ? 'light' : 'dark'; $el.closest('html').setAttribute('data-theme', theme); localStorage.setItem('theme', theme)"
                         class="p-2 rounded-xl transition" :class="theme === 'dark' ? 'text-amber-400 hover:text-amber-300' : 'text-gray-400 hover:text-amber-700'" title="{{ app()->getLocale() === 'ar' ? 'تغيير السمة' : 'Toggle Theme' }}">
@@ -728,7 +746,7 @@
                             <div class="max-h-80 overflow-y-auto">
                                 @forelse($recentNotifications as $notification)
                                     @php
-                                        $notifTitle = $notification->title ?? ($notification->type === 'chat' ? 'رسالة جديدة' : null);
+                                        $notifTitle = $notification->title ?? ($notification->type === 'chat' ? __('app.new_message') : null);
                                     @endphp
                                         @if($notification->is_read)
                                         <div class="block px-4 py-3 transition" style="border-bottom: 1px solid rgba(201,165,90,0.04);">
@@ -846,7 +864,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
                                 </svg>
                             </div>
-                            <p class="text-[11px] tracking-[0.35em] text-amber-400/80 font-bold mb-2">رسالة اليوم</p>
+                            <p class="text-[11px] tracking-[0.35em] text-amber-400/80 font-bold mb-2">{{ __('app.today_message') }}</p>
                             <div class="w-12 h-px mx-auto bg-gradient-to-l from-transparent via-amber-400/60 to-transparent mb-5"></div>
                             <p class="text-sm text-amber-50 leading-relaxed whitespace-pre-wrap">{!! $todayMsgHtml !!}</p>
                             <button type="button" x-bind:class="locked ? 'bg-amber-500 text-[#17130d] border-amber-500' : 'text-amber-300 border-amber-400/40 hover:bg-amber-400/10'" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content } }).catch(() => {}).finally(() => { locked = true; setTimeout(() => hidden = true, 350); })" class="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-full border font-bold text-xs transition-all duration-300" title="قفل الرسالة">
@@ -873,7 +891,7 @@
                 <div class="flex items-center gap-2">
                     <p class="text-xs text-gray-400">{{ $officeName }}</p>
                     <span class="text-gray-300">|</span>
-                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-xs text-gray-400 hover:text-amber-600 transition">المطور عبدالرحمن الريامي</a>
+                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-xs text-gray-400 hover:text-amber-600 transition">{{ __('app.developer_credit') }}</a>
                 </div>
             </div>
         </footer>

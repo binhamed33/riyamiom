@@ -7,7 +7,7 @@
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
-        <h1 class="text-2xl font-bold text-amber-600">📋 قضايا <span x-text="monthNames[month]"></span> <span x-text="year"></span></h1>
+        <h1 class="text-2xl font-bold text-amber-600">📋 {{ __('app.monthly_cases_view') }} <span x-text="monthNames[month]"></span> <span x-text="year"></span></h1>
         <div class="flex items-center gap-3">
             <button id="printBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -16,7 +16,7 @@
                 طباعة
             </button>
             <a href="{{ route('cases.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-lg font-medium transition-colors text-sm">
-                رجوع
+                {{ __('app.back') }}
             </a>
         </div>
     </div>
@@ -25,7 +25,7 @@
     <div class="bg-white rounded-xl border border-amber-200 p-5 print:hidden">
         <div class="flex flex-wrap items-end gap-6">
             <div class="flex-1 min-w-[160px]">
-                <label class="block text-gray-400 text-xs mb-1.5">الشهر</label>
+                <label class="block text-gray-400 text-xs mb-1.5">{{ __('app.month') }}</label>
                 <select x-model="month" @change="fetchData" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                     <template x-for="(name, num) in monthNames" :key="num">
                         <option :value="num" x-text="name" :selected="month == num"></option>
@@ -33,14 +33,14 @@
                 </select>
             </div>
             <div class="flex-1 min-w-[120px]">
-                <label class="block text-gray-400 text-xs mb-1.5">السنة</label>
+                <label class="block text-gray-400 text-xs mb-1.5">{{ __('app.year') }}</label>
                 <select x-model="year" @change="fetchData" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                     <template x-for="y in years" :key="y">
                         <option :value="y" x-text="y" :selected="year == y"></option>
                     </template>
                 </select>
             </div>
-            <div x-show="loading" class="text-amber-600 text-sm font-medium">جارٍ التحميل...</div>
+            <div x-show="loading" class="text-amber-600 text-sm font-medium">{{ __('app.loading') }}</div>
         </div>
     </div>
 
@@ -48,19 +48,19 @@
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 print:gap-3">
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p class="text-2xl font-bold text-amber-600" x-text="summary.total">0</p>
-            <p class="text-gray-500 text-sm mt-1">إجمالي القضايا</p>
+            <p class="text-gray-500 text-sm mt-1">{{ __('app.total_cases') }}</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p class="text-2xl font-bold text-green-700" x-text="summary.active">0</p>
-            <p class="text-gray-500 text-sm mt-1">نشطة</p>
+            <p class="text-gray-500 text-sm mt-1">{{ __('app.active') }}</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p class="text-2xl font-bold text-blue-700" x-text="summary.pending">0</p>
-            <p class="text-gray-500 text-sm mt-1">معلقة</p>
+            <p class="text-gray-500 text-sm mt-1">{{ __('app.pending') }}</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p class="text-2xl font-bold text-gray-400" x-text="summary.closed">0</p>
-            <p class="text-gray-500 text-sm mt-1">منتهية</p>
+            <p class="text-gray-500 text-sm mt-1">{{ __('app.closed') }}</p>
         </div>
     </div>
 
@@ -71,12 +71,12 @@
                 <thead>
                     <tr class="bg-amber-50 border-b border-amber-200">
                         <th class="px-4 py-3 text-right text-amber-600 font-bold">#</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">رقم القضية</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">الموضوع</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">العميل</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">المحكمة</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">الحالة</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">تاريخ آخر جلسة</th>
+                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.office_case_number') }}</th>
+                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.subject') }}</th>
+                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.client') }}</th>
+                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.court') }}</th>
+                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.status') }}</th>
+                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.last_session_date') }}</th>
                     </tr>
                 </thead>
                 <tbody>

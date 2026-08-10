@@ -63,7 +63,7 @@ document.addEventListener('alpine:init', () => {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                القضايا الشهرية
+                {{ __('app.monthly_cases') }}
             </a>
         </div>
     </div>
@@ -246,7 +246,7 @@ document.addEventListener('alpine:init', () => {
                                     </a>
                                     @if($case->client && ($case->client->phone || $case->client->email))
                                     <div class="relative" x-data="sendPortal({{ $case->id }})">
-                                        <button @click="send()" :disabled="sending" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors disabled:opacity-50" title="إرسال رسالة المتابعة للموكل تلقائياً (إيميل وواتساب)">
+                                        <button @click="send()" :disabled="sending" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors disabled:opacity-50" title="{{ __('app.send_followup') }}">
                                             <svg x-show="!sending" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                                             </svg>
@@ -280,11 +280,11 @@ document.addEventListener('alpine:init', () => {
                                                 <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 text-red-700 flex items-center justify-center">
                                                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                                 </div>
-                                                <h3 class="text-lg font-bold text-gray-900 mb-2">تأكيد حذف القضية</h3>
-                                                <p class="text-sm text-gray-500 mb-6">هل أنت متأكد من حذف القضية <span class="font-semibold text-gray-900">{{ $case->case_number }}</span>؟ لا يمكن التراجع عن هذا الإجراء.</p>
+                                                <h3 class="text-lg font-bold text-gray-900 mb-2">{{ __('app.delete_case_title') }}</h3>
+                                                <p class="text-sm text-gray-500 mb-6">{{ __('app.delete_case_body', ['case' => $case->case_number]) }}</p>
                                                 <div class="flex gap-3 justify-center">
-                                                    <button type="button" @click="document.getElementById('delete-case-{{ $case->id }}').submit()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">نعم، احذف</button>
-                                                    <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">إلغاء</button>
+                                                    <button type="button" @click="document.getElementById('delete-case-{{ $case->id }}').submit()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.yes_delete') }}</button>
+                                                    <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">{{ __('app.cancel') }}</button>
                                                 </div>
                                             </div>
                                         </div>
