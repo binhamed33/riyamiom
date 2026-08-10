@@ -349,21 +349,21 @@ document.addEventListener('alpine:init', () => {
                     @endif
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-                {{-- Quick Actions (Primary) --}}
-                <button @click="quickOpen = true" class="btn btn-primary">
+            <div class="flex flex-wrap items-center gap-3">
+                {{-- Quick Actions Button --}}
+                <button @click="quickOpen = true" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 shadow-lg shadow-amber-500/25">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
                     إجراءات سريعة
                 </button>
-                {{-- Summarize --}}
-                <button @click="showSummary = true" class="btn btn-secondary">
+                {{-- Summarize Button --}}
+                <button @click="showSummary = true" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     {{ __('app.case_summary') }}
                 </button>
-                {{-- AI Analysis --}}
-                <button @click="runAnalysis()" :disabled="analyzing" class="btn btn-secondary">
+                {{-- AI Analysis Button --}}
+                <button @click="runAnalysis()" :disabled="analyzing" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
                     <svg x-show="!analyzing" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
                     </svg>
@@ -373,13 +373,55 @@ document.addEventListener('alpine:init', () => {
                     </svg>
                     <span x-text="analyzing ? 'جارِ التحليل...' : 'تحليل بالذكاء الاصطناعي'"></span>
                 </button>
-                {{-- AI Chat --}}
-                <button @click="openAiChat()" class="btn btn-secondary">
+                {{-- AI Chat Button --}}
+                <button @click="openAiChat()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
                     </svg>
                     {{ __('app.ai_chat_title') }}
                 </button>
+                {{-- Print Button --}}
+                <button @click="window.print()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 no-print">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                    </svg>
+                    {{ __('app.print') }}
+                </button>
+                {{-- Download PDF Button --}}
+                <a href="{{ route('cases.file', $case) }}" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    {{ __('app.download_case_pdf') }}
+                </a>
+                <a href="{{ route('cases.edit', $case->id) }}" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+                    {{ __('app.edit') }}
+                </a>
+                @if($case->created_by === auth()->id() || in_array(auth()->user()->role, ['developer', 'admin']))
+                <span class="inline-block" x-data="{ open: false }">
+                    <button type="button" @click="open = true" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm">
+                        {{ __('app.delete') }}
+                    </button>
+                    <form id="delete-case-{{ $case->id }}" action="{{ route('cases.destroy', $case->id) }}" method="POST" class="hidden">
+                        @csrf
+                        @method('DELETE')
+                    </form>
+                    <div x-show="open" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4" @keydown.escape="open = false">
+                        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+                        <div class="relative bg-white border border-red-300 rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
+                            <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 text-red-700 flex items-center justify-center">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-900 mb-2">تأكيد حذف القضية</h3>
+                            <p class="text-sm text-gray-500 mb-6">هل أنت متأكد من حذف القضية <span class="font-semibold text-gray-900">{{ $case->case_number }}</span>؟ لا يمكن التراجع عن هذا الإجراء.</p>
+                            <div class="flex gap-3 justify-center">
+                                <button type="button" @click="document.getElementById('delete-case-{{ $case->id }}').submit()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">نعم، احذف</button>
+                                <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">إلغاء</button>
+                            </div>
+                        </div>
+                    </div>
+                </span>
+                @endif
             </div>
         </div>
         <div class="card-body pt-3">
@@ -455,41 +497,7 @@ document.addEventListener('alpine:init', () => {
                         <span class="text-sm text-[var(--ink-muted)]">—</span>
                     @endif
                 </div>
-                <div class="ms-auto flex items-center gap-1 no-print">
-                    <button @click="window.print()" class="row-action" title="{{ __('app.print') }}">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                    </button>
-                    <a href="{{ route('cases.file', $case) }}" class="row-action" title="{{ __('app.download_case_pdf') }}">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    </a>
-                    <a href="{{ route('cases.edit', $case->id) }}" class="row-action" title="{{ __('app.edit') }}">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    </a>
-                    @if($case->created_by === auth()->id() || in_array(auth()->user()->role, ['developer', 'admin']))
-                    <span class="inline-block" x-data="{ open: false }">
-                        <button type="button" @click="open = true" class="row-action text-red-500 hover:text-red-700" title="{{ __('app.delete') }}">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        </button>
-                        <form id="delete-case-{{ $case->id }}" action="{{ route('cases.destroy', $case->id) }}" method="POST" class="hidden">
-                            @csrf
-                            @method('DELETE')
-                        </form>
-                        <div x-show="open" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4" @keydown.escape="open = false">
-                            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
-                            <div class="relative bg-white border border-red-300 rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
-                                <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 text-red-700 flex items-center justify-center">
-                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                </div>
-                                <h3 class="text-lg font-bold text-gray-900 mb-2">تأكيد حذف القضية</h3>
-                                <p class="text-sm text-gray-500 mb-6">هل أنت متأكد من حذف القضية <span class="font-semibold text-gray-900">{{ $case->case_number }}</span>؟ لا يمكن التراجع عن هذا الإجراء.</p>
-                                <div class="flex gap-3 justify-center">
-                                    <button type="button" @click="document.getElementById('delete-case-{{ $case->id }}').submit()" class="btn btn-danger">نعم، احذف</button>
-                                    <button type="button" @click="open = false" class="btn btn-secondary">إلغاء</button>
-                                </div>
-                            </div>
-                        </div>
-                    </span>
-                    @endif
+                <div class="ms-auto no-print">
                 </div>
             </div>
             <div x-show="portalResult" x-cloak class="mt-2 text-xs font-medium" :class="portalResult?.ok ? 'text-green-600' : 'text-red-600'" x-text="portalResult?.text"></div>
