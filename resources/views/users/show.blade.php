@@ -5,7 +5,7 @@
 @section('content')
 <div class="space-y-6">
     <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-amber-600">{{ $user->name }}</h1>
+        <h1 class="text-3xl font-bold text-gold-dark">{{ $user->name }}</h1>
         <div class="flex items-center gap-3">
             <a href="{{ route('users.edit', $user) }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.edit') }}</a>
             <a href="{{ route('users.index') }}" class="text-gray-500 hover:text-gray-700 transition-colors text-sm flex items-center gap-1">{{ __('app.back') }}</a>
@@ -15,7 +15,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2">
             <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 class="text-lg font-semibold text-amber-600 mb-4">{{ __('app.user_name') }}</h2>
+                <h2 class="text-lg font-semibold text-gold-dark mb-4">{{ __('app.user_name') }}</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-white rounded-lg p-4">
                         <p class="text-gray-400 text-sm mb-1">{{ __('app.name') }}</p>
@@ -32,7 +32,7 @@
                             $roleColors = [
                                 'developer' => 'bg-purple-100 text-purple-700 border-purple-200',
                                 'admin' => 'bg-red-100 text-red-700 border-red-200',
-                                'lawyer' => 'bg-amber-100 text-amber-600 border-amber-300',
+                                'lawyer' => 'bg-gold/12 text-gold-dark border-gold/25',
                                 'staff' => 'bg-blue-100 text-blue-700 border-blue-200',
                                 'client' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
                             ];
@@ -63,19 +63,19 @@
 
         @if($user->role === 'lawyer')
             <div class="space-y-6">
-                <div class="bg-white rounded-xl border border-amber-200 p-6">
-                    <h3 class="text-sm font-semibold text-amber-600 mb-4">{{ __('app.lawyer_stats') }}</h3>
+                <div class="bg-white rounded-xl border border-gold/15 p-6">
+                    <h3 class="text-sm font-semibold text-gold-dark mb-4">{{ __('app.lawyer_stats') }}</h3>
                     <div class="space-y-4">
                         <div class="bg-white rounded-lg p-4 text-center">
-                            <p class="text-3xl font-bold text-amber-600">{{ $user->cases_count ?? 0 }}</p>
+                            <p class="text-3xl font-bold text-gold-dark">{{ $user->cases_count ?? 0 }}</p>
                             <p class="text-gray-500 text-sm mt-1">{{ __('app.active_cases_count') }}</p>
                         </div>
                         <div class="bg-white rounded-lg p-4 text-center">
-                            <p class="text-3xl font-bold text-amber-600">{{ $user->tasks_count ?? 0 }}</p>
+                            <p class="text-3xl font-bold text-gold-dark">{{ $user->tasks_count ?? 0 }}</p>
                             <p class="text-gray-500 text-sm mt-1">{{ __('app.assigned_tasks') }}</p>
                         </div>
                         <div class="bg-white rounded-lg p-4 text-center">
-                            <p class="text-3xl font-bold text-amber-600">{{ $user->efficiency ?? 0 }}%</p>
+                            <p class="text-3xl font-bold text-gold-dark">{{ $user->efficiency ?? 0 }}%</p>
                             <p class="text-gray-500 text-sm mt-1">{{ __('app.efficiency') }}</p>
                             @php
                                 $efficiency = $user->efficiency ?? 0;

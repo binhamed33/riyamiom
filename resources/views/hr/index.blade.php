@@ -7,29 +7,29 @@
 @section('content')
 <div class="">
     <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-amber-700">{{ __('app.hr') }}</h1>
+        <h1 class="text-2xl font-bold text-gold-dark">{{ __('app.hr') }}</h1>
     </div>
 
     @if($isAdmin)
     {{-- Stats --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div class="bg-white rounded-xl border border-amber-200 p-5">
+        <div class="bg-white rounded-xl border border-gold/15 p-5">
             <p class="text-xs text-gray-400 mb-1">إجمالي الموظفين</p>
-            <p class="text-2xl font-bold text-amber-700">{{ $stats['total_employees'] }}</p>
+            <p class="text-2xl font-bold text-gold-dark">{{ $stats['total_employees'] }}</p>
         </div>
-        <div class="bg-white rounded-xl border border-amber-200 p-5">
+        <div class="bg-white rounded-xl border border-gold/15 p-5">
             <p class="text-xs text-gray-400 mb-1">متوسط التقييم</p>
-            <p class="text-2xl font-bold text-amber-700">{{ number_format($stats['avg_rating'] ?? 0, 1) }}/5</p>
+            <p class="text-2xl font-bold text-gold-dark">{{ number_format($stats['avg_rating'] ?? 0, 1) }}/5</p>
         </div>
-        <div class="bg-white rounded-xl border border-amber-200 p-5">
+        <div class="bg-white rounded-xl border border-gold/15 p-5">
             <p class="text-xs text-gray-400 mb-1">إجمالي المكافآت</p>
             <p class="text-2xl font-bold text-green-700">{{ number_format($stats['total_bonuses'], 2) }} ر.ع</p>
         </div>
-        <div class="bg-white rounded-xl border border-amber-200 p-5">
+        <div class="bg-white rounded-xl border border-gold/15 p-5">
             <p class="text-xs text-gray-400 mb-1">إجمالي الجزاءات</p>
             <p class="text-2xl font-bold text-red-700">{{ number_format($stats['total_penalties'], 2) }} ر.ع</p>
         </div>
-        <div class="bg-white rounded-xl border border-amber-200 p-5">
+        <div class="bg-white rounded-xl border border-gold/15 p-5">
             <p class="text-xs text-gray-400 mb-1">إجازات pending</p>
             <p class="text-2xl font-bold text-yellow-700">{{ $stats['pending_leaves'] }}</p>
         </div>
@@ -39,20 +39,20 @@
     {{-- Tabs --}}
     <div class="mb-6 border-b border-gray-200 flex gap-1 overflow-x-auto">
         @if($isAdmin)
-        <a href="{{ route('hr.index', ['tab' => 'employees']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'employees' ? 'text-amber-700 bg-gray-100 border-b-2 border-amber-500' : 'text-gray-400 hover:text-gray-600' }}">الموظفون</a>
+        <a href="{{ route('hr.index', ['tab' => 'employees']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'employees' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">الموظفون</a>
         @endif
-        <a href="{{ route('hr.index', ['tab' => 'performance']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'performance' ? 'text-amber-700 bg-gray-100 border-b-2 border-amber-500' : 'text-gray-400 hover:text-gray-600' }}">التقييمات</a>
-        <a href="{{ route('hr.index', ['tab' => 'bonuses']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'bonuses' ? 'text-amber-700 bg-gray-100 border-b-2 border-amber-500' : 'text-gray-400 hover:text-gray-600' }}">المكافآت</a>
-        <a href="{{ route('hr.index', ['tab' => 'penalties']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'penalties' ? 'text-amber-700 bg-gray-100 border-b-2 border-amber-500' : 'text-gray-400 hover:text-gray-600' }}">الجزاءات</a>
-        <a href="{{ route('hr.index', ['tab' => 'leaves']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'leaves' ? 'text-amber-700 bg-gray-100 border-b-2 border-amber-500' : 'text-gray-400 hover:text-gray-600' }}">الإجازات</a>
+        <a href="{{ route('hr.index', ['tab' => 'performance']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'performance' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">التقييمات</a>
+        <a href="{{ route('hr.index', ['tab' => 'bonuses']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'bonuses' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">المكافآت</a>
+        <a href="{{ route('hr.index', ['tab' => 'penalties']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'penalties' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">الجزاءات</a>
+        <a href="{{ route('hr.index', ['tab' => 'leaves']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'leaves' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">الإجازات</a>
     </div>
 
     {{-- Tab Content --}}
     @if($tab === 'employees' && $isAdmin)
-        <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+        <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
             @if(count($chartData) > 0)
             <div class="p-5 border-b border-gray-200">
-                <h3 class="text-sm font-bold text-amber-700 mb-4">توزيع التقييمات</h3>
+                <h3 class="text-sm font-bold text-gold-dark mb-4">توزيع التقييمات</h3>
                 <div class="flex items-center gap-8">
                     <div class="w-48 h-48"><canvas id="hrRatingChart"></canvas></div>
                     <div class="space-y-3">
@@ -65,14 +65,14 @@
             @endif
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-amber-700">الاسم</th><th class="text-right px-4 py-3 font-bold text-amber-700">البريد</th><th class="text-right px-4 py-3 font-bold text-amber-700">الدور</th><th class="text-right px-4 py-3 font-bold text-amber-700">قضايا</th><th class="text-right px-4 py-3 font-bold text-amber-700">مهام</th><th class="text-right px-4 py-3 font-bold text-amber-700">التقييم</th><th class="text-right px-4 py-3 font-bold text-amber-700">الحالة</th></tr></thead>
+                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الاسم</th><th class="text-right px-4 py-3 font-bold text-gold-dark">البريد</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الدور</th><th class="text-right px-4 py-3 font-bold text-gold-dark">قضايا</th><th class="text-right px-4 py-3 font-bold text-gold-dark">مهام</th><th class="text-right px-4 py-3 font-bold text-gold-dark">التقييم</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحالة</th></tr></thead>
                     <tbody>
                         @foreach($employees as $emp)
                             @php $d = collect($chartData)->firstWhere('name', $emp->name) ?? ['cases'=>0,'tasks'=>0,'tasks_done'=>0,'rating'=>0]; @endphp
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                 <td class="px-4 py-3 text-gray-900">{{ $emp->name }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $emp->email }}</td>
-                                <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-amber-50 text-amber-700 border-amber-300">{{ $emp->role }}</span></td>
+                                <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gold/10 text-gold-dark border-gold/25">{{ $emp->role }}</span></td>
                                 <td class="px-4 py-3 text-gray-500">{{ $d['cases'] }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $d['tasks_done'] }}/{{ $d['tasks'] }}</td>
                                 <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $d['rating'] >= 4 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ($d['rating'] >= 3 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-400 border-gray-200') }}">{{ $d['rating'] }}</span></td>
@@ -85,16 +85,16 @@
         </div>
 
     @elseif($tab === 'performance')
-        <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+        <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
             @if($isAdmin)
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
-                <h2 class="text-sm font-bold text-amber-700">التقييمات</h2>
+                <h2 class="text-sm font-bold text-gold-dark">التقييمات</h2>
                 <button @click="$dispatch('open-modal', 'perfModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ تقييم</button>
             </div>
             @endif
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-amber-700">الموظف</th><th class="text-right px-4 py-3 font-bold text-amber-700">التاريخ</th><th class="text-right px-4 py-3 font-bold text-amber-700">التقييم</th><th class="text-right px-4 py-3 font-bold text-amber-700">المقيم</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-amber-700">إجراءات</th>@endif</tr></thead>
+                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">التاريخ</th><th class="text-right px-4 py-3 font-bold text-gold-dark">التقييم</th><th class="text-right px-4 py-3 font-bold text-gold-dark">المقيم</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
                     <tbody>
                         @forelse($performances as $p)
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
@@ -119,16 +119,16 @@
         </div>
 
     @elseif($tab === 'bonuses')
-        <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+        <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
             @if($isAdmin)
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
-                <h2 class="text-sm font-bold text-amber-700">المكافآت</h2>
+                <h2 class="text-sm font-bold text-gold-dark">المكافآت</h2>
                 <button @click="$dispatch('open-modal', 'bonusModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ مكافأة</button>
             </div>
             @endif
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-amber-700">الموظف</th><th class="text-right px-4 py-3 font-bold text-amber-700">المبلغ</th><th class="text-right px-4 py-3 font-bold text-amber-700">السبب</th><th class="text-right px-4 py-3 font-bold text-amber-700">التاريخ</th><th class="text-right px-4 py-3 font-bold text-amber-700">بواسطة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-amber-700">إجراءات</th>@endif</tr></thead>
+                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">المبلغ</th><th class="text-right px-4 py-3 font-bold text-gold-dark">السبب</th><th class="text-right px-4 py-3 font-bold text-gold-dark">التاريخ</th><th class="text-right px-4 py-3 font-bold text-gold-dark">بواسطة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
                     <tbody>
                         @forelse($bonuses as $b)
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
@@ -153,16 +153,16 @@
         </div>
 
     @elseif($tab === 'penalties')
-        <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+        <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
             @if($isAdmin)
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
-                <h2 class="text-sm font-bold text-amber-700">الجزاءات</h2>
+                <h2 class="text-sm font-bold text-gold-dark">الجزاءات</h2>
                 <button @click="$dispatch('open-modal', 'penaltyModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ جزاء</button>
             </div>
             @endif
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-amber-700">الموظف</th><th class="text-right px-4 py-3 font-bold text-amber-700">المبلغ</th><th class="text-right px-4 py-3 font-bold text-amber-700">السبب</th><th class="text-right px-4 py-3 font-bold text-amber-700">التاريخ</th><th class="text-right px-4 py-3 font-bold text-amber-700">بواسطة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-amber-700">إجراءات</th>@endif</tr></thead>
+                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">المبلغ</th><th class="text-right px-4 py-3 font-bold text-gold-dark">السبب</th><th class="text-right px-4 py-3 font-bold text-gold-dark">التاريخ</th><th class="text-right px-4 py-3 font-bold text-gold-dark">بواسطة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
                     <tbody>
                         @forelse($penalties as $p)
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
@@ -187,14 +187,14 @@
         </div>
 
     @elseif($tab === 'leaves')
-        <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+        <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
-                <h2 class="text-sm font-bold text-amber-700">الإجازات</h2>
+                <h2 class="text-sm font-bold text-gold-dark">الإجازات</h2>
                 <button @click="$dispatch('open-modal', 'leaveModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ طلب إجازة</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-amber-700">الموظف</th><th class="text-right px-4 py-3 font-bold text-amber-700">النوع</th><th class="text-right px-4 py-3 font-bold text-amber-700">من</th><th class="text-right px-4 py-3 font-bold text-amber-700">إلى</th><th class="text-right px-4 py-3 font-bold text-amber-700">الحالة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-amber-700">إجراءات</th>@endif</tr></thead>
+                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">النوع</th><th class="text-right px-4 py-3 font-bold text-gold-dark">من</th><th class="text-right px-4 py-3 font-bold text-gold-dark">إلى</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحالة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
                     <tbody>
                         @forelse($leaves as $l)
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
@@ -231,9 +231,9 @@
 @if($isAdmin)
 <div id="perfModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'perfModal') open = true" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
-    <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
+    <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-bold text-amber-700">إضافة تقييم</h3>
+            <h3 class="text-lg font-bold text-gold-dark">إضافة تقييم</h3>
             <button @click="open = false" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-900"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <form method="POST" action="{{ route('hr.performance.store') }}" class="px-6 py-5 space-y-4">
@@ -241,20 +241,20 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">الموظف <span class="text-red-700">*</span></label>
-                    <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
+                    <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">التاريخ <span class="text-red-700">*</span></label>
-                    <input type="date" name="review_date" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required>
+                    <input type="date" name="review_date" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">التقييم <span class="text-red-700">*</span></label>
-                    <select name="rating" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required><option value="">اختر</option>@for($i=1;$i<=5;$i++)<option value="{{ $i }}">{{ $i }} نجوم</option>@endfor</select>
+                    <select name="rating" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@for($i=1;$i<=5;$i++)<option value="{{ $i }}">{{ $i }} نجوم</option>@endfor</select>
                 </div>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">ملاحظات</label>
-                <textarea name="notes" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"></textarea>
+                <textarea name="notes" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"></textarea>
             </div>
             <div class="flex gap-3 pt-2">
                 <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
@@ -267,9 +267,9 @@
 {{-- Bonus Modal --}}
 <div id="bonusModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'bonusModal') open = true" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
-    <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
+    <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-bold text-amber-700">إضافة مكافأة</h3>
+            <h3 class="text-lg font-bold text-gold-dark">إضافة مكافأة</h3>
             <button @click="open = false" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-900"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <form method="POST" action="{{ route('hr.bonuses.store') }}" class="px-6 py-5 space-y-4">
@@ -277,20 +277,20 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">الموظف <span class="text-red-700">*</span></label>
-                    <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
+                    <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">المبلغ <span class="text-red-700">*</span></label>
-                    <input type="number" step="0.001" name="amount" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required>
+                    <input type="number" step="0.001" name="amount" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">التاريخ <span class="text-red-700">*</span></label>
-                    <input type="date" name="date" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required>
+                    <input type="date" name="date" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required>
                 </div>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">السبب <span class="text-red-700">*</span></label>
-                <textarea name="reason" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required></textarea>
+                <textarea name="reason" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required></textarea>
             </div>
             <div class="flex gap-3 pt-2">
                 <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
@@ -303,9 +303,9 @@
 {{-- Penalty Modal --}}
 <div id="penaltyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'penaltyModal') open = true" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
-    <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
+    <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-bold text-amber-700">إضافة جزاء</h3>
+            <h3 class="text-lg font-bold text-gold-dark">إضافة جزاء</h3>
             <button @click="open = false" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-900"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <form method="POST" action="{{ route('hr.penalties.store') }}" class="px-6 py-5 space-y-4">
@@ -313,20 +313,20 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">الموظف <span class="text-red-700">*</span></label>
-                    <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
+                    <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">المبلغ</label>
-                    <input type="number" step="0.001" name="amount" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    <input type="number" step="0.001" name="amount" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">التاريخ <span class="text-red-700">*</span></label>
-                    <input type="date" name="date" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required>
+                    <input type="date" name="date" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required>
                 </div>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">السبب <span class="text-red-700">*</span></label>
-                <textarea name="reason" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required></textarea>
+                <textarea name="reason" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required></textarea>
             </div>
             <div class="flex gap-3 pt-2">
                 <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">حفظ</button>
@@ -340,9 +340,9 @@
 {{-- Leave Modal --}}
 <div id="leaveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'leaveModal') open = true" @keydown.escape="open = false">
     <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
-    <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
+    <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-bold text-amber-700">طلب إجازة</h3>
+            <h3 class="text-lg font-bold text-gold-dark">طلب إجازة</h3>
             <button @click="open = false" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-900"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <form method="POST" action="{{ route('hr.leaves.store') }}" class="px-6 py-5 space-y-4">
@@ -350,7 +350,7 @@
             @if(auth()->user()->isAdmin() || auth()->user()->isDeveloper())
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">الموظف <span class="text-red-700">*</span></label>
-                <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
+                <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
             </div>
             @else
             <input type="hidden" name="employee_id" value="{{ auth()->id() }}">
@@ -361,21 +361,21 @@
             @endif
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">النوع <span class="text-red-700">*</span></label>
-                <select name="type" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required><option value="">اختر</option><option value="annual">سنوية</option><option value="sick">مرضية</option><option value="emergency">طارئة</option><option value="maternity">أمومة</option><option value="unpaid">بدون راتب</option><option value="other">أخرى</option></select>
+                <select name="type" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option><option value="annual">سنوية</option><option value="sick">مرضية</option><option value="emergency">طارئة</option><option value="maternity">أمومة</option><option value="unpaid">بدون راتب</option><option value="other">أخرى</option></select>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">من <span class="text-red-700">*</span></label>
-                    <input type="date" name="start_date" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required>
+                    <input type="date" name="start_date" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">إلى <span class="text-red-700">*</span></label>
-                    <input type="date" name="end_date" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required>
+                    <input type="date" name="end_date" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required>
                 </div>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">السبب</label>
-                <textarea name="reason" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"></textarea>
+                <textarea name="reason" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"></textarea>
             </div>
             <div class="flex gap-3 pt-2">
                 <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">إرسال الطلب</button>
@@ -396,8 +396,8 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: ['ممتاز (4-5)', 'جيد (3-4)', 'ضعيف (>3)'],
             datasets: [{
                 data: [{{ $ratingDistribution['excellent'] }}, {{ $ratingDistribution['good'] }}, {{ $ratingDistribution['poor'] }}],
-                backgroundColor: ['#7FBF99', '#C9A971', '#D98F8F'],
-                borderColor: '#DDD8CD',
+                backgroundColor: ['#4ADE80', '#F59E0B', '#F87171'],
+                borderColor: '#E2E6EC',
                 borderWidth: 3
             }]
         },

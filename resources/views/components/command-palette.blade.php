@@ -9,7 +9,7 @@
 {{-- Command Palette - Lawyer OS --}}
 <div x-data="commandPalette()" class="relative min-w-0 flex-1 max-w-md">
     {{-- Trigger (looks like the old search box, opens overlay) --}}
-    <button type="button" @click="openPalette()" class="w-full flex items-center gap-2.5 bg-gray-100 border border-gray-200 rounded-xl {{ $_ar ? 'pr-3 pl-2' : 'pl-3 pr-2' }} py-2 text-sm text-gray-400 hover:border-amber-500/40 hover:bg-white transition-all group" aria-label="{{ __('app.search') }}">
+    <button type="button" @click="openPalette()" class="w-full flex items-center gap-2.5 bg-gray-100 border border-gray-200 rounded-xl {{ $_ar ? 'pr-3 pl-2' : 'pl-3 pr-2' }} py-2 text-sm text-gray-400 hover:border-gold/40 hover:bg-white transition-all group" aria-label="{{ __('app.search') }}">
         <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
         <span class="truncate font-heading text-[13px] group-hover:text-gray-600 transition-colors">{{ __('app.search') }}...</span>
         <kbd class="ms-auto hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border border-gray-200 bg-white text-[10px] font-bold text-gray-400 shadow-sm"><span>Ctrl</span><span>K</span></kbd>
@@ -19,21 +19,21 @@
     <template x-teleport="body">
     <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @keydown.escape.window="open = false" class="fixed inset-0 z-[120]" style="background: rgba(10,8,5,0.55); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);" @click="if($event.target === $el) open = false" role="dialog" aria-modal="true" aria-label="{{ __('app.search') }}">
         <div class="absolute inset-x-0 top-[8vh] sm:top-[12vh] mx-auto w-[94vw] sm:max-w-xl" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)">
-            <div class="rounded-2xl overflow-hidden border border-amber-400/25 bg-gradient-to-b from-[#1F211E] to-[#141514] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(184,155,94,0.12)]">
-                <div class="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-l from-amber-600/60 via-amber-400/70 to-amber-600/60 pointer-events-none"></div>
+            <div class="rounded-2xl overflow-hidden border border-gold-light/25 bg-gradient-to-b from-[#121826] to-[#080B12] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(212,175,55,0.12)]">
+                <div class="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-l from-gold-dark/60 via-gold/70 to-gold-light/60 pointer-events-none"></div>
 
                 {{-- Input row --}}
-                <div class="flex items-center gap-3 px-5" style="border-bottom: 1px solid rgba(184,155,94,0.12);">
-                    <svg class="w-5 h-5 text-amber-400/80 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-                    <input x-ref="palInput" type="text" x-model="query" @input.debounce.250ms="run()" @keydown.enter="go()" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="{{ app()->getLocale() === 'ar' ? 'ابحث عن قضية، موكل، جلسة، مهمة... أو ابدأ بـ  >  للأوامر' : 'Search cases, clients, sessions... or start with  >  for commands' }}" class="w-full bg-transparent py-4 text-[15px] text-amber-50 placeholder-amber-100/40 focus:outline-none">
-                    <button type="button" @click="open = false" class="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-amber-100/50 hover:text-amber-100 hover:bg-amber-400/10 transition" aria-label="{{ app()->getLocale() === 'ar' ? 'إغلاق' : 'Close' }}">
+                <div class="flex items-center gap-3 px-5" style="border-bottom: 1px solid rgba(212,175,55,0.12);">
+                    <svg class="w-5 h-5 text-gold-light/80 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                    <input x-ref="palInput" type="text" x-model="query" @input.debounce.250ms="run()" @keydown.enter="go()" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="{{ app()->getLocale() === 'ar' ? 'ابحث عن قضية، موكل، جلسة، مهمة... أو ابدأ بـ  >  للأوامر' : 'Search cases, clients, sessions... or start with  >  for commands' }}" class="w-full bg-transparent py-4 text-[15px] text-gold-light placeholder-gold-light/40 focus:outline-none">
+                    <button type="button" @click="open = false" class="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-gold-light/50 hover:text-gold-light hover:bg-gold-light/10 transition" aria-label="{{ app()->getLocale() === 'ar' ? 'إغلاق' : 'Close' }}">
                         ESC
                     </button>
                 </div>
 
                 {{-- Loading --}}
-                <div x-show="loading" x-cloak class="px-5 py-8 flex items-center justify-center gap-3 text-amber-100/60 text-sm">
-                    <svg class="w-5 h-5 animate-spin text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                <div x-show="loading" x-cloak class="px-5 py-8 flex items-center justify-center gap-3 text-gold-light/60 text-sm">
+                    <svg class="w-5 h-5 animate-spin text-gold-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
                     <span>{{ app()->getLocale() === 'ar' ? 'جارٍ البحث...' : 'Searching...' }}</span>
                 </div>
 
@@ -42,12 +42,12 @@
                     {{-- Commands section --}}
                     <div x-show="actions.length > 0">
                         <div class="px-5 pt-3 pb-1.5 flex items-center gap-2">
-                            <span class="text-[10px] font-bold tracking-[0.2em] text-amber-400/60 uppercase">{{ app()->getLocale() === 'ar' ? 'أوامر سريعة' : 'Quick commands' }}</span>
-                            <span class="flex-1 h-px bg-amber-400/10"></span>
+                            <span class="text-[10px] font-bold tracking-[0.2em] text-gold-light/60 uppercase">{{ app()->getLocale() === 'ar' ? 'أوامر سريعة' : 'Quick commands' }}</span>
+                            <span class="flex-1 h-px bg-gold-light/10"></span>
                         </div>
                         <template x-for="(a, i) in actions" :key="'a'+a.key">
-                            <a :href="a.url" @click="open = false" class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150" :class="isActive('action', i) ? 'bg-amber-400/15 text-amber-50' : 'text-amber-100/70 hover:bg-amber-400/5 hover:text-amber-50'" @mouseenter="setActive('action', i)">
-                                <span class="w-6 h-6 shrink-0 rounded-lg bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-[11px] font-bold text-amber-300" x-text="a.icon"></span>
+                            <a :href="a.url" @click="open = false" class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150" :class="isActive('action', i) ? 'bg-gold-light/15 text-gold-light' : 'text-gold-light/70 hover:bg-gold-light/5 hover:text-gold-light'" @mouseenter="setActive('action', i)">
+                                <span class="w-6 h-6 shrink-0 rounded-lg bg-gold-light/10 border border-gold-light/20 flex items-center justify-center text-[11px] font-bold text-gold-light" x-text="a.icon"></span>
                                 <span x-text="a.label" class="truncate"></span>
                             </a>
                         </template>
@@ -57,15 +57,15 @@
                     <template x-for="key in groupKeys" :key="key">
                         <div>
                             <div class="px-5 pt-3 pb-1.5 flex items-center gap-2">
-                                <span class="text-[10px] font-bold tracking-[0.2em] text-amber-400/60 uppercase" x-text="groupTitle(key)"></span>
-                                <span class="flex-1 h-px bg-amber-400/10"></span>
+                                <span class="text-[10px] font-bold tracking-[0.2em] text-gold-light/60 uppercase" x-text="groupTitle(key)"></span>
+                                <span class="flex-1 h-px bg-gold-light/10"></span>
                             </div>
                             <template x-for="(r, j) in groups[key]" :key="key+j">
-                                <a :href="r.url" @click="open = false" class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150" :class="isActive('result', key, j) ? 'bg-amber-400/15 text-amber-50' : 'text-amber-100/70 hover:bg-amber-400/5 hover:text-amber-50'" @mouseenter="setActive('result', key, j)">
-                                    <span class="w-6 h-6 shrink-0 rounded-lg bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-[11px] font-bold text-amber-300" x-text="r.icon"></span>
+                                <a :href="r.url" @click="open = false" class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150" :class="isActive('result', key, j) ? 'bg-gold-light/15 text-gold-light' : 'text-gold-light/70 hover:bg-gold-light/5 hover:text-gold-light'" @mouseenter="setActive('result', key, j)">
+                                    <span class="w-6 h-6 shrink-0 rounded-lg bg-gold-light/10 border border-gold-light/20 flex items-center justify-center text-[11px] font-bold text-gold-light" x-text="r.icon"></span>
                                     <span class="min-w-0">
                                         <span class="block truncate" x-text="r.label"></span>
-                                        <span x-show="r.sub" class="block text-[11px] text-amber-100/40 truncate" x-text="r.sub"></span>
+                                        <span x-show="r.sub" class="block text-[11px] text-gold-light/40 truncate" x-text="r.sub"></span>
                                     </span>
                                 </a>
                             </template>
@@ -74,18 +74,18 @@
 
                     {{-- Empty --}}
                     <div x-show="empty" class="px-5 py-10 text-center">
-                        <div class="w-12 h-12 mx-auto rounded-full bg-amber-400/5 border border-amber-400/15 flex items-center justify-center mb-3">
-                            <svg class="w-5 h-5 text-amber-400/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                        <div class="w-12 h-12 mx-auto rounded-full bg-gold-light/5 border border-gold-light/15 flex items-center justify-center mb-3">
+                            <svg class="w-5 h-5 text-gold-light/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
                         </div>
-                        <p class="text-sm text-amber-100/50" x-text="query.length > 1 ? '{{ $palMsgNoResults }}' : '{{ $palMsgStartTyping }}'"></p>
+                        <p class="text-sm text-gold-light/50" x-text="query.length > 1 ? '{{ $palMsgNoResults }}' : '{{ $palMsgStartTyping }}'"></p>
                     </div>
                 </div>
 
                 {{-- Footer hints --}}
-                <div class="flex items-center gap-4 px-5 py-2.5 text-[10px] text-amber-100/35" style="border-top: 1px solid rgba(251,191,36,0.1);">
-                    <span class="flex items-center gap-1"><kbd class="px-1 leading-4 rounded border border-amber-400/20 bg-amber-400/5">↑</kbd><kbd class="px-1 leading-4 rounded border border-amber-400/20 bg-amber-400/5">↓</kbd> {{ app()->getLocale() === 'ar' ? 'تنقل' : 'Navigate' }}</span>
-                    <span class="flex items-center gap-1"><kbd class="px-1 leading-4 rounded border border-amber-400/20 bg-amber-400/5">Enter</kbd> {{ app()->getLocale() === 'ar' ? 'فتح' : 'Open' }}</span>
-                    <span class="flex items-center gap-1"><kbd class="px-1 leading-4 rounded border border-amber-400/20 bg-amber-400/5">&gt;</kbd> {{ app()->getLocale() === 'ar' ? 'أوامر فقط' : 'Commands only' }}</span>
+                <div class="flex items-center gap-4 px-5 py-2.5 text-[10px] text-gold-light/35" style="border-top: 1px solid rgba(251,191,36,0.1);">
+                    <span class="flex items-center gap-1"><kbd class="px-1 leading-4 rounded border border-gold-light/20 bg-gold-light/5">↑</kbd><kbd class="px-1 leading-4 rounded border border-gold-light/20 bg-gold-light/5">↓</kbd> {{ app()->getLocale() === 'ar' ? 'تنقل' : 'Navigate' }}</span>
+                    <span class="flex items-center gap-1"><kbd class="px-1 leading-4 rounded border border-gold-light/20 bg-gold-light/5">Enter</kbd> {{ app()->getLocale() === 'ar' ? 'فتح' : 'Open' }}</span>
+                    <span class="flex items-center gap-1"><kbd class="px-1 leading-4 rounded border border-gold-light/20 bg-gold-light/5">&gt;</kbd> {{ app()->getLocale() === 'ar' ? 'أوامر فقط' : 'Commands only' }}</span>
                 </div>
             </div>
         </div>

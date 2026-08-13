@@ -12,7 +12,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
             </a>
-            <h1 class="text-2xl font-bold text-amber-600">{{ $case->title }}</h1>
+            <h1 class="text-2xl font-bold text-gold-dark">{{ $case->title }}</h1>
         </div>
         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
             @if($case->status === 'active') bg-green-100 text-green-700 border border-green-200
@@ -38,8 +38,8 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white rounded-xl border border-amber-200 p-6">
-                <h2 class="text-lg font-bold text-amber-600 mb-4">{{ __('app.case_details') }}</h2>
+            <div class="bg-white rounded-xl border border-gold/15 p-6">
+                <h2 class="text-lg font-bold text-gold-dark mb-4">{{ __('app.case_details') }}</h2>
                 <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
                         <span class="text-gray-400">{{ __('app.case_number') }}:</span>
@@ -89,14 +89,14 @@
             </div>
 
             @if($case->sessions->count())
-                <div class="bg-white rounded-xl border border-amber-200 p-6">
-                    <h2 class="text-lg font-bold text-amber-600 mb-4">{{ __('app.sessions') }}</h2>
+                <div class="bg-white rounded-xl border border-gold/15 p-6">
+                    <h2 class="text-lg font-bold text-gold-dark mb-4">{{ __('app.sessions') }}</h2>
                     <div class="space-y-3">
                         @foreach($case->sessions as $session)
                             <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="w-10 h-10 rounded-lg bg-gold/12 flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-gold-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                         </svg>
                                     </div>
@@ -125,13 +125,13 @@
 
         <div class="space-y-6">
             @if($case->documents->count())
-                <div class="bg-white rounded-xl border border-amber-200 p-6">
-                    <h2 class="text-lg font-bold text-amber-600 mb-4">{{ __('app.documents') }}</h2>
+                <div class="bg-white rounded-xl border border-gold/15 p-6">
+                    <h2 class="text-lg font-bold text-gold-dark mb-4">{{ __('app.documents') }}</h2>
                     <div class="space-y-2">
                         @foreach($case->documents as $document)
                             <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
-                                <div class="w-8 h-8 rounded bg-amber-100 flex items-center justify-center">
-                                    <svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="w-8 h-8 rounded bg-gold/12 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-gold-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
                                 </div>

@@ -7,18 +7,18 @@
 
     {{-- Hero --}}
     <div class="text-center py-12">
-        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-300 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-amber-200/30">
+        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-gold to-gold-light flex items-center justify-center mx-auto mb-6 shadow-lg shadow-gold/30">
             <span class="text-3xl font-bold text-gray-900">LP</span>
         </div>
-        <h1 class="text-4xl md:text-5xl font-bold text-amber-600 font-heading mb-4">LexPro</h1>
+        <h1 class="text-4xl md:text-5xl font-bold text-gold-dark font-heading mb-4">LexPro</h1>
         <p class="text-gray-600 text-xl">نظام متكامل لإدارة المكاتب القانونية والمحاماة</p>
     </div>
 
     {{-- What is LexPro --}}
     <div class="bg-white rounded-2xl border border-gray-200 p-8">
-        <h2 class="text-2xl font-bold text-amber-600 mb-6">ما هو LexPro؟</h2>
+        <h2 class="text-2xl font-bold text-gold-dark mb-6">ما هو LexPro؟</h2>
         <p class="text-gray-800 leading-relaxed text-lg">
-            <strong class="text-amber-600">LexPro</strong> هو نظام إلكتروني متكامل لإدارة المكاتب القانونية، تم تطويره خصيصاً<br class="hidden md:block">
+            <strong class="text-gold-dark">LexPro</strong> هو نظام إلكتروني متكامل لإدارة المكاتب القانونية، تم تطويره خصيصاً<br class="hidden md:block">
             ليسهل على المحامين وإدارة المكتب إدارة القضايا والعملاء والجلسات والمهام اليومية.
         </p>
     </div>
@@ -26,7 +26,7 @@
     {{-- Features --}}
     <div class="grid md:grid-cols-2 gap-6">
         <div class="bg-white rounded-2xl border border-gray-200 p-6">
-            <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4 text-amber-600 text-xl">📁</div>
+            <div class="w-12 h-12 rounded-xl bg-gold/12 flex items-center justify-center mb-4 text-gold-dark text-xl">📁</div>
             <h3 class="text-lg font-bold text-gray-700 mb-2">إدارة القضايا</h3>
             <p class="text-gray-600 text-sm leading-relaxed">
                 تسجيل القضايا مع رقم القضية، المحكمة، الموضوع، الخصم، الحالة، والقسم.
@@ -34,7 +34,7 @@
             </p>
         </div>
         <div class="bg-white rounded-2xl border border-gray-200 p-6">
-            <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4 text-amber-600 text-xl">👥</div>
+            <div class="w-12 h-12 rounded-xl bg-gold/12 flex items-center justify-center mb-4 text-gold-dark text-xl">👥</div>
             <h3 class="text-lg font-bold text-gray-700 mb-2">إدارة العملاء</h3>
             <p class="text-gray-600 text-sm leading-relaxed">
                 قاعدة بيانات متكاملة للعملاء تشمل الاسم، الهاتف، البريد، والعنوان.
@@ -42,7 +42,7 @@
             </p>
         </div>
         <div class="bg-white rounded-2xl border border-gray-200 p-6">
-            <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4 text-amber-600 text-xl">📅</div>
+            <div class="w-12 h-12 rounded-xl bg-gold/12 flex items-center justify-center mb-4 text-gold-dark text-xl">📅</div>
             <h3 class="text-lg font-bold text-gray-700 mb-2">الجلسات القضائية</h3>
             <p class="text-gray-600 text-sm leading-relaxed">
                 جدولة جلسات المحكمة وتصنيفها حسب التاريخ والنوع.
@@ -50,7 +50,7 @@
             </p>
         </div>
         <div class="bg-white rounded-2xl border border-gray-200 p-6">
-            <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4 text-amber-600 text-xl">✅</div>
+            <div class="w-12 h-12 rounded-xl bg-gold/12 flex items-center justify-center mb-4 text-gold-dark text-xl">✅</div>
             <h3 class="text-lg font-bold text-gray-700 mb-2">المهام</h3>
             <p class="text-gray-600 text-sm leading-relaxed">
                 نظام مهام متكامل مع تحديد الأولويات (عادية، مهمة، عاجلة)
@@ -58,7 +58,7 @@
             </p>
         </div>
         <div class="bg-white rounded-2xl border border-gray-200 p-6">
-            <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4 text-amber-600 text-xl">💬</div>
+            <div class="w-12 h-12 rounded-xl bg-gold/12 flex items-center justify-center mb-4 text-gold-dark text-xl">💬</div>
             <h3 class="text-lg font-bold text-gray-700 mb-2">المحادثات الداخلية</h3>
             <p class="text-gray-600 text-sm leading-relaxed">
                 نظام تواصل فوري بين أعضاء الفريق مع إمكانية إرفاق الملفات
@@ -66,7 +66,7 @@
             </p>
         </div>
         <div class="bg-white rounded-2xl border border-gray-200 p-6">
-            <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4 text-amber-600 text-xl">💰</div>
+            <div class="w-12 h-12 rounded-xl bg-gold/12 flex items-center justify-center mb-4 text-gold-dark text-xl">💰</div>
             <h3 class="text-lg font-bold text-gray-700 mb-2">المالية</h3>
             <p class="text-gray-600 text-sm leading-relaxed">
                 إدارة المعاملات المالية، الفواتير، والرسوم.
@@ -77,7 +77,7 @@
 
     {{-- More Features --}}
     <div class="bg-white rounded-2xl border border-gray-200 p-8">
-        <h2 class="text-xl font-bold text-amber-600 mb-6">مميزات إضافية</h2>
+        <h2 class="text-xl font-bold text-gold-dark mb-6">مميزات إضافية</h2>
         <div class="grid sm:grid-cols-3 gap-4">
             <div class="text-center p-4">
                 <span class="text-2xl">👔</span>
@@ -114,7 +114,7 @@
 
     {{-- Tech Stack --}}
     <div class="bg-white rounded-2xl border border-gray-200 p-8 text-center">
-        <h2 class="text-xl font-bold text-amber-600 mb-4">التقنيات المستخدمة</h2>
+        <h2 class="text-xl font-bold text-gold-dark mb-4">التقنيات المستخدمة</h2>
         <div class="flex flex-wrap justify-center gap-3">
             <span class="px-4 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-700 text-sm">Laravel</span>
             <span class="px-4 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-700 text-sm">PHP</span>

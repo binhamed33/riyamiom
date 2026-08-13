@@ -55,98 +55,190 @@
             theme: {
                 extend: {
                     colors: {
-                        gold: { DEFAULT: '#B89B5E', light: '#D4B978', dark: '#8F7745' },
-                        primary: { DEFAULT: '#B89B5E', hover: '#A1844F', dark: '#8F7745', light: '#D4B978' },
-                        background: '#F5F2EB',
-                        surface: '#FBF9F5',
-                        text: { DEFAULT: '#191A18', secondary: '#686963', muted: '#8A8B84' },
-                        border: '#DDD8CD',
-                        success: { DEFAULT: '#3FA66B', light: '#DCEFE3', dark: '#327F55' },
-                        error: { DEFAULT: '#C95C5C', light: '#F5DEDE', dark: '#A94848' },
-                        warning: { DEFAULT: '#C89A45', light: '#F4E8CC', dark: '#9F7935' },
-                        info: { DEFAULT: '#5B86B8', light: '#E0E9F3', dark: '#456B97' },
-                        ai: { DEFAULT: '#756A9A', light: '#E9E6F2', dark: '#5F567E' },
+
+                        gold: { DEFAULT: '#D4AF37', light: '#F0D98A', dark: '#A98218', deep: '#8C6A12', hover: '#E5C158' },
+
+                        primary: { DEFAULT: '#D4AF37', hover: '#E5C158', dark: '#A98218', light: '#F0D98A' },
+
+                        background: '#F7F8FA',
+
+                        surface: '#FFFFFF',
+
+                        text: { DEFAULT: '#111827', secondary: '#4B5563', muted: '#6B7280' },
+
+                        border: '#E2E6EC',
+
+                        success: { DEFAULT: '#16A34A', light: '#DCFCE7', dark: '#166534' },
+
+                        error: { DEFAULT: '#DC2626', light: '#FEE2E2', dark: '#991B1B' },
+
+                        warning: { DEFAULT: '#D97706', light: '#FEF3C7', dark: '#92400E' },
+
+                        info: { DEFAULT: '#2563EB', light: '#DBEAFE', dark: '#1E40AF' },
+
+                        ai: { DEFAULT: '#7C3AED', light: '#EDE9FE', dark: '#5B21B6' },
+
                         gray: {
-                            50: '#FBF9F5', 100: '#F4F0E8', 200: '#E4DFD4', 300: '#CFCABD',
-                            400: '#A3A49D', 500: '#8A8B84', 600: '#7A7B74', 700: '#686963',
-                            800: '#3A3B36', 900: '#191A18',
+
+                            50: '#F9FAFB', 100: '#F3F4F6', 200: '#E5E7EB', 300: '#D1D5DB',
+
+                            400: '#9CA3AF', 500: '#6B7280', 600: '#4B5563', 700: '#374151',
+
+                            800: '#1F2937', 900: '#111827',
+
                         },
+
                         amber: {
-                            50: '#FBF7EE', 100: '#F5EDDC', 200: '#EADDBD', 300: '#DCCB9F',
-                            400: '#C9A971', 500: '#B89B5E', 600: '#A1844F', 700: '#8F7745',
-                            800: '#705C38', 900: '#5C4B2E',
+
+                            50: '#FFFBEB', 100: '#FEF3C7', 200: '#FDE68A', 300: '#FCD34D',
+
+                            400: '#FBBF24', 500: '#F59E0B', 600: '#D97706', 700: '#B45309',
+
+                            800: '#92400E', 900: '#78350F',
+
                         },
+
                         red: {
-                            50: '#FBF0F0', 100: '#F5DEDE', 200: '#EBBFBF', 300: '#DF9B9B',
-                            400: '#CF6F6F', 500: '#C95C5C', 600: '#B14F4F', 700: '#A94848',
-                            800: '#8E3D3D', 900: '#763333',
+
+                            50: '#FEF2F2', 100: '#FEE2E2', 200: '#FECACA', 300: '#FCA5A5',
+
+                            400: '#F87171', 500: '#EF4444', 600: '#DC2626', 700: '#B91C1C',
+
+                            800: '#991B1B', 900: '#7F1D1D',
+
                         },
+
                         green: {
-                            50: '#EFF7F1', 100: '#DCEFE3', 200: '#C2E3CE', 300: '#9CD0B0',
-                            400: '#63B283', 500: '#3FA66B', 600: '#358A59', 700: '#327F55',
-                            800: '#2A6A46', 900: '#225738',
+
+                            50: '#F0FDF4', 100: '#DCFCE7', 200: '#BBF7D0', 300: '#86EFAC',
+
+                            400: '#4ADE80', 500: '#22C55E', 600: '#16A34A', 700: '#15803D',
+
+                            800: '#166534', 900: '#14532D',
+
                         },
+
                         emerald: {
-                            50: '#ECF7F1', 100: '#DCEFE3', 200: '#BEE3D1', 300: '#97CFB6',
-                            400: '#63B283', 500: '#3FA66B', 600: '#358A59', 700: '#327F55',
-                            800: '#2A6A46', 900: '#225738',
+
+                            50: '#ECFDF5', 100: '#D1FAE5', 200: '#A7F3D0', 300: '#6EE7B7',
+
+                            400: '#34D399', 500: '#10B981', 600: '#059669', 700: '#047857',
+
+                            800: '#065F46', 900: '#064E3B',
+
                         },
+
                         blue: {
-                            50: '#EEF3F9', 100: '#E0E9F3', 200: '#C2D4E7', 300: '#9DBAD8',
-                            400: '#7A9EC4', 500: '#5B86B8', 600: '#4F76A5', 700: '#456B97',
-                            800: '#3A5A7E', 900: '#304B68',
+
+                            50: '#EFF6FF', 100: '#DBEAFE', 200: '#BFDBFE', 300: '#93C5FD',
+
+                            400: '#60A5FA', 500: '#3B82F6', 600: '#2563EB', 700: '#1D4ED8',
+
+                            800: '#1E40AF', 900: '#1E3A8A',
+
                         },
+
                         purple: {
-                            50: '#F4F2F9', 100: '#E9E6F2', 200: '#D8D3E8', 300: '#C0B9D9',
-                            400: '#A198C2', 500: '#8B81AC', 600: '#756A9A', 700: '#5F567E',
-                            800: '#4D4667', 900: '#403A56',
+
+                            50: '#FAF5FF', 100: '#F3E8FF', 200: '#E9D5FF', 300: '#D8B4FE',
+
+                            400: '#C084FC', 500: '#A855F7', 600: '#9333EA', 700: '#7E22CE',
+
+                            800: '#6B21A8', 900: '#581C87',
+
                         },
+
                         yellow: {
-                            50: '#FBF6E8', 100: '#F4E8CC', 200: '#EAD9A8', 300: '#DEBE7A',
-                            400: '#CC9F52', 500: '#C89A45', 600: '#B28636', 700: '#9F7935',
-                            800: '#82622B', 900: '#6B5124',
+
+                            50: '#FEFCE8', 100: '#FEF9C3', 200: '#FEF08A', 300: '#FDE047',
+
+                            400: '#FACC15', 500: '#EAB308', 600: '#CA8A04', 700: '#A16207',
+
+                            800: '#854D0E', 900: '#713F12',
+
                         },
+
                         orange: {
-                            50: '#FBF5EC', 100: '#F6EAD6', 200: '#EED7B0', 300: '#E2BB82',
-                            400: '#D09A56', 500: '#C98A45', 600: '#B4763A', 700: '#9E6632',
-                            800: '#82522A', 900: '#6B4423',
+
+                            50: '#FFF7ED', 100: '#FFEDD5', 200: '#FED7AA', 300: '#FDBA74',
+
+                            400: '#FB923C', 500: '#F97316', 600: '#EA580C', 700: '#C2410C',
+
+                            800: '#9A3412', 900: '#7C2D12',
+
                         },
+
                         indigo: {
-                            50: '#EFF2F9', 100: '#E1E8F4', 200: '#C6D3E9', 300: '#A1B7DA',
-                            400: '#7E9BC7', 500: '#6679A8', 600: '#56688F', 700: '#4A5A7C',
-                            800: '#3D4A66', 900: '#323D54',
+
+                            50: '#EEF2FF', 100: '#E0E7FF', 200: '#C7D2FE', 300: '#A5B4FC',
+
+                            400: '#818CF8', 500: '#6366F1', 600: '#4F46E5', 700: '#4338CA',
+
+                            800: '#3730A3', 900: '#312E81',
+
                         },
+
                         teal: {
-                            50: '#EDF6F2', 100: '#D9EDE5', 200: '#B3DDCD', 300: '#88C9B1',
-                            400: '#5AB08F', 500: '#4E9C83', 600: '#41836E', 700: '#37705E',
-                            800: '#305D50', 900: '#284C42',
+
+                            50: '#F0FDFA', 100: '#CCFBF1', 200: '#99F6E4', 300: '#5EEAD4',
+
+                            400: '#2DD4BF', 500: '#14B8A6', 600: '#0D9488', 700: '#0F766E',
+
+                            800: '#115E59', 900: '#134E4A',
+
                         },
+
                         cyan: {
-                            50: '#EDF5F8', 100: '#D9EBF1', 200: '#B3D8E4', 300: '#88BED2',
-                            400: '#60A3BD', 500: '#5F97B3', 600: '#4F7F98', 700: '#426B80',
-                            800: '#385A6B', 900: '#2E4A58',
+
+                            50: '#ECFEFF', 100: '#CFFAFE', 200: '#A5F3FC', 300: '#67E8F9',
+
+                            400: '#22D3EE', 500: '#06B6D4', 600: '#0891B2', 700: '#0E7490',
+
+                            800: '#155E75', 900: '#164E63',
+
                         },
+
                         sky: {
-                            50: '#EEF5F9', 100: '#DEEBF3', 200: '#BED8E8', 300: '#98BDD6',
-                            400: '#73A2C3', 500: '#6C9FC0', 600: '#5B86AC', 700: '#52799A',
-                            800: '#45657F', 900: '#385267',
+
+                            50: '#F0F9FF', 100: '#E0F2FE', 200: '#BAE6FD', 300: '#7DD3FC',
+
+                            400: '#38BDF8', 500: '#0EA5E9', 600: '#0284C7', 700: '#0369A1',
+
+                            800: '#075985', 900: '#0C4A6E',
+
                         },
+
                         violet: {
-                            50: '#F3F2F9', 100: '#E7E5F3', 200: '#D1CDE8', 300: '#B3ADD8',
-                            400: '#958BC4', 500: '#83799F', 600: '#6F6490', 700: '#5F567E',
-                            800: '#4C4567', 900: '#3E3954',
+
+                            50: '#F5F3FF', 100: '#EDE9FE', 200: '#DDD6FE', 300: '#C4B5FD',
+
+                            400: '#A78BFA', 500: '#8B5CF6', 600: '#7C3AED', 700: '#6D28D9',
+
+                            800: '#5B21B6', 900: '#4C1D95',
+
                         },
+
                         pink: {
-                            50: '#FBF0F4', 100: '#F6E0E9', 200: '#EDC2D3', 300: '#E09CB5',
-                            400: '#D07897', 500: '#BC849C', 600: '#A86E87', 700: '#8E5C70',
-                            800: '#754C5D', 900: '#5F3E4C',
+
+                            50: '#FDF2F8', 100: '#FCE7F3', 200: '#FBCFE8', 300: '#F9A8D4',
+
+                            400: '#F472B6', 500: '#EC4899', 600: '#DB2777', 700: '#BE185D',
+
+                            800: '#9D174D', 900: '#831843',
+
                         },
+
                         rose: {
-                            50: '#FBF1F1', 100: '#F5E1E1', 200: '#EBC4C4', 300: '#DFA0A0',
-                            400: '#D07C7C', 500: '#C96464', 600: '#B35151', 700: '#A94848',
-                            800: '#8C3D3D', 900: '#743333',
+
+                            50: '#FFF1F2', 100: '#FFE4E6', 200: '#FECDD3', 300: '#FDA4AF',
+
+                            400: '#FB7185', 500: '#F43F5E', 600: '#E11D48', 700: '#BE123C',
+
+                            800: '#9F1239', 900: '#881337',
+
                         },
-                    },
+
+},
                     fontFamily: {
                         body: ['Tajawal', 'sans-serif'],
                         heading: ['Cairo', 'sans-serif'],
@@ -160,24 +252,24 @@
         [x-cloak] { display: none !important; }
 
         /* Warm ivory surfaces (light mode) */
-        .bg-white, .bg-white\/60, .bg-white\/70, .bg-white\/80, .bg-white\/90 { background-color: #FBF9F5; }
+        .bg-white, .bg-white\/60, .bg-white\/70, .bg-white\/80, .bg-white\/90 { background-color: #FFFFFF; }
 
         * { font-family: 'Tajawal', sans-serif; }
         h1, h2, h3, h4, h5, h6, .font-heading { font-family: 'Cairo', sans-serif; }
 
         ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #E9E4D9; }
-        ::-webkit-scrollbar-thumb { background: #B89B5E; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #D4B978; }
+        ::-webkit-scrollbar-track { background: #F2F4F7; }
+        ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #E5C158; }
 
         .sidebar-link { transition: all 0.15s ease; position: relative; }
         .sidebar-link:hover {
-            background: rgba(184, 155, 94, 0.08);
-            color: #B89B5E;
+            background: rgba(212, 175, 55, 0.08);
+            color: #D4AF37;
         }
         .sidebar-link.active {
-            background: rgba(184, 155, 94, 0.1);
-            color: #B89B5E;
+            background: rgba(212, 175, 55, 0.1);
+            color: #D4AF37;
         }
         .sidebar-link.active::before {
             content: '';
@@ -186,7 +278,7 @@
             transform: translateY(-50%);
             width: 3px;
             height: 24px;
-            background: #B89B5E;
+            background: #D4AF37;
             border-radius: 3px;
         }
         [dir="rtl"] .sidebar-link.active::before { right: -2px; }
@@ -221,8 +313,8 @@
         }
 
         /* --- Theme base (applied before first paint) --- */
-        html { background-color: #F5F2EB; }
-        html[data-theme="dark"] { background-color: #111315; color-scheme: dark; }
+        html { background-color: #F7F8FA; }
+        html[data-theme="dark"] { background-color: #080B12; color-scheme: dark; }
 
         /* --- Premium page transitions (View Transitions API) --- */
         @view-transition { navigation: auto; }
@@ -237,7 +329,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(105deg, transparent 35%, rgba(184, 155, 94, 0.22) 50%, transparent 65%);
+            background: linear-gradient(105deg, transparent 35%, rgba(212, 175, 55, 0.22) 50%, transparent 65%);
             animation: goldSweep 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
@@ -268,12 +360,12 @@
         }
         .badge-pulse { animation: pulse 2s infinite; }
 
-        .glass-border { border: 1px solid rgba(184,155,94,0.08); }
+        .glass-border { border: 1px solid rgba(212,175,55,0.08); }
         .glass-card {
             background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(184,155,94,0.08);
+            border: 1px solid rgba(212,175,55,0.08);
         }
 
         .dropdown-dark {
@@ -289,20 +381,20 @@
             100% { background-position: 200% 0; }
         }
         .gold-shimmer {
-            background: linear-gradient(90deg, transparent, rgba(184, 155, 94, 0.08), transparent);
+            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.08), transparent);
             background-size: 200% 100%;
             animation: shimmer 3s infinite;
         }
 
-        .btn-gold {
-            background: linear-gradient(135deg, #B89B5E, #9F844E);
-            color: #fff;
+.btn-gold {
+            background: linear-gradient(135deg, #E5C158, #D4AF37 45%, #A98218);
+            color: #111827;
             transition: all 0.15s ease;
         }
         .btn-gold:hover {
-            background: linear-gradient(135deg, #CDB273, #B89B5E);
+            background: linear-gradient(135deg, #E5C158, #D4AF37);
             transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(184,155,94,0.3);
+            box-shadow: 0 4px 15px rgba(212,175,55,0.3);
         }
         .btn-gold:active {
             transform: translateY(0);
@@ -327,13 +419,13 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, rgba(184,155,94,0.03), transparent);
-            border: 1px solid rgba(184,155,94,0.08);
+            background: linear-gradient(135deg, rgba(212,175,55,0.03), transparent);
+            border: 1px solid rgba(212,175,55,0.08);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .stat-card:hover {
-            background: linear-gradient(135deg, rgba(184,155,94,0.06), rgba(184,155,94,0.02));
-            border-color: rgba(184,155,94,0.15);
+            background: linear-gradient(135deg, rgba(212,175,55,0.06), rgba(212,175,55,0.02));
+            border-color: rgba(212,175,55,0.15);
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
@@ -344,8 +436,8 @@
             border: 1px solid rgba(0,0,0,0.12);
         }
         .form-input:focus {
-            border-color: #B89B5E;
-            box-shadow: 0 0 0 3px rgba(184,155,94,0.15);
+            border-color: #D4AF37;
+            box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
         }
 
         /* Table refinements */
@@ -381,12 +473,12 @@
         /* Card refinements */
         .card-premium {
             background: #fff;
-            border: 1px solid rgba(184,155,94,0.15);
+            border: 1px solid rgba(212,175,55,0.15);
             border-radius: 16px;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .card-premium:hover {
-            border-color: rgba(184,155,94,0.3);
+            border-color: rgba(212,175,55,0.3);
             box-shadow: 0 4px 20px rgba(0,0,0,0.06);
         }
 
@@ -402,7 +494,7 @@
             left: 0;
             right: 0;
             height: 2px;
-            background: #B89B5E;
+            background: #D4AF37;
             transform: scaleX(0);
             transition: transform 0.2s ease;
         }
@@ -411,82 +503,85 @@
             transform: scaleX(1);
         }
 
-::-webkit-scrollbar-track { background: #EFEAE0; }
-        ::-webkit-scrollbar-thumb { background: #B3AEA3; border-radius: 8px; }
-        input[type=checkbox] { accent-color: #A78A4F !important; }
-        .ts-wrapper .ts-control { background: #FBF9F5 !important; border: 1px solid #CBC6BA !important; color: #191A18 !important; }
-        .ts-wrapper .ts-control input { color: #191A18 !important; }
-        .ts-wrapper .ts-control:hover { border-color: #B3AEA3 !important; }
-        .ts-wrapper.focus .ts-control { border-color: #A78A4F !important; box-shadow: 0 0 0 2px rgba(191,155,48,0.3) !important; }
-        .ts-wrapper .ts-dropdown { background: #FBF9F5 !important; border: 1px solid #CBC6BA !important; color: #191A18 !important; }
-        .ts-wrapper .ts-dropdown .option { color: #4A4A45 !important; }
-        .ts-wrapper .ts-dropdown .option.active { background: rgba(191,155,48,0.12) !important; color: #A78A4F !important; }
-        .ts-wrapper .ts-dropdown .option:hover { background: rgba(191,155,48,0.06) !important; }
-        .ts-wrapper .ts-dropdown .option.highlight { background: rgba(191,155,48,0.05) !important; }
-        .ts-wrapper .ts-dropdown .create { color: #A78A4F !important; }
-        .ts-wrapper .ts-dropdown .no-results { color: #8A8B84 !important; }
-        .ts-wrapper .ts-control .item { color: #191A18 !important; }
-        .ts-wrapper.multi .ts-control .item { background: rgba(191,155,48,0.12) !important; border: 1px solid rgba(191,155,48,0.3) !important; color: #A78A4F !important; }
+::-webkit-scrollbar-track { background: #F2F4F7; }
+        ::-webkit-scrollbar-thumb { background: #C9CDD6; border-radius: 8px; }
+        input[type=checkbox] { accent-color: #A98218 !important; }
+        .ts-wrapper .ts-control { background: #FFFFFF !important; border: 1px solid #E2E6EC !important; color: #111827 !important; }
+        .ts-wrapper .ts-control input { color: #111827 !important; }
+        .ts-wrapper .ts-control:hover { border-color: #C9CDD6 !important; }
+        .ts-wrapper.focus .ts-control { border-color: #A98218 !important; box-shadow: 0 0 0 2px rgba(212,175,55,0.3) !important; }
+        .ts-wrapper .ts-dropdown { background: #FFFFFF !important; border: 1px solid #E2E6EC !important; color: #111827 !important; }
+        .ts-wrapper .ts-dropdown .option { color: #4B5563 !important; }
+        .ts-wrapper .ts-dropdown .option.active { background: rgba(212,175,55,0.12) !important; color: #A98218 !important; }
+        .ts-wrapper .ts-dropdown .option:hover { background: rgba(212,175,55,0.06) !important; }
+        .ts-wrapper .ts-dropdown .option.highlight { background: rgba(212,175,55,0.05) !important; }
+        .ts-wrapper .ts-dropdown .create { color: #A98218 !important; }
+        .ts-wrapper .ts-dropdown .no-results { color: #6B7280 !important; }
+        .ts-wrapper .ts-control .item { color: #111827 !important; }
+        .ts-wrapper.multi .ts-control .item { background: rgba(212,175,55,0.12) !important; border: 1px solid rgba(212,175,55,0.3) !important; color: #A98218 !important; }
 
         /* Dark mode */
-        [data-theme="dark"] { --bg: #111315; --card: #191C1B; --text: #E9E2D0; --text-muted: #8F918B; --border: rgba(184,155,94,0.15); }
-        [data-theme="dark"] body { background-color: #111315 !important; color: #E9E2D0 !important; }
-        [data-theme="dark"] .bg-white { background-color: #191C1B !important; }
-        [data-theme="dark"] .bg-gray-50 { background-color: #1B1D1C !important; }
-        [data-theme="dark"] .bg-gray-100 { background-color: #1B1D1C !important; }
-        [data-theme="dark"] .text-gray-900, [data-theme="dark"] .text-gray-800, [data-theme="dark"] .text-gray-700 { color: #E9E2D0 !important; }
-        [data-theme="dark"] .text-gray-600, [data-theme="dark"] .text-gray-500 { color: #B8B2A3 !important; }
-        [data-theme="dark"] .text-gray-400 { color: #8F918B !important; }
-        [data-theme="dark"] .text-gray-300 { color: #8F918B !important; }
-        [data-theme="dark"] .border-gray-200, [data-theme="dark"] .border-gray-100, [data-theme="dark"] .divide-gray-100, [data-theme="dark"] .divide-gray-200 { border-color: rgba(184,155,94,0.12) !important; }
-        [data-theme="dark"] .border-amber-200, [data-theme="dark"] .border-amber-300 { border-color: rgba(184,155,94,0.25) !important; }
-        [data-theme="dark"] .hover\:bg-gray-50:hover { background-color: #1B1D1C !important; }
-        [data-theme="dark"] .hover\:bg-gray-100:hover { background-color: #252825 !important; }
-        [data-theme="dark"] .hover\:text-amber-600:hover, [data-theme="dark"] .hover\:text-amber-700:hover { color: #D4B978 !important; }
-        [data-theme="dark"] .sidebar-link { color: #8F918B !important; }
-        [data-theme="dark"] .sidebar-link:hover { background: rgba(184,155,94,0.1) !important; color: #D4B978 !important; }
-        [data-theme="dark"] .sidebar-link.active { background: rgba(184,155,94,0.12) !important; color: #B89B5E !important; }
-        [data-theme="dark"] header[style*="background"] { background: rgba(17,19,21,0.95) !important; }
-        [data-theme="dark"] .bg-amber-100 { background-color: rgba(184,155,94,0.15) !important; }
-        [data-theme="dark"] .text-amber-700, [data-theme="dark"] .text-amber-600 { color: #B89B5E !important; }
-        [data-theme="dark"] .bg-green-100 { background-color: rgba(63,166,107,0.15) !important; }
-        [data-theme="dark"] .text-green-700 { color: #7FBF99 !important; }
-        [data-theme="dark"] .bg-red-100 { background-color: rgba(201,92,92,0.15) !important; }
-        [data-theme="dark"] .text-red-700 { color: #D98F8F !important; }
-        [data-theme="dark"] .bg-blue-100 { background-color: rgba(91,134,184,0.15) !important; }
-        [data-theme="dark"] .text-blue-700 { color: #8FB3D4 !important; }
-        [data-theme="dark"] .bg-purple-100 { background-color: rgba(117,106,154,0.15) !important; }
-        [data-theme="dark"] .text-purple-700 { color: #756A9A !important; }
-        [data-theme="dark"] .bg-emerald-100 { background-color: rgba(63,166,107,0.15) !important; }
-        [data-theme="dark"] .text-emerald-700 { color: #7FBF99 !important; }
-        [data-theme="dark"] .bg-yellow-100 { background-color: rgba(200,154,69,0.15) !important; }
-        [data-theme="dark"] .text-yellow-700 { color: #C89A45 !important; }
-        [data-theme="dark"] .bg-orange-100 { background-color: rgba(201,138,69,0.15) !important; }
-        [data-theme="dark"] .text-orange-700 { color: #D9A96F !important; }
-        [data-theme="dark"] aside[style*="background"] { background: #111315 !important; }
-        [data-theme="dark"] aside div[style*="border-bottom"] { border-color: rgba(184,155,94,0.1) !important; }
-        [data-theme="dark"] .dropdown-dark { background: rgba(17,19,21,0.98) !important; border-color: rgba(184,155,94,0.15) !important; }
-        [data-theme="dark"] footer[style*="background"] { background: rgba(17,19,21,0.5) !important; }
-        [data-theme="dark"] .btn-gold { background: linear-gradient(135deg, #B89B5E, #9F844E) !important; color: #111315 !important; }
-        [data-theme="dark"] .card-premium { background: #191C1B !important; border-color: rgba(184,155,94,0.15) !important; }
-        [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background-color: #141716 !important; border-color: rgba(184,155,94,0.15) !important; color: #E9E2D0 !important; }
-        [data-theme="dark"] table thead { border-bottom-color: rgba(184,155,94,0.1) !important; }
-        [data-theme="dark"] .ts-wrapper .ts-control, [data-theme="dark"] .ts-wrapper .ts-dropdown { background: #141716 !important; border-color: rgba(184,155,94,0.15) !important; color: #E9E2D0 !important; }
-        [data-theme="dark"] .guide-card { background-color: #191C1B !important; background-image: linear-gradient(135deg, #191C1B, #1B1D1C) !important; }
-        [data-theme="dark"] .guide-glass { background-color: rgba(25, 28, 27, 0.6) !important; }
-        .font-pill { background-color: rgba(251, 249, 245, 0.78); border-color: rgba(184, 155, 94, 0.35); }
-        [data-theme="dark"] .font-pill { background-color: rgba(20, 23, 22, 0.72); border-color: rgba(184, 155, 94, 0.28); }
-        [data-theme="dark"] .ts-wrapper .ts-control input { color: #E9E2D0 !important; }
-        [data-theme="dark"] .ts-wrapper .ts-control input::placeholder { color: #8F918B !important; }
-        [data-theme="dark"] .ts-wrapper .ts-control .item { color: #E9E2D0 !important; }
-        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option { color: #B8B2A3 !important; }
+        [data-theme="dark"] { --bg: #080B12; --card: #121826; --text: #FFFFFF; --text-muted: #94A3B8; --border: rgba(212,175,55,0.15); }
+        [data-theme="dark"] body { background-color: #080B12 !important; color: #FFFFFF !important; }
+        [data-theme="dark"] .bg-white { background-color: #121826 !important; }
+        [data-theme="dark"] .bg-gray-50 { background-color: #0D111B !important; }
+        [data-theme="dark"] .bg-gray-100 { background-color: #0D111B !important; }
+        [data-theme="dark"] .text-gray-900, [data-theme="dark"] .text-gray-800, [data-theme="dark"] .text-gray-700 { color: #FFFFFF !important; }
+        [data-theme="dark"] .text-gray-600, [data-theme="dark"] .text-gray-500 { color: #CBD5E1 !important; }
+        [data-theme="dark"] .text-gray-400 { color: #94A3B8 !important; }
+        [data-theme="dark"] .text-gray-300 { color: #94A3B8 !important; }
+[data-theme="dark"] .border-gray-200, [data-theme="dark"] .border-gray-100, [data-theme="dark"] .divide-gray-100, [data-theme="dark"] .divide-gray-200 { border-color: #252D3D !important; }
+        [data-theme="dark"] .border-amber-200, [data-theme="dark"] .border-amber-300 { border-color: rgba(217,119,6,0.4) !important; }
+        [data-theme="dark"] .hover\:bg-gray-50:hover { background-color: #0D111B !important; }
+        [data-theme="dark"] .hover\:bg-gray-100:hover { background-color: #182033 !important; }
+        [data-theme="dark"] .hover\:text-gold-dark:hover, [data-theme="dark"] .hover\:text-gold-dark:hover { color: #F0D98A !important; }
+        [data-theme="dark"] .sidebar-link { color: #94A3B8 !important; }
+        [data-theme="dark"] .sidebar-link:hover { background: rgba(212,175,55,0.1) !important; color: #E5C158 !important; }
+        [data-theme="dark"] .sidebar-link.active { background: rgba(212,175,55,0.12) !important; color: #D4AF37 !important; }
+        [data-theme="dark"] header[style*="background"] { background: rgba(8,11,18,0.95) !important; }
+        [data-theme="dark"] .bg-gold/12 { background-color: rgba(212,175,55,0.15) !important; }
+        [data-theme="dark"] .text-gold-dark, [data-theme="dark"] .text-gold-dark { color: #D4AF37 !important; }
+        [data-theme="dark"] .bg-green-100 { background-color: rgba(22,163,74,0.15) !important; }
+        [data-theme="dark"] .text-green-700 { color: #4ADE80 !important; }
+        [data-theme="dark"] .bg-red-100 { background-color: rgba(220,38,38,0.15) !important; }
+        [data-theme="dark"] .text-red-700 { color: #F87171 !important; }
+        [data-theme="dark"] .bg-blue-100 { background-color: rgba(37,99,235,0.15) !important; }
+        [data-theme="dark"] .text-blue-700 { color: #60A5FA !important; }
+        [data-theme="dark"] .bg-purple-100 { background-color: rgba(124,58,237,0.15) !important; }
+        [data-theme="dark"] .text-purple-700 { color: #8B5CF6 !important; }
+        [data-theme="dark"] .bg-emerald-100 { background-color: rgba(22,163,74,0.15) !important; }
+        [data-theme="dark"] .text-emerald-700 { color: #4ADE80 !important; }
+        [data-theme="dark"] .bg-yellow-100 { background-color: rgba(217,119,6,0.15) !important; }
+        [data-theme="dark"] .text-yellow-700 { color: #F59E0B !important; }
+        [data-theme="dark"] .bg-orange-100 { background-color: rgba(249,115,22,0.15) !important; }
+        [data-theme="dark"] .text-orange-700 { color: #FB923C !important; }
+        [data-theme="dark"] aside[style*="background"] { background: #0D111B !important; }
+        [data-theme="dark"] aside div[style*="border-bottom"] { border-color: rgba(212,175,55,0.1) !important; }
+        [data-theme="dark"] .dropdown-dark { background: rgba(8,11,18,0.98) !important; border-color: rgba(212,175,55,0.15) !important; }
+        [data-theme="dark"] footer[style*="background"] { background: rgba(8,11,18,0.5) !important; }
+        [data-theme="dark"] .btn-gold { background: linear-gradient(135deg, #D4AF37, #A98218) !important; color: #080B12 !important; }
+        [data-theme="dark"] .card-premium { background: #121826 !important; border-color: rgba(212,175,55,0.15) !important; }
+        [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background-color: #0B1019 !important; border-color: #252D3D !important; color: #FFFFFF !important; }
+        [data-theme="dark"] table thead { border-bottom-color: rgba(212,175,55,0.1) !important; }
+        [data-theme="dark"] .ts-wrapper .ts-control { background: #0B1019 !important; border-color: rgba(212,175,55,0.15) !important; color: #FFFFFF !important; }
+        [data-theme="dark"] .ts-wrapper .ts-dropdown { background: #121826 !important; border-color: #252D3D !important; color: #FFFFFF !important; }
+        [data-theme="dark"] .guide-card { background-color: #121826 !important; background-image: linear-gradient(135deg, #121826, #0D111B) !important; }
+        [data-theme="dark"] .guide-glass { background-color: rgba(18, 24, 38, 0.6) !important; }
+        .font-pill { background-color: rgba(255, 255, 255, 0.78); border-color: rgba(212, 175, 55, 0.35); }
+        [data-theme="dark"] .font-pill { background-color: rgba(8, 11, 18, 0.72); border-color: rgba(212, 175, 55, 0.28); }
+        [data-theme="dark"] .ts-wrapper .ts-control input { color: #FFFFFF !important; }
+        [data-theme="dark"] .ts-wrapper .ts-control input::placeholder { color: #94A3B8 !important; }
+        [data-theme="dark"] .ts-wrapper .ts-control .item { color: #FFFFFF !important; }
+        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option { color: #CBD5E1 !important; }
         [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option:hover,
-        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option.active { background-color: rgba(184, 155, 94, 0.18) !important; color: #D4B978 !important; }
-        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option.selected { color: #B89B5E !important; }
+        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option.active { background-color: rgba(212, 175, 55, 0.18) !important; color: #E5C158 !important; }
+        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option.selected { color: #D4AF37 !important; }
+        [data-theme="dark"] .text-gold-dark { color: #F0D98A !important; }
+        [data-theme="dark"] .hover\:text-gold-dark:hover { color: #F0D98A !important; }
 </style>
     @stack('styles')
 </head>
-<body class="font-body min-h-screen" style="background-color: #F5F2EB; color: #191A18;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: localStorage.getItem('theme') || 'light', fontSize: parseInt(localStorage.getItem('fontSize') || '100', 10) || 100, fontStep(step) { const levels = [100, 110, 125]; let i = levels.indexOf(this.fontSize); if (i === -1) i = 0; const ni = Math.max(0, Math.min(levels.length - 1, i + step)); this.fontSize = levels[ni]; localStorage.setItem('fontSize', this.fontSize); document.documentElement.style.fontSize = (16 * this.fontSize / 100) + 'px'; } }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
+<body class="font-body min-h-screen" style="background-color: #F7F8FA; color: #111827;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: localStorage.getItem('theme') || 'light', fontSize: parseInt(localStorage.getItem('fontSize') || '100', 10) || 100, fontStep(step) { const levels = [100, 110, 125]; let i = levels.indexOf(this.fontSize); if (i === -1) i = 0; const ni = Math.max(0, Math.min(levels.length - 1, i + step)); this.fontSize = levels[ni]; localStorage.setItem('fontSize', this.fontSize); document.documentElement.style.fontSize = (16 * this.fontSize / 100) + 'px'; } }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
 
     {{-- Mobile Overlay --}}
     <div
@@ -508,12 +603,12 @@
             sidebarOpen ? 'sb-open' : 'sb-closed',
             mobileOpen ? 'translate-x-0' : '{{ $isRtl ? 'translate-x-full' : '-translate-x-full' }} md:translate-x-0'
         ]"
-            style="background: #FAF7F1; {{ $isRtl ? 'border-left' : 'border-right' }}: 1px solid #DDD8CD;"
+            style="background: #FFFFFF; {{ $isRtl ? 'border-left' : 'border-right' }}: 1px solid #E2E6EC;"
     >
         {{-- Logo --}}
-        <div class="flex items-center justify-between h-16 px-4" style="border-bottom: 1px solid #DDD8CD;">
+        <div class="flex items-center justify-between h-16 px-4" style="border-bottom: 1px solid #E2E6EC;">
             <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden" style="box-shadow: 0 8px 24px rgba(184, 155, 94, 0.22);">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden" style="box-shadow: 0 8px 24px rgba(212, 175, 55, 0.22);">
                     @if($officeLogo)
                         <img src="{{ $officeLogo }}" alt="{{ $officeName }}" class="w-full h-full object-cover">
                     @else
@@ -522,7 +617,7 @@
                         </svg>
                     @endif
                 </div>
-                <span class="sidebar-logo-text text-amber-600 font-heading font-bold text-[10px] leading-tight whitespace-normal max-w-[160px]" style="color: #B89B5E;">{{ $officeName }}</span>
+                <span class="sidebar-logo-text text-gold-dark font-heading font-bold text-[10px] leading-tight whitespace-normal max-w-[160px]" style="color: #D4AF37;">{{ $officeName }}</span>
             </div>
             <button @click="mobileOpen = false" class="md:hidden text-gray-400 hover:text-gray-800 transition">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -547,7 +642,7 @@
                 <span>{{ __('app.attention_center') }}</span>
                 @php $attCount = \App\Services\AttentionService::itemsCount(); @endphp
                 @if($attCount > 0)
-                    <span class="ms-auto text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-bold">{{ $attCount }}</span>
+                    <span class="ms-auto text-[10px] px-1.5 py-0.5 rounded-full bg-gold text-[#111827] font-bold">{{ $attCount }}</span>
                 @endif
             </a>
 
@@ -710,7 +805,7 @@
         </nav>
 
         {{-- Sidebar Footer --}}
-        <div class="p-3 space-y-0.5" style="border-top: 1px solid #DDD8CD;">
+        <div class="p-3 space-y-0.5" style="border-top: 1px solid #E2E6EC;">
             <a href="{{ route('guide') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
@@ -750,7 +845,7 @@
         :class="sidebarOpen ? 'ct-open' : 'ct-closed'"
     >
         {{-- Top Bar --}}
-        <header class="sticky top-0 z-30" style="background: rgba(245,242,235,0.95); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-bottom: 1px solid rgba(184,155,94,0.08);">
+        <header class="sticky top-0 z-30" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-bottom: 1px solid rgba(212,175,55,0.08);">
             <div class="flex items-center justify-between h-16 px-4 sm:px-6">
                 {{-- Right Side: Hamburger + Breadcrumb --}}
                 <div class="flex items-center gap-3">
@@ -774,7 +869,7 @@
                 {{-- Left Side --}}
                 <div class="flex items-center gap-1">
                     <a href="{{ route('language.switch', app()->getLocale() === 'ar' ? 'en' : 'ar') }}"
-                        class="p-2 rounded-xl text-gray-400 hover:text-amber-700 transition" title="{{ app()->getLocale() === 'ar' ? 'English' : 'العربية' }}">
+                        class="p-2 rounded-xl text-gray-400 hover:text-gold-dark transition" title="{{ app()->getLocale() === 'ar' ? 'English' : 'العربية' }}">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                         </svg>
@@ -783,20 +878,20 @@
                     {{-- Font Size Control --}}
                     <div class="hidden sm:inline-flex items-center gap-0.5 rounded-xl border font-pill px-1 py-1" title="{{ __('app.font_size') }}">
                         <button @click="fontStep(-1)" :disabled="fontSize === 100"
-                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-gray-500 transition hover:bg-amber-100 hover:text-amber-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-500" title="{{ __('app.font_decrease') }}">
+                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-gray-500 transition hover:bg-gold/12 hover:text-gold-dark disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-500" title="{{ __('app.font_decrease') }}">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
                         </button>
                         <button @click="fontSize = 100; localStorage.setItem('fontSize', 100); document.documentElement.style.fontSize = '16px'"
-                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-sm font-black text-amber-700 transition hover:bg-amber-100" title="{{ __('app.font_reset') }}">A</button>
+                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-sm font-black text-gold-dark transition hover:bg-gold/12" title="{{ __('app.font_reset') }}">A</button>
                         <button @click="fontStep(1)" :disabled="fontSize === 125"
-                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-gray-500 transition hover:bg-amber-100 hover:text-amber-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-500" title="{{ __('app.font_increase') }}">
+                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-gray-500 transition hover:bg-gold/12 hover:text-gold-dark disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-500" title="{{ __('app.font_increase') }}">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                         </button>
                     </div>
 
                     {{-- Theme Toggle --}}
                     <button @click="theme = theme === 'dark' ? 'light' : 'dark'; $el.closest('html').setAttribute('data-theme', theme); localStorage.setItem('theme', theme)"
-                        class="p-2 rounded-xl transition" :class="theme === 'dark' ? 'text-amber-400 hover:text-amber-300' : 'text-gray-400 hover:text-amber-700'" title="{{ app()->getLocale() === 'ar' ? 'تغيير السمة' : 'Toggle Theme' }}">
+                        class="p-2 rounded-xl transition" :class="theme === 'dark' ? 'text-gold-light hover:text-gold-light' : 'text-gray-400 hover:text-gold-dark'" title="{{ app()->getLocale() === 'ar' ? 'تغيير السمة' : 'Toggle Theme' }}">
                         <svg x-show="theme === 'light'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
                         </svg>
@@ -830,12 +925,12 @@
                             class="absolute left-0 mt-2 w-80 rounded-2xl overflow-hidden z-50 dropdown-dark"
                             style="box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);"
                         >
-                            <div class="p-4 flex items-center justify-between" style="border-bottom: 1px solid #DDD8CD;">
+                            <div class="p-4 flex items-center justify-between" style="border-bottom: 1px solid #E2E6EC;">
                                 <h3 class="font-heading font-bold text-gray-900">{{ __('app.notifications') }}</h3>
                                 @if($unreadCount > 0)
                                     <form method="POST" action="{{ route('notifications.readAll') }}" class="inline">
                                         @csrf
-                                        <button type="submit" class="text-xs text-amber-600 hover:text-amber-700 transition">{{ __('app.mark_all_read') }}</button>
+                                        <button type="submit" class="text-xs text-gold-dark hover:text-gold transition">{{ __('app.mark_all_read') }}</button>
                                     </form>
                                 @endif
                             </div>
@@ -845,7 +940,7 @@
                                         $notifTitle = $notification->title ?? ($notification->type === 'chat' ? __('app.new_message') : null);
                                     @endphp
                                         @if($notification->is_read)
-                                        <div class="block px-4 py-3 transition" style="border-bottom: 1px solid rgba(184,155,94,0.04);">
+                                        <div class="block px-4 py-3 transition" style="border-bottom: 1px solid rgba(212,175,55,0.04);">
                                             <div class="flex items-center justify-between">
                                                 <p class="text-sm font-medium text-gray-500">{{ $notifTitle }}</p>
                                                 @if($notification->message_count > 1)
@@ -856,13 +951,13 @@
                                             <p class="text-xs text-gray-400 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
                                         </div>
                                     @else
-                                        <form method="POST" action="{{ route('notifications.read', $notification->id) }}" class="block transition hover:bg-gray-50" style="border-bottom: 1px solid rgba(184,155,94,0.04);">
+                                        <form method="POST" action="{{ route('notifications.read', $notification->id) }}" class="block transition hover:bg-gray-50" style="border-bottom: 1px solid rgba(212,175,55,0.04);">
                                             @csrf
                                             <button type="submit" class="w-full text-right px-4 py-3">
                                                 <div class="flex items-center justify-between">
                                                     <p class="text-sm font-medium text-gray-900">{{ $notifTitle }}</p>
                                                     @if($notification->message_count > 1)
-                                                        <span class="text-[10px] text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">{{ $notification->message_count }}</span>
+                                                        <span class="text-[10px] text-gold-dark bg-gold/12 px-1.5 py-0.5 rounded-full">{{ $notification->message_count }}</span>
                                                     @endif
                                                 </div>
                                                 <p class="text-sm text-gray-700">{{ $notification->message }}</p>
@@ -877,14 +972,14 @@
                                     </div>
                                 @endforelse
                             </div>
-                            <a href="{{ route('notifications.index') }}" class="block p-3 text-center text-sm text-amber-600 font-medium transition hover:text-amber-700" style="border-top: 1px solid #DDD8CD;">{{ __('app.view_all_notifications') }}</a>
+                            <a href="{{ route('notifications.index') }}" class="block p-3 text-center text-sm text-gold-dark font-medium transition hover:text-gold" style="border-top: 1px solid #E2E6EC;">{{ __('app.view_all_notifications') }}</a>
                         </div>
                     </div>
 
                     {{-- User Menu --}}
                     <div class="relative" x-data="{ open: false }">
                         <button @click="open = !open" class="flex items-center gap-2 p-1.5 rounded-xl transition">
-                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg" style="box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center shadow-lg" style="box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);">
                                 <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
                                 </svg>
@@ -905,10 +1000,10 @@
                             class="absolute left-0 mt-2 w-56 rounded-2xl overflow-hidden z-50 dropdown-dark"
                             style="box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);"
                         >
-                            <div class="p-4" style="border-bottom: 1px solid #DDD8CD;">
+                            <div class="p-4" style="border-bottom: 1px solid #E2E6EC;">
                                 <p class="font-heading font-bold text-gray-900 text-sm">{{ Auth::user()->name }}</p>
                                 <p class="text-xs text-gray-400 mt-0.5">{{ Auth::user()->email }}</p>
-                                <span class="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">{{ Auth::user()->role }}</span>
+                                <span class="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-gold/12 text-gold-dark font-medium">{{ Auth::user()->role }}</span>
                             </div>
                             <div class="py-1">
                                 <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-500 hover:text-gray-900 transition">
@@ -952,18 +1047,18 @@
             @if($todayMsg && !$todayMsgSeen)
                 <div x-data="{ hidden: false, locked: false }" x-show="!hidden" x-cloak x-transition:leave="transition ease-in duration-300" x-transition:leave-end="opacity-0 scale-95" class="fixed inset-0 z-[100] flex items-center justify-center p-4" dir="rtl">
                     <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content } }).catch(() => {}).finally(() => { hidden = true; })"></div>
-                    <div class="relative w-full max-w-sm rounded-2xl bg-gradient-to-b from-[#1F211E] to-[#141514] border border-amber-400/25 shadow-[0_30px_90px_-15px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(184,155,94,0.12)] overflow-hidden">
-                        <div class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-l from-amber-600/70 via-amber-400/80 to-amber-600/70"></div>
+                    <div class="relative w-full max-w-sm rounded-2xl bg-gradient-to-b from-[#121826] to-[#080B12] border border-gold/25 shadow-[0_30px_90px_-15px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(212,175,55,0.12)] overflow-hidden">
+                        <div class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-l from-gold-dark/70 via-gold/80 to-gold-dark/70"></div>
                         <div class="p-7 text-center">
-                            <div class="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-amber-500/25 to-amber-600/5 border border-amber-400/30 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(251,191,36,0.15)]">
-                                <svg class="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <div class="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-gold/25 to-gold-dark/5 border border-gold/30 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(251,191,36,0.15)]">
+                                <svg class="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
                                 </svg>
                             </div>
-                            <p class="text-[11px] tracking-[0.35em] text-amber-400/80 font-bold mb-2">{{ __('app.today_message') }}</p>
-                            <div class="w-12 h-px mx-auto bg-gradient-to-l from-transparent via-amber-400/60 to-transparent mb-5"></div>
-                            <p class="text-sm text-amber-50 leading-relaxed whitespace-pre-wrap">{!! $todayMsgHtml !!}</p>
-                            <button type="button" x-bind:class="locked ? 'bg-amber-500 text-[#141514] border-amber-500' : 'text-amber-300 border-amber-400/40 hover:bg-amber-400/10'" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content } }).catch(() => {}).finally(() => { locked = true; setTimeout(() => hidden = true, 350); })" class="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-full border font-bold text-xs transition-all duration-300" title="قفل الرسالة">
+                            <p class="text-[11px] tracking-[0.35em] text-gold-light/90 font-bold mb-2">{{ __('app.today_message') }}</p>
+                            <div class="w-12 h-px mx-auto bg-gradient-to-l from-transparent via-gold/60 to-transparent mb-5"></div>
+                            <p class="text-sm text-[#CBD5E1] leading-relaxed whitespace-pre-wrap">{!! $todayMsgHtml !!}</p>
+                            <button type="button" x-bind:class="locked ? 'bg-gold text-[#080B12] border-gold' : 'text-gold-light border-gold/40 hover:bg-gold/10'" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content } }).catch(() => {}).finally(() => { locked = true; setTimeout(() => hidden = true, 350); })" class="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-full border font-bold text-xs transition-all duration-300" title="قفل الرسالة">
                                 <svg x-show="!locked" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
                                 <svg x-show="locked" x-cloak class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
                                 <span x-text="locked ? 'تم القفل' : 'قفل الرسالة'"></span>
@@ -977,17 +1072,17 @@
         </main>
 
         {{-- Footer --}}
-        <footer style="border-top: 1px solid #DDD8CD; background: rgba(244,242,238,0.5);">
+        <footer style="border-top: 1px solid #E2E6EC; background: rgba(244,242,238,0.5);">
             <div class="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-sm font-heading font-bold hover:opacity-80 transition-opacity" style="color: #A1844F;">LexPro</a>
+                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-sm font-heading font-bold hover:opacity-80 transition-opacity" style="color: #E5C158;">LexPro</a>
                     <span class="text-xs text-gray-400">&copy;</span>
                     <span class="text-sm text-gray-500">{{ date('Y') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <p class="text-xs text-gray-400">{{ $officeName }}</p>
                     <span class="text-gray-300">|</span>
-                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-xs text-gray-400 hover:text-amber-600 transition">{{ __('app.developer_credit') }}</a>
+                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-xs text-gray-400 hover:text-gold-dark transition">{{ __('app.developer_credit') }}</a>
                 </div>
             </div>
         </footer>
@@ -1110,7 +1205,7 @@
 
         var indicator = document.createElement('div');
         indicator.id = 'syncIndicator';
-        indicator.style.cssText = 'position:fixed;bottom:12px;left:12px;z-index:9999;display:none;padding:4px 10px;border-radius:8px;font-size:11px;color:#A1844F;background:rgba(244,242,238,0.9);border:1px solid rgba(184,155,94,0.3);transition:opacity 0.3s;pointer-events:none;';
+        indicator.style.cssText = 'position:fixed;bottom:12px;left:12px;z-index:9999;display:none;padding:4px 10px;border-radius:8px;font-size:11px;color:#A98218;background:rgba(244,242,238,0.9);border:1px solid rgba(212,175,55,0.3);transition:opacity 0.3s;pointer-events:none;';
         document.body.appendChild(indicator);
 
         function showIndicator() {
@@ -1187,7 +1282,7 @@
                 osc.stop(ctx.currentTime + 0.15);
             } catch(_) {}
             var toast = document.createElement('div');
-            toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;background:rgba(184,155,94,0.95);color:#111315;padding:16px 24px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,0.35);max-width:400px;text-align:center;direction:rtl;';
+            toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;background:rgba(212,175,55,0.95);color:#080B12;padding:16px 24px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,0.35);max-width:400px;text-align:center;direction:rtl;';
             toast.textContent = '🔐 هذا البريد الإلكتروني وجميع البيانات في الموقع مشفرة للحماية. للتواصل يرجى مراسلة المطور.';
             document.body.appendChild(toast);
             setTimeout(function() {
@@ -1226,8 +1321,8 @@
         if (existing) { existing.remove(); }
         var t = document.createElement('div');
         t.id = 'notifToast';
-        t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:99998;background:linear-gradient(135deg,rgba(245,242,235,0.95),rgba(251,249,245,0.95));backdrop-filter:blur(12px);border:1px solid rgba(184,155,94,0.3);color:#191A18;padding:16px 24px;border-radius:16px;font-size:14px;font-weight:500;box-shadow:0 12px 48px rgba(0,0,0,0.45);max-width:420px;text-align:center;direction:rtl;opacity:0;transition:all 0.4s cubic-bezier(0.22,1,0.36,1);';
-        t.innerHTML = '<div style="display:flex;align-items:center;gap:12px"><div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#B89B5E,#A1844F);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(184,155,94,0.3)">🔔</div><div style="flex:1;text-align:right"><div style="font-weight:700;color:#A1844F;margin-bottom:4px">' + title + '</div><div style="font-size:12px;color:#A1844F">' + msg + '</div></div></div>';
+        t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:99998;background:linear-gradient(135deg,rgba(255,255,255,0.95),rgba(251,249,245,0.95));backdrop-filter:blur(12px);border:1px solid rgba(212,175,55,0.3);color:#111827;padding:16px 24px;border-radius:16px;font-size:14px;font-weight:500;box-shadow:0 12px 48px rgba(0,0,0,0.45);max-width:420px;text-align:center;direction:rtl;opacity:0;transition:all 0.4s cubic-bezier(0.22,1,0.36,1);';
+        t.innerHTML = '<div style="display:flex;align-items:center;gap:12px"><div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#D4AF37,#E5C158);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(212,175,55,0.3)">🔔</div><div style="flex:1;text-align:right"><div style="font-weight:700;color:#A98218;margin-bottom:4px">' + title + '</div><div style="font-size:12px;color:#A98218">' + msg + '</div></div></div>';
         document.body.appendChild(t);
         requestAnimationFrame(function() {
             t.style.transform = 'translateX(-50%) translateY(0)';
@@ -1281,16 +1376,16 @@
     <style>
         [x-cloak] { display: none !important; }
         .ai-content { line-height: 1.9; }
-        .ai-content strong { color: #756A9A; font-weight: 700; }
-        .ai-content h1, .ai-content h2, .ai-content h3 { color: #5F567E; font-weight: 700; margin: 0.75rem 0 0.4rem; line-height: 1.5; }
+        .ai-content strong { color: #8B5CF6; font-weight: 700; }
+        .ai-content h1, .ai-content h2, .ai-content h3 { color: #6D28D9; font-weight: 700; margin: 0.75rem 0 0.4rem; line-height: 1.5; }
         .ai-content h1 { font-size: 1rem; }
         .ai-content h2 { font-size: 0.95rem; }
         .ai-content h3 { font-size: 0.9rem; }
         .ai-content ul { list-style: disc; padding-inline-start: 1.25rem; margin: 0.4rem 0; }
         .ai-content li { margin: 0.25rem 0; }
         .ai-content p { margin: 0.4rem 0; }
-        .ai-content hr { border: 0; border-top: 1px dashed #DDD9EA; margin: 0.6rem 0; }
-        .ai-content code { background: #E9E6F2; color: #5F567E; padding: 0 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
+        .ai-content hr { border: 0; border-top: 1px dashed #EDE9FE; margin: 0.6rem 0; }
+        .ai-content code { background: #EDE9FE; color: #6D28D9; padding: 0 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
     </style>
 
     {{-- Global AI Legal Assistant Widget --}}

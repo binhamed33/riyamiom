@@ -86,7 +86,7 @@
                     @endif
                 </div>
                 <a href="{{ route('cases.show', $session->case) }}"
-                   class="text-amber-700 hover:text-[#A88D57] font-medium text-sm transition-colors">
+                   class="text-gold-dark hover:text-[#A88D57] font-medium text-sm transition-colors">
                     {{ __('app.view_case') }}
                     <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>

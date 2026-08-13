@@ -5,7 +5,7 @@
 @section('content')
 <div class="space-y-6">
     <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-amber-600">{{ __('app.page_users') }}</h1>
+        <h1 class="text-3xl font-bold text-gold-dark">{{ __('app.page_users') }}</h1>
         <a href="{{ route('users.create') }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
             + {{ __('app.new_user') }}
         </a>
@@ -18,9 +18,9 @@
                 name="search"
                 value="{{ request('search') }}"
                 placeholder="{{ __('app.search_users_placeholder') }}"
-                class="flex-1 rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                class="flex-1 rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
             >
-            <select name="role" class="sm:w-auto rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+            <select name="role" class="sm:w-auto rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
                 <option value="">{{ __('app.all_roles') }}</option>
                 <option value="developer" {{ request('role') === 'developer' ? 'selected' : '' }}>{{ __('app.developer') }}</option>
                 <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>{{ __('app.admin') }}</option>
@@ -28,7 +28,7 @@
                 <option value="staff" {{ request('role') === 'staff' ? 'selected' : '' }}>{{ __('app.staff') }}</option>
                 <option value="client" {{ request('role') === 'client' ? 'selected' : '' }}>{{ __('app.client_role') }}</option>
             </select>
-            <button type="submit" class="bg-gray-100 border border-amber-300 text-amber-600 px-5 py-2 rounded-lg hover:bg-amber-100 transition text-sm">{{ __('app.search') }}</button>
+            <button type="submit" class="bg-gray-100 border border-gold/25 text-gold-dark px-5 py-2 rounded-lg hover:bg-gold/12 transition text-sm">{{ __('app.search') }}</button>
         </div>
     </form>
 
@@ -37,19 +37,19 @@
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-gray-200">
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.name') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.email') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.user_role') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.phone') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.user_status') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.actions') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.name') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.email') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.user_role') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.phone') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.user_status') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @forelse($users as $user)
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4">
-                                <a href="{{ route('users.show', $user) }}" class="text-gray-700 hover:text-amber-600 transition font-medium">
+                                <a href="{{ route('users.show', $user) }}" class="text-gray-700 hover:text-gold-dark transition font-medium">
                                     {{ $user->name }}
                                 </a>
                             </td>
@@ -59,7 +59,7 @@
                                     $roleColors = [
                                         'developer' => 'bg-purple-100 text-purple-700 border-purple-200',
                                         'admin' => 'bg-red-100 text-red-700 border-red-200',
-                                        'lawyer' => 'bg-amber-100 text-amber-600 border-amber-300',
+                                        'lawyer' => 'bg-gold/12 text-gold-dark border-gold/25',
                                         'staff' => 'bg-blue-100 text-blue-700 border-blue-200',
                                         'client' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
                                     ];
@@ -85,7 +85,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-1">
-                                    <a href="{{ route('users.edit', $user) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors" title="{{ __('app.edit') }}">
+                                    <a href="{{ route('users.edit', $user) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gold/12 text-gold-dark hover:bg-gold/15 transition-colors" title="{{ __('app.edit') }}">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
                                     </a>
                                     <form method="POST" action="{{ route('users.destroy', $user) }}" class="contents" onsubmit="return confirm('{{ __("app.confirm_delete") }}')">

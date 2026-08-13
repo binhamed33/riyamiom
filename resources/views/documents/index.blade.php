@@ -17,15 +17,15 @@
     <div class="flex items-center gap-2">
         @php $currentAccess = request('access_level'); @endphp
         <a href="{{ route('documents.index', array_merge(request()->query(), ['access_level' => ''])) }}"
-           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ !$currentAccess ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ !$currentAccess ? 'bg-gold text-[#111827]' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             {{ __('app.access_public') }}
         </a>
         <a href="{{ route('documents.index', array_merge(request()->query(), ['access_level' => 'team'])) }}"
-           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $currentAccess === 'team' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $currentAccess === 'team' ? 'bg-gold text-[#111827]' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             {{ __('app.access_team') }}
         </a>
         <a href="{{ route('documents.index', array_merge(request()->query(), ['access_level' => 'private'])) }}"
-           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $currentAccess === 'private' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $currentAccess === 'private' ? 'bg-gold text-[#111827]' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             {{ __('app.access_private') }}
         </a>
     </div>
@@ -53,7 +53,7 @@
                     <div>
                         <label for="doc_title" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.title') }} <span class="text-red-500">*</span></label>
                         <input type="text" id="doc_title" name="title" value="{{ old('title') }}"
-                               class="w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#B89B5E] focus:border-[#B89B5E] @error('title') border-red-500 @enderror"
+                               class="w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] @error('title') border-red-500 @enderror"
                                placeholder="{{ __('app.document_title_placeholder') }}" required>
                         @error('title')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -63,7 +63,7 @@
                     <div>
                         <label for="file" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.document_file') }} <span class="text-red-500">*</span></label>
                         <input type="file" id="file" name="file"
-                               class="w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#B89B5E] focus:border-[#B89B5E] @error('file') border-red-500 @enderror"
+                               class="w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] @error('file') border-red-500 @enderror"
                                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" required>
                         <p class="mt-1 text-xs text-gray-500">{{ __('app.allowed_formats') }}</p>
                         @error('file')
@@ -73,7 +73,7 @@
 
                     <div>
                         <label for="case_id" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case') }}</label>
-                        <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#B89B5E] focus:border-[#B89B5E] @error('case_id') border-red-500 @enderror">
+                        <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] @error('case_id') border-red-500 @enderror">
                             <option value="">{{ __('app.no_case') }}</option>
                             @foreach ($cases as $case)
                                 <option value="{{ $case->id }}" {{ old('case_id', $selectedCaseId ?? '') == $case->id ? 'selected' : '' }}>
@@ -92,19 +92,19 @@
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" name="access_level" value="all"
                                        {{ old('access_level', 'all') === 'all' ? 'checked' : '' }}
-                                       class="w-4 h-4 text-[#B89B5E] focus:ring-[#B89B5E] border-gray-300">
+                                       class="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300">
                                 <span class="text-sm text-gray-700">{{ __('app.access_public') }}</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" name="access_level" value="team"
                                        {{ old('access_level') === 'team' ? 'checked' : '' }}
-                                       class="w-4 h-4 text-[#B89B5E] focus:ring-[#B89B5E] border-gray-300">
+                                       class="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300">
                                 <span class="text-sm text-gray-700">{{ __('app.access_team') }}</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" name="access_level" value="private"
                                        {{ old('access_level') === 'private' ? 'checked' : '' }}
-                                       class="w-4 h-4 text-[#B89B5E] focus:ring-[#B89B5E] border-gray-300">
+                                       class="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300">
                                 <span class="text-sm text-gray-700">{{ __('app.access_private') }}</span>
                             </label>
                         </div>
@@ -154,8 +154,8 @@
                                 <div class="min-w-0">
                                     <p class="truncate">{{ $document->title }}</p>
                                     @if($document->doc_type)
-                                        <p class="text-[11px] font-bold text-amber-700 mt-0.5 flex items-center gap-1.5">
-                                            <span class="bg-amber-50 border border-amber-100 rounded-full px-2 py-0.5">{{ $document->doc_type }}</span>
+                                        <p class="text-[11px] font-bold text-gold-dark mt-0.5 flex items-center gap-1.5">
+                                            <span class="bg-gold/10 border border-gold/15 rounded-full px-2 py-0.5">{{ $document->doc_type }}</span>
                                             @if($document->doc_date)<span class="text-gray-400 font-normal">📅 {{ $document->doc_date->format('Y/m/d') }}</span>@endif
                                         </p>
                                     @endif

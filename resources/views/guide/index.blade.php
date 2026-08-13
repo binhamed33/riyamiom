@@ -7,65 +7,65 @@
 
     {{-- Header --}}
     <div class="text-center py-8">
-        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-500/60 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-200/30">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold to-gold/60 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-gold/30">
             <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
             </svg>
         </div>
-        <h1 class="text-4xl font-bold text-amber-600 font-heading">📖 دليل استخدام النظام</h1>
+        <h1 class="text-4xl font-bold text-gold-dark font-heading">📖 دليل استخدام النظام</h1>
         <p class="text-gray-500 mt-3 text-lg">كل ما تحتاج لمعرفته للبدء في استخدام مكتب المحاماة الإلكتروني</p>
     </div>
 
     {{-- Quick Nav --}}
     <div class="guide-glass bg-white/60 backdrop-blur-sm rounded-2xl border border-gray-100 p-6">
-        <p class="text-amber-600 font-bold mb-4 text-sm uppercase tracking-wider">محتويات الدليل</p>
+        <p class="text-gold-dark font-bold mb-4 text-sm uppercase tracking-wider">محتويات الدليل</p>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            <a href="#dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">🏠</span>
+            <a href="#dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">🏠</span>
                 لوحة التحكم
             </a>
-            <a href="#cases" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">📁</span>
+            <a href="#cases" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">📁</span>
                 إدارة القضايا
             </a>
-            <a href="#clients" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">👥</span>
+            <a href="#clients" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">👥</span>
                 إدارة العملاء
             </a>
-            <a href="#sessions" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">📅</span>
+            <a href="#sessions" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">📅</span>
                 الجلسات القضائية
             </a>
-            <a href="#tasks" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">✅</span>
+            <a href="#tasks" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">✅</span>
                 المهام
             </a>
-            <a href="#documents" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">📄</span>
+            <a href="#documents" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">📄</span>
                 المستندات
             </a>
-            <a href="#chat" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">💬</span>
+            <a href="#chat" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">💬</span>
                 المحادثات
             </a>
-            <a href="#hr" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">👔</span>
+            <a href="#hr" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">👔</span>
                 الموارد البشرية
             </a>
-            <a href="#finance" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">💰</span>
+            <a href="#finance" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">💰</span>
                 المالية
             </a>
-            <a href="#reports" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">📊</span>
+            <a href="#reports" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">📊</span>
                 التقارير والتصدير
             </a>
-            <a href="#profile" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">⚙️</span>
+            <a href="#profile" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">⚙️</span>
                 الملف الشخصي والإعدادات
             </a>
-            <a href="#tips" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-amber-100 transition text-gray-700 hover:text-amber-600 text-sm">
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-base">💡</span>
+            <a href="#tips" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gold/12 transition text-gray-700 hover:text-gold-dark text-sm">
+                <span class="w-8 h-8 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0 text-gold-dark text-base">💡</span>
                 نصائح سريعة
             </a>
         </div>
@@ -76,30 +76,30 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">🏠</span>
-                <h2 class="text-2xl font-bold text-amber-600">لوحة التحكم</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">لوحة التحكم</h2>
             </div>
             <div class="space-y-4 text-gray-700 leading-relaxed">
-                <p>لوحة التحكم هي <strong class="text-amber-600">الصفحة الرئيسية</strong> اللي بتظهر لك أول ما تدخل. من هنا تقدر تشوف كل شيء重要 بشكل مختصر:</p>
+                <p>لوحة التحكم هي <strong class="text-gold-dark">الصفحة الرئيسية</strong> اللي بتظهر لك أول ما تدخل. من هنا تقدر تشوف كل شيء重要 بشكل مختصر:</p>
                 <ul class="space-y-3 pr-6">
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">بطاقات الإحصائيات:</strong> تشوف عدد القضايا، العملاء، الجلسات، والمهام الفورية</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">الجلسات القادمة:</strong> جدول جلسات اليوم والأيام الجاية</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">آخر المهام:</strong> أحدث المهام المضافة مع حالتها</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">آخر التحديثات:</strong> نشاطات حديثة على النظام</span>
                     </li>
                 </ul>
                 <div class="bg-white rounded-xl p-4 border border-gray-100 mt-4">
-                    <p class="text-gray-600 text-sm">💡 <strong class="text-amber-600">نصيحة:</strong> لو تحس إن البيانات قديمة، استخدم Ctrl+F5 عشان تحديث الصفحة من الكاش.</p>
+                    <p class="text-gray-600 text-sm">💡 <strong class="text-gold-dark">نصيحة:</strong> لو تحس إن البيانات قديمة، استخدم Ctrl+F5 عشان تحديث الصفحة من الكاش.</p>
                 </div>
             </div>
         </div>
@@ -110,21 +110,21 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">📁</span>
-                <h2 class="text-2xl font-bold text-amber-600">إدارة القضايا</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">إدارة القضايا</h2>
             </div>
             <div class="space-y-4 text-gray-700 leading-relaxed">
-                <p>في قسم القضايا تقدر <strong class="text-amber-600">تضيف، تعدل، تحذف، وتتصفح</strong> كل القضايا المسجلة في النظام.</p>
+                <p>في قسم القضايا تقدر <strong class="text-gold-dark">تضيف، تعدل، تحذف، وتتصفح</strong> كل القضايا المسجلة في النظام.</p>
                 <h3 class="text-lg font-bold text-gray-700 mt-6 mb-3">📌 إضافة قضية جديدة:</h3>
-                <ol class="space-y-2 pr-6 list-decimal text-gray-700 marker:text-amber-600">
-                    <li>اضغط على زر <span class="bg-amber-100 text-amber-600 px-3 py-1 rounded-lg text-sm">+ إضافة قضية</span></li>
+                <ol class="space-y-2 pr-6 list-decimal text-gray-700 marker:text-gold-dark">
+                    <li>اضغط على زر <span class="bg-gold/12 text-gold-dark px-3 py-1 rounded-lg text-sm">+ إضافة قضية</span></li>
                     <li>املأ البيانات: رقم القضية، المحكمة، الموضوع، الخصم، الحالة، القسم، النوع</li>
                     <li>اختر <strong>العميل</strong> المرتبط بالقضية (إجباري)</li>
                     <li>اختر <strong>الموظف المسؤول</strong> (إن وجد)</li>
                     <li>اضغط حفظ ✨</li>
                 </ol>
-                <p class="mt-4">لكل قضية تقدر <strong class="text-amber-600">تضيف ملفات مرفقة</strong> (مستندات PDF، صور، إلخ) وتشوف <strong>الجلسات</strong> و <strong>المهام</strong> المرتبطة بها.</p>
+                <p class="mt-4">لكل قضية تقدر <strong class="text-gold-dark">تضيف ملفات مرفقة</strong> (مستندات PDF، صور، إلخ) وتشوف <strong>الجلسات</strong> و <strong>المهام</strong> المرتبطة بها.</p>
                 <div class="bg-white rounded-xl p-4 border border-gray-100 mt-4">
-                    <p class="text-gray-600 text-sm">🔍 <strong class="text-amber-600">بحث:</strong> في أعلى جدول القضايا، في مربع بحث يسمح لك تبحث عن أي قضية برقم القضية أو اسم العميل.</p>
+                    <p class="text-gray-600 text-sm">🔍 <strong class="text-gold-dark">بحث:</strong> في أعلى جدول القضايا، في مربع بحث يسمح لك تبحث عن أي قضية برقم القضية أو اسم العميل.</p>
                 </div>
             </div>
         </div>
@@ -135,21 +135,21 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">👥</span>
-                <h2 class="text-2xl font-bold text-amber-600">إدارة العملاء</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">إدارة العملاء</h2>
             </div>
             <div class="space-y-4 text-gray-700 leading-relaxed">
-                <p>قسم العملاء يسمح لك <strong class="text-amber-600">تسجل بيانات العملاء</strong> وتتابع كل قضاياهم.</p>
+                <p>قسم العملاء يسمح لك <strong class="text-gold-dark">تسجل بيانات العملاء</strong> وتتابع كل قضاياهم.</p>
                 <ul class="space-y-3 pr-6">
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">إضافة عميل:</strong> الاسم، رقم الهاتف، البريد الإلكتروني، العنوان، ملاحظات</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">عرض العميل:</strong> الضغط على اسم العميل يوديك لصفحة العميل وفيها كل قضاياه وجلساته ومستنداته</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">إضافة قضية أثناء إنشاء العميل:</strong> في شاشة إضافة عميل، تقدر تختار "إضافة قضية" عشان تربط قضية جديدة بالعميل فوراً</span>
                     </li>
                 </ul>
@@ -162,13 +162,13 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">📅</span>
-                <h2 class="text-2xl font-bold text-amber-600">الجلسات القضائية</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">الجلسات القضائية</h2>
             </div>
             <div class="space-y-4 text-gray-700 leading-relaxed">
-                <p>تابع <strong class="text-amber-600">جلسات المحكمة</strong> لكل قضية. تقدر تضيف جلسة جديدة، تعدلها، أو تحذفها.</p>
+                <p>تابع <strong class="text-gold-dark">جلسات المحكمة</strong> لكل قضية. تقدر تضيف جلسة جديدة، تعدلها، أو تحذفها.</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div class="bg-white rounded-xl p-4 border border-gray-100">
-                        <p class="text-amber-600 font-bold mb-2">📌 إضافة جلسة:</p>
+                        <p class="text-gold-dark font-bold mb-2">📌 إضافة جلسة:</p>
                         <ul class="text-gray-700 text-sm space-y-1 pr-4">
                             <li>• اختر القضية من القائمة المنسدلة</li>
                             <li>• حدد تاريخ الجلسة و الوقت</li>
@@ -177,8 +177,8 @@
                         </ul>
                     </div>
                     <div class="bg-white rounded-xl p-4 border border-gray-100">
-                        <p class="text-amber-600 font-bold mb-2">⭐ جلسات اليوم:</p>
-                        <p class="text-gray-700 text-sm">في لوحة التحكم وداخل قسم الجلسات، في تبويب <span class="text-amber-600">"جلسات اليوم"</span> يعرض لك كل جلسات اليوم مباشرة.</p>
+                        <p class="text-gold-dark font-bold mb-2">⭐ جلسات اليوم:</p>
+                        <p class="text-gray-700 text-sm">في لوحة التحكم وداخل قسم الجلسات، في تبويب <span class="text-gold-dark">"جلسات اليوم"</span> يعرض لك كل جلسات اليوم مباشرة.</p>
                     </div>
                 </div>
             </div>
@@ -190,26 +190,26 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">✅</span>
-                <h2 class="text-2xl font-bold text-amber-600">المهام</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">المهام</h2>
             </div>
             <div class="space-y-4 text-gray-700 leading-relaxed">
-                <p>نظام المهام يساعدك <strong class="text-amber-600">تنظم أعمالك اليومية</strong> وتتابع إنجازها مع الفريق.</p>
+                <p>نظام المهام يساعدك <strong class="text-gold-dark">تنظم أعمالك اليومية</strong> وتتابع إنجازها مع الفريق.</p>
                 <ul class="space-y-3 pr-6">
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">إنشاء مهمة:</strong> حدد العنوان، الوصف، الأولوية (عادية / مهمة / عاجلة)، تاريخ الاستحقاق، والموظف المسؤول</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">حالة المهمة:</strong> تقدر تحدد الحالة (معلق / قيد الإنجاز / منجز / ملغي)</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">ربط المهمة بقضية:</strong> تقدر تربط المهمة بقضية معينة عشان تكون مرتبطة بسياقها</span>
                     </li>
                 </ul>
                 <div class="bg-white rounded-xl p-4 border border-gray-100 mt-4">
-                    <p class="text-gray-600 text-sm">🎯 <strong class="text-amber-600">الأولويات:</strong> المهام العاجلة تظهر باللون الأحمر، المهمة بالبرتقالي، والعادية بالأزرق.</p>
+                    <p class="text-gray-600 text-sm">🎯 <strong class="text-gold-dark">الأولويات:</strong> المهام العاجلة تظهر باللون الأحمر، المهمة بالبرتقالي، والعادية بالأزرق.</p>
                 </div>
             </div>
         </div>
@@ -220,21 +220,21 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">📄</span>
-                <h2 class="text-2xl font-bold text-amber-600">المستندات</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">المستندات</h2>
             </div>
             <div class="space-y-4 text-gray-700 leading-relaxed">
-                <p>قسم المستندات هو <strong class="text-amber-600">مستودعك الرقمي</strong> لكل الملفات والمستندات اللي تخص القضايا والعملاء.</p>
+                <p>قسم المستندات هو <strong class="text-gold-dark">مستودعك الرقمي</strong> لكل الملفات والمستندات اللي تخص القضايا والعملاء.</p>
                 <ul class="space-y-3 pr-6">
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">رفع مستند:</strong> اسحب الملف أو اختر من جهازك، اكتب وصف للمستند، واربطه بقضية أو عميل</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">تصفح وتحميل:</strong> كل المستندات مرتبة بتاريخ الإضافة، تقدر تفتحها أو تحملها بضغطة زر</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">أنواع الملفات المدعومة:</strong> PDF، صور (JPG, PNG)، Word، Excel</span>
                     </li>
                 </ul>
@@ -247,13 +247,13 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">💬</span>
-                <h2 class="text-2xl font-bold text-amber-600">المحادثات</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">المحادثات</h2>
             </div>
             <div class="space-y-4 text-gray-700 leading-relaxed">
-                <p>نظام المحادثات الداخلية يسمح لك <strong class="text-amber-600">تتواصل مع زملائك</strong> في المكتب بشكل فوري وآمن.</p>
+                <p>نظام المحادثات الداخلية يسمح لك <strong class="text-gold-dark">تتواصل مع زملائك</strong> في المكتب بشكل فوري وآمن.</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div class="bg-white rounded-xl p-4 border border-gray-100">
-                        <p class="text-amber-600 font-bold mb-2">📌 إرسال رسالة:</p>
+                        <p class="text-gold-dark font-bold mb-2">📌 إرسال رسالة:</p>
                         <ul class="text-gray-700 text-sm space-y-1 pr-4">
                             <li>• اختر محادثة من القائمة اليمين</li>
                             <li>• اكتب رسالتك في مربع النص</li>
@@ -262,7 +262,7 @@
                         </ul>
                     </div>
                     <div class="bg-white rounded-xl p-4 border border-gray-100">
-                        <p class="text-amber-600 font-bold mb-2">⭐ مميزات:</p>
+                        <p class="text-gold-dark font-bold mb-2">⭐ مميزات:</p>
                         <ul class="text-gray-700 text-sm space-y-1 pr-4">
                             <li>• 🔔 صوت وصول رسائل جديد (يشتغل تلقائياً)</li>
                             <li>• 📎 إرفاق ملفات وصور</li>
@@ -280,21 +280,21 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">👔</span>
-                <h2 class="text-2xl font-bold text-amber-600">الموارد البشرية</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">الموارد البشرية</h2>
             </div>
             <div class="space-y-4 text-gray-700 leading-relaxed">
-                <p>قسم الموارد البشرية يسمح لك <strong class="text-amber-600">إدارة شؤون الموظفين</strong> في المكتب.</p>
+                <p>قسم الموارد البشرية يسمح لك <strong class="text-gold-dark">إدارة شؤون الموظفين</strong> في المكتب.</p>
                 <ul class="space-y-2 pr-6">
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">سجل الموظفين:</strong> متابعة بيانات جميع الموظفين في المكتب</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">الإجازات:</strong> تقديم واعتماد طلبات الإجازات (إجازة سنوية، مرضية، طارئة)</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">الإحصائيات:</strong> رسوم بيانية توضح توزيع الموظفين والإجازات</span>
                     </li>
                 </ul>
@@ -307,21 +307,21 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">💰</span>
-                <h2 class="text-2xl font-bold text-amber-600">المالية</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">المالية</h2>
             </div>
             <div class="space-y-4 text-gray-700 leading-relaxed">
-                <p>نظام المالية يساعدك <strong class="text-amber-600">تتابع كل المعاملات المالية</strong> في المكتب.</p>
+                <p>نظام المالية يساعدك <strong class="text-gold-dark">تتابع كل المعاملات المالية</strong> في المكتب.</p>
                 <ul class="space-y-2 pr-6">
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">المعاملات المالية:</strong> تسجيل كل المدفوعات والمقبوضات مع تاريخها</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">إرفاق المستندات:</strong> إرفاق فواتير وإيصالات لكل معاملة</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">طباعة وتصدير:</strong> طباعة تفاصيل المعاملة أو تصديرها</span>
                     </li>
                 </ul>
@@ -334,21 +334,21 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">📊</span>
-                <h2 class="text-2xl font-bold text-amber-600">التقارير والتصدير</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">التقارير والتصدير</h2>
             </div>
             <div class="space-y-4 text-gray-700 leading-relaxed">
-                <p>قسم التقارير يسمح لك <strong class="text-amber-600">تصدير بيانات النظام</strong> على شكل Excel.</p>
+                <p>قسم التقارير يسمح لك <strong class="text-gold-dark">تصدير بيانات النظام</strong> على شكل Excel.</p>
                 <ul class="space-y-2 pr-6">
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">التقارير المتاحة:</strong> تقارير القضايا، العملاء، الجلسات، المهام، المستندات، المالية، الموارد البشرية</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">التصدير الشامل:</strong> تصدير كل البيانات مرة واحدة مع صفحة ملخص</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">تصميم التقرير:</strong> رأس ذهبي، خط أبيض عريض، صفوف مخططة، محاذاة عربية</span>
                     </li>
                 </ul>
@@ -361,21 +361,21 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">⚙️</span>
-                <h2 class="text-2xl font-bold text-amber-600">الملف الشخصي والإعدادات</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">الملف الشخصي والإعدادات</h2>
             </div>
             <div class="space-y-4 text-gray-700 leading-relaxed">
-                <p>من هنا تقدر <strong class="text-amber-600">تعدل بيانات حسابك الشخصي</strong> وتغير كلمة المرور.</p>
+                <p>من هنا تقدر <strong class="text-gold-dark">تعدل بيانات حسابك الشخصي</strong> وتغير كلمة المرور.</p>
                 <ul class="space-y-2 pr-6">
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">تعديل الملف الشخصي:</strong> الاسم، البريد الإلكتروني، رقم الجوال</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">تغيير كلمة المرور:</strong> من نفس الشاشة، اكتب كلمة المرور الحالية والجديدة</span>
                     </li>
                     <li class="flex items-start gap-3">
-                        <span class="text-amber-600 mt-1">•</span>
+                        <span class="text-gold-dark mt-1">•</span>
                         <span><strong class="text-gray-700">تبديل اللغة:</strong> من الشريط الجانبي، تقدر تحول بين العربية والإنجليزية</span>
                     </li>
                 </ul>
@@ -388,31 +388,31 @@
         <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
             <div class="flex items-center gap-4 mb-6">
                 <span class="text-3xl">💡</span>
-                <h2 class="text-2xl font-bold text-amber-600">نصائح سريعة</h2>
+                <h2 class="text-2xl font-bold text-gold-dark">نصائح سريعة</h2>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-white rounded-xl p-5 border border-gray-100">
-                    <p class="text-amber-600 font-bold mb-2">🔄 التحديثات المباشرة</p>
+                    <p class="text-gold-dark font-bold mb-2">🔄 التحديثات المباشرة</p>
                     <p class="text-gray-700 text-sm">النظام يحدث تلقائياً كل 30 ثانية. أي تغيير يسويه أحد الزملاء راح يظهر لك مباشرة بدون ما تعيد تحميل الصفحة.</p>
                 </div>
                 <div class="bg-white rounded-xl p-5 border border-gray-100">
-                    <p class="text-amber-600 font-bold mb-2">🔊 أصوات التنبيهات</p>
+                    <p class="text-gold-dark font-bold mb-2">🔊 أصوات التنبيهات</p>
                     <p class="text-gray-700 text-sm">لما توصلك رسالة جديدة في الشات أو إشعار جديد، راح تسمع صوت تنبيه. تأكد إن الصوت شغال على جهازك.</p>
                 </div>
                 <div class="bg-white rounded-xl p-5 border border-gray-100">
-                    <p class="text-amber-600 font-bold mb-2">🔍 البحث السريع</p>
+                    <p class="text-gold-dark font-bold mb-2">🔍 البحث السريع</p>
                     <p class="text-gray-700 text-sm">في كل جدول تقدر تبحث باستعمال مربع البحث. جرب تكتب أي كلمة وراح تظهر النتائج فوراً.</p>
                 </div>
                 <div class="bg-white rounded-xl p-5 border border-gray-100">
-                    <p class="text-amber-600 font-bold mb-2">🌙 الوضع الليلي / النهاري</p>
+                    <p class="text-gold-dark font-bold mb-2">🌙 الوضع الليلي / النهاري</p>
                     <p class="text-gray-700 text-sm">النظام يدعم الوضع الليلي (أزرق داكن) والوضع النهاري (بيج فاتح). تقدر تغير من إعدادات العرض.</p>
                 </div>
                 <div class="bg-white rounded-xl p-5 border border-gray-100">
-                    <p class="text-amber-600 font-bold mb-2">📱 متوافق مع الجوال</p>
+                    <p class="text-gold-dark font-bold mb-2">📱 متوافق مع الجوال</p>
                     <p class="text-gray-700 text-sm">النظام يشتغل على الجوال والتابلت أيضاً. القائمة الجانبية تنطوي عشان تعطي مساحة أكبر للشاشة.</p>
                 </div>
                 <div class="bg-white rounded-xl p-5 border border-gray-100">
-                    <p class="text-amber-600 font-bold mb-2">🔐 الأمان</p>
+                    <p class="text-gold-dark font-bold mb-2">🔐 الأمان</p>
                     <p class="text-gray-700 text-sm">جميع البيانات في النظام مشفرة. لا تشارك كلمة المرور مع أي شخص. في حال نسيت كلمة المرور، تواصل مع المطور.</p>
                 </div>
             </div>
@@ -421,7 +421,7 @@
 
     {{-- Footer --}}
     <div class="text-center py-10 text-gray-400 text-sm border-t border-gray-100">
-        <p>تم تطويره بواسطة <span class="text-amber-400">عبدالرحمن الريامي</span> — LexPro</p>
+        <p>تم تطويره بواسطة <span class="text-gold-light">عبدالرحمن الريامي</span> — LexPro</p>
     </div>
 </div>
 @endsection

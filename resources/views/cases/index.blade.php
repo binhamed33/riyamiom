@@ -42,7 +42,7 @@ document.addEventListener('alpine:init', () => {
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 class="text-2xl font-bold text-amber-700">{{ __('app.manage_cases') }}</h1>
+        <h1 class="text-2xl font-bold text-gold-dark">{{ __('app.manage_cases') }}</h1>
         <div class="flex flex-wrap items-center gap-3">
             <form action="{{ route('cases.detectOverdue') }}" method="POST" class="contents">
                 @csrf
@@ -59,7 +59,7 @@ document.addEventListener('alpine:init', () => {
                 </svg>
                 {{ __('app.add_new_case') }}
             </a>
-            <a href="{{ route('cases.monthly') }}" class="bg-white hover:bg-gray-100 text-gray-600 border border-amber-200 px-5 py-2.5 rounded-lg font-medium transition-colors text-sm inline-flex items-center gap-2">
+            <a href="{{ route('cases.monthly') }}" class="bg-white hover:bg-gray-100 text-gray-600 border border-gold/15 px-5 py-2.5 rounded-lg font-medium transition-colors text-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
@@ -69,7 +69,7 @@ document.addEventListener('alpine:init', () => {
     </div>
 
     {{-- Filter Bar --}}
-    <form method="GET" action="{{ route('cases.index') }}" class="bg-white rounded-xl border border-amber-200 p-4">
+    <form method="GET" action="{{ route('cases.index') }}" class="bg-white rounded-xl border border-gold/15 p-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {{-- Search --}}
             <div class="lg:col-span-1">
@@ -82,15 +82,15 @@ document.addEventListener('alpine:init', () => {
                         x-on:blur="setTimeout(() => open = false, 200)"
                         x-on:focus="if (results.length > 0) open = true"
                         autocomplete="off"
-                        class="w-full rounded-lg bg-white border border-gray-200 pr-10 pl-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                        class="w-full rounded-lg bg-white border border-gray-200 pr-10 pl-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
                     <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
-                    <div x-show="open" x-cloak class="absolute z-50 top-full mt-1 w-full bg-white border border-amber-200 rounded-lg shadow-lg overflow-hidden">
+                    <div x-show="open" x-cloak class="absolute z-50 top-full mt-1 w-full bg-white border border-gold/15 rounded-lg shadow-lg overflow-hidden">
                         <template x-for="(r, i) in results" :key="i">
                             <a :href="r.url" x-html="r.label"
-                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 transition-colors border-b border-gray-100 last:border-b-0"
-                                :class="{ 'bg-amber-50': i === selected }"></a>
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gold/10 transition-colors border-b border-gray-100 last:border-b-0"
+                                :class="{ 'bg-gold/10': i === selected }"></a>
                         </template>
                     </div>
                 </div>
@@ -98,7 +98,7 @@ document.addEventListener('alpine:init', () => {
 
             {{-- Status --}}
             <div>
-                <select name="status" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                <select name="status" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
                     <option value="">{{ __('app.all') }}</option>
                     <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>{{ __('app.status_active') }}</option>
                     <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>{{ __('app.status_pending') }}</option>
@@ -113,7 +113,7 @@ document.addEventListener('alpine:init', () => {
 
             {{-- Priority --}}
             <div>
-                <select name="priority" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                <select name="priority" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
                     <option value="">{{ __('app.all') }}</option>
                     <option value="low" {{ request('priority') === 'low' ? 'selected' : '' }}>{{ __('app.priority_low') }}</option>
                     <option value="medium" {{ request('priority') === 'medium' ? 'selected' : '' }}>{{ __('app.priority_medium') }}</option>
@@ -135,7 +135,7 @@ document.addEventListener('alpine:init', () => {
     </form>
 
     {{-- Cases Table --}}
-    <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-right">
                 <thead>
@@ -162,7 +162,7 @@ document.addEventListener('alpine:init', () => {
                             @endphp
                             <th class="px-3 py-2 whitespace-nowrap text-xs">
                                 <a href="{{ request()->fullUrlWithQuery(['sort' => $colKey, 'dir' => $nextDir]) }}"
-                                    class="{{ $arrowCls }} {{ $isActive ? 'text-amber-600 bg-amber-100/80 rounded-lg px-2 py-1' : 'text-amber-700 hover:text-amber-600' }}">
+                                    class="{{ $arrowCls }} {{ $isActive ? 'text-gold-dark bg-gold/12/80 rounded-lg px-2 py-1' : 'text-gold-dark hover:text-gold-dark' }}">
                                     {{ $label }}
                                     @if($isActive)
                                         <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -180,7 +180,7 @@ document.addEventListener('alpine:init', () => {
                                 </a>
                             </th>
                         @endforeach
-                        <th class="px-3 py-2 text-amber-700 font-bold whitespace-nowrap text-xs">{{ __('app.actions') }}</th>
+                        <th class="px-3 py-2 text-gold-dark font-bold whitespace-nowrap text-xs">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -258,7 +258,7 @@ document.addEventListener('alpine:init', () => {
                                         <div x-show="result" x-cloak class="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg max-w-[280px]" :class="result?.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'" x-text="result?.text"></div>
                                     </div>
                                     @endif
-                                    <a href="{{ route('cases.edit', $case->id) }}" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors" title="{{ __('app.edit') }}">
+                                    <a href="{{ route('cases.edit', $case->id) }}" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gold/12 text-gold-dark hover:bg-gold/15 transition-colors" title="{{ __('app.edit') }}">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
@@ -300,7 +300,7 @@ document.addEventListener('alpine:init', () => {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                 </svg>
                                 <p class="text-lg">{{ __('app.no_cases') }}</p>
-                                <a href="{{ route('cases.create') }}" class="mt-3 inline-block text-amber-700 hover:underline text-sm">{{ __('app.add_case_prompt') }}</a>
+                                <a href="{{ route('cases.create') }}" class="mt-3 inline-block text-gold-dark hover:underline text-sm">{{ __('app.add_case_prompt') }}</a>
                             </td>
                         </tr>
                     @endforelse

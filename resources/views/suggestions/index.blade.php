@@ -5,7 +5,7 @@
 @section('content')
 <div class="max-w-2xl mx-auto">
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-amber-600">صندوق الاقتراحات</h1>
+        <h1 class="text-2xl font-bold text-gold-dark">صندوق الاقتراحات</h1>
         <p class="text-sm text-gray-500 mt-1">شاركنا بفكرتك أو ملاحظتك — تصل مباشرة إلى المطوّرين ويتم مراجعتها.</p>
     </div>
 
@@ -23,7 +23,7 @@
                 id="content" name="content" rows="5" required minlength="20" maxlength="2000"
                 x-model="content"
                 @input="len = content.length"
-                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-300 focus:bg-amber-50 transition resize-y @error('content') border-red-300 @enderror"
+                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/25 focus:bg-gold/10 transition resize-y @error('content') border-red-300 @enderror"
                 placeholder="صف اقتراحك بوصف واضح... ماذا تقترح ولماذا؟"></textarea>
             <div class="flex items-center justify-between mt-2">
                 <div>
@@ -34,7 +34,7 @@
                 </div>
                 <p class="text-xs text-gray-400" x-text="'عدد الأحرف: ' + len"></p>
             </div>
-            <button type="submit" class="mt-4 bg-gradient-to-l from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-500 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-amber-200/30 hover:shadow-amber-300/30 text-sm flex items-center gap-2">
+            <button type="submit" class="mt-4 bg-gradient-to-l from-gold-dark to-gold hover:from-gold-light hover:to-gold text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-gold/30 hover:shadow-gold-light/30 text-sm flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 إرسال الاقتراح
             </button>
@@ -52,7 +52,7 @@
                             تم التنفيذ
                         </span>
                     @else
-                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-gold-dark bg-gold/12 px-2 py-0.5 rounded-full">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             قيد الدراسة أو التنفيذ
                         </span>

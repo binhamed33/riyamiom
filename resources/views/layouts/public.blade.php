@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#8F7745">
+    <meta name="theme-color" content="#A98218">
     <title>@yield('title', $officeName) - {{ $officeName }}</title>
 
     <link rel="icon" href="/favicon.ico">
@@ -37,7 +37,7 @@
             theme: {
                 extend: {
                     colors: {
-                        gold: { DEFAULT: '#B89B5E', light: '#D4B978', dark: '#8F7745' },
+                        gold: { DEFAULT: '#D4AF37', light: '#E5C158', dark: '#A98218' },
                     },
                     fontFamily: {
                         body: ['Tajawal', 'sans-serif'],
@@ -67,24 +67,24 @@
 
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #B89B5E; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 3px; }
     </style>
 
     @stack('styles')
 </head>
-<body class="bg-gradient-to-br from-amber-50 via-white to-orange-100 min-h-screen flex flex-col">
-    <header class="bg-white/80 backdrop-blur-sm border-b border-amber-100 sticky top-0 z-50">
+<body class="bg-gradient-to-br from-[#F9FAFB] via-white to-[#F7F8FA] min-h-screen flex flex-col">
+    <header class="bg-white/80 backdrop-blur-sm border-b border-gold/15 sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="flex items-center justify-between h-14 sm:h-16">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-600 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-200/50">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center shadow-lg shadow-gold/20">
                         <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
                         </svg>
                     </div>
                     <div>
-                        <h1 class="font-heading font-bold text-sm sm:text-base text-amber-900 leading-tight">{{ $officeName }}</h1>
-                        <p class="text-[10px] sm:text-xs text-amber-600/70 leading-tight">بوابة المتابعة الإلكترونية</p>
+                        <h1 class="font-heading font-bold text-sm sm:text-base text-[#111827] leading-tight">{{ $officeName }}</h1>
+                        <p class="text-[10px] sm:text-xs text-gold-dark/70 leading-tight">بوابة المتابعة الإلكترونية</p>
                     </div>
                 </div>
                 @hasSection('header-actions')
@@ -102,14 +102,14 @@
         </div>
     </main>
 
-    <footer class="bg-white/50 border-t border-amber-100">
+    <footer class="bg-white/50 border-t border-gold/15">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
             <div class="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 text-[10px] sm:text-xs text-gray-400">
-                <a href="https://office.riyami.om/portfolio/" target="_blank" class="hover:text-amber-600 transition-colors">LexPro &copy; {{ date('Y') }}</a>
+                <a href="https://office.riyami.om/portfolio/" target="_blank" class="hover:text-gold-dark transition-colors">LexPro &copy; {{ date('Y') }}</a>
                 <span class="hidden sm:inline text-gray-300">|</span>
                 <span>{{ $officeName }}</span>
                 <span class="hidden sm:inline text-gray-300">|</span>
-                <a href="https://office.riyami.om/portfolio/" target="_blank" class="hover:text-amber-600 transition-colors">المطور عبدالرحمن الريامي</a>
+                <a href="https://office.riyami.om/portfolio/" target="_blank" class="hover:text-gold-dark transition-colors">المطور عبدالرحمن الريامي</a>
             </div>
         </div>
     </footer>

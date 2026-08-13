@@ -20,7 +20,7 @@
 
             <div>
                 <label for="case_id" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case') }} <span class="text-red-500">*</span></label>
-                <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('case_id') border-red-500 @enderror" required>
+                <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('case_id') border-red-500 @enderror" required>
                     <option value="">{{ __('app.choose_case') }}</option>
                     @foreach ($cases as $case)
                         <option value="{{ $case->id }}" {{ old('case_id', $session->case_id) == $case->id ? 'selected' : '' }}>
@@ -37,7 +37,7 @@
                 <label for="date" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.session_datetime') }} <span class="text-red-500">*</span></label>
                 <input type="datetime-local" id="date" name="date"
                        value="{{ old('date', $session->date->format('Y-m-d\TH:i')) }}"
-                       class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('date') border-red-500 @enderror" required>
+                       class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('date') border-red-500 @enderror" required>
                 @error('date')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -46,7 +46,7 @@
             <div>
                 <label for="location" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.location') }} <span class="text-red-500">*</span></label>
                 <input type="text" id="location" name="location" value="{{ old('location', $session->location) }}"
-                       class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('location') border-red-500 @enderror"
+                       class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('location') border-red-500 @enderror"
                        placeholder="{{ __('app.session_location_placeholder') }}" required>
                 @error('location')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -55,7 +55,7 @@
 
             <div>
                 <label for="status" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.status') }} <span class="text-red-500">*</span></label>
-                <select id="status" name="status" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('status') border-red-500 @enderror" required>
+                <select id="status" name="status" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('status') border-red-500 @enderror" required>
                     <option value="upcoming" {{ old('status', $session->status) === 'upcoming' ? 'selected' : '' }}>{{ __('app.status_upcoming') }}</option>
                     <option value="completed" {{ old('status', $session->status) === 'completed' ? 'selected' : '' }}>{{ __('app.status_completed') }}</option>
                     <option value="postponed" {{ old('status', $session->status) === 'postponed' ? 'selected' : '' }}>{{ __('app.status_postponed') }}</option>
@@ -69,7 +69,7 @@
             <div>
                 <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.notes') }}</label>
                 <textarea id="notes" name="notes" rows="4"
-                          class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('notes') border-red-500 @enderror"
+                          class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('notes') border-red-500 @enderror"
                           placeholder="{{ __('app.session_notes_placeholder') }}">{{ old('notes', $session->notes) }}</textarea>
                 @error('notes')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -79,7 +79,7 @@
             <div>
                 <label for="report" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.session_decision') }}</label>
                 <textarea id="report" name="report" rows="4"
-                          class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('report') border-red-500 @enderror"
+                          class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('report') border-red-500 @enderror"
                           placeholder="{{ __('app.session_decision_placeholder') }}">{{ old('report', $session->report) }}</textarea>
                 @error('report')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

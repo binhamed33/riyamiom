@@ -7,7 +7,7 @@
 
     {{-- Header --}}
     <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-amber-600">⚙️ لوحة المطور</h1>
+        <h1 class="text-2xl font-bold text-gold-dark">⚙️ لوحة المطور</h1>
         <div class="flex items-center gap-2 text-xs text-gray-400">
             <span>v{{ $laravelVersion }}</span>
             <span class="w-1 h-1 rounded-full bg-gray-200"></span>
@@ -59,7 +59,7 @@
 
     {{-- Quick Actions --}}
     <div class="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 class="text-amber-600 font-bold mb-4 text-sm uppercase tracking-wider">⚡ إجراءات سريعة</h2>
+        <h2 class="text-gold-dark font-bold mb-4 text-sm uppercase tracking-wider">⚡ إجراءات سريعة</h2>
         <div class="flex flex-wrap gap-3">
             <form action="{{ route('developer.cache-clear') }}" method="POST" class="inline">
                 @csrf
@@ -67,7 +67,7 @@
             </form>
             <form action="{{ route('developer.cache-all') }}" method="POST" class="inline">
                 @csrf
-                <button type="submit" class="bg-amber-100 border border-amber-200 text-amber-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-200 transition">⚡ تخزين الكاش</button>
+                <button type="submit" class="bg-gold/12 border border-gold/15 text-gold-dark px-4 py-2 rounded-lg text-sm font-medium hover:bg-gold/15 transition">⚡ تخزين الكاش</button>
             </form>
             <form action="{{ route('developer.optimize') }}" method="POST" class="inline">
                 @csrf
@@ -87,7 +87,7 @@
 
     {{-- Cache Status --}}
     <div class="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 class="text-amber-600 font-bold mb-4 text-sm uppercase tracking-wider">💾 حالة الكاش</h2>
+        <h2 class="text-gold-dark font-bold mb-4 text-sm uppercase tracking-wider">💾 حالة الكاش</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             @foreach($cacheDrivers as $key => $cached)
                 <div class="flex items-center gap-3 px-4 py-3 rounded-xl {{ $cached ? 'bg-green-100' : 'bg-red-100' }}">
@@ -102,8 +102,8 @@
     {{-- Recent Audit Log --}}
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 class="text-amber-600 font-bold text-sm uppercase tracking-wider">📋 آخر النشاطات</h2>
-            <a href="{{ route('audit-log.index') }}" class="text-gray-400 text-xs hover:text-amber-600 transition">عرض الكل</a>
+            <h2 class="text-gold-dark font-bold text-sm uppercase tracking-wider">📋 آخر النشاطات</h2>
+            <a href="{{ route('audit-log.index') }}" class="text-gray-400 text-xs hover:text-gold-dark transition">عرض الكل</a>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -117,11 +117,11 @@
                 </thead>
                 <tbody>
                     @forelse($recentLogs as $log)
-                        <tr class="border-t border-gray-100 hover:bg-amber-50 transition">
+                        <tr class="border-t border-gray-100 hover:bg-gold/10 transition">
                             <td class="px-4 py-2.5 text-gray-700">{{ $log->user?->name ?? '—' }}</td>
                             <td class="px-4 py-2.5">
                                 @php
-                                    $actionColors = ['create' => 'text-green-700', 'update' => 'text-blue-700', 'delete' => 'text-red-700', 'login' => 'text-amber-600', 'logout' => 'text-gray-500'];
+                                    $actionColors = ['create' => 'text-green-700', 'update' => 'text-blue-700', 'delete' => 'text-red-700', 'login' => 'text-gold-dark', 'logout' => 'text-gray-500'];
                                     $actionLabels = ['create' => 'إنشاء', 'update' => 'تحديث', 'delete' => 'حذف', 'login' => 'دخول', 'logout' => 'خروج'];
                                 @endphp
                                 <span class="{{ $actionColors[$log->action] ?? 'text-gray-500' }} font-medium">{{ $actionLabels[$log->action] ?? $log->action }}</span>
@@ -140,11 +140,11 @@
     {{-- Announcement of the Day --}}
     <div class="bg-white rounded-xl border border-gray-200 p-5">
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-amber-600 font-bold text-sm uppercase tracking-wider">📢 رسالة اليوم</h2>
+            <h2 class="text-gold-dark font-bold text-sm uppercase tracking-wider">📢 رسالة اليوم</h2>
         </div>
 
         @if($currentAnnouncement)
-            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+            <div class="bg-gold/10 border border-gold/15 rounded-xl p-4 mb-4">
                 <p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{{ $currentAnnouncement->content }}</p>
                 <p class="text-[11px] text-gray-400 mt-2">
                     نُشرت {{ $currentAnnouncement->created_at->diffForHumans() }} • شاهدها {{ $currentAnnouncement->reads_count }} مستخدم حتى الآن
@@ -160,7 +160,7 @@
 
         <form method="POST" action="{{ route('announcements.publish') }}">
             @csrf
-            <textarea name="content" rows="3" minlength="5" maxlength="2000" placeholder="اكتب رسالة اليوم..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-300 focus:bg-amber-50 transition resize-y">{{ $currentAnnouncement ? '' : 'أهلاً بالجميع! أضفنا زرّ تقديم الاقتراحات في القائمة الجانبية. اضغط على كلمة اقتراحات لتفتح صفحة الاقتراحات مباشرة، واكتب اقتراحك أو ملاحظتك بوصف واضح — سيصلنا فوراً، وستصلك رسالة بردّ المطور وحالة اقتراحك (منفّذ أو قيد الدراسة).' }}</textarea>
+            <textarea name="content" rows="3" minlength="5" maxlength="2000" placeholder="اكتب رسالة اليوم..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/25 focus:bg-gold/10 transition resize-y">{{ $currentAnnouncement ? '' : 'أهلاً بالجميع! أضفنا زرّ تقديم الاقتراحات في القائمة الجانبية. اضغط على كلمة اقتراحات لتفتح صفحة الاقتراحات مباشرة، واكتب اقتراحك أو ملاحظتك بوصف واضح — سيصلنا فوراً، وستصلك رسالة بردّ المطور وحالة اقتراحك (منفّذ أو قيد الدراسة).' }}</textarea>
             <div class="flex justify-end mt-2">
                 <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
@@ -173,14 +173,14 @@
     {{-- Suggestions --}}
     <div class="bg-white rounded-xl border border-gray-200 p-5">
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-amber-600 font-bold text-sm uppercase tracking-wider">💡 اقتراحات الموظفين</h2>
+            <h2 class="text-gold-dark font-bold text-sm uppercase tracking-wider">💡 اقتراحات الموظفين</h2>
             <span class="text-xs text-gray-400">{{ $suggestions->count() }} اقتراح</span>
         </div>
 
         @forelse($suggestions as $suggestion)
             <div class="border border-gray-100 rounded-xl p-4 mb-4" x-data="{ editing: false }">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center flex-shrink-0 text-white text-sm font-bold">
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0 text-white text-sm font-bold">
                         {{ mb_substr($suggestion->user->name, 0, 1) }}
                     </div>
                     <div class="flex-1">
@@ -199,7 +199,7 @@
                         <form method="POST" action="{{ route('suggestions.status', $suggestion) }}" class="inline">
                             @csrf
                             <input type="hidden" name="status" value="pending">
-                            <button type="submit" class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border transition {{ $suggestion->status === 'pending' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50' }}" title="قيد الدراسة أو التنفيذ">
+                            <button type="submit" class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border transition {{ $suggestion->status === 'pending' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gold-dark border-gold/25 hover:bg-gold/10' }}" title="قيد الدراسة أو التنفيذ">
                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 قيد الدراسة
                             </button>
@@ -212,7 +212,7 @@
                 <form x-show="editing" x-cloak method="POST" action="{{ route('suggestions.update', $suggestion) }}" class="mt-1">
                     @csrf
                     @method('PUT')
-                    <textarea name="content" rows="3" minlength="20" maxlength="2000" class="w-full bg-gray-50 border border-amber-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none transition resize-y">{{ $suggestion->content }}</textarea>
+                    <textarea name="content" rows="3" minlength="20" maxlength="2000" class="w-full bg-gray-50 border border-gold/25 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none transition resize-y">{{ $suggestion->content }}</textarea>
                     <div class="flex gap-2 mt-2">
                         <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-1.5 rounded-lg text-xs transition">حفظ التعديل</button>
                         <button type="button" @click="editing = false" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-1.5 rounded-lg text-xs transition">إلغاء</button>
@@ -239,7 +239,7 @@
 
                 <form method="POST" action="{{ route('suggestions.reply', $suggestion) }}" class="mt-3">
                     @csrf
-                    <textarea name="reply" rows="2" placeholder="اكتب ردّك لصاحب الاقتراح..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-300 focus:bg-amber-50 transition resize-y">{{ old('reply', $suggestion->developer_reply) }}</textarea>
+                    <textarea name="reply" rows="2" placeholder="اكتب ردّك لصاحب الاقتراح..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/25 focus:bg-gold/10 transition resize-y">{{ old('reply', $suggestion->developer_reply) }}</textarea>
                     <div class="flex justify-end mt-2">
                         <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
@@ -257,63 +257,63 @@
 
     {{-- What We Did (Development Notes) --}}
     <div class="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 class="text-amber-600 font-bold mb-4 text-sm uppercase tracking-wider">📝 وش نسوي</h2>
+        <h2 class="text-gold-dark font-bold mb-4 text-sm uppercase tracking-wider">📝 وش نسوي</h2>
         <div class="bg-white rounded-xl p-5 border border-gray-100">
             <ul class="space-y-3 text-gray-700 text-sm">
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">القضايا الشهرية:</strong> جدول + طباعة + تصفية حية</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">دليل الاستخدام:</strong> صفحة تعليمات للمستخدمين الجدد</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">إشعارات فخمة:</strong> توست + صوت عند وصول الإشعارات</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">صوت رسائل الشات:</strong> بيب عند وصول رسالة من شخص ثاني</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">حماية البريد الإلكتروني:</strong> اعتراض Cloudflare email + توست + صوت</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">النسخ الاحتياطي التلقائي:</strong> يومي (3AM) + كل 30 دقيقة عند التغيير</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">إزالة صلاحيات الأدوار:</strong> كل أعضاء الفريق يشوفون كل البيانات</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">الموارد البشرية:</strong> موظفين، إجازات، موافقة/رفض</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">المالية:</strong> معاملات، فواتير، رسوم، طباعة, تصدير</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">تصدير Excel:</strong> تقارير بتصميم ذهبي + تصدير شامل + صفحة ملخص</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">الشات:</strong> محادثات خاصة، رفع ملفات، أصوات، إشعارات</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">الوضع النهاري:</strong> إعادة تصميم بخلفية بيج وكروت بيضاء</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">CSP:</strong> حماية بـ nonce لكل السكربتات</span>
                 </li>
                 <li class="flex items-start gap-3">
-                    <span class="text-amber-600 mt-0.5">🟢</span>
+                    <span class="text-gold-dark mt-0.5">🟢</span>
                     <span><strong class="text-gray-700">إدارة المستخدمين:</strong> فتح صلاحية lawyer و staff</span>
                 </li>
             </ul>

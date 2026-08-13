@@ -7,7 +7,7 @@
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
-        <h1 class="text-2xl font-bold text-amber-600">📋 {{ __('app.monthly_cases_view') }} <span x-text="monthNames[month]"></span> <span x-text="year"></span></h1>
+        <h1 class="text-2xl font-bold text-gold-dark">📋 {{ __('app.monthly_cases_view') }} <span x-text="monthNames[month]"></span> <span x-text="year"></span></h1>
         <div class="flex items-center gap-3">
             <button id="printBtn" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,11 +22,11 @@
     </div>
 
     {{-- Month/Year Panel --}}
-    <div class="bg-white rounded-xl border border-amber-200 p-5 print:hidden">
+    <div class="bg-white rounded-xl border border-gold/15 p-5 print:hidden">
         <div class="flex flex-wrap items-end gap-6">
             <div class="flex-1 min-w-[160px]">
                 <label class="block text-gray-400 text-xs mb-1.5">{{ __('app.month') }}</label>
-                <select x-model="month" @change="fetchData" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                <select x-model="month" @change="fetchData" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
                     <template x-for="(name, num) in monthNames" :key="num">
                         <option :value="num" x-text="name" :selected="month == num"></option>
                     </template>
@@ -34,20 +34,20 @@
             </div>
             <div class="flex-1 min-w-[120px]">
                 <label class="block text-gray-400 text-xs mb-1.5">{{ __('app.year') }}</label>
-                <select x-model="year" @change="fetchData" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                <select x-model="year" @change="fetchData" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
                     <template x-for="y in years" :key="y">
                         <option :value="y" x-text="y" :selected="year == y"></option>
                     </template>
                 </select>
             </div>
-            <div x-show="loading" class="text-amber-600 text-sm font-medium">{{ __('app.loading') }}</div>
+            <div x-show="loading" class="text-gold-dark text-sm font-medium">{{ __('app.loading') }}</div>
         </div>
     </div>
 
     {{-- Summary Cards --}}
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 print:gap-3">
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p class="text-2xl font-bold text-amber-600" x-text="summary.total">0</p>
+            <p class="text-2xl font-bold text-gold-dark" x-text="summary.total">0</p>
             <p class="text-gray-500 text-sm mt-1">{{ __('app.total_cases') }}</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
@@ -69,27 +69,27 @@
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="bg-amber-50 border-b border-amber-200">
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">#</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.office_case_number') }}</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.subject') }}</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.client') }}</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.court') }}</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.status') }}</th>
-                        <th class="px-4 py-3 text-right text-amber-600 font-bold">{{ __('app.last_session_date') }}</th>
+                    <tr class="bg-gold/10 border-b border-gold/15">
+                        <th class="px-4 py-3 text-right text-gold-dark font-bold">#</th>
+                        <th class="px-4 py-3 text-right text-gold-dark font-bold">{{ __('app.office_case_number') }}</th>
+                        <th class="px-4 py-3 text-right text-gold-dark font-bold">{{ __('app.subject') }}</th>
+                        <th class="px-4 py-3 text-right text-gold-dark font-bold">{{ __('app.client') }}</th>
+                        <th class="px-4 py-3 text-right text-gold-dark font-bold">{{ __('app.court') }}</th>
+                        <th class="px-4 py-3 text-right text-gold-dark font-bold">{{ __('app.status') }}</th>
+                        <th class="px-4 py-3 text-right text-gold-dark font-bold">{{ __('app.last_session_date') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <template x-for="(caseItem, idx) in cases" :key="caseItem.id">
-                        <tr class="border-b border-gray-100 hover:bg-amber-50 transition">
+                        <tr class="border-b border-gray-100 hover:bg-gold/10 transition">
                             <td class="px-4 py-3 text-gray-500" x-text="idx + 1"></td>
                             <td class="px-4 py-3">
-                                <a :href="caseItem.show_url" class="text-amber-600 hover:text-amber-500 font-medium" x-text="caseItem.case_number"></a>
+                                <a :href="caseItem.show_url" class="text-gold-dark hover:text-gold font-medium" x-text="caseItem.case_number"></a>
                             </td>
                             <td class="px-4 py-3 text-gray-700 max-w-[200px] truncate" x-text="caseItem.title"></td>
                             <td class="px-4 py-3 text-gray-600">
                                 <template x-if="caseItem.client_name">
-                                    <a :href="caseItem.client_url" class="hover:text-amber-600 transition" x-text="caseItem.client_name"></a>
+                                    <a :href="caseItem.client_url" class="hover:text-gold-dark transition" x-text="caseItem.client_name"></a>
                                 </template>
                                 <template x-if="!caseItem.client_name">
                                     <span class="text-gray-400">—</span>
@@ -132,22 +132,22 @@
     h1, h2, h3, h4, h5, h6, p, span, div:not(.print\\:hidden) { color: #000 !important; }
     .text-gold, .text-ivory, .text-ivory\\/50, .text-ivory\\/60, .text-ivory\\/70, .text-ivory\\/80, .text-ivory\\/30, .text-white { color: #000 !important; }
     table { width: 100%; border-collapse: collapse; }
-    th { background: #B89B5E !important; color: #000 !important; padding: 10px 14px !important; font-size: 13px !important; font-weight: 700 !important; border: 2px solid #000 !important; }
+    th { background: #D4AF37 !important; color: #000 !important; padding: 10px 14px !important; font-size: 13px !important; font-weight: 700 !important; border: 2px solid #000 !important; }
     td { padding: 8px 14px !important; border: 1px solid #000 !important; font-size: 12px !important; color: #000 !important; }
-    tr:nth-child(even) td { background: #EFE7D3 !important; }
+    tr:nth-child(even) td { background: #F2F4F7 !important; }
     tr:nth-child(odd) td { background: #fff !important; }
     a { color: #000 !important; text-decoration: underline !important; font-weight: 600 !important; }
     .bg-navy-light, .bg-navy, .bg-navy-darker { background: #fff !important; border: 1px solid #000 !important; }
-    .bg-gold { background: #B89B5E !important; color: #000 !important; }
-    .bg-gold\\/10, .bg-gold\\/15, .bg-gold\\/20 { background: #EFE7D3 !important; }
-    .text-green-400 { color: #327F55 !important; font-weight: 700 !important; }
-    .text-blue-400 { color: #456B97 !important; font-weight: 700 !important; }
-    .text-red-400 { color: #A94848 !important; font-weight: 700 !important; }
-    .bg-green-500\\/15 { background: #DCEFE3 !important; color: #000 !important; }
-    .bg-yellow-500\\/15 { background: #F4E8CC !important; color: #000 !important; }
-    .bg-red-500\\/15 { background: #F5DEDE !important; color: #000 !important; }
-    .bg-gray-500\\/15 { background: #DDD8CD !important; color: #000 !important; }
-    .bg-emerald-500\\/15 { background: #DCEFE3 !important; color: #000 !important; }
+    .bg-gold { background: #D4AF37 !important; color: #000 !important; }
+    .bg-gold\\/10, .bg-gold\\/15, .bg-gold\\/20 { background: #F2F4F7 !important; }
+    .text-green-400 { color: #166534 !important; font-weight: 700 !important; }
+    .text-blue-400 { color: #1E40AF !important; font-weight: 700 !important; }
+    .text-red-400 { color: #991B1B !important; font-weight: 700 !important; }
+    .bg-green-500\\/15 { background: #DCFCE7 !important; color: #000 !important; }
+    .bg-yellow-500\\/15 { background: #FEF3C7 !important; color: #000 !important; }
+    .bg-red-500\\/15 { background: #FEE2E2 !important; color: #000 !important; }
+    .bg-gray-500\\/15 { background: #E2E6EC !important; color: #000 !important; }
+    .bg-emerald-500\\/15 { background: #DCFCE7 !important; color: #000 !important; }
     .inline-block { border: 1px solid #000 !important; font-weight: 700 !important; }
 }
 </style>

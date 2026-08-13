@@ -8,7 +8,7 @@
     {{-- Header --}}
     <div class="flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-3">
-            <h1 class="text-2xl font-bold text-amber-600 flex items-center gap-2">
+            <h1 class="text-2xl font-bold text-gold-dark flex items-center gap-2">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 21h8m-4-4v4m-7-4h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                 {{ __('app.evaluations') }}
             </h1>
@@ -18,7 +18,7 @@
         <div class="flex bg-white rounded-xl border border-gray-200 p-1">
             @foreach(['all' => __('app.evaluation_all'), 'month' => __('app.evaluation_this_month'), 'last_month' => __('app.evaluation_last_month')] as $value => $label)
                 <a href="{{ route('evaluations.index', ['period' => $value]) }}"
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ $period === $value ? 'bg-amber-600 text-white' : 'text-gray-500 hover:text-amber-700' }}">
+                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ $period === $value ? 'bg-gold text-[#111827]' : 'text-gray-500 hover:text-gold-dark' }}">
                     {{ $label }}
                 </a>
             @endforeach
@@ -26,16 +26,16 @@
     </div>
 
     {{-- How it's calculated --}}
-    <div class="bg-white rounded-xl border border-amber-200 p-5">
+    <div class="bg-white rounded-xl border border-gold/15 p-5">
         <p class="text-gray-600 text-sm">{{ __('app.evaluations_desc') }}</p>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 text-sm">
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p class="font-bold text-blue-800">{{ __('app.evaluation_cases_weight') }}</p>
                 <p class="text-blue-600 text-xs mt-1">{{ __('app.evaluation_cases_weight_desc') }}</p>
             </div>
-            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <p class="font-bold text-amber-800">{{ __('app.evaluation_activity_weight') }}</p>
-                <p class="text-amber-600 text-xs mt-1">{{ __('app.evaluation_activity_weight_desc') }}</p>
+            <div class="bg-gold/10 border border-gold/15 rounded-lg p-3">
+                <p class="font-bold text-gold-dark">{{ __('app.evaluation_activity_weight') }}</p>
+                <p class="text-gold-dark text-xs mt-1">{{ __('app.evaluation_activity_weight_desc') }}</p>
             </div>
             <div class="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p class="font-bold text-green-800">{{ __('app.evaluation_quality_weight') }}</p>
@@ -45,7 +45,7 @@
     </div>
 
     {{-- Rankings --}}
-    <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
         @if(count($rows) === 0)
             <div class="text-center py-10 text-gray-400 text-sm">{{ __('app.no_data') }}</div>
         @else
@@ -53,14 +53,14 @@
                 <table class="w-full text-sm text-right">
                     <thead>
                         <tr class="border-b border-gray-200 bg-gray-50">
-                            <th class="px-3 py-3 text-amber-700 font-bold text-xs">{{ __('app.evaluation_rank') }}</th>
-                            <th class="px-3 py-3 text-amber-700 font-bold text-xs">{{ __('app.evaluation_employee') }}</th>
-                            <th class="px-3 py-3 text-amber-700 font-bold text-xs">{{ __('app.evaluation_cases') }}</th>
-                            <th class="px-3 py-3 text-amber-700 font-bold text-xs">{{ __('app.evaluation_sessions') }}</th>
-                            <th class="px-3 py-3 text-amber-700 font-bold text-xs">{{ __('app.evaluation_tasks') }}</th>
-                            <th class="px-3 py-3 text-amber-700 font-bold text-xs">{{ __('app.evaluation_documents') }}</th>
-                            <th class="px-3 py-3 text-amber-700 font-bold text-xs">{{ __('app.evaluation_activity') }}</th>
-                            <th class="px-3 py-3 text-amber-700 font-bold text-xs min-w-[140px]">{{ __('app.evaluation_score') }}</th>
+                            <th class="px-3 py-3 text-gold-dark font-bold text-xs">{{ __('app.evaluation_rank') }}</th>
+                            <th class="px-3 py-3 text-gold-dark font-bold text-xs">{{ __('app.evaluation_employee') }}</th>
+                            <th class="px-3 py-3 text-gold-dark font-bold text-xs">{{ __('app.evaluation_cases') }}</th>
+                            <th class="px-3 py-3 text-gold-dark font-bold text-xs">{{ __('app.evaluation_sessions') }}</th>
+                            <th class="px-3 py-3 text-gold-dark font-bold text-xs">{{ __('app.evaluation_tasks') }}</th>
+                            <th class="px-3 py-3 text-gold-dark font-bold text-xs">{{ __('app.evaluation_documents') }}</th>
+                            <th class="px-3 py-3 text-gold-dark font-bold text-xs">{{ __('app.evaluation_activity') }}</th>
+                            <th class="px-3 py-3 text-gold-dark font-bold text-xs min-w-[140px]">{{ __('app.evaluation_score') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -83,7 +83,7 @@
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-3 py-3">
                                     <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold
-                                        {{ $row['rank'] === 1 ? 'bg-amber-100 text-amber-700' : ($row['rank'] <= 3 ? 'bg-gray-200 text-gray-700' : 'bg-gray-100 text-gray-500') }}">
+                                        {{ $row['rank'] === 1 ? 'bg-gold/12 text-gold-dark' : ($row['rank'] <= 3 ? 'bg-gray-200 text-gray-700' : 'bg-gray-100 text-gray-500') }}">
                                         {{ $row['rank'] }}
                                     </span>
                                 </td>

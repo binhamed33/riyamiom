@@ -3,16 +3,16 @@
 @php
     $colors = [
         'gold' => [
-            'bg' => 'bg-amber-50',
-            'icon_bg' => 'bg-gradient-to-br from-amber-500 to-amber-600',
+            'bg' => 'bg-gold/10',
+            'icon_bg' => 'bg-gradient-to-br from-gold to-gold-dark',
             'icon_text' => 'text-white',
-            'border' => 'border-amber-200',
-            'shadow' => 'shadow-amber-200/20',
-            'badge' => 'bg-amber-100 text-amber-700',
+            'border' => 'border-gold/15',
+            'shadow' => 'shadow-gold/20',
+            'badge' => 'bg-gold/12 text-gold-dark',
         ],
         'navy' => [
             'bg' => 'bg-gray-100',
-            'icon_bg' => 'bg-gradient-to-br from-amber-500 to-amber-600',
+            'icon_bg' => 'bg-gradient-to-br from-gold to-gold-dark',
             'icon_text' => 'text-white',
             'border' => 'border-gray-200',
             'shadow' => 'shadow-gray-200/20',

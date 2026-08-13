@@ -9,9 +9,9 @@
 @section('content')
 <div class="flex items-center justify-center min-h-[70vh]">
     <div class="w-full max-w-md animate-slide-up">
-        <div class="bg-white rounded-2xl sm:rounded-3xl shadow-xl shadow-amber-200/20 border border-amber-100 overflow-hidden">
+        <div class="bg-white rounded-2xl sm:rounded-3xl shadow-xl shadow-gold/20 border border-gold/15 overflow-hidden">
             {{-- Header --}}
-            <div class="bg-gradient-to-l from-amber-600 via-amber-700 to-amber-800 px-6 sm:px-8 py-8 sm:py-10 text-center relative overflow-hidden">
+            <div class="bg-gradient-to-l from-gold via-gold-dark to-gold-deep px-6 sm:px-8 py-8 sm:py-10 text-center relative overflow-hidden">
                 <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.1),transparent_70%)]"></div>
                 <div class="relative">
                     <div class="w-14 h-14 sm:w-16 sm:h-16 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
@@ -20,7 +20,7 @@
                         </svg>
                     </div>
                     <h2 class="text-xl sm:text-2xl font-bold text-white font-heading">متابعة القضايا</h2>
-                    <p class="text-amber-200/80 text-sm sm:text-base mt-1.5">أدخل بياناتك للاطلاع على قضاياك</p>
+                    <p class="text-gold-light/80 text-sm sm:text-base mt-1.5">أدخل بياناتك للاطلاع على قضاياك</p>
                 </div>
             </div>
 
@@ -53,7 +53,7 @@
                             </svg>
                         </div>
                         <input type="text" id="credential" name="credential" value="{{ old('credential') }}"
-                            class="w-full px-4 py-3.5 pr-11 rounded-xl border-2 border-gray-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 outline-none transition-all text-sm bg-gray-50/50 hover:bg-white focus:bg-white"
+                            class="w-full px-4 py-3.5 pr-11 rounded-xl border-2 border-gray-200 focus:border-gold-dark focus:ring-4 focus:ring-gold/20 outline-none transition-all text-sm bg-gray-50/50 hover:bg-white focus:bg-white"
                             placeholder="example@email.com أو 09xxxxxxxx"
                             autofocus
                             autocomplete="off">
@@ -67,7 +67,7 @@
                 </div>
 
                 <button type="submit"
-                    class="w-full bg-gradient-to-l from-amber-600 via-amber-700 to-amber-800 text-white font-bold py-3.5 rounded-xl hover:from-amber-700 hover:via-amber-800 hover:to-amber-900 transition-all shadow-lg shadow-amber-200/50 active:scale-[0.98] text-sm sm:text-base">
+                    class="w-full bg-gradient-to-l from-gold via-gold-dark to-gold-deep text-white font-bold py-3.5 rounded-xl hover:from-gold-dark hover:via-gold-deep hover:to-gold-deep transition-all shadow-lg shadow-gold/20 active:scale-[0.98] text-sm sm:text-base">
                     <span class="flex items-center justify-center gap-2">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />

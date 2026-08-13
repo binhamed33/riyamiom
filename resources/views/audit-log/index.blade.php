@@ -5,7 +5,7 @@
 @section('content')
 <div class="space-y-6">
     <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-amber-600">{{ __('app.page_audit_log') }}</h1>
+        <h1 class="text-3xl font-bold text-gold-dark">{{ __('app.page_audit_log') }}</h1>
     </div>
 
     <form method="GET" action="{{ route('audit-log.index') }}">
@@ -13,7 +13,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-xs text-gray-400 mb-1">{{ __('app.audit_user') }}</label>
-                    <select name="user_id" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    <select name="user_id" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
                         <option value="">{{ __('app.all_users') }}</option>
                         @foreach($users ?? [] as $u)
                             <option value="{{ $u->id }}" {{ request('user_id') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
@@ -22,7 +22,7 @@
                 </div>
                 <div>
                     <label class="block text-xs text-gray-400 mb-1">{{ __('app.audit_action') }}</label>
-                    <select name="action" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    <select name="action" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
                         <option value="">{{ __('app.all_actions') }}</option>
                         <option value="create" {{ request('action') === 'create' ? 'selected' : '' }}>{{ __('app.create') }}</option>
                         <option value="update" {{ request('action') === 'update' ? 'selected' : '' }}>{{ __('app.edit') }}</option>
@@ -38,7 +38,7 @@
                         name="model"
                         value="{{ request('model') }}"
                         placeholder="{{ __('app.model_name') }}"
-                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
                     >
                 </div>
                 <div class="grid grid-cols-2 gap-2">
@@ -48,7 +48,7 @@
                             type="date"
                             name="date_from"
                             value="{{ request('date_from') }}"
-                            class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
                         >
                     </div>
                     <div>
@@ -57,7 +57,7 @@
                             type="date"
                             name="date_to"
                             value="{{ request('date_to') }}"
-                            class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
                         >
                     </div>
                 </div>
@@ -74,12 +74,12 @@
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-gray-200">
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.table_datetime') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.audit_user') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.table_action') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.model_name') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.table_details') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.table_ip') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.table_datetime') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.audit_user') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.table_action') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.model_name') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.table_details') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.table_ip') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -93,7 +93,7 @@
                                         'create' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
                                         'update' => 'bg-blue-100 text-blue-700 border-blue-200',
                                         'delete' => 'bg-red-100 text-red-700 border-red-200',
-                                        'login' => 'bg-amber-100 text-amber-600 border-amber-200',
+                                        'login' => 'bg-gold/12 text-gold-dark border-gold/15',
                                         'logout' => 'bg-gray-100 text-gray-500 border-gray-200',
                                     ];
                                     $actionLabels = [

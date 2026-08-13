@@ -14,7 +14,7 @@
             <h1 class="text-xl font-heading font-bold text-gray-900">{{ $greeting }}، {{ auth()->user()->name }}</h1>
             <p class="text-xs text-gray-400 mt-0.5">إليك ما يحتاج انتباهك اليوم — {{ now()->format('l d F Y') }}</p>
         </div>
-        <a href="{{ route('attention.index') }}" class="flex-shrink-0 text-xs font-bold text-amber-600 hover:text-amber-700 transition inline-flex items-center gap-1 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+        <a href="{{ route('attention.index') }}" class="flex-shrink-0 text-xs font-bold text-gold-dark hover:text-gold-dark transition inline-flex items-center gap-1 bg-gold/10 border border-gold/15 rounded-xl px-3 py-2">
             عرض كل شيء
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ app()->getLocale() === 'ar' ? 'M15 12h4m0 0l-2-2m2 2l-2 2M5 12h10m-6-4l4 4-4 4' : 'M9 12h4m0 0l-2-2m2 2l-2 2m10 0a7 7 0 11-14 0 7 7 0 0114 0z' }}"/></svg>
         </a>
@@ -27,17 +27,17 @@
                         $sev = [
                             1 => ['dot' => 'bg-red-500', 'text' => 'text-red-700', 'bg' => 'bg-red-50'],
                             2 => ['dot' => 'bg-orange-500', 'text' => 'text-orange-700', 'bg' => 'bg-orange-50'],
-                            3 => ['dot' => 'bg-amber-500', 'text' => 'text-amber-700', 'bg' => 'bg-amber-50'],
+                            3 => ['dot' => 'bg-gold-dark', 'text' => 'text-gold-dark', 'bg' => 'bg-gold/10'],
                             4 => ['dot' => 'bg-emerald-500', 'text' => 'text-emerald-700', 'bg' => 'bg-emerald-50'],
                         ][$item['sev']] ?? ['dot' => 'bg-gray-400', 'text' => 'text-gray-600', 'bg' => 'bg-gray-50'];
                     @endphp
                     <a href="{{ $item['url'] }}" class="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50/70 transition-colors group">
                         <span class="w-2.5 h-2.5 rounded-full {{ $sev['dot'] }} flex-shrink-0"></span>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-800 group-hover:text-amber-700 transition truncate">{{ $item['title'] }}</p>
+                            <p class="text-sm font-medium text-gray-800 group-hover:text-gold-dark transition truncate">{{ $item['title'] }}</p>
                             <p class="text-xs text-gray-400 truncate">{{ $item['sub'] }}</p>
                         </div>
-                        <svg class="w-4 h-4 text-gray-300 group-hover:text-amber-600 transition flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ app()->getLocale() === 'ar' ? 'm11 19-7-7 7-7m8 14-7-7 7-7' : 'm9 5 7 7-7 7m8-14-7 7 7 7' }}"/></svg>
+                        <svg class="w-4 h-4 text-gray-300 group-hover:text-gold-dark transition flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ app()->getLocale() === 'ar' ? 'm11 19-7-7 7-7m8 14-7-7 7-7' : 'm9 5 7 7-7 7m8-14-7 7 7 7' }}"/></svg>
                     </a>
                 @empty
                     <div class="px-5 py-6 text-center">
@@ -46,7 +46,7 @@
                 @endforelse
             </div>
         </template>
-        <button x-on:click="briefOpen = !briefOpen" class="w-full flex items-center justify-center gap-1 py-1.5 text-[10px] font-bold text-gray-400 hover:text-amber-600 transition">
+        <button x-on:click="briefOpen = !briefOpen" class="w-full flex items-center justify-center gap-1 py-1.5 text-[10px] font-bold text-gray-400 hover:text-gold-dark transition">
             <span x-text="briefOpen ? 'إخفاء القائمة' : 'إظهار اليوم باختصار'"></span>
             <svg class="w-3 h-3" :class="briefOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/></svg>
         </button>
@@ -55,16 +55,16 @@
 
 {{-- Attention Center --}}
 @if($attentionItems->isNotEmpty())
-    <div class="bg-white rounded-2xl border border-amber-200 overflow-hidden">
-        <div class="flex items-center justify-between px-5 py-3" style="background: linear-gradient(90deg, rgba(184,155,94,0.12), rgba(184,155,94,0.03)); border-bottom: 1px solid rgba(184,155,94,0.18);">
+    <div class="bg-white rounded-2xl border border-gold/15 overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3" style="background: linear-gradient(90deg, rgba(212,175,55,0.12), rgba(212,175,55,0.03)); border-bottom: 1px solid rgba(212,175,55,0.18);">
             <div class="flex items-center gap-2.5">
-                <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <svg class="w-5 h-5 text-gold-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
                 </svg>
                 <h2 class="font-heading font-bold text-gray-900 text-sm">مركز الانتباه</h2>
                 <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold">{{ $attentionItems->count() }} تنبيه</span>
             </div>
-            <a href="{{ route('attention.index') }}" class="text-xs font-bold text-amber-600 hover:text-amber-700 transition inline-flex items-center gap-1">
+            <a href="{{ route('attention.index') }}" class="text-xs font-bold text-gold-dark hover:text-gold-dark transition inline-flex items-center gap-1">
                 عرض الكل
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ app()->getLocale() === 'ar' ? 'M15 12h4m0 0l-2-2m2 2l-2 2M5 12h10m-6-4l4 4-4 4' : 'M9 12h4m0 0l-2-2m2 2l-2 2m10 0a7 7 0 11-14 0 7 7 0 0114 0z' }}"/></svg>
             </a>
@@ -74,7 +74,7 @@
                 $sevMap = [
                     'critical' => ['border' => 'border-red-200', 'bg' => 'bg-red-50', 'dot' => 'bg-red-500', 'text' => 'text-red-700'],
                     'warning'  => ['border' => 'border-orange-200', 'bg' => 'bg-orange-50', 'dot' => 'bg-orange-500', 'text' => 'text-orange-700'],
-                    'info'     => ['border' => 'border-amber-200', 'bg' => 'bg-amber-50', 'dot' => 'bg-amber-500', 'text' => 'text-amber-700'],
+                    'info'     => ['border' => 'border-gold/15', 'bg' => 'bg-gold/10', 'dot' => 'bg-gold-dark', 'text' => 'text-gold-dark'],
                 ];
             @endphp
             @foreach($attentionItems as $item)
@@ -86,9 +86,9 @@
                         <p class="text-xs text-gray-400 truncate">{{ $item['description'] }}</p>
                     </div>
                     @if(!empty($item['action']))
-                        <a href="{{ $item['action']['url'] }}" class="flex-shrink-0 text-xs font-bold text-amber-600 hover:text-amber-700 transition">{{ $item['action']['label'] }}</a>
+                        <a href="{{ $item['action']['url'] }}" class="flex-shrink-0 text-xs font-bold text-gold-dark hover:text-gold-dark transition">{{ $item['action']['label'] }}</a>
                     @elseif(!empty($item['url']))
-                        <a href="{{ $item['url'] }}" class="flex-shrink-0 text-xs font-bold text-gray-400 hover:text-amber-600 transition">{{ __('app.open') }}</a>
+                        <a href="{{ $item['url'] }}" class="flex-shrink-0 text-xs font-bold text-gray-400 hover:text-gold-dark transition">{{ __('app.open') }}</a>
                     @endif
                 </div>
             @endforeach
@@ -99,10 +99,10 @@
 @if($isMgmt)
     {{-- Row 1: Key Metrics (Management only) --}}
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div class="bg-white rounded-xl border border-amber-200 p-4 hover:border-amber-300 transition-colors">
+        <div class="bg-white rounded-xl border border-gold/15 p-4 hover:border-gold/25 transition-colors">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                <div class="w-10 h-10 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-gold-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                 </div>
                 <div>
                     <p class="text-gray-400 text-xs">{{ __('app.total_cases') }}</p>
@@ -159,14 +159,14 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-amber-200 p-4 hover:border-amber-300 transition-colors">
+        <div class="bg-white rounded-xl border border-gold/15 p-4 hover:border-gold/25 transition-colors">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <div class="w-10 h-10 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-gold-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 </div>
                 <div>
                     <p class="text-gray-400 text-xs">{{ __('app.clients') }}</p>
-                    <p class="text-xl font-bold text-amber-700">{{ $totalClients }}</p>
+                    <p class="text-xl font-bold text-gold-dark">{{ $totalClients }}</p>
                 </div>
             </div>
         </div>
@@ -174,10 +174,10 @@
 
     {{-- Row 2: Monthly Comparison + Today's Sessions --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="bg-white rounded-xl border border-amber-200 p-5">
+        <div class="bg-white rounded-xl border border-gold/15 p-5">
             <p class="text-gray-400 text-xs mb-2">{{ __('app.new_this_month') }}</p>
             <div class="flex items-end gap-2">
-                <p class="text-3xl font-bold text-amber-700">{{ $newCasesThisMonth }}</p>
+                <p class="text-3xl font-bold text-gold-dark">{{ $newCasesThisMonth }}</p>
                 <p class="text-xs mb-1">
                     @if($newCasesLastMonth > 0)
                         @php $change = round((($newCasesThisMonth - $newCasesLastMonth) / $newCasesLastMonth) * 100); @endphp
@@ -196,7 +196,7 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-amber-200 p-5">
+        <div class="bg-white rounded-xl border border-gold/15 p-5">
             <p class="text-gray-400 text-xs mb-2">{{ __('app.today_sessions') }}</p>
             @if($todaySessions->count() > 0)
                 <p class="text-3xl font-bold text-green-700">{{ $todaySessions->count() }}</p>
@@ -211,7 +211,7 @@
             @endif
         </div>
 
-        <div class="bg-white rounded-xl border border-amber-200 p-5">
+        <div class="bg-white rounded-xl border border-gold/15 p-5">
             <p class="text-gray-400 text-xs mb-2">{{ __('app.tasks_completed_week') }}</p>
             <div class="flex items-end gap-2">
                 <p class="text-3xl font-bold text-purple-700">{{ $completedThisWeek }}</p>
@@ -225,22 +225,22 @@
 
     {{-- Row 3: Charts --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="bg-white rounded-xl border border-amber-200 p-6">
-            <h2 class="text-sm font-bold text-amber-700 mb-4">{{ __('app.cases_by_status') }}</h2>
+        <div class="bg-white rounded-xl border border-gold/15 p-6">
+            <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.cases_by_status') }}</h2>
             <div class="flex justify-center" style="height: 240px;">
                 <canvas id="casesStatusChart"></canvas>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-amber-200 p-6">
-            <h2 class="text-sm font-bold text-amber-700 mb-4">{{ __('app.monthly_trend') }}</h2>
+        <div class="bg-white rounded-xl border border-gold/15 p-6">
+            <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.monthly_trend') }}</h2>
             <div style="height: 240px;">
                 <canvas id="monthlyTrendChart"></canvas>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-amber-200 p-6">
-            <h2 class="text-sm font-bold text-amber-700 mb-4">{{ __('app.cases_by_lawyer') }}</h2>
+        <div class="bg-white rounded-xl border border-gold/15 p-6">
+            <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.cases_by_lawyer') }}</h2>
             <div style="height: 240px;">
                 <canvas id="casesByLawyerChart"></canvas>
             </div>
@@ -249,8 +249,8 @@
 
     {{-- Row 4: Priority Distribution + Cases Summary --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white rounded-xl border border-amber-200 p-6">
-            <h2 class="text-sm font-bold text-amber-700 mb-4">{{ __('app.cases_by_priority') }}</h2>
+        <div class="bg-white rounded-xl border border-gold/15 p-6">
+            <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.cases_by_priority') }}</h2>
             <div class="space-y-3">
                 @php
                     $priorityColors = ['urgent' => 'bg-red-500', 'high' => 'bg-orange-500', 'medium' => 'bg-yellow-500', 'low' => 'bg-gray-500'];
@@ -270,8 +270,8 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-amber-200 p-6">
-            <h2 class="text-sm font-bold text-amber-700 mb-4">{{ __('app.office_overview') }}</h2>
+        <div class="bg-white rounded-xl border border-gold/15 p-6">
+            <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.office_overview') }}</h2>
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-white rounded-lg p-3 text-center">
                     <p class="text-2xl font-bold text-gray-900">{{ $totalLawyers }}</p>
@@ -295,10 +295,10 @@
 @else
     {{-- Lawyer/Staff/Client: Personal Dashboard --}}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="bg-white rounded-xl border border-amber-200 p-4">
+        <div class="bg-white rounded-xl border border-gold/15 p-4">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                <div class="w-10 h-10 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-gold-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                 </div>
                 <div>
                     <p class="text-gray-400 text-xs">{{ __('app.total_cases') }}</p>
@@ -363,18 +363,18 @@
         </div>
 
         {{-- Upcoming Sessions --}}
-        <div class="bg-white rounded-xl border border-amber-200 p-6">
+        <div class="bg-white rounded-xl border border-gold/15 p-6">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-sm font-bold text-amber-700">{{ __('app.upcoming_sessions') }}</h2>
-                <a href="{{ route('sessions.index') }}" class="text-xs text-gray-600 hover:text-amber-700">{{ __('app.view_all') }}</a>
+                <h2 class="text-sm font-bold text-gold-dark">{{ __('app.upcoming_sessions') }}</h2>
+                <a href="{{ route('sessions.index') }}" class="text-xs text-gray-600 hover:text-gold-dark">{{ __('app.view_all') }}</a>
             </div>
             <div class="space-y-2">
                 @forelse($upcomingSessions as $session)
-                    <div class="flex items-center gap-3 p-2.5 rounded-lg bg-gray-100 border border-gray-100 hover:border-amber-300 transition-colors">
-                        <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <div class="flex items-center gap-3 p-2.5 rounded-lg bg-gray-100 border border-gray-100 hover:border-gold/25 transition-colors">
+                        <div class="w-10 h-10 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0">
                             <div class="text-center leading-none">
                                 <p class="text-[10px] text-gray-600">{{ $session->date?->format('M') ?? '' }}</p>
-                                <p class="text-sm font-bold text-amber-700">{{ $session->date?->format('d') ?? '' }}</p>
+                                <p class="text-sm font-bold text-gold-dark">{{ $session->date?->format('d') ?? '' }}</p>
                             </div>
                         </div>
                         <div class="flex-1 min-w-0">
@@ -391,14 +391,14 @@
         </div>
 
         {{-- Pending Tasks --}}
-        <div class="bg-white rounded-xl border border-amber-200 p-6">
+        <div class="bg-white rounded-xl border border-gold/15 p-6">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-sm font-bold text-amber-700">{{ __('app.pending_tasks') }}</h2>
-                <a href="{{ route('tasks.index') }}" class="text-xs text-gray-600 hover:text-amber-700">{{ __('app.view_all') }}</a>
+                <h2 class="text-sm font-bold text-gold-dark">{{ __('app.pending_tasks') }}</h2>
+                <a href="{{ route('tasks.index') }}" class="text-xs text-gray-600 hover:text-gold-dark">{{ __('app.view_all') }}</a>
             </div>
             <div class="space-y-2">
                 @forelse($pendingTasksList->take(5) as $task)
-                    <div class="flex items-center gap-3 p-2.5 rounded-lg bg-gray-100 border border-gray-100 hover:border-amber-300 transition-colors">
+                    <div class="flex items-center gap-3 p-2.5 rounded-lg bg-gray-100 border border-gray-100 hover:border-gold/25 transition-colors">
                         <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
                             @if(($task->priority ?? '') === 'urgent') bg-red-100
                             @elseif(($task->priority ?? '') === 'high') bg-orange-500/15
@@ -426,22 +426,22 @@
     </div>
 
     {{-- Row 6: Recent Activity --}}
-    <div class="bg-white rounded-xl border border-amber-200 p-6">
-        <h2 class="text-sm font-bold text-amber-700 mb-4">{{ __('app.recent_activity') }}</h2>
+    <div class="bg-white rounded-xl border border-gold/15 p-6">
+        <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.recent_activity') }}</h2>
         <div class="space-y-2">
             @forelse($recentActivity as $item)
                 @php
                     $typeConfig = [
                         'case' => ['color' => 'bg-blue-100 text-blue-700', 'icon' => 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'],
                         'task' => ['color' => 'bg-purple-100 text-purple-700', 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4'],
-                        'client' => ['color' => 'bg-amber-100 text-amber-700', 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'],
+                        'client' => ['color' => 'bg-gold/12 text-gold-dark', 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'],
                         'document' => ['color' => 'bg-green-100 text-green-700', 'icon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
                         'log' => ['color' => 'bg-gray-100 text-gray-500', 'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
                     ];
                     $config = $typeConfig[$item['icon']] ?? $typeConfig['log'];
                 @endphp
                 @if($item['url'])
-                    <a href="{{ $item['url'] }}" class="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-100 hover:border-amber-300 transition-colors group">
+                    <a href="{{ $item['url'] }}" class="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-100 hover:border-gold/25 transition-colors group">
                 @else
                     <div class="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-100">
                 @endif
@@ -449,7 +449,7 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $config['icon'] }}"/></svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-gray-900 text-xs font-medium truncate group-hover:text-amber-700 transition-colors">{{ $item['title'] }}</p>
+                        <p class="text-gray-900 text-xs font-medium truncate group-hover:text-gold-dark transition-colors">{{ $item['title'] }}</p>
                         <p class="text-gray-500 text-[11px] truncate">{{ $item['subtitle'] }}</p>
                     </div>
                     <span class="text-gray-400 text-[11px] flex-shrink-0" dir="ltr">{{ $item['time']?->diffForHumans() ?? '' }}</span>
@@ -471,8 +471,8 @@
 @push('scripts')
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
-    const goldColor = '#B89B5E';
-    const bgColor = '#FBF9F5';
+    const goldColor = '#D4AF37';
+    const bgColor = '#FFFFFF';
 
     // === Cases by Status (Doughnut) ===
     const statusCtx = document.getElementById('casesStatusChart');
@@ -489,9 +489,9 @@ document.addEventListener('DOMContentLoaded', function () {
             fees_pending: '{{ __("app.status_fees_pending") }}',
         };
         const colors = {
-            active: '#3FA66B', pending: '#C89A45', overdue: '#C95C5C',
-            closed: '#8A8B84', won: '#5B86B8', lost: '#A94848',
-            adjudicated: '#3FA66B', fees_pending: '#C95C5C',
+            active: '#22C55E', pending: '#F59E0B', overdue: '#EF4444',
+            closed: '#6B7280', won: '#3B82F6', lost: '#991B1B',
+            adjudicated: '#22C55E', fees_pending: '#EF4444',
         };
         const data = Object.keys(chartData).filter(k => chartData[k] > 0);
         new Chart(statusCtx.getContext('2d'), {
@@ -500,7 +500,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: data.map(k => labels[k] || k),
                 datasets: [{
                     data: data.map(k => chartData[k]),
-                    backgroundColor: data.map(k => colors[k] || '#8A8B84'),
+                    backgroundColor: data.map(k => colors[k] || '#6B7280'),
                     borderColor: bgColor, borderWidth: 3,
                     hoverBorderColor: goldColor, hoverBorderWidth: 2,
                 }]
@@ -510,10 +510,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { color: '#8A8B84', padding: 12, font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8 }
+                        labels: { color: '#6B7280', padding: 12, font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8 }
                     },
                     tooltip: {
-                        backgroundColor: '#252825', titleColor: goldColor, bodyColor: '#fff',
+                        backgroundColor: '#121826', titleColor: goldColor, bodyColor: '#fff',
                         borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
                     }
                 }
@@ -539,7 +539,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     {
                         label: '{{ __("app.closed") }}',
                         data: trendData.map(d => d.closed),
-                        backgroundColor: '#8A8B8499',
+                        backgroundColor: '#6B728099',
                         borderRadius: 4,
                     }
                 ]
@@ -547,15 +547,15 @@ document.addEventListener('DOMContentLoaded', function () {
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: {
-                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#8A8B84', font: { size: 11 } } },
-                    y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#8A8B84', font: { size: 11 }, stepSize: 1 } }
+                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#6B7280', font: { size: 11 } } },
+                    y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#6B7280', font: { size: 11 }, stepSize: 1 } }
                 },
                 plugins: {
                     legend: {
-                        labels: { color: '#8A8B84', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8, padding: 12 }
+                        labels: { color: '#6B7280', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8, padding: 12 }
                     },
                     tooltip: {
-                        backgroundColor: '#252825', titleColor: goldColor, bodyColor: '#fff',
+                        backgroundColor: '#121826', titleColor: goldColor, bodyColor: '#fff',
                         borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
                     }
                 }
@@ -583,13 +583,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 indexAxis: 'y',
                 responsive: true, maintainAspectRatio: false,
                 scales: {
-                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#8A8B84', font: { size: 11 }, stepSize: 1 } },
-                    y: { grid: { display: false }, ticks: { color: '#8A8B84', font: { size: 11 } } }
+                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#6B7280', font: { size: 11 }, stepSize: 1 } },
+                    y: { grid: { display: false }, ticks: { color: '#6B7280', font: { size: 11 } } }
                 },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: '#252825', titleColor: goldColor, bodyColor: '#fff',
+                        backgroundColor: '#121826', titleColor: goldColor, bodyColor: '#fff',
                         borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
                     }
                 }

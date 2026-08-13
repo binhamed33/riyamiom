@@ -21,23 +21,23 @@
     <script nonce="{{ $cspNonce }}">
         tailwind.config = {
             theme: { extend: { colors: {
-                obsidian: '#08090B', navy: '#0B1220', charcoal: '#11151C',
-                gold: { DEFAULT: '#C8A96B', soft: '#E0C98A', dim: '#9A7B45' },
-                ivory: '#F4F0E8', muted: '#9299A5'
+                obsidian: '#080B12', navy: '#0D111B', charcoal: '#121826',
+                gold: { DEFAULT: '#E5C158', soft: '#F0D98A', dim: '#A98218' },
+                ivory: '#121826', muted: '#94A3B8'
             } } }
         }
     </script>
 
     <style>
         :root {
-            --obsidian: #08090B;
-            --navy: #0B1220;
-            --charcoal: #11151C;
-            --gold: #C8A96B;
-            --gold-soft: #E0C98A;
-            --gold-dim: #9A7B45;
-            --ivory: #F4F0E8;
-            --muted: #9299A5;
+            --obsidian: #080B12;
+            --navy: #0D111B;
+            --charcoal: #121826;
+            --gold: #E5C158;
+            --gold-soft: #F0D98A;
+            --gold-dim: #A98218;
+            --ivory: #121826;
+            --muted: #94A3B8;
         }
 
         body {
@@ -59,7 +59,7 @@
         .scene { position: fixed; inset: 0; overflow: hidden; background:
             radial-gradient(120% 90% at 78% 12%, rgba(200,169,107,0.07) 0%, transparent 45%),
             radial-gradient(90% 70% at 15% 85%, rgba(11,18,32,0.9) 0%, transparent 60%),
-            linear-gradient(165deg, #0B1220 0%, #08090B 55%, #07080A 100%);
+            linear-gradient(165deg, #0D111B 0%, #080B12 55%, #080B12 100%);
             z-index: 0;
         }
 
@@ -186,7 +186,7 @@
             box-shadow: 0 0 0 3px rgba(200,169,107,0.08), 0 0 26px rgba(200,169,107,0.07);
             background: rgba(10,12,16,0.55); }
         .field:-webkit-autofill, .field:-webkit-autofill:hover, .field:-webkit-autofill:focus {
-            -webkit-box-shadow: 0 0 0 60px #0b0e13 inset !important;
+            -webkit-box-shadow: 0 0 0 60px #080B12 inset !important;
             -webkit-text-fill-color: var(--ivory) !important; caret-color: var(--ivory); }
 
         .field-underline { position: absolute; bottom: -1px; inset-inline: 14px; height: 1.5px;
@@ -206,8 +206,8 @@
         .field-eye:focus-visible { outline: 2px solid rgba(224,201,138,0.5); outline-offset: 2px; }
 
         .btn-enter { position: relative; width: 100%; overflow: hidden;
-            background: linear-gradient(120deg, var(--gold-soft) 0%, var(--gold) 50%, #B8955C 100%);
-            background-size: 200% 200%; color: #0B1220;
+            background: linear-gradient(120deg, var(--gold-soft) 0%, var(--gold) 50%, #D4AF37 100%);
+            background-size: 200% 200%; color: #0D111B;
             border-radius: 14px; padding: 1rem; font-weight: 700; font-size: 1rem;
             transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s, background-position 1.2s ease;
             animation: btnBreath 5s ease-in-out infinite; border: none; cursor: pointer; }
@@ -221,7 +221,7 @@
         .btn-enter:hover .btn-arrow { opacity: 1; transform: translateX(-4px); }
 
         .spinner-min { width: 17px; height: 17px; border-radius: 50%;
-            border: 2px solid rgba(11,18,32,0.25); border-top-color: #0B1220;
+            border: 2px solid rgba(11,18,32,0.25); border-top-color: #0D111B;
             animation: spinAnim 0.7s linear infinite; }
         @keyframes spinAnim { to { transform: rotate(360deg); } }
 
@@ -231,12 +231,12 @@
             transition: all 0.3s; position: relative; }
         .check-custom:checked { background: var(--gold); border-color: var(--gold); }
         .check-custom:checked::after { content: ''; width: 9px; height: 5px;
-            border-inline-start: 2px solid #0B1220; border-bottom: 2px solid #0B1220;
+            border-inline-start: 2px solid #0D111B; border-bottom: 2px solid #0D111B;
             transform: rotate(-45deg) translate(0.5px, -1px); }
         .check-custom:focus-visible { outline: 2px solid rgba(224,201,138,0.6); outline-offset: 2px; }
 
         .alert-error { background: rgba(200,60,60,0.08); border: 1px solid rgba(200,90,90,0.28);
-            backdrop-filter: blur(8px); color: #F0A9A0; border-radius: 14px; }
+            backdrop-filter: blur(8px); color: #F87979; border-radius: 14px; }
 
         .link-soft { color: var(--gold); transition: color 0.3s; }
         .link-soft:hover { color: var(--gold-soft); }
@@ -376,7 +376,7 @@
                             @else
                                 <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                     <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2.6L9.4 8.7 5 9.4l3.2 3.1L7.6 17 12 14.7 16.4 17l-.6-4.5L19 9.4l-4.4-.7L12 4.6z" fill="url(#lgGold)"/>
-                                    <defs><linearGradient id="lgGold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#E0C98A"/><stop offset="1" stop-color="#9A7B45"/></linearGradient></defs>
+                                    <defs><linearGradient id="lgGold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F0D98A"/><stop offset="1" stop-color="#A98218"/></linearGradient></defs>
                                 </svg>
                             @endif
                         </div>
@@ -526,17 +526,17 @@
                         <svg class="w-[230px] sm:w-[270px] lg:w-[330px] h-auto relative" viewBox="0 0 320 300" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ $isRtl ? 'ميزان العدالة' : 'Scales of Justice' }}">
                             <defs>
                                 <linearGradient id="lexGold" x1="0" y1="0" x2="1" y2="1">
-                                    <stop offset="0" stop-color="#E0C98A"/>
-                                    <stop offset="0.5" stop-color="#C8A96B"/>
-                                    <stop offset="1" stop-color="#96783F"/>
+                                    <stop offset="0" stop-color="#F0D98A"/>
+                                    <stop offset="0.5" stop-color="#E5C158"/>
+                                    <stop offset="1" stop-color="#A98218"/>
                                 </linearGradient>
                                 <linearGradient id="lexGoldV" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0" stop-color="#E8D5A4"/>
-                                    <stop offset="1" stop-color="#A8874B"/>
+                                    <stop offset="0" stop-color="#F0D98A"/>
+                                    <stop offset="1" stop-color="#A98218"/>
                                 </linearGradient>
                                 <linearGradient id="lexPan" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0" stop-color="#E0C98A" stop-opacity="0.6"/>
-                                    <stop offset="1" stop-color="#C8A96B" stop-opacity="0.10"/>
+                                    <stop offset="0" stop-color="#F0D98A" stop-opacity="0.6"/>
+                                    <stop offset="1" stop-color="#E5C158" stop-opacity="0.10"/>
                                 </linearGradient>
                                 <filter id="lexGlow" x="-40%" y="-40%" width="180%" height="180%">
                                     <feGaussianBlur stdDeviation="5" result="b"/>
@@ -606,8 +606,8 @@
                         <stop offset="1" stop-color="rgba(200,169,107,0)"/>
                     </radialGradient>
                     <linearGradient id="judgeGold" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" stop-color="#E0C98A"/>
-                        <stop offset="1" stop-color="#9A7B45"/>
+                        <stop offset="0" stop-color="#F0D98A"/>
+                        <stop offset="1" stop-color="#A98218"/>
                     </linearGradient>
                     <filter id="judgeSoft" x="-50%" y="-50%" width="200%" height="200%">
                         <feGaussianBlur stdDeviation="4" result="b"/>
@@ -620,20 +620,20 @@
 
                 {{-- bench (منصة القضاء) --}}
                 <rect x="74" y="224" width="272" height="9" rx="4" fill="url(#judgeGold)" opacity="0.65"/>
-                <rect x="66" y="233" width="288" height="16" rx="3" fill="#131820"/>
-                <rect x="66" y="249" width="288" height="10" rx="3" fill="#0D1117"/>
+                <rect x="66" y="233" width="288" height="16" rx="3" fill="#121826"/>
+                <rect x="66" y="249" width="288" height="10" rx="3" fill="#0D111B"/>
                 <line x1="74" y1="228" x2="346" y2="228" stroke="rgba(224,201,138,0.5)" stroke-width="1"/>
                 <circle cx="210" cy="248" r="4.5" fill="rgba(224,201,138,0.45)"/>
                 <circle cx="210" cy="248" r="10.5" fill="none" stroke="rgba(200,169,107,0.25)"/>
 
                 {{-- judge silhouette: shoulder + head --}}
-                <path d="M150 176 Q150 150 178 146 Q196 144 210 144 Q224 144 242 146 Q270 150 270 176 L272 220 L148 220 Z" fill="#0A0E14"/>
-                <path d="M146 176 L274 176 L272 222 L148 222 Z" fill="#0D131B"/>
+                <path d="M150 176 Q150 150 178 146 Q196 144 210 144 Q224 144 242 146 Q270 150 270 176 L272 220 L148 220 Z" fill="#080B12"/>
+                <path d="M146 176 L274 176 L272 222 L148 222 Z" fill="#182033"/>
                 <path d="M196 146 Q205 152 210 152 Q215 152 224 146" stroke="rgba(224,201,138,0.35)" stroke-width="2" fill="none"/>
-                <ellipse cx="210" cy="132" rx="27" ry="29" fill="#0A0E14"/>
+                <ellipse cx="210" cy="132" rx="27" ry="29" fill="#080B12"/>
                 <ellipse cx="210" cy="132" rx="27" ry="29" fill="none" stroke="rgba(224,201,138,0.18)" stroke-width="1"/>
                 <path d="M196 128 Q210 136 224 128" stroke="rgba(224,201,138,0.25)" stroke-width="1.5" fill="none"/>
-                <rect x="204" y="152" width="12" height="10" fill="#0A0E14"/>
+                <rect x="204" y="152" width="12" height="10" fill="#080B12"/>
 
                 {{-- hammer (raised) --}}
                 <g class="gavel">
@@ -643,7 +643,7 @@
                 </g>
 
                 {{-- impact point --}}
-                <circle class="strike-flash" cx="334" cy="242" r="6" fill="none" stroke="#F0DCA5" stroke-width="3"/>
+                <circle class="strike-flash" cx="334" cy="242" r="6" fill="none" stroke="#F0D98A" stroke-width="3"/>
                 <circle class="strike-ripple" cx="334" cy="242" r="6" fill="none" stroke="rgba(224,201,138,0.8)" stroke-width="2"/>
 
                 {{-- base glow under bench --}}

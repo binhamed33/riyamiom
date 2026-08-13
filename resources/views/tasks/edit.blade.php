@@ -21,7 +21,7 @@
             <div>
                 <label for="title" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.title') }} <span class="text-red-500">*</span></label>
                 <input type="text" id="title" name="title" value="{{ old('title', $task->title) }}"
-                       class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('title') border-red-500 @enderror"
+                       class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('title') border-red-500 @enderror"
                        placeholder="{{ __('app.task_title_placeholder') }}" required>
                 @error('title')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -31,7 +31,7 @@
             <div>
                 <label for="description" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.description') }}</label>
                 <textarea id="description" name="description" rows="4"
-                          class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('description') border-red-500 @enderror"
+                          class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('description') border-red-500 @enderror"
                           placeholder="{{ __('app.task_description_placeholder') }}">{{ old('description', $task->description) }}</textarea>
                 @error('description')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -41,7 +41,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label for="case_id" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case') }}</label>
-                    <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('case_id') border-red-500 @enderror">
+                    <select id="case_id" name="case_id" class="ts w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('case_id') border-red-500 @enderror">
                         <option value="">{{ __('app.no_case') }}</option>
                         @foreach($cases as $case)
                             <option value="{{ $case->id }}" @selected(old('case_id', $task->case_id) == $case->id)>
@@ -56,7 +56,7 @@
 
                 <div>
                     <label for="assigned_to" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.task_assigned_to') }} <span class="text-red-500">*</span></label>
-                    <select id="assigned_to" name="assigned_to" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('assigned_to') border-red-500 @enderror" required>
+                    <select id="assigned_to" name="assigned_to" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('assigned_to') border-red-500 @enderror" required>
                         <option value="">{{ __('app.choose_assignee') }}</option>
                         @foreach($users as $user)
                             <option value="{{ $user->id }}" @selected(old('assigned_to', $task->assigned_to) == $user->id)>
@@ -73,7 +73,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label for="priority" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.priority') }} <span class="text-red-500">*</span></label>
-                    <select id="priority" name="priority" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('priority') border-red-500 @enderror" required>
+                    <select id="priority" name="priority" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('priority') border-red-500 @enderror" required>
                         <option value="low" {{ old('priority', $task->priority) === 'low' ? 'selected' : '' }}>{{ __('app.priority_low') }}</option>
                         <option value="medium" {{ old('priority', $task->priority) === 'medium' ? 'selected' : '' }}>{{ __('app.priority_medium') }}</option>
                         <option value="high" {{ old('priority', $task->priority) === 'high' ? 'selected' : '' }}>{{ __('app.priority_high') }}</option>
@@ -88,7 +88,7 @@
                     <label for="due_date" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.due_date') }}</label>
                     <input type="date" id="due_date" name="due_date"
                            value="{{ old('due_date', $task->due_date?->format('Y-m-d')) }}"
-                           class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('due_date') border-red-500 @enderror">
+                           class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('due_date') border-red-500 @enderror">
                     @error('due_date')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -97,7 +97,7 @@
 
             <div>
                 <label for="status" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.status') }} <span class="text-red-500">*</span></label>
-                <select id="status" name="status" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('status') border-red-500 @enderror" required>
+                <select id="status" name="status" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('status') border-red-500 @enderror" required>
                     <option value="pending" {{ old('status', $task->status) === 'pending' ? 'selected' : '' }}>{{ __('app.status_pending') }}</option>
                     <option value="in_progress" {{ old('status', $task->status) === 'in_progress' ? 'selected' : '' }}>{{ __('app.status_in_progress') }}</option>
                     <option value="completed" {{ old('status', $task->status) === 'completed' ? 'selected' : '' }}>{{ __('app.status_completed') }}</option>

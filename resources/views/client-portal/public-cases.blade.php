@@ -17,7 +17,7 @@
 @section('content')
 <div class="animate-fade-in">
     {{-- Welcome Header --}}
-    <div class="bg-gradient-to-l from-amber-600 via-amber-700 to-amber-800 rounded-2xl sm:rounded-3xl shadow-xl shadow-amber-200/20 p-5 sm:p-8 mb-4 sm:mb-6 relative overflow-hidden">
+    <div class="bg-gradient-to-l from-gold via-gold-dark to-gold-deep rounded-2xl sm:rounded-3xl shadow-xl shadow-gold/20 p-5 sm:p-8 mb-4 sm:mb-6 relative overflow-hidden">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.08),transparent_70%)]"></div>
         <div class="relative">
             <div class="flex items-start sm:items-center justify-between">
@@ -30,10 +30,10 @@
                         </div>
                         <h1 class="text-lg sm:text-2xl font-bold text-white font-heading">مرحباً {{ $match->name }}</h1>
                     </div>
-                    <p class="text-amber-200/80 text-xs sm:text-sm mr-10 sm:mr-0">
+                    <p class="text-gold-light/80 text-xs sm:text-sm mr-10 sm:mr-0">
                         قضاياك المسجلة في المكتب
-                        <span class="inline-block mx-2 w-1 h-1 rounded-full bg-amber-300/50"></span>
-                        <span class="font-medium text-amber-200">{{ $cases->count() }} قضية</span>
+                        <span class="inline-block mx-2 w-1 h-1 rounded-full bg-gold/50"></span>
+                        <span class="font-medium text-gold-light">{{ $cases->count() }} قضية</span>
                     </p>
                 </div>
             </div>
@@ -56,9 +56,9 @@
 
     {{-- Cases List --}}
     @if($cases->isEmpty())
-        <div class="bg-white rounded-2xl sm:rounded-3xl border border-amber-100 p-8 sm:p-16 text-center shadow-sm">
-            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-5 rounded-2xl bg-amber-50 flex items-center justify-center">
-                <svg class="w-8 h-8 sm:w-10 sm:h-10 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+        <div class="bg-white rounded-2xl sm:rounded-3xl border border-gold/15 p-8 sm:p-16 text-center shadow-sm">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-5 rounded-2xl bg-gold/10 flex items-center justify-center">
+                <svg class="w-8 h-8 sm:w-10 sm:h-10 text-gold-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 11.625l2.25-2.25M12 11.625l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
                 </svg>
             </div>
@@ -69,7 +69,7 @@
         <div class="grid grid-cols-1 gap-3 sm:gap-4">
             @foreach($cases as $case)
                 <a href="{{ route('client.access.case', $case) }}"
-                   class="group block bg-white rounded-2xl border border-amber-100 p-4 sm:p-5 card-hover shadow-sm">
+                   class="group block bg-white rounded-2xl border border-gold/15 p-4 sm:p-5 card-hover shadow-sm">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex-1 min-w-0">
                             {{-- Badges --}}
@@ -79,7 +79,7 @@
                                 </span>
                                 <span class="text-[10px] sm:text-xs px-2 py-0.5 rounded-lg font-medium
                                     {{ $case->status === 'active' ? 'bg-green-100 text-green-700' : '' }}
-                                    {{ $case->status === 'pending' ? 'bg-amber-100 text-amber-700' : '' }}
+                                    {{ $case->status === 'pending' ? 'bg-gold/12 text-gold-dark' : '' }}
                                     {{ $case->status === 'closed' ? 'bg-gray-100 text-gray-500' : '' }}
                                     {{ $case->status === 'won' ? 'bg-emerald-100 text-emerald-700' : '' }}
                                     {{ $case->status === 'lost' ? 'bg-red-100 text-red-700' : '' }}
@@ -94,7 +94,7 @@
                             </div>
 
                             {{-- Title --}}
-                            <h3 class="text-sm sm:text-base font-bold text-gray-800 mb-1.5 font-heading group-hover:text-amber-700 transition-colors">{{ $case->title }}</h3>
+                            <h3 class="text-sm sm:text-base font-bold text-gray-800 mb-1.5 font-heading group-hover:text-gold-dark transition-colors">{{ $case->title }}</h3>
 
                             {{-- Details --}}
                             <div class="flex flex-wrap gap-x-3 sm:gap-x-5 gap-y-1 text-xs sm:text-sm text-gray-500">
@@ -117,7 +117,7 @@
 
                         {{-- Arrow --}}
                         <div class="flex-shrink-0 mt-1">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 group-hover:text-amber-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 group-hover:text-gold-dark transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                             </svg>
                         </div>

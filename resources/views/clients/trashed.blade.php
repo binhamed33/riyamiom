@@ -5,7 +5,7 @@
 @section('content')
 <div class="space-y-6">
     <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-amber-600">{{ __('app.page_trashed_clients') }}</h1>
+        <h1 class="text-3xl font-bold text-gold-dark">{{ __('app.page_trashed_clients') }}</h1>
         <a href="{{ route('clients.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -19,13 +19,13 @@
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-gray-200">
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.name') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.type') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.phone') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.email') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.cases') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.date') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-amber-600">{{ __('app.actions') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.name') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.type') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.phone') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.email') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.cases') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.date') }}</th>
+                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -36,7 +36,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 @if($client->type === 'company')
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-600 border border-amber-200">{{ __('app.company') }}</span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gold/12 text-gold-dark border border-gold/15">{{ __('app.company') }}</span>
                                 @else
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">{{ __('app.individual') }}</span>
                                 @endif

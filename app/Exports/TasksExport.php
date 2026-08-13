@@ -52,7 +52,7 @@ class TasksExport implements FromCollection, WithHeadings, ShouldAutoSize, WithE
 
     public function registerEvents(): array
     {
-        $gold = 'B89B5E';
+        $gold = 'D4AF37';
         $navy = '0A1628';
         $altRow = '1A2D4A';
         $white = 'FFFFFF';

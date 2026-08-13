@@ -57,7 +57,7 @@ class CasesExport implements FromCollection, WithHeadings, ShouldAutoSize, WithE
 
     public function registerEvents(): array
     {
-        $gold = 'B89B5E';
+        $gold = 'D4AF37';
         $navy = '0A1628';
         $lightGold = 'F5E6C8';
         $white = 'FFFFFF';

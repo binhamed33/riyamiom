@@ -5,7 +5,7 @@
 @section('content')
 <div class="max-w-3xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-amber-600">{{ __('app.settings') }}</h1>
+        <h1 class="text-3xl font-bold text-gold-dark">{{ __('app.settings') }}</h1>
     </div>
 
     <form method="POST" action="{{ route('settings.update') }}" class="space-y-6">
@@ -13,7 +13,7 @@
         @method('PUT')
 
         <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-            <h2 class="text-lg font-semibold text-amber-600 border-b border-gray-200 pb-3">{{ __('app.office_info') }}</h2>
+            <h2 class="text-lg font-semibold text-gold-dark border-b border-gray-200 pb-3">{{ __('app.office_info') }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="office_name" class="block text-sm font-medium text-gray-700 mb-2">{{ __('app.office_name') }}</label>
@@ -22,7 +22,7 @@
                         name="office_name"
                         id="office_name"
                         value="{{ old('office_name', $settings['office_name'] ?? '') }}"
-                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
                     >
                     @error('office_name')
                         <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
@@ -35,7 +35,7 @@
                         name="office_email"
                         id="office_email"
                         value="{{ old('office_email', $settings['office_email'] ?? '') }}"
-                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
                     >
                     @error('office_email')
                         <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
@@ -48,7 +48,7 @@
                         name="office_phone"
                         id="office_phone"
                         value="{{ old('office_phone', $settings['office_phone'] ?? '') }}"
-                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
                         dir="ltr"
                     >
                     @error('office_phone')
@@ -62,7 +62,7 @@
                         name="office_address"
                         id="office_address"
                         value="{{ old('office_address', $settings['office_address'] ?? '') }}"
-                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
                     >
                     @error('office_address')
                         <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
@@ -72,7 +72,7 @@
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-            <h2 class="text-lg font-semibold text-amber-600 border-b border-gray-200 pb-3">{{ __('app.notification_settings') }}</h2>
+            <h2 class="text-lg font-semibold text-gold-dark border-b border-gray-200 pb-3">{{ __('app.notification_settings') }}</h2>
             <div class="space-y-4">
                 <label class="flex items-center gap-3 cursor-pointer">
                     <input
@@ -80,7 +80,7 @@
                         name="email_notifications"
                         value="1"
                         {{ old('email_notifications', $settings['email_notifications'] ?? true) ? 'checked' : '' }}
-                        class="w-4 h-4 text-amber-600 bg-white border-gray-300 rounded focus:ring-amber-500"
+                        class="w-4 h-4 text-gold-dark bg-white border-gray-300 rounded focus:ring-gold-dark"
                     >
                     <span class="text-gray-700">{{ __('app.email_notifications') }}</span>
                 </label>
@@ -90,7 +90,7 @@
                         name="task_reminders"
                         value="1"
                         {{ old('task_reminders', $settings['task_reminders'] ?? true) ? 'checked' : '' }}
-                        class="w-4 h-4 text-amber-600 bg-white border-gray-300 rounded focus:ring-amber-500"
+                        class="w-4 h-4 text-gold-dark bg-white border-gray-300 rounded focus:ring-gold-dark"
                     >
                     <span class="text-gray-700">{{ __('app.task_reminders') }}</span>
                 </label>
@@ -100,7 +100,7 @@
                         name="deadline_alerts"
                         value="1"
                         {{ old('deadline_alerts', $settings['deadline_alerts'] ?? true) ? 'checked' : '' }}
-                        class="w-4 h-4 text-amber-600 bg-white border-gray-300 rounded focus:ring-amber-500"
+                        class="w-4 h-4 text-gold-dark bg-white border-gray-300 rounded focus:ring-gold-dark"
                     >
                     <span class="text-gray-700">{{ __('app.deadline_alerts') }}</span>
                 </label>
@@ -108,7 +108,7 @@
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-            <h2 class="text-lg font-semibold text-amber-600 border-b border-gray-200 pb-3">{{ __('app.system_settings') }}</h2>
+            <h2 class="text-lg font-semibold text-gold-dark border-b border-gray-200 pb-3">{{ __('app.system_settings') }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('app.timezone') }}</label>
@@ -121,7 +121,7 @@
                     <select
                         name="date_format"
                         id="date_format"
-                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
                     >
                         <option value="Y-m-d" {{ old('date_format', $settings['date_format'] ?? 'Y-m-d') === 'Y-m-d' ? 'selected' : '' }}>2026-07-14</option>
                         <option value="d/m/Y" {{ old('date_format', $settings['date_format'] ?? '') === 'd/m/Y' ? 'selected' : '' }}>14/07/2026</option>
@@ -140,7 +140,7 @@
                         value="{{ old('items_per_page', $settings['items_per_page'] ?? 15) }}"
                         min="5"
                         max="100"
-                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
                     >
                     @error('items_per_page')
                         <p class="mt-1 text-sm text-red-700">{{ $message }}</p>

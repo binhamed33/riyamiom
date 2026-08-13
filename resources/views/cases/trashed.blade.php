@@ -7,7 +7,7 @@
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 class="text-2xl font-bold text-amber-700">{{ __('app.page_trashed_cases') }}</h1>
+        <h1 class="text-2xl font-bold text-gold-dark">{{ __('app.page_trashed_cases') }}</h1>
         <a href="{{ route('cases.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -17,18 +17,18 @@
     </div>
 
     {{-- Cases Table --}}
-    <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-right">
                 <thead>
                     <tr class="border-b border-gray-200">
-                        <th class="px-4 py-3 text-amber-700 font-bold whitespace-nowrap">{{ __('app.case_number') }}</th>
-                        <th class="px-4 py-3 text-amber-700 font-bold whitespace-nowrap">{{ __('app.title') }}</th>
-                        <th class="px-4 py-3 text-amber-700 font-bold whitespace-nowrap">{{ __('app.case_client') }}</th>
-                        <th class="px-4 py-3 text-amber-700 font-bold whitespace-nowrap">{{ __('app.case_lawyer') }}</th>
-                        <th class="px-4 py-3 text-amber-700 font-bold whitespace-nowrap">{{ __('app.status') }}</th>
-                        <th class="px-4 py-3 text-amber-700 font-bold whitespace-nowrap">{{ __('app.date') }}</th>
-                        <th class="px-4 py-3 text-amber-700 font-bold whitespace-nowrap">{{ __('app.actions') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.case_number') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.title') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.case_client') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.case_lawyer') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.status') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.date') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">

@@ -281,7 +281,7 @@ document.addEventListener('alpine:init', () => {
             win.document.write('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap">');
             win.document.write('</head><body>');
             win.document.write('<div style="max-width:700px;margin:30px auto;font-family:Tajawal,Cairo,sans-serif;direction:rtl;padding:20px;color:#333;">');
-            win.document.write('<h2 style="color:#B89B5E;border-bottom:2px solid #B89B5E;padding-bottom:10px;">{{ __("app.case_summary") }} - {{ $case->case_number }}</h2>');
+            win.document.write('<h2 style="color:#D4AF37;border-bottom:2px solid #D4AF37;padding-bottom:10px;">{{ __("app.case_summary") }} - {{ $case->case_number }}</h2>');
             win.document.write(printContent.innerHTML);
             win.document.write('</div></body></html>');
             win.document.close();
@@ -300,7 +300,7 @@ document.addEventListener('alpine:init', () => {
         [dir="ltr"] .content-area { margin: 0 !important; }
         main { padding: 0 !important; }
         * { box-shadow: none !important; text-shadow: none !important; }
-        .print-header { border-bottom: 2px solid #B89B5E; padding-bottom: 10px; margin-bottom: 20px; }
+        .print-header { border-bottom: 2px solid #D4AF37; padding-bottom: 10px; margin-bottom: 20px; }
         .print-footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 5px; }
     }
     .print-only { display: none; }
@@ -324,26 +324,26 @@ document.addEventListener('alpine:init', () => {
 
     {{-- Print Header (visible only in print) --}}
     <div class="print-only print-header">
-        <h1 style="font-size:20px;color:#B89B5E;margin:0;">{{ __('app.case_number') }}: {{ $case->case_number }}</h1>
+        <h1 style="font-size:20px;color:#D4AF37;margin:0;">{{ __('app.case_number') }}: {{ $case->case_number }}</h1>
         <p style="color:#666;font-size:12px;margin:2px 0;">{{ $case->created_at->format('Y-m-d') }}</p>
     </div>
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-amber-700">{{ $case->case_number }}</h1>
+            <h1 class="text-2xl font-bold text-gold-dark">{{ $case->case_number }}</h1>
             @if($case->title && $case->title !== $case->case_number)
                 <p class="text-gray-400 text-sm mt-1">{{ $case->title }}</p>
             @endif
             @if($case->case_type)
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-300 mt-2">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gold/12 text-gold-dark border border-gold/25 mt-2">
                     {{ $case->case_type }}
                 </span>
             @endif
         </div>
         <div class="flex items-center gap-3">
             {{-- Quick Actions Button --}}
-            <button @click="quickOpen = true" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 shadow-lg shadow-amber-500/25">
+            <button @click="quickOpen = true" class="bg-gradient-to-r from-gold to-gold-dark hover:from-gold-dark hover:to-gold-deep text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 shadow-lg shadow-gold/25">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
                 إجراءات سريعة
             </button>
@@ -418,15 +418,15 @@ document.addEventListener('alpine:init', () => {
     </div>
 
     {{-- Related People Section (at top) --}}
-    <div class="bg-white rounded-xl border border-amber-200 p-6">
-        <h2 class="text-lg font-bold text-amber-700 border-b border-gray-200 pb-3 mb-5">{{ __('app.related_people') }}</h2>
+    <div class="bg-white rounded-xl border border-gold/15 p-6">
+        <h2 class="text-lg font-bold text-gold-dark border-b border-gray-200 pb-3 mb-5">{{ __('app.related_people') }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
                 <p class="text-gray-400 text-xs mb-1">{{ __('app.case_client') }}</p>
                 <div class="flex items-center gap-2">
                     <p class="text-gray-900 text-sm font-medium">{{ $case->client->name ?? '—' }}</p>
                     @if($case->client && ($case->client->phone || $case->client->email))
-                    <button @click="sendPortalMessage()" :disabled="portalSending" class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors disabled:opacity-50" title="إرسال رسالة المتابعة للموكل تلقائياً (إيميل وواتساب)">
+                    <button @click="sendPortalMessage()" :disabled="portalSending" class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-gold/12 text-gold-dark hover:bg-gold/15 transition-colors disabled:opacity-50" title="إرسال رسالة المتابعة للموكل تلقائياً (إيميل وواتساب)">
                         <svg x-show="!portalSending" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                         </svg>
@@ -447,7 +447,7 @@ document.addEventListener('alpine:init', () => {
     </div>
 
     {{-- Case Info Card --}}
-    <div class="bg-white rounded-xl border border-amber-200 p-6">
+    <div class="bg-white rounded-xl border border-gold/15 p-6">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {{-- Status --}}
             <div>
@@ -515,8 +515,8 @@ document.addEventListener('alpine:init', () => {
     </div>
 
     {{-- Opponent Data Card --}}
-    <div class="bg-white rounded-xl border border-amber-200 p-6">
-        <h2 class="text-lg font-bold text-amber-700 border-b border-gray-200 pb-3 mb-5">{{ __('app.opponent_data') }}</h2>
+    <div class="bg-white rounded-xl border border-gold/15 p-6">
+        <h2 class="text-lg font-bold text-gold-dark border-b border-gray-200 pb-3 mb-5">{{ __('app.opponent_data') }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
                 <p class="text-gray-400 text-xs mb-1">{{ __('app.opponent_name') }}</p>
@@ -543,29 +543,29 @@ document.addEventListener('alpine:init', () => {
 
     {{-- Description --}}
     @if($case->description)
-    <div class="bg-white rounded-xl border border-amber-200 p-6">
+    <div class="bg-white rounded-xl border border-gold/15 p-6">
         <p class="text-gray-400 text-xs mb-2">{{ __('app.case_description') }}</p>
         <p class="text-gray-900 text-sm leading-relaxed">{{ $case->description }}</p>
     </div>
     @endif
 
     {{-- Tabs --}}
-    <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
         {{-- Tab Headers --}}
         <div class="flex border-b border-gray-200" role="tablist">
-            <button @click="activeTab = 'sessions'" :class="activeTab === 'sessions' ? 'text-amber-700 border-b-2 border-amber-700 bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
+            <button @click="activeTab = 'sessions'" :class="activeTab === 'sessions' ? 'text-gold-dark border-b-2 border-gold-dark bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
                 class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
                 {{ __('app.sessions_tab') }} (<span x-text="sessions.length">{{ $case->sessions->count() ?? 0 }}</span>)
             </button>
-            <button @click="activeTab = 'tasks'" :class="activeTab === 'tasks' ? 'text-amber-700 border-b-2 border-amber-700 bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
+            <button @click="activeTab = 'tasks'" :class="activeTab === 'tasks' ? 'text-gold-dark border-b-2 border-gold-dark bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
                 class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
                 {{ __('app.tasks_tab') }} ({{ $case->tasks->count() ?? 0 }})
             </button>
-            <button @click="activeTab = 'documents'" :class="activeTab === 'documents' ? 'text-amber-700 border-b-2 border-amber-700 bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
+            <button @click="activeTab = 'documents'" :class="activeTab === 'documents' ? 'text-gold-dark border-b-2 border-gold-dark bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
                 class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
                 {{ __('app.documents_tab') }} ({{ $case->documents->count() ?? 0 }})
             </button>
-            <button @click="activeTab = 'timeline'" :class="activeTab === 'timeline' ? 'text-amber-700 border-b-2 border-amber-700 bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
+            <button @click="activeTab = 'timeline'" :class="activeTab === 'timeline' ? 'text-gold-dark border-b-2 border-gold-dark bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
                 class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
                 الخط الزمني ({{ $timeline->count() }})
             </button>
@@ -578,12 +578,12 @@ document.addEventListener('alpine:init', () => {
                     <div class="flex-1 min-w-[150px]">
                         <label class="block text-xs font-bold text-gray-600 mb-1">{{ __('app.table_date') }} *</label>
                         <input type="date" x-model="quickSession.date" required
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white">
                     </div>
                     <div class="w-36">
                         <label class="block text-xs font-bold text-gray-600 mb-1">{{ __('app.status') }}</label>
                         <select x-model="quickSession.status"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white">
                             <option value="upcoming">{{ __('app.status_upcoming') }}</option>
                             <option value="completed">{{ __('app.status_completed') }}</option>
                             <option value="postponed">{{ __('app.status_postponed') }}</option>
@@ -593,7 +593,7 @@ document.addEventListener('alpine:init', () => {
                     <div class="flex-1 min-w-[150px]">
                         <label class="block text-xs font-bold text-gray-600 mb-1">{{ __('app.table_notes') }}</label>
                         <input type="text" x-model="quickSession.notes"
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white">
                     </div>
                     <button type="submit" :disabled="quickAdding"
                             class="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
@@ -609,11 +609,11 @@ document.addEventListener('alpine:init', () => {
                     <table class="w-full text-sm text-right">
                         <thead>
                             <tr class="border-b border-gray-200">
-                                <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.table_date') }}</th>
-                                <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.table_type') }}</th>
-                                <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.status') }}</th>
-                                <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.table_notes') }}</th>
-                                <th class="px-3 py-2 text-amber-700 font-bold text-xs">{{ __('app.session_decision') }}</th>
+                                <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.table_date') }}</th>
+                                <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.table_type') }}</th>
+                                <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.status') }}</th>
+                                <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.table_notes') }}</th>
+                                <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.session_decision') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -627,7 +627,7 @@ document.addEventListener('alpine:init', () => {
                                     <td class="px-3 py-2.5 text-gray-400 text-xs max-w-[200px] truncate" x-text="s.notes || '—'"></td>
                                     <td class="px-3 py-2.5">
                                         <button @click="openReport(s.id)" class="text-xs"
-                                            :class="reportSession && reportSession.id === s.id && reportText ? 'text-amber-700' : 'text-gray-400 hover:text-amber-700'"
+                                            :class="reportSession && reportSession.id === s.id && reportText ? 'text-gold-dark' : 'text-gray-400 hover:text-gold-dark'"
                                             x-text="s.report ? '{{ __('app.view_decision') }}' : '{{ __('app.add_decision') }}'"></button>
                                     </td>
                                 </tr>
@@ -657,7 +657,7 @@ document.addEventListener('alpine:init', () => {
             @if($case->tasks && $case->tasks->count() > 0)
                 <div class="space-y-2">
                     @foreach($case->tasks as $task)
-                        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-100 hover:border-amber-200 transition-colors">
+                        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-100 hover:border-gold/15 transition-colors">
                             <div class="flex-shrink-0">
                                 @if($task->status === 'completed')
                                     <div class="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
@@ -708,9 +708,9 @@ document.addEventListener('alpine:init', () => {
             @if($case->documents && $case->documents->count() > 0)
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     @foreach($case->documents as $document)
-                        <div class="p-3 rounded-lg bg-gray-100 border border-gray-100 hover:border-amber-200 transition-colors">
+                        <div class="p-3 rounded-lg bg-gray-100 border border-gray-100 hover:border-gold/15 transition-colors">
         <div class="flex flex-wrap items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                                <div class="w-10 h-10 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0">
                                     @if(str_contains($document->file_type ?? '', 'pdf'))
                                         <svg class="w-5 h-5 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
@@ -763,13 +763,13 @@ document.addEventListener('alpine:init', () => {
             <div id="caseTimeline" class="relative ps-6">
                 @php
                     $kindStyles = [
-                        'activity'  => ['dot' => 'bg-amber-500', 'text' => 'text-amber-700', 'bg' => 'bg-amber-50', 'border' => 'border-amber-200'],
+                        'activity'  => ['dot' => 'bg-gold-dark', 'text' => 'text-gold-dark', 'bg' => 'bg-gold/10', 'border' => 'border-gold/15'],
                         'session'   => ['dot' => 'bg-purple-500', 'text' => 'text-purple-700', 'bg' => 'bg-purple-50', 'border' => 'border-purple-200'],
                         'task'      => ['dot' => 'bg-emerald-500', 'text' => 'text-emerald-700', 'bg' => 'bg-emerald-50', 'border' => 'border-emerald-200'],
                         'document'  => ['dot' => 'bg-blue-500', 'text' => 'text-blue-700', 'bg' => 'bg-blue-50', 'border' => 'border-blue-200'],
                     ];
                 @endphp
-                <span class="absolute top-0 bottom-0 start-3 w-px bg-gradient-to-b from-amber-300 via-gray-200 to-transparent"></span>
+                <span class="absolute top-0 bottom-0 start-3 w-px bg-gradient-to-b from-gold-light via-gray-200 to-transparent"></span>
                 @forelse($timeline as $ev)
                     @php $k = $kindStyles[$ev['kind']] ?? $kindStyles['activity']; @endphp
                     <div class="relative mb-5 last:mb-0">
@@ -801,11 +801,11 @@ document.addEventListener('alpine:init', () => {
         x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
         <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="reportModal = false"></div>
-        <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
+        <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
             x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
             x-transition:enter-end="opacity-100 scale-100">
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-bold text-amber-700">{{ __('app.session_decision') }}</h3>
+                <h3 class="text-lg font-bold text-gold-dark">{{ __('app.session_decision') }}</h3>
                 <button @click="reportModal = false" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -814,7 +814,7 @@ document.addEventListener('alpine:init', () => {
             </div>
             <div class="px-6 py-5 overflow-y-auto flex-1">
                 <textarea x-model="reportText" rows="8"
-                    class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-y"
+                    class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 resize-y"
                     placeholder="{{ __('app.session_decision_placeholder') }}"></textarea>
             </div>
             <div class="px-6 py-3 border-t border-gray-200 flex justify-end gap-3">
@@ -837,12 +837,12 @@ document.addEventListener('alpine:init', () => {
         <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="showSummary = false"></div>
 
         {{-- Modal --}}
-        <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+        <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
             x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
             x-transition:enter-end="opacity-100 scale-100">
             {{-- Header --}}
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-bold text-amber-700">{{ __('app.case_summary') }}</h3>
+                <h3 class="text-lg font-bold text-gold-dark">{{ __('app.case_summary') }}</h3>
                 <button @click="showSummary = false" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -858,7 +858,7 @@ document.addEventListener('alpine:init', () => {
                         <p class="text-xs text-gray-500 mb-1">{{ __('app.status') }}</p>
                         @php
                             $statusMap = ['active'=>__('app.status_active'),'pending'=>__('app.status_pending'),'overdue'=>__('app.status_overdue'),'closed'=>__('app.status_closed'),'won'=>__('app.status_won'),'lost'=>__('app.status_lost'),'adjudicated'=>__('app.status_adjudicated'),'fees_pending'=>__('app.status_fees_pending')];
-                            $statusColors = ['active'=>'text-emerald-700','pending'=>'text-amber-700','overdue'=>'text-red-700','closed'=>'text-gray-400','won'=>'text-green-700','lost'=>'text-red-700','adjudicated'=>'text-emerald-700','fees_pending'=>'text-red-700'];
+                            $statusColors = ['active'=>'text-emerald-700','pending'=>'text-gold-dark','overdue'=>'text-red-700','closed'=>'text-gray-400','won'=>'text-green-700','lost'=>'text-red-700','adjudicated'=>'text-emerald-700','fees_pending'=>'text-red-700'];
                         @endphp
                         <p class="font-bold {{ $statusColors[$case->status] ?? 'text-gray-900' }}">{{ $statusMap[$case->status] ?? $case->status }}</p>
                     </div>
@@ -866,7 +866,7 @@ document.addEventListener('alpine:init', () => {
                         <p class="text-xs text-gray-500 mb-1">{{ __('app.priority') }}</p>
                         @php
                             $priorityMap = ['low'=>__('app.priority_low'),'medium'=>__('app.priority_medium'),'high'=>__('app.priority_high'),'urgent'=>__('app.priority_urgent')];
-                            $priorityColors = ['low'=>'text-gray-400','medium'=>'text-amber-700','high'=>'text-orange-700','urgent'=>'text-red-700'];
+                            $priorityColors = ['low'=>'text-gray-400','medium'=>'text-gold-dark','high'=>'text-orange-700','urgent'=>'text-red-700'];
                         @endphp
                         <p class="font-bold {{ $priorityColors[$case->priority] ?? 'text-gray-900' }}">{{ $priorityMap[$case->priority] ?? $case->priority }}</p>
                     </div>
@@ -888,7 +888,7 @@ document.addEventListener('alpine:init', () => {
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-500 text-sm">{{ __('app.case_client') }}</span>
-                        <span class="text-amber-700 text-sm font-medium">{{ $case->client?->name ?? '—' }}</span>
+                        <span class="text-gold-dark text-sm font-medium">{{ $case->client?->name ?? '—' }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-500 text-sm">{{ __('app.case_lawyer') }}</span>
@@ -952,15 +952,15 @@ document.addEventListener('alpine:init', () => {
                 {{-- Counts --}}
                 <div class="grid grid-cols-3 gap-3">
                     <div class="bg-white rounded-xl p-3 border border-gray-100 text-center">
-                        <p class="text-2xl font-bold text-amber-700" x-text="sessions.length">{{ $case->sessions->count() }}</p>
+                        <p class="text-2xl font-bold text-gold-dark" x-text="sessions.length">{{ $case->sessions->count() }}</p>
                         <p class="text-xs text-gray-500 mt-1">{{ __('app.sessions') }}</p>
                     </div>
                     <div class="bg-white rounded-xl p-3 border border-gray-100 text-center">
-                        <p class="text-2xl font-bold text-amber-700">{{ $case->tasks->count() }}</p>
+                        <p class="text-2xl font-bold text-gold-dark">{{ $case->tasks->count() }}</p>
                         <p class="text-xs text-gray-500 mt-1">{{ __('app.tasks') }}</p>
                     </div>
                     <div class="bg-white rounded-xl p-3 border border-gray-100 text-center">
-                        <p class="text-2xl font-bold text-amber-700">{{ $case->documents->count() }}</p>
+                        <p class="text-2xl font-bold text-gold-dark">{{ $case->documents->count() }}</p>
                         <p class="text-xs text-gray-500 mt-1">{{ __('app.documents') }}</p>
                     </div>
                 </div>
@@ -1073,11 +1073,11 @@ document.addEventListener('alpine:init', () => {
     x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
     <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="quickOpen = false"></div>
 
-    <div class="relative bg-white border border-amber-300 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+    <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
         x-transition:enter-end="opacity-100 scale-100">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-bold text-amber-700">إجراءات سريعة</h3>
+            <h3 class="text-lg font-bold text-gold-dark">إجراءات سريعة</h3>
             <button @click="quickOpen = false" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1099,11 +1099,11 @@ document.addEventListener('alpine:init', () => {
         <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
             {{-- Tabs --}}
             <div class="flex border-b border-gray-200">
-                <button @click="quickTab = 'note'" :class="quickTab === 'note' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
+                <button @click="quickTab = 'note'" :class="quickTab === 'note' ? 'text-gold-dark border-b-2 border-gold-dark bg-gold/10' : 'text-gray-400 hover:text-gray-600'"
                     class="flex-1 px-4 py-3 text-xs font-bold transition-colors">ملاحظة / اتصال</button>
-                <button @click="quickTab = 'task'" :class="quickTab === 'task' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
+                <button @click="quickTab = 'task'" :class="quickTab === 'task' ? 'text-gold-dark border-b-2 border-gold-dark bg-gold/10' : 'text-gray-400 hover:text-gray-600'"
                     class="flex-1 px-4 py-3 text-xs font-bold transition-colors">مهمة</button>
-                <button @click="quickTab = 'doc'" :class="quickTab === 'doc' ? 'text-amber-700 border-b-2 border-amber-700 bg-amber-50/40' : 'text-gray-400 hover:text-gray-600'"
+                <button @click="quickTab = 'doc'" :class="quickTab === 'doc' ? 'text-gold-dark border-b-2 border-gold-dark bg-gold/10' : 'text-gray-400 hover:text-gray-600'"
                     class="flex-1 px-4 py-3 text-xs font-bold transition-colors">مستند</button>
             </div>
 
@@ -1112,7 +1112,7 @@ document.addEventListener('alpine:init', () => {
                 <div class="bg-white rounded-xl p-4 border border-gray-100 space-y-3">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1.5">النوع</label>
-                        <select x-model="activityForm.type" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                        <select x-model="activityForm.type" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white">
                             <option value="note">ملاحظة</option>
                             <option value="call">اتصال هاتفي</option>
                             <option value="appointment">موعد</option>
@@ -1121,11 +1121,11 @@ document.addEventListener('alpine:init', () => {
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1.5">العنوان *</label>
-                        <input type="text" x-model="activityForm.title" placeholder="مثال: مكالمة مع الموكل حول التأجيل" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                        <input type="text" x-model="activityForm.title" placeholder="مثال: مكالمة مع الموكل حول التأجيل" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1.5">التفاصيل</label>
-                        <textarea x-model="activityForm.content" rows="4" placeholder="تفاصيل إضافية..." class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"></textarea>
+                        <textarea x-model="activityForm.content" rows="4" placeholder="تفاصيل إضافية..." class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white resize-none"></textarea>
                     </div>
                 </div>
                 <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
@@ -1139,16 +1139,16 @@ document.addEventListener('alpine:init', () => {
                 <div class="bg-white rounded-xl p-4 border border-gray-100 space-y-3">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1.5">عنوان المهمة *</label>
-                        <input type="text" x-model="taskForm.title" placeholder="مثال: تجهيز مذكرة الرد" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                        <input type="text" x-model="taskForm.title" placeholder="مثال: تجهيز مذكرة الرد" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1.5">الوصف</label>
-                        <textarea x-model="taskForm.description" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"></textarea>
+                        <textarea x-model="taskForm.description" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white resize-none"></textarea>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-gray-600 mb-1.5">الأولوية</label>
-                            <select x-model="taskForm.priority" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                            <select x-model="taskForm.priority" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white">
                                 <option value="low">منخفضة</option>
                                 <option value="medium">متوسطة</option>
                                 <option value="high">عالية</option>
@@ -1157,7 +1157,7 @@ document.addEventListener('alpine:init', () => {
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-600 mb-1.5">الاستحقاق</label>
-                            <input type="date" x-model="taskForm.due_date" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                            <input type="date" x-model="taskForm.due_date" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white">
                         </div>
                     </div>
                 </div>
@@ -1172,11 +1172,11 @@ document.addEventListener('alpine:init', () => {
                 <div class="bg-white rounded-xl p-4 border border-gray-100 space-y-3">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1.5">العنوان</label>
-                        <input type="text" x-model="docForm.title" placeholder="اتركه فارغًا لاستخدام اسم الملف" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                        <input type="text" x-model="docForm.title" placeholder="اتركه فارغًا لاستخدام اسم الملف" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1.5">الملف *</label>
-                        <input type="file" @change="docForm.file = $event.target.files[0]; if (!docForm.title.trim()) { docForm.title = ($event.target.files[0].name || '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(); }" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-amber-700 hover:file:bg-amber-200">
+                        <input type="file" @change="docForm.file = $event.target.files[0]; if (!docForm.title.trim()) { docForm.title = ($event.target.files[0].name || '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(); }" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-gold/12 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-gold-dark hover:file:bg-gold/15">
                     </div>
                 </div>
                 <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
@@ -1198,15 +1198,15 @@ document.addEventListener('alpine:init', () => {
 <style>
     [x-cloak] { display: none !important; }
     .ai-content { line-height: 1.9; }
-    .ai-content strong { color: #756A9A; font-weight: 700; }
-    .ai-content h1, .ai-content h2, .ai-content h3 { color: #5F567E; font-weight: 700; margin: 1rem 0 0.5rem; line-height: 1.5; }
+    .ai-content strong { color: #8B5CF6; font-weight: 700; }
+    .ai-content h1, .ai-content h2, .ai-content h3 { color: #6D28D9; font-weight: 700; margin: 1rem 0 0.5rem; line-height: 1.5; }
     .ai-content h1 { font-size: 1.05rem; }
     .ai-content h2 { font-size: 1rem; }
     .ai-content h3 { font-size: 0.95rem; }
     .ai-content ul { list-style: disc; padding-inline-start: 1.25rem; margin: 0.5rem 0; }
     .ai-content li { margin: 0.3rem 0; }
     .ai-content p { margin: 0.5rem 0; }
-    .ai-content hr { border: 0; border-top: 1px dashed #DDD9EA; margin: 0.75rem 0; }
-    .ai-content code { background: #E9E6F2; color: #5F567E; padding: 0 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
+    .ai-content hr { border: 0; border-top: 1px dashed #EDE9FE; margin: 0.75rem 0; }
+    .ai-content code { background: #EDE9FE; color: #6D28D9; padding: 0 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
 </style>
 @endsection

@@ -16,12 +16,12 @@ function roleAvatar($user, $size = 9) {
     {{-- Conversations List --}}
     <div class="w-80 flex-shrink-0 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden flex flex-col">
         <div class="p-4 border-b border-gray-100">
-            <h2 class="text-lg font-bold text-amber-600">{{ __('app.chat') ?? 'المحادثات' }}</h2>
+            <h2 class="text-lg font-bold text-gold-dark">{{ __('app.chat') ?? 'المحادثات' }}</h2>
         </div>
         <div class="flex-1 overflow-y-auto">
             @forelse($conversations as $conv)
                 @php $other = $conv->participants->where('id', '!=', auth()->id())->first(); @endphp
-                <a href="{{ route('chat.show', $conv) }}" class="block px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition {{ isset($conversation) && $conversation->id === $conv->id ? 'bg-amber-50 border-r-2 border-r-amber-500' : '' }}">
+                <a href="{{ route('chat.show', $conv) }}" class="block px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition {{ isset($conversation) && $conversation->id === $conv->id ? 'bg-gold/10 border-r-2 border-r-gold-dark' : '' }}">
                     <div class="flex items-center gap-3">
                         <div class="relative">
                             {!! $other ? roleAvatar($other, 10) : '<div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"><span class="text-gray-500 font-bold text-sm">?</span></div>' !!}
@@ -40,7 +40,7 @@ function roleAvatar($user, $size = 9) {
                             </div>
                             <p class="text-xs text-gray-400 truncate mt-0.5">
                                 @if($conv->lastMessage)
-                                    <span class="text-amber-600/60">{{ $conv->lastMessage->user->name }}: </span>
+                                    <span class="text-gold-dark/60">{{ $conv->lastMessage->user->name }}: </span>
                                     @if($conv->lastMessage->attachment_path && !$conv->lastMessage->message)
                                         <span class="text-gray-400">📎 مرفق</span>
                                     @else
@@ -77,49 +77,49 @@ function roleAvatar($user, $size = 9) {
                 @foreach($messages as $msg)
                     @php $isOwn = $msg->user_id === auth()->id(); $escMsg = htmlspecialchars($msg->message, ENT_QUOTES, 'UTF-8'); @endphp
                     <div class="flex {{ $isOwn ? 'justify-end' : 'justify-start' }} group" data-message-id="{{ $msg->id }}">
-                        <div class="max-w-[75%] {{ $isOwn ? 'bg-amber-600 border-amber-700' : 'bg-white border-gray-200' }} rounded-2xl px-4 py-2.5 border relative shadow-sm">
+                        <div class="max-w-[75%] {{ $isOwn ? 'bg-gold-dark border-gold-deep' : 'bg-white border-gray-200' }} rounded-2xl px-4 py-2.5 border relative shadow-sm">
                             @if(!$isOwn)
-                                <p class="text-[11px] text-amber-600 font-semibold mb-1" data-sender-name="{{ $msg->user->name }}">{{ $msg->user->name }}</p>
+                                <p class="text-[11px] text-gold-dark font-semibold mb-1" data-sender-name="{{ $msg->user->name }}">{{ $msg->user->name }}</p>
                             @endif
                             @if($msg->replyTo)
-                                <div class="text-[11px] mb-1.5 pr-2 border-r-2 border-r-amber-400 py-0.5 truncate {{ $isOwn ? 'text-amber-200' : 'text-gray-400' }}">
-                                    <span class="{{ $isOwn ? 'text-amber-300' : 'text-amber-600' }}">رد:</span> {{ $msg->replyTo->message }}
+                                <div class="text-[11px] mb-1.5 pr-2 border-r-2 border-r-gold-light py-0.5 truncate {{ $isOwn ? 'text-gold-light' : 'text-gray-400' }}">
+                                    <span class="{{ $isOwn ? 'text-gold-light' : 'text-gold-dark' }}">رد:</span> {{ $msg->replyTo->message }}
                                 </div>
                             @endif
                             @if($msg->message)
                                 <p class="text-sm {{ $isOwn ? 'text-white' : 'text-gray-800' }}" data-message-text="{{ $escMsg }}">{{ $msg->message }}
-                                    @if($msg->edited_at) <span class="text-[10px] {{ $isOwn ? 'text-amber-200' : 'text-gray-400' }}">(تم التعديل)</span> @endif
+                                    @if($msg->edited_at) <span class="text-[10px] {{ $isOwn ? 'text-gold-light' : 'text-gray-400' }}">(تم التعديل)</span> @endif
                                 </p>
                             @endif
                             @if($msg->attachment_path)
                                 @if($msg->is_image)
-                                    <div class="mt-2 rounded-xl overflow-hidden {{ $isOwn ? 'border border-amber-500/30' : 'border border-gray-200' }}">
+                                    <div class="mt-2 rounded-xl overflow-hidden {{ $isOwn ? 'border border-gold/40' : 'border border-gray-200' }}">
                                         <img src="{{ $msg->attachment_url }}" alt="{{ $msg->attachment_name }}" class="max-w-full h-auto">
                                     </div>
                                 @endif
                                 <div class="mt-2">
-                                    <a href="{{ $msg->attachment_url }}" download="{{ $msg->attachment_name }}" class="flex items-center gap-2 px-3 py-2 rounded-lg transition text-xs {{ $isOwn ? 'bg-amber-700 hover:bg-amber-800 text-amber-200' : 'bg-amber-100 hover:bg-amber-200 text-amber-700' }}">
+                                    <a href="{{ $msg->attachment_url }}" download="{{ $msg->attachment_name }}" class="flex items-center gap-2 px-3 py-2 rounded-lg transition text-xs {{ $isOwn ? 'bg-gold-deep hover:bg-gold-deep text-gold-light' : 'bg-gold/12 hover:bg-gold/15 text-gold-dark' }}">
                                         <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span class="truncate">{{ $msg->attachment_name }}</span>
                                     </a>
                                 </div>
                             @endif
                             <div class="flex items-center justify-between mt-1">
-                                <p class="text-[10px] {{ $isOwn ? 'text-amber-200' : 'text-gray-400' }}">{{ $msg->created_at->diffForHumans() }}
+                                <p class="text-[10px] {{ $isOwn ? 'text-gold-light' : 'text-gray-400' }}">{{ $msg->created_at->diffForHumans() }}
                                     @if($msg->discord_message_id)
-                                        <span class="font-medium {{ $msg->discord_replied_at ? ($isOwn ? 'text-green-200' : 'text-green-600') : ($isOwn ? 'text-amber-100' : 'text-amber-600') }}">— @if($msg->discord_replied_at) تم الرد من المطور @else بانتظار رد المطور @endif</span>
+                                        <span class="font-medium {{ $msg->discord_replied_at ? ($isOwn ? 'text-green-200' : 'text-green-600') : ($isOwn ? 'text-gold-light' : 'text-gold-dark') }}">— @if($msg->discord_replied_at) تم الرد من المطور @else بانتظار رد المطور @endif</span>
                                     @endif
                                 </p>
                                 <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
                                     @if($isOwn)
-                                        <button type="button" data-msg-action="edit" class="text-[10px] {{ $isOwn ? 'text-amber-200 hover:text-white' : 'text-amber-600/50 hover:text-amber-700' }} transition" title="تعديل">
+                                        <button type="button" data-msg-action="edit" class="text-[10px] {{ $isOwn ? 'text-gold-light hover:text-white' : 'text-gold-dark/50 hover:text-gold-dark' }} transition" title="تعديل">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         </button>
                                         <button type="button" data-msg-action="delete" class="text-[10px] {{ $isOwn ? 'text-red-300 hover:text-red-200' : 'text-red-700/50 hover:text-red-700' }} transition" title="حذف">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     @endif
-                                    <button type="button" data-msg-action="reply" class="text-[10px] {{ $isOwn ? 'text-amber-200 hover:text-white' : 'text-gray-400 hover:text-amber-700' }} transition" title="رد">
+                                    <button type="button" data-msg-action="reply" class="text-[10px] {{ $isOwn ? 'text-gold-light hover:text-white' : 'text-gray-400 hover:text-gold-dark' }} transition" title="رد">
                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
                                     </button>
                                 </div>
@@ -132,10 +132,10 @@ function roleAvatar($user, $size = 9) {
 
             {{-- Reply Bar + Input --}}
             <div class="border-t border-gray-200 bg-gray-100">
-                <div id="replyBar" class="hidden px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-3">
-                    <svg class="w-4 h-4 text-amber-600/50 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                <div id="replyBar" class="hidden px-4 py-2 bg-gold/10 border-b border-gold/15 flex items-center gap-3">
+                    <svg class="w-4 h-4 text-gold-dark/50 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
                     <div class="flex-1 min-w-0">
-                        <p class="text-[11px] text-amber-600/60"><span id="replyUserName"></span></p>
+                        <p class="text-[11px] text-gold-dark/60"><span id="replyUserName"></span></p>
                         <p class="text-xs text-gray-500 truncate" id="replyMessageText"></p>
                     </div>
                     <button type="button" id="cancelReply" class="text-red-700/50 hover:text-red-700 transition flex-shrink-0">
@@ -147,7 +147,7 @@ function roleAvatar($user, $size = 9) {
                         @csrf
                         <input type="hidden" id="replyToId" name="reply_to_id" value="">
                         <div class="flex gap-2">
-                            <label class="flex-shrink-0 w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-amber-100 hover:border-amber-300 transition">
+                            <label class="flex-shrink-0 w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gold/12 hover:border-gold/25 transition">
                                 <input type="file" id="fileInput" name="attachment" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden">
                                 <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
@@ -155,7 +155,7 @@ function roleAvatar($user, $size = 9) {
                             </label>
                             <div class="flex-1 relative">
                                 <input type="text" id="messageInput" placeholder="اكتب رسالة..." autocomplete="off"
-                                    class="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-300 focus:bg-amber-50 transition">
+                                    class="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/25 focus:bg-gold/10 transition">
                                 <div id="filePreview" class="hidden absolute bottom-full mb-2 right-0 left-0 bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
                                     <span id="fileName" class="text-xs text-gray-700 flex-1 truncate"></span>
                                     <button type="button" id="clearFile" class="text-red-700 hover:text-red-600 transition">
@@ -187,7 +187,7 @@ function roleAvatar($user, $size = 9) {
     {{-- Users List (new conversation) --}}
     <div class="w-72 flex-shrink-0 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden flex flex-col">
         <div class="p-4 border-b border-gray-100">
-            <h3 class="text-sm font-bold text-amber-600">{{ __('app.chat_users') ?? 'الموظفون' }}</h3>
+            <h3 class="text-sm font-bold text-gold-dark">{{ __('app.chat_users') ?? 'الموظفون' }}</h3>
         </div>
         <div class="flex-1 overflow-y-auto">
             @forelse($users as $user)
@@ -213,12 +213,12 @@ function roleAvatar($user, $size = 9) {
 <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/45 backdrop-blur-sm">
     <div class="bg-white border border-gray-200 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl shadow-gray-500/30">
         <div class="text-center">
-            <svg class="w-14 h-14 mx-auto mb-4 text-amber-600/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <svg class="w-14 h-14 mx-auto mb-4 text-gold-dark/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
             </svg>
             <p id="confirmMessage" class="text-gray-900 text-base font-medium mb-6 leading-relaxed"></p>
             <div class="flex gap-3 justify-center">
-                <button id="confirmYes" class="px-7 py-2.5 bg-gradient-to-l from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-200/30 hover:shadow-amber-300/30 text-sm">تأكيد</button>
+                <button id="confirmYes" class="px-7 py-2.5 bg-gradient-to-l from-gold-dark to-gold hover:from-gold-light hover:to-gold text-white font-bold rounded-xl transition-all shadow-lg shadow-gold/30 hover:shadow-gold-light/30 text-sm">تأكيد</button>
                 <button id="confirmNo" class="px-7 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 border border-gray-200 rounded-xl transition text-sm">إلغاء</button>
             </div>
         </div>
@@ -263,9 +263,9 @@ window.chatActions = {
         const oldText = textEl ? textEl.textContent.replace(/\(تم التعديل\)/g, '').trim() : '';
         const editHtml = `
             <div class="edit-form mt-1">
-                <textarea class="w-full bg-gray-100 border border-amber-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-500 resize-none" rows="2">${oldText.replace(/</g, '&lt;')}</textarea>
+                <textarea class="w-full bg-gray-100 border border-gold/25 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/40 resize-none" rows="2">${oldText.replace(/</g, '&lt;')}</textarea>
                 <div class="flex gap-2 mt-1">
-                    <button type="button" class="edit-save text-[11px] bg-amber-500 text-white font-bold px-3 py-1 rounded-lg hover:bg-amber-600 transition">حفظ</button>
+                    <button type="button" class="edit-save text-[11px] bg-gold text-[#111827] font-bold px-3 py-1 rounded-lg hover:bg-gold-dark transition">حفظ</button>
                     <button type="button" class="edit-cancel text-[11px] text-gray-500 hover:text-gray-900 transition">إلغاء</button>
                 </div>
             </div>`;
@@ -467,41 +467,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>`;
             }
             attachmentHtml += `<div class="mt-2">
-                <a href="${data.attachment_url}" download="${data.attachment_name || 'download'}" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-100 hover:bg-amber-200 transition text-xs text-amber-600">
+                <a href="${data.attachment_url}" download="${data.attachment_name || 'download'}" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-gold/12 hover:bg-gold/15 transition text-xs text-gold-dark">
                     <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     <span class="truncate">${data.attachment_name || 'ملف مرفق'}</span>
                 </a>
             </div>`;
         }
 
-        const replyHtml = data.reply_message ? `<div class="text-[11px] text-gray-400 mb-1.5 pr-2 border-r-2 border-r-amber-300 py-0.5 truncate">
-            <span class="text-amber-600/50">رد:</span> ${data.reply_message.replace(/</g, '&lt;')}
+        const replyHtml = data.reply_message ? `<div class="text-[11px] text-gray-400 mb-1.5 pr-2 border-r-2 border-r-gold-light/60 py-0.5 truncate">
+            <span class="text-gold-dark/50">رد:</span> ${data.reply_message.replace(/</g, '&lt;')}
         </div>` : '';
 
         const editedHtml = data.edited_at ? '<span class="text-[10px] text-gray-400">(تم التعديل)</span>' : '';
 
-        const pendingHtml = data.discord_pending ? '<p class="text-[10px] text-amber-600 font-medium mt-1">↦ أُرسلت للمطورين — بانتظار الرد</p>' : '';
+        const pendingHtml = data.discord_pending ? '<p class="text-[10px] text-gold-dark font-medium mt-1">↦ أُرسلت للمطورين — بانتظار الرد</p>' : '';
 
-        const senderNameDisplay = !isOwn ? `<p class="text-[11px] text-amber-600/60 font-medium mb-1" data-sender-name="${data.user_name.replace(/"/g, '&quot;')}">${data.user_name}</p>` : '';
+        const senderNameDisplay = !isOwn ? `<p class="text-[11px] text-gold-dark/60 font-medium mb-1" data-sender-name="${data.user_name.replace(/"/g, '&quot;')}">${data.user_name}</p>` : '';
 
         const actionsHtml = `<div class="flex items-center justify-between mt-1">
             <p class="text-[10px] text-gray-400">${data.created_at}</p>
             <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
                 ${isOwn ? `
-                    <button type="button" data-msg-action="edit" class="text-[10px] text-amber-600/50 hover:text-amber-700 transition" title="تعديل">
+                    <button type="button" data-msg-action="edit" class="text-[10px] text-gold-dark/50 hover:text-gold-dark transition" title="تعديل">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     </button>
                     <button type="button" data-msg-action="delete" class="text-[10px] text-red-700/50 hover:text-red-700 transition" title="حذف">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     </button>
                 ` : ''}
-                <button type="button" data-msg-action="reply" class="text-[10px] text-gray-400 hover:text-amber-700 transition" title="رد">
+                <button type="button" data-msg-action="reply" class="text-[10px] text-gray-400 hover:text-gold-dark transition" title="رد">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
                 </button>
             </div>
         </div>`;
 
-        div.innerHTML = `<div class="max-w-[75%] ${isOwn ? 'bg-amber-50 border-amber-200' : 'bg-gray-100 border-gray-200'} rounded-2xl px-4 py-2.5 border relative">
+        div.innerHTML = `<div class="max-w-[75%] ${isOwn ? 'bg-gold/10 border-gold/15' : 'bg-gray-100 border-gray-200'} rounded-2xl px-4 py-2.5 border relative">
             ${senderNameDisplay}
             ${replyHtml}
             ${data.message ? '<p class="text-sm text-gray-800" data-message-text="' + data.message.replace(/"/g, '&quot;') + '">' + data.message.replace(/</g, '&lt;') + ' ' + editedHtml + '</p>' : ''}

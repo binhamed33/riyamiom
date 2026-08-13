@@ -8,7 +8,7 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-amber-700">{{ __('app.backup') }}</h1>
+            <h1 class="text-2xl font-bold text-gold-dark">{{ __('app.backup') }}</h1>
             <p class="text-gray-400 text-sm mt-1">{{ __('app.manage_backups') }}</p>
         </div>
         <form action="{{ route('backup.create') }}" method="POST">
@@ -23,14 +23,14 @@
     </div>
 
     {{-- Upload & Restore --}}
-    <div class="bg-white rounded-xl border border-amber-200 p-4">
+    <div class="bg-white rounded-xl border border-gold/15 p-4">
         <form action="{{ route('backup.upload-restore') }}" method="POST" enctype="multipart/form-data" x-data="{ uploading: false }" @submit.prevent="uploading = true; $el.submit()">
             @csrf
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <div class="flex-1">
                     <label class="block text-gray-400 text-xs mb-1.5">{{ __('app.upload_backup_file') }}</label>
                     <input type="file" name="backup_file" accept=".zip" required
-                           class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-amber-100 file:text-amber-600 hover:file:bg-amber-200 file:cursor-pointer cursor-pointer bg-gray-100 rounded-lg border border-gray-200 px-3 py-1.5">
+                           class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gold/12 file:text-gold-dark hover:file:bg-gold/15 file:cursor-pointer cursor-pointer bg-gray-100 rounded-lg border border-gray-200 px-3 py-1.5">
                 </div>
                 <button type="submit" :disabled="uploading"
                         class="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2 mt-5 sm:mt-0">
@@ -61,7 +61,7 @@
     </div>
 
     {{-- Auto Backup Status --}}
-    <div class="bg-white rounded-xl border border-amber-200 p-4">
+    <div class="bg-white rounded-xl border border-gold/15 p-4">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,7 +76,7 @@
     </div>
 
     {{-- Backups Table --}}
-    <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
         @if(!empty($backups) && count($backups) > 0)
             <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                 <span class="text-gray-400 text-xs">{{ count($backups) }} {{ __('app.backup_count') }}</span>
@@ -86,10 +86,10 @@
                 <table class="w-full text-sm text-right">
                     <thead>
                         <tr class="border-b border-gray-200">
-                            <th class="px-4 py-3 text-amber-700 font-bold text-xs">{{ __('app.backup_file_name') }}</th>
-                            <th class="px-4 py-3 text-amber-700 font-bold text-xs">{{ __('app.backup_size') }}</th>
-                            <th class="px-4 py-3 text-amber-700 font-bold text-xs">{{ __('app.backup_date') }}</th>
-                            <th class="px-4 py-3 text-amber-700 font-bold text-xs">{{ __('app.actions') }}</th>
+                            <th class="px-4 py-3 text-gold-dark font-bold text-xs">{{ __('app.backup_file_name') }}</th>
+                            <th class="px-4 py-3 text-gold-dark font-bold text-xs">{{ __('app.backup_size') }}</th>
+                            <th class="px-4 py-3 text-gold-dark font-bold text-xs">{{ __('app.backup_date') }}</th>
+                            <th class="px-4 py-3 text-gold-dark font-bold text-xs">{{ __('app.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">

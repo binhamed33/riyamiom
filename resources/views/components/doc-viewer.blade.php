@@ -48,7 +48,7 @@
         </div>
         <div class="px-5 py-2.5 border-t border-gray-100 text-[11px] text-gray-400 flex items-center justify-between" dir="rtl">
             <span>يمكنك التنقل بين صفحات PDF عبر شريط أدوات المتصفح داخل المعاينة</span>
-            <button type="button" x-on:click="zoom = 100" class="text-xs font-bold text-amber-600 hover:text-amber-700 transition">استعادة الحجم</button>
+            <button type="button" x-on:click="zoom = 100" class="text-xs font-bold text-gold-dark hover:text-gold-dark transition">استعادة الحجم</button>
         </div>
     </div>
 </div>

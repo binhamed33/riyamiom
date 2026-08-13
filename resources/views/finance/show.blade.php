@@ -13,7 +13,7 @@
     @endif
 
     <div class="flex items-center justify-between">
-        <h2 class="text-2xl font-bold text-amber-700">{{ $title }}</h2>
+        <h2 class="text-2xl font-bold text-gold-dark">{{ $title }}</h2>
         <div class="flex items-center gap-2">
             <a href="{{ route('finance.' . $type . 's.print', $item) }}" target="_blank"
                class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg font-medium transition-colors text-sm flex items-center gap-1.5">
@@ -27,7 +27,7 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-amber-200 p-6">
+    <div class="bg-white rounded-xl border border-gold/15 p-6">
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-semibold text-gray-900">تفاصيل {{ $title }}</h3>
             @if($type === 'transaction')
@@ -151,7 +151,7 @@
             <div class="mt-6">
                 <h4 class="text-sm text-gray-500 mb-2">المرفق</h4>
                 <a href="{{ $item->attachment_url }}" target="_blank"
-                   class="inline-flex items-center gap-2 bg-amber-100 text-amber-700 hover:bg-amber-200 px-4 py-2 rounded-lg transition-colors text-sm font-medium">
+                   class="inline-flex items-center gap-2 bg-gold/12 text-gold-dark hover:bg-gold/15 px-4 py-2 rounded-lg transition-colors text-sm font-medium">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     {{ $item->attachment_name ?? 'تحميل المرفق' }}
                 </a>

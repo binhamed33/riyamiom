@@ -4,7 +4,7 @@
 
 @section('breadcrumb')
     <div class="flex items-center gap-2 text-sm">
-        <a href="{{ route('dashboard') }}" class="text-gray-400 hover:text-amber-700 transition">{{ __('app.calendar') }}</a>
+        <a href="{{ route('dashboard') }}" class="text-gray-400 hover:text-gold-dark transition">{{ __('app.calendar') }}</a>
         <span class="text-gray-300">/</span>
         <span class="font-medium text-gray-700">{{ app()->getLocale() === 'ar' ? 'مركز الانتباه' : 'Attention Center' }}</span>
     </div>
@@ -19,7 +19,7 @@
             <h1 class="text-2xl font-heading font-bold text-gray-900">{{ app()->getLocale() === 'ar' ? 'مركز الانتباه' : 'Attention Center' }}</h1>
             <p class="text-sm text-gray-400 mt-1">{{ app()->getLocale() === 'ar' ? 'تنبيهات ذكية تحتاج إجراء منك - يتم تحديثها تلقائياً' : 'Smart alerts requiring your action - refreshed automatically' }}</p>
         </div>
-        <button type="button" x-on:click="window.location.reload()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-amber-200 bg-white text-sm font-medium text-amber-700 hover:bg-amber-50 transition">
+        <button type="button" x-on:click="window.location.reload()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gold/15 bg-white text-sm font-medium text-gold-dark hover:bg-gold/10 transition">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
             {{ app()->getLocale() === 'ar' ? 'تحديث' : 'Refresh' }}
         </button>
@@ -29,7 +29,7 @@
         $severityStyles = [
             'critical' => ['border' => 'border-red-200', 'bg' => 'bg-red-50', 'dot' => 'bg-red-500', 'text' => 'text-red-700', 'label' => 'عاجل'],
             'warning'  => ['border' => 'border-orange-200', 'bg' => 'bg-orange-50', 'dot' => 'bg-orange-500', 'text' => 'text-orange-700', 'label' => 'تنبيه'],
-            'info'     => ['border' => 'border-amber-200', 'bg' => 'bg-amber-50', 'dot' => 'bg-amber-500', 'text' => 'text-amber-700', 'label' => 'معلومة'],
+            'info'     => ['border' => 'border-gold/15', 'bg' => 'bg-gold/10', 'dot' => 'bg-gold-dark', 'text' => 'text-gold-dark', 'label' => 'معلومة'],
         ];
         $iconPaths = [
             'gavel' => 'M9.253 6.242 3.75 11.745a3 3 0 0 0 0 4.238l3.757 3.758a3 3 0 0 0 4.238 0l6.5-6.5A1.5 1.5 0 0 0 18.72 12l-3.385-1.544a6 6 0 0 0-4.04-.214l-4.042 1.98Zm6.197-1.47 3.75-3.75a.75.75 0 0 1 1.061 0l1.875 1.875a.75.75 0 0 1 0 1.061l-3.75 3.75a.75.75 0 0 1-1.061 0l-1.875-1.875a.75.75 0 0 1 0-1.061Z',
@@ -59,7 +59,7 @@
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
                 @if(!empty($item['action']))
-                    <a href="{{ $item['action']['url'] }}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 transition shadow-sm">
+                    <a href="{{ $item['action']['url'] }}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold text-[#111827] text-sm font-bold hover:bg-gold-dark transition shadow-sm">
                         {{ $item['action']['label'] }}
                     </a>
                 @endif

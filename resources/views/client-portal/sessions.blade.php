@@ -6,19 +6,19 @@
 <div class="space-y-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
     <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-amber-600">{{ __('app.my_sessions') }}</h1>
+        <h1 class="text-2xl font-bold text-gold-dark">{{ __('app.my_sessions') }}</h1>
     </div>
 
-    <div class="bg-white rounded-xl border border-amber-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-right">
                 <thead>
                     <tr class="border-b border-gray-200">
-                        <th class="px-4 py-3 text-amber-600 font-bold whitespace-nowrap">{{ __('app.date') }}</th>
-                        <th class="px-4 py-3 text-amber-600 font-bold whitespace-nowrap">{{ __('app.location') }}</th>
-                        <th class="px-4 py-3 text-amber-600 font-bold whitespace-nowrap">{{ __('app.case') }}</th>
-                        <th class="px-4 py-3 text-amber-600 font-bold whitespace-nowrap">{{ __('app.status') }}</th>
-                        <th class="px-4 py-3 text-amber-600 font-bold whitespace-nowrap">{{ __('app.notes') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.date') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.location') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.case') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.status') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.notes') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
