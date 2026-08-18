@@ -46,6 +46,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 // الصفحات التسويقية العامة (لا تتطلب تسجيل دخول)
 // ============================================================
 Route::get('/register', [MarketingPageController::class, 'register'])->name('marketing.register');
+Route::post('/register', [MarketingPageController::class, 'storeRegister'])->name('marketing.register.store')->middleware('throttle:5,10');
 Route::get('/features', [MarketingPageController::class, 'features'])->name('marketing.features');
 Route::get('/pricing', [MarketingPageController::class, 'pricing'])->name('marketing.pricing');
 Route::get('/faq', [MarketingPageController::class, 'faq'])->name('marketing.faq');
@@ -285,6 +286,10 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/audit-log', [AuditLogController::class, 'index'])->middleware(['role:developer,admin,permission:audit_log.view', 'feature:audit_log'])->name('audit-log.index');
     Route::get('/settings', [SettingController::class, 'index'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.update');
+
+    // طلبات التسجيل من الموقع التعريفي
+    Route::get('/register-requests', [MarketingPageController::class, 'requests'])->middleware(['role:developer,admin'])->name('marketing.requests');
+    Route::post('/register-requests/{registration_request}/status', [MarketingPageController::class, 'updateStatus'])->middleware(['role:developer,admin'])->name('marketing.requests.status');
 
     // Chat - developer, admin, lawyer, staff
     Route::middleware(['role:developer,admin,lawyer,staff', 'feature:chat'])->group(function () {

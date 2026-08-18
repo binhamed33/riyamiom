@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\RegistrationRequest;
 use Illuminate\Http\Request;
 
 class MarketingPageController extends Controller
@@ -9,6 +10,46 @@ class MarketingPageController extends Controller
     public function register()
     {
         return view('marketing.register');
+    }
+
+    public function storeRegister(Request $request)
+    {
+        $validated = $request->validate([
+            'office_name' => ['required', 'string', 'max:190'],
+            'contact_name' => ['required', 'string', 'max:190'],
+            'phone' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-()\s.]+$/'],
+            'email' => ['required', 'email', 'max:190'],
+            'lawyers_count' => ['nullable', 'integer', 'in:1,2,3,4'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        // فخ للروبوتات: حقل مخفي — إذا مُلئ لا ننفذ شيئًا
+        if (filled($request->input('website'))) {
+            return back()->with('success', 'تم استلام طلبك بنجاح، سنتواصل معك قريبًا.');
+        }
+
+        RegistrationRequest::create($validated + ['status' => RegistrationRequest::STATUS_NEW]);
+
+        return back()->with('success', 'تم استلام طلبك بنجاح! سنراجع بياناتك ونتواصل معك خلال ٢٤–٤٨ ساعة.');
+    }
+
+    public function requests()
+    {
+        $requests = RegistrationRequest::latest()->paginate(25);
+
+        return view('register-requests.index', compact('requests'));
+    }
+
+    public function updateStatus(Request $request, RegistrationRequest $registrationRequest)
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:' . implode(',', array_keys(RegistrationRequest::STATUSES))],
+        ]);
+
+        $registrationRequest->update($validated);
+
+        return back()->with('success', 'تم تحديث حالة الطلب إلى «' . $registrationRequest->status_label . '».');
     }
 
     public function guide()
