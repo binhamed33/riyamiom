@@ -268,57 +268,10 @@
         .judge-scene { position: relative; opacity: 0; transform: scale(0.95); filter: blur(4px);
             transition: opacity 0.65s ease, transform 0.65s cubic-bezier(0.16,1,0.3,1), filter 0.65s ease; }
         .judge-scene.show { opacity: 1; transform: scale(1); filter: blur(0); }
-        .judge-scene.strike { animation: camShake 0.3s linear; }
-        @keyframes camShake {
-            0%,100% { transform: translate(0,0); }
-            20% { transform: translate(-1.5px,1px); }
-            45% { transform: translate(1.5px,-0.5px); }
-            70% { transform: translate(-1px,-1px); }
-        }
 
         .judge-scene .table { transform-box: view-box; }
-        .judge-scene.strike .table { animation: tableThud 0.35s ease-out; }
-        @keyframes tableThud {
-            0%,100% { transform: translateY(0); }
-            30% { transform: translateY(1.5px); }
-            60% { transform: translateY(0); }
-            82% { transform: translateY(0.6px); }
-        }
-
-        .judge-scene .gavel { transform: rotate(5deg); transform-box: view-box; transform-origin: 309.6px 147.4px; }
-        .judge-scene.raise .gavel { animation: gavelRaise 0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
-        @keyframes gavelRaise { from { transform: rotate(5deg); } to { transform: rotate(10deg); } }
-        .judge-scene.strike .gavel { animation: gavelHit 0.5s linear forwards; }
-        @keyframes gavelHit {
-            0% { transform: rotate(10deg); }
-            15% { transform: rotate(8deg); }
-            30% { transform: rotate(5deg); }
-            45% { transform: rotate(1.5deg); }
-            55% { transform: rotate(0.2deg); }
-            62% { transform: rotate(-1.5deg); }
-            70% { transform: rotate(1deg); }
-            80% { transform: rotate(0deg); }
-            90% { transform: rotate(0.3deg); }
-            100% { transform: rotate(0deg); }
-        }
 
         .judge-scene .scales { transform: translate(20px,14.5px) scale(0.85); transform-origin: 156px 103px; transform-box: view-box; }
-        .judge-scene.strike .scales { animation: scalesNudge 0.9s ease-out 0.04s; }
-        @keyframes scalesNudge {
-            0%,100% { transform: translate(20px,14.5px) scale(0.85) rotate(0deg); }
-            30% { transform: translate(20px,14.5px) scale(0.85) rotate(-1.1deg); }
-            50% { transform: translate(20px,14.5px) scale(0.85) rotate(0.8deg); }
-            70% { transform: translate(20px,14.5px) scale(0.85) rotate(-0.45deg); }
-            88% { transform: translate(20px,14.5px) scale(0.85) rotate(0.2deg); }
-        }
-
-        .judge-scene .strike-flash { opacity: 0; transform: scale(0.4); transform-box: view-box; transform-origin: 210px 241px; }
-        .judge-scene.strike .strike-flash { animation: flashBurst 0.45s ease-out 0.3s forwards; }
-        @keyframes flashBurst { 0% { opacity: 1; transform: scale(0.4); } 100% { opacity: 0; transform: scale(2.6); } }
-
-        .judge-scene .strike-ripple { opacity: 0; transform: scale(0.3); transform-box: view-box; transform-origin: 210px 241px; }
-        .judge-scene.strike .strike-ripple { animation: rippleOut 0.75s ease-out 0.3s forwards; }
-        @keyframes rippleOut { 0% { opacity: 0.9; transform: scale(0.3); } 100% { opacity: 0; transform: scale(2.9); } }
 
         .success-msg { opacity: 0; text-align: center; padding: 0 1.5rem; }
         .success-msg.show { opacity: 1; transition: opacity 0.5s ease; }
@@ -721,18 +674,6 @@
                     <path d="M223 158 Q256 174 289 158" stroke="rgba(240,217,138,0.35)" stroke-width="1" fill="none"/>
                 </g>
 
-                {{-- gavel (tilted, hammering the table center) --}}
-                <g class="gavel">
-                    <line x1="309.6" y1="147.4" x2="210" y2="224" stroke="url(#judgeGold)" stroke-width="6" stroke-linecap="round"/>
-                    <line x1="309.6" y1="147.4" x2="294.7" y2="158.9" stroke="rgba(255,248,228,0.55)" stroke-width="6" stroke-linecap="round"/>
-                    <rect x="188" y="224" width="44" height="14" rx="4" fill="url(#judgeGold)"/>
-                    <rect x="188" y="224" width="44" height="4" rx="2" fill="rgba(255,248,228,0.5)"/>
-                </g>
-
-                {{-- impact point --}}
-                <circle class="strike-flash" cx="210" cy="241" r="6" fill="none" stroke="#F0D98A" stroke-width="3"/>
-                <circle class="strike-ripple" cx="210" cy="241" r="6" fill="none" stroke="rgba(224,201,138,0.8)" stroke-width="2"/>
-
                 {{-- base glow under table --}}
                 <ellipse cx="210" cy="298" rx="170" ry="10" fill="rgba(200,169,107,0.10)" filter="url(#judgeSoft)"/>
             </svg>
@@ -751,15 +692,6 @@
         <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 text-xs" style="color:rgba(146,153,165,0.65);">
             <p class="flex items-center gap-2"><span style="color:var(--gold);">◆</span> {{ $officeName }} — © 2026 جميع الحقوق محفوظة</p>
             <div class="flex items-center gap-5">
-                <button type="button" id="soundToggle" class="link-soft font-medium flex items-center gap-1.5" aria-pressed="false" aria-label="{{ $isRtl ? 'تفعيل صوت ضربة المطرقة' : 'Enable hammer sound' }}" title="{{ $isRtl ? 'صوت ضربة المطرقة' : 'Hammer strike sound' }}">
-                    <svg class="w-4 h-4" id="soundOnIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="display:none;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15.54 8.46a5 5 0 010 7.07"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.07 4.93a10 10 0 010 14.14"/>
-                    </svg>
-                    <svg class="w-4 h-4" id="soundOffIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 9l-6 6M16 9l6 6"/>
-                    </svg>
-                    <span id="soundLabel">{{ $isRtl ? 'الصوت' : 'Sound' }}</span>
-                </button>
                 <a href="{{ route('language.switch', $isRtl ? 'en' : 'ar') }}" class="link-soft font-medium" aria-label="{{ $isRtl ? 'Switch to English' : 'التبديل إلى العربية' }}">
                     {{ $isRtl ? 'English' : 'العربية' }}
                 </a>
@@ -844,70 +776,13 @@
             const goldBurst = document.getElementById('goldBurst');
             const authLoadGlow = document.getElementById('authLoadGlow');
 
-            /* ---------- sound (Web Audio, OFF by default) ---------- */
-            const soundToggle = document.getElementById('soundToggle');
-            let soundOn = localStorage.getItem('lexpro_sound_hammer') === '1';
-            let audioCtx = null;
-            function refreshSoundUI() {
-                if (!soundToggle) return;
-                document.getElementById('soundOnIcon').style.display = soundOn ? 'block' : 'none';
-                document.getElementById('soundOffIcon').style.display = soundOn ? 'none' : 'block';
-                soundToggle.setAttribute('aria-pressed', String(soundOn));
-            }
-            refreshSoundUI();
-            if (soundToggle) soundToggle.addEventListener('click', function () {
-                soundOn = !soundOn;
-                localStorage.setItem('lexpro_sound_hammer', soundOn ? '1' : '0');
-                refreshSoundUI();
-            });
-            function playHammerSound() {
-                if (!soundOn || reduced) return;
-                try {
-                    const Ctx = window.AudioContext || window.webkitAudioContext;
-                    if (!Ctx) return;
-                    audioCtx = audioCtx || new Ctx();
-                    if (audioCtx.state === 'suspended') audioCtx.resume();
-                    const t = audioCtx.currentTime;
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(220, t);
-                    osc.frequency.exponentialRampToValueAtTime(70, t + 0.12);
-                    gain.gain.setValueAtTime(0.0001, t);
-                    gain.gain.exponentialRampToValueAtTime(0.3, t + 0.005);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.start(t); osc.stop(t + 0.2);
-                    const thump = audioCtx.createOscillator();
-                    const tg = audioCtx.createGain();
-                    thump.type = 'triangle';
-                    thump.frequency.setValueAtTime(120, t + 0.02);
-                    thump.frequency.exponentialRampToValueAtTime(50, t + 0.15);
-                    tg.gain.setValueAtTime(0.0001, t + 0.02);
-                    tg.gain.exponentialRampToValueAtTime(0.18, t + 0.03);
-                    tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
-                    thump.connect(tg); tg.connect(audioCtx.destination);
-                    thump.start(t + 0.02); thump.stop(t + 0.22);
-                    const click = audioCtx.createOscillator();
-                    const cg = audioCtx.createGain();
-                    click.type = 'square';
-                    click.frequency.setValueAtTime(950, t + 0.01);
-                    click.frequency.exponentialRampToValueAtTime(320, t + 0.035);
-                    cg.gain.setValueAtTime(0.0001, t + 0.01);
-                    cg.gain.exponentialRampToValueAtTime(0.07, t + 0.02);
-                    cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
-                    click.connect(cg); cg.connect(audioCtx.destination);
-                    click.start(t + 0.01); click.stop(t + 0.07);
-                } catch (e) { /* sound unavailable — flow continues */ }
-            }
-
             /* ---------- success cinematic ---------- */
             function positionGoldBurst() {
                 const svgEl = judgeScene.querySelector('svg');
                 if (!svgEl) return;
                 const r = svgEl.getBoundingClientRect();
-                goldBurst.style.left = (r.left + (r.width * 210) / 420) + 'px';
-                goldBurst.style.top = (r.top + (r.height * 241) / 320) + 'px';
+                goldBurst.style.left = (r.left + (r.width * 156) / 420) + 'px';
+                goldBurst.style.top = (r.top + (r.height * 103) / 320) + 'px';
             }
 
             function playSuccess(navigateTo) {
@@ -916,18 +791,14 @@
                 successOverlay.classList.add('show');
                 goldBurst.classList.remove('go');
                 successMsg.classList.remove('show');
-                judgeScene.classList.remove('raise', 'strike');
+                judgeScene.classList.remove('show');
                 setTimeout(function () { judgeScene.classList.add('show'); }, 120);
-                setTimeout(function () { judgeScene.classList.add('raise'); }, 480);
+                setTimeout(function () { successMsg.classList.add('show'); }, 700);
                 setTimeout(function () {
-                    judgeScene.classList.remove('raise');
-                    judgeScene.classList.add('strike');
-                    playHammerSound();
                     positionGoldBurst();
                     goldBurst.classList.add('go');
-                }, 950);
-                setTimeout(function () { successMsg.classList.add('show'); }, 1300);
-                setTimeout(function () { navigateTo(); }, 1680);
+                }, 1000);
+                setTimeout(function () { navigateTo(); }, 1450);
             }
 
             /* ---------- error presentation ---------- */
