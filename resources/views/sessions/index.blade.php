@@ -76,8 +76,8 @@
                         <td class="px-6 py-4 text-gray-600">
                             {{ $session->case->opponent ?? '—' }}
                         </td>
-                        <td class="px-6 py-4 text-gray-600">
-                            {{ $session->date->format('Y-m-d') }}
+                        <td class="px-6 py-4 text-gray-600 whitespace-nowrap">
+                            {{ $session->date->format('Y-m-d H:i') }}
                         </td>
                         <td class="px-6 py-4">
                             @switch($session->status)

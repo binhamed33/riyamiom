@@ -396,7 +396,7 @@ class CaseController extends Controller
         $sessionsData = $case->sessions->map(fn($s) => [
             'id' => $s->id,
             'case_id' => $s->case_id,
-            'date' => $s->date?->format('Y-m-d'),
+            'date' => $s->date?->format('Y-m-d\TH:i'),
             'location' => $s->location,
             'status' => $s->status,
             'notes' => $s->notes,

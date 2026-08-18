@@ -444,7 +444,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.table_date') }} <span class="text-red-700">*</span></label>
-                            <input type="date" :name="'sessions['+i+'][date]'" x-model="s.date" required
+                            <input type="datetime-local" :name="'sessions['+i+'][date]'" x-model="s.date" required
                                 class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
                         </div>
                         <div>

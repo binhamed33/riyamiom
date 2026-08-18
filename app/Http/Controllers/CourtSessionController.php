@@ -109,6 +109,8 @@ class CourtSessionController extends Controller
 
         $case = LegalCase::findOrFail($validated['case_id']);
 
+        $validated['location'] = $validated['location'] ?? '';
+
         $session = Session::create($validated);
 
         $this->logAudit(

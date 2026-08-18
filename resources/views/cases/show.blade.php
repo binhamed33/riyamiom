@@ -197,6 +197,10 @@ document.addEventListener('alpine:init', () => {
         sessionStatusClass(status) {
             return { completed: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700', postponed: 'bg-orange-100 text-orange-700', upcoming: 'bg-blue-100 text-blue-700' }[status] || 'bg-blue-100 text-blue-700';
         },
+        sessionDateLabel(date) {
+            if (!date) return '—';
+            return String(date).replace('T', ' ');
+        },
         get reportSession() {
             if (!this.reportSessionId) return null;
             return this.sessions.find(s => s.id === this.reportSessionId) || null;
@@ -577,7 +581,7 @@ document.addEventListener('alpine:init', () => {
                 <div class="flex items-end gap-3 flex-wrap">
                     <div class="flex-1 min-w-[150px]">
                         <label class="block text-xs font-bold text-gray-600 mb-1">{{ __('app.table_date') }} *</label>
-                        <input type="date" x-model="quickSession.date" required
+                        <input type="datetime-local" x-model="quickSession.date" required
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white">
                     </div>
                     <div class="w-36">
@@ -619,7 +623,7 @@ document.addEventListener('alpine:init', () => {
                         <tbody class="divide-y divide-gray-100">
                             <template x-for="s in sessions" :key="s.id">
                                 <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="px-3 py-2.5 text-gray-900 text-xs whitespace-nowrap" x-text="s.date || '—'"></td>
+                                    <td class="px-3 py-2.5 text-gray-900 text-xs whitespace-nowrap" x-text="sessionDateLabel(s.date)"></td>
                                     <td class="px-3 py-2.5 text-gray-400 text-xs" x-text="s.location || '—'"></td>
                                     <td class="px-3 py-2.5">
                                         <span class="text-xs px-2 py-0.5 rounded-full" :class="sessionStatusClass(s.status)" x-text="sessionStatusLabel(s.status)"></span>
