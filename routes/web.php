@@ -16,6 +16,7 @@ use App\Http\Controllers\FeasibilityController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\MarketingPageController;
 
 Route::get('/health', HealthController::class)->name('health');
 use App\Http\Controllers\AuditLogController;
@@ -40,6 +41,19 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+
+// ============================================================
+// الصفحات التسويقية العامة (لا تتطلب تسجيل دخول)
+// ============================================================
+Route::get('/register', [MarketingPageController::class, 'register'])->name('marketing.register');
+Route::get('/features', [MarketingPageController::class, 'features'])->name('marketing.features');
+Route::get('/pricing', [MarketingPageController::class, 'pricing'])->name('marketing.pricing');
+Route::get('/faq', [MarketingPageController::class, 'faq'])->name('marketing.faq');
+Route::get('/blog', [MarketingPageController::class, 'blog'])->name('marketing.blog');
+Route::get('/contact', [MarketingPageController::class, 'contact'])->name('marketing.contact');
+Route::get('/legal/privacy', [MarketingPageController::class, 'privacy'])->name('marketing.privacy');
+Route::get('/legal/terms', [MarketingPageController::class, 'terms'])->name('marketing.terms');
+Route::get('/guide', [MarketingPageController::class, 'guide'])->name('marketing.guide');
 
 // Keep-alive لتجديد الجلسة عند السيرفر أثناء تنبيه انتهاء الجلسة
 Route::post('/session/keepalive', function (Illuminate\Http\Request $request) {
@@ -98,8 +112,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         return view('lexpro.index');
     })->name('lexpro');
 
-    // User Guide
-    Route::get('/guide', function () {
+    // User Guide (داخل النظام)
+    Route::get('/guide/system', function () {
         return view('guide.index');
     })->name('guide');
     
