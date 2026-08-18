@@ -535,8 +535,9 @@
                                     <stop offset="1" stop-color="#A98218"/>
                                 </linearGradient>
                                 <linearGradient id="lexPan" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0" stop-color="#F0D98A" stop-opacity="0.6"/>
-                                    <stop offset="1" stop-color="#E5C158" stop-opacity="0.10"/>
+                                    <stop offset="0" stop-color="#F0D98A" stop-opacity="0.55"/>
+                                    <stop offset="0.55" stop-color="#E5C158" stop-opacity="0.22"/>
+                                    <stop offset="1" stop-color="#A98218" stop-opacity="0.45"/>
                                 </linearGradient>
                                 <filter id="lexGlow" x="-40%" y="-40%" width="180%" height="180%">
                                     <feGaussianBlur stdDeviation="5" result="b"/>
@@ -545,38 +546,55 @@
                             </defs>
 
                             {{-- ground glow --}}
-                            <ellipse cx="160" cy="262" rx="100" ry="12" fill="rgba(200,169,107,0.15)" filter="url(#lexGlow)"/>
+                            <ellipse cx="160" cy="268" rx="116" ry="13" fill="rgba(200,169,107,0.16)" filter="url(#lexGlow)"/>
+                            <ellipse cx="160" cy="268" rx="62" ry="7" fill="rgba(240,217,138,0.18)"/>
 
                             {{-- finial --}}
-                            <rect x="157" y="38" width="6" height="26" rx="3" fill="url(#lexGoldV)"/>
-                            <circle cx="160" cy="32" r="7" fill="url(#lexGold)"/>
-                            <circle cx="160" cy="71" r="9" fill="url(#lexGold)"/>
-
-                            {{-- pillar --}}
-                            <rect x="150" y="78" width="20" height="122" rx="4" fill="url(#lexGoldV)"/>
-                            <rect x="144" y="90" width="32" height="5" rx="2.5" fill="rgba(232,213,164,0.55)"/>
-                            <rect x="144" y="118" width="32" height="4" rx="2" fill="rgba(232,213,164,0.4)"/>
-                            <rect x="144" y="146" width="32" height="4" rx="2" fill="rgba(232,213,164,0.4)"/>
-
-                            {{-- base --}}
-                            <path d="M126 200 h68 l-9 18 h-50 z" fill="url(#lexGoldV)"/>
-                            <rect x="108" y="218" width="104" height="9" rx="4" fill="url(#lexGold)"/>
-                            <rect x="122" y="227" width="76" height="6" rx="3" fill="rgba(168,135,75,0.5)"/>
+                            <rect x="157" y="86" width="6" height="18" rx="3" fill="url(#lexGoldV)"/>
+                            <circle cx="160" cy="80" r="8" fill="url(#lexGold)"/>
+                            <circle cx="157.5" cy="77.5" r="3" fill="rgba(240,217,138,0.75)"/>
 
                             {{-- beam --}}
-                            <line x1="52" y1="96" x2="268" y2="96" stroke="url(#lexGold)" stroke-width="9" stroke-linecap="round"/>
-                            <circle cx="52" cy="96" r="6" fill="url(#lexGoldV)"/>
-                            <circle cx="268" cy="96" r="6" fill="url(#lexGoldV)"/>
+                            <line x1="40" y1="104" x2="280" y2="104" stroke="url(#lexGold)" stroke-width="8" stroke-linecap="round"/>
+                            <line x1="40" y1="101" x2="280" y2="101" stroke="rgba(240,217,138,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+                            <circle cx="40" cy="104" r="6.5" fill="url(#lexGoldV)"/>
+                            <circle cx="280" cy="104" r="6.5" fill="url(#lexGoldV)"/>
+                            <circle cx="38.5" cy="102" r="2" fill="rgba(240,217,138,0.8)"/>
+                            <circle cx="278.5" cy="102" r="2" fill="rgba(240,217,138,0.8)"/>
+                            <circle cx="160" cy="104" r="7.5" fill="url(#lexGold)"/>
+                            <circle cx="158" cy="101.5" r="2.8" fill="rgba(240,217,138,0.7)"/>
 
-                            {{-- left chains + pan --}}
-                            <path d="M66 96 L66 118 M66 118 L40 134 M66 118 L92 134" stroke="url(#lexGold)" stroke-width="2.6" stroke-linecap="round"/>
-                            <path d="M24 132 L100 132 Q96 160 62 160 Q28 160 24 132 Z" fill="url(#lexPan)" stroke="url(#lexGold)" stroke-width="2.4"/>
-                            <path d="M30 132 Q62 150 94 132" stroke="rgba(232,213,164,0.5)" stroke-width="0.9" fill="none"/>
+                            {{-- pillar --}}
+                            <rect x="149" y="104" width="22" height="118" rx="4" fill="url(#lexGoldV)"/>
+                            <rect x="153" y="112" width="4" height="102" rx="2" fill="rgba(240,217,138,0.30)"/>
+                            <rect x="143" y="124" width="34" height="6" rx="3" fill="rgba(232,213,164,0.5)"/>
+                            <rect x="145" y="160" width="30" height="5" rx="2.5" fill="rgba(232,213,164,0.4)"/>
+                            <rect x="145" y="194" width="30" height="5" rx="2.5" fill="rgba(232,213,164,0.4)"/>
 
-                            {{-- right chains + pan --}}
-                            <path d="M254 96 L254 118 M254 118 L228 134 M254 118 L280 134" stroke="url(#lexGold)" stroke-width="2.6" stroke-linecap="round"/>
-                            <path d="M220 132 L296 132 Q292 160 258 160 Q224 160 220 132 Z" fill="url(#lexPan)" stroke="url(#lexGold)" stroke-width="2.4"/>
-                            <path d="M226 132 Q258 150 290 132" stroke="rgba(232,213,164,0.5)" stroke-width="0.9" fill="none"/>
+                            {{-- base --}}
+                            <path d="M134 222 L186 222 L198 240 L122 240 Z" fill="url(#lexGoldV)"/>
+                            <rect x="138" y="226" width="44" height="2" rx="1" fill="rgba(240,217,138,0.4)"/>
+                            <rect x="106" y="240" width="108" height="10" rx="5" fill="url(#lexGold)"/>
+                            <rect x="90" y="252" width="140" height="11" rx="5.5" fill="url(#lexGold)"/>
+                            <rect x="90" y="254" width="140" height="3" rx="1.5" fill="rgba(240,217,138,0.45)"/>
+
+                            {{-- left shackle + chains + pan --}}
+                            <line x1="64" y1="106" x2="64" y2="122" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
+                            <circle cx="64" cy="122" r="3.5" fill="url(#lexGold)"/>
+                            <path d="M64 122 L24 152 M64 122 L104 152 M64 122 L64 142" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
+                            <path d="M24 152 A40 9.5 0 0 1 104 152" stroke="rgba(232,213,164,0.65)" stroke-width="1.6" fill="none"/>
+                            <path d="M24 152 C28 176 40 188 64 188 C88 188 100 176 104 152 Z" fill="url(#lexPan)" stroke="url(#lexGold)" stroke-width="2.2"/>
+                            <path d="M24 152 A40 9.5 0 0 0 104 152" stroke="url(#lexGold)" stroke-width="2.4" fill="none"/>
+                            <path d="M31 158 Q64 174 97 158" stroke="rgba(240,217,138,0.35)" stroke-width="1" fill="none"/>
+
+                            {{-- right shackle + chains + pan --}}
+                            <line x1="256" y1="106" x2="256" y2="122" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
+                            <circle cx="256" cy="122" r="3.5" fill="url(#lexGold)"/>
+                            <path d="M256 122 L216 152 M256 122 L296 152 M256 122 L256 142" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
+                            <path d="M216 152 A40 9.5 0 0 1 296 152" stroke="rgba(232,213,164,0.65)" stroke-width="1.6" fill="none"/>
+                            <path d="M216 152 C220 176 232 188 256 188 C280 188 292 176 296 152 Z" fill="url(#lexPan)" stroke="url(#lexGold)" stroke-width="2.2"/>
+                            <path d="M216 152 A40 9.5 0 0 0 296 152" stroke="url(#lexGold)" stroke-width="2.4" fill="none"/>
+                            <path d="M223 158 Q256 174 289 158" stroke="rgba(240,217,138,0.35)" stroke-width="1" fill="none"/>
 
                             {{-- specks --}}
                             <circle cx="160" cy="192" r="2" fill="rgba(224,201,138,0.5)"/>
