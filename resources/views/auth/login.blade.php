@@ -285,37 +285,37 @@
             82% { transform: translateY(0.6px); }
         }
 
-        .judge-scene .gavel { transform: rotate(-40deg); transform-box: view-box; transform-origin: 356px 158px; }
-        .judge-scene.raise .gavel { animation: gavelRaise 0.32s cubic-bezier(0.16,1,0.3,1) forwards; }
-        @keyframes gavelRaise { from { transform: rotate(-40deg); } to { transform: rotate(-52deg); } }
+        .judge-scene .gavel { transform: translateY(-24px); transform-box: view-box; }
+        .judge-scene.raise .gavel { animation: gavelRaise 0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
+        @keyframes gavelRaise { from { transform: translateY(-24px); } to { transform: translateY(-36px); } }
         .judge-scene.strike .gavel { animation: gavelHit 0.5s linear forwards; }
         @keyframes gavelHit {
-            0% { transform: rotate(-52deg); }
-            20% { transform: rotate(-44deg); }
-            40% { transform: rotate(-30deg); }
-            55% { transform: rotate(-12deg); }
-            62% { transform: rotate(0deg) translateY(3px); }
-            70% { transform: rotate(6deg) translateY(0); }
-            80% { transform: rotate(-2deg) translateY(1px); }
-            90% { transform: rotate(0.5deg) translateY(0.4px); }
-            100% { transform: rotate(0deg) translateY(0); }
+            0% { transform: translateY(-36px); }
+            18% { transform: translateY(-28px); }
+            38% { transform: translateY(-14px); }
+            54% { transform: translateY(1px); }
+            62% { transform: translateY(4px); }
+            70% { transform: translateY(-3px); }
+            80% { transform: translateY(0); }
+            90% { transform: translateY(0.7px); }
+            100% { transform: translateY(0); }
         }
 
-        .judge-scene .scales { transform: translate(30px,1.3px) scale(0.9); transform-origin: 174px 95px; transform-box: view-box; }
+        .judge-scene .scales { transform: translate(20px,1.3px) scale(0.85); transform-origin: 156px 90px; transform-box: view-box; }
         .judge-scene.strike .scales { animation: scalesNudge 0.9s ease-out 0.04s; }
         @keyframes scalesNudge {
-            0%,100% { transform: translate(30px,1.3px) scale(0.9) rotate(0deg); }
-            30% { transform: translate(30px,1.3px) scale(0.9) rotate(-1.1deg); }
-            50% { transform: translate(30px,1.3px) scale(0.9) rotate(0.8deg); }
-            70% { transform: translate(30px,1.3px) scale(0.9) rotate(-0.45deg); }
-            88% { transform: translate(30px,1.3px) scale(0.9) rotate(0.2deg); }
+            0%,100% { transform: translate(20px,1.3px) scale(0.85) rotate(0deg); }
+            30% { transform: translate(20px,1.3px) scale(0.85) rotate(-1.1deg); }
+            50% { transform: translate(20px,1.3px) scale(0.85) rotate(0.8deg); }
+            70% { transform: translate(20px,1.3px) scale(0.85) rotate(-0.45deg); }
+            88% { transform: translate(20px,1.3px) scale(0.85) rotate(0.2deg); }
         }
 
-        .judge-scene .strike-flash { opacity: 0; transform: scale(0.4); transform-box: view-box; transform-origin: 356px 242px; }
+        .judge-scene .strike-flash { opacity: 0; transform: scale(0.4); transform-box: view-box; transform-origin: 288px 241px; }
         .judge-scene.strike .strike-flash { animation: flashBurst 0.45s ease-out 0.3s forwards; }
         @keyframes flashBurst { 0% { opacity: 1; transform: scale(0.4); } 100% { opacity: 0; transform: scale(2.6); } }
 
-        .judge-scene .strike-ripple { opacity: 0; transform: scale(0.3); transform-box: view-box; transform-origin: 356px 242px; }
+        .judge-scene .strike-ripple { opacity: 0; transform: scale(0.3); transform-box: view-box; transform-origin: 288px 241px; }
         .judge-scene.strike .strike-ripple { animation: rippleOut 0.75s ease-out 0.3s forwards; }
         @keyframes rippleOut { 0% { opacity: 0.9; transform: scale(0.3); } 100% { opacity: 0; transform: scale(2.9); } }
 
@@ -672,7 +672,7 @@
                     <rect x="40" y="238" width="340" height="14" rx="5" fill="url(#judgeWood)"/>
                     <line x1="52" y1="243" x2="368" y2="243" stroke="rgba(240,217,138,0.06)" stroke-width="1"/>
                     <line x1="58" y1="247" x2="362" y2="247" stroke="rgba(240,217,138,0.05)" stroke-width="1"/>
-                    <rect x="322" y="240" width="36" height="4" rx="2" fill="url(#judgeGold)" opacity="0.85"/>
+                    <rect x="270" y="240" width="36" height="4" rx="2" fill="url(#judgeGold)" opacity="0.85"/>
                     <rect x="36" y="252" width="348" height="16" rx="4" fill="#0D111B"/>
                     <line x1="40" y1="253" x2="380" y2="253" stroke="rgba(200,169,107,0.35)" stroke-width="1"/>
                     <rect x="56" y="268" width="14" height="26" rx="2" fill="#0B1019"/>
@@ -720,17 +720,17 @@
                     <path d="M223 158 Q256 174 289 158" stroke="rgba(240,217,138,0.35)" stroke-width="1" fill="none"/>
                 </g>
 
-                {{-- gavel (raised, ready to strike) --}}
+                {{-- gavel (raised, ready to strike straight down) --}}
                 <g class="gavel">
-                    <rect x="353" y="160" width="6" height="66" rx="3" fill="url(#judgeGold)"/>
-                    <rect x="353" y="160" width="6" height="14" rx="3" fill="rgba(255,248,228,0.55)"/>
-                    <rect x="333" y="224" width="46" height="14" rx="4" fill="url(#judgeGold)"/>
-                    <rect x="333" y="224" width="46" height="4" rx="2" fill="rgba(255,248,228,0.5)"/>
+                    <rect x="285" y="116" width="6" height="108" rx="3" fill="url(#judgeGold)"/>
+                    <rect x="285" y="116" width="6" height="14" rx="3" fill="rgba(255,248,228,0.55)"/>
+                    <rect x="262" y="224" width="52" height="16" rx="4" fill="url(#judgeGold)"/>
+                    <rect x="262" y="224" width="52" height="4" rx="2" fill="rgba(255,248,228,0.5)"/>
                 </g>
 
                 {{-- impact point --}}
-                <circle class="strike-flash" cx="356" cy="242" r="6" fill="none" stroke="#F0D98A" stroke-width="3"/>
-                <circle class="strike-ripple" cx="356" cy="242" r="6" fill="none" stroke="rgba(224,201,138,0.8)" stroke-width="2"/>
+                <circle class="strike-flash" cx="288" cy="241" r="6" fill="none" stroke="#F0D98A" stroke-width="3"/>
+                <circle class="strike-ripple" cx="288" cy="241" r="6" fill="none" stroke="rgba(224,201,138,0.8)" stroke-width="2"/>
 
                 {{-- base glow under table --}}
                 <ellipse cx="210" cy="298" rx="170" ry="10" fill="rgba(200,169,107,0.10)" filter="url(#judgeSoft)"/>
@@ -905,8 +905,8 @@
                 const svgEl = judgeScene.querySelector('svg');
                 if (!svgEl) return;
                 const r = svgEl.getBoundingClientRect();
-                goldBurst.style.left = (r.left + (r.width * 356) / 420) + 'px';
-                goldBurst.style.top = (r.top + (r.height * 242) / 320) + 'px';
+                goldBurst.style.left = (r.left + (r.width * 288) / 420) + 'px';
+                goldBurst.style.top = (r.top + (r.height * 241) / 320) + 'px';
             }
 
             function playSuccess(navigateTo) {
