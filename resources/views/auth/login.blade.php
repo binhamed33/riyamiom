@@ -268,10 +268,29 @@
         .judge-scene { position: relative; opacity: 0; transform: scale(0.95); filter: blur(4px);
             transition: opacity 0.65s ease, transform 0.65s cubic-bezier(0.16,1,0.3,1), filter 0.65s ease; }
         .judge-scene.show { opacity: 1; transform: scale(1); filter: blur(0); }
+        .judge-scene.strike { animation: camShake 0.13s linear; }
+        @keyframes camShake {
+            0%,100% { transform: translate(0,0); }
+            25% { transform: translate(-3px,2px); }
+            50% { transform: translate(3px,-1px); }
+            75% { transform: translate(-2px,-2px); }
+        }
 
-        .judge-scene .table { transform-box: view-box; }
+        .judge-scene .gavel { transform: rotate(-34deg); transform-box: view-box; transform-origin: 329px 240px; }
+        .judge-scene.strike .gavel { animation: gavelHit 0.26s cubic-bezier(0.3,1.3,0.4,1) forwards; }
+        @keyframes gavelHit {
+            0% { transform: rotate(-34deg); }
+            70% { transform: rotate(4deg) translateY(6px); }
+            100% { transform: rotate(2deg) translateY(10px); }
+        }
 
-        .judge-scene .scales { transform: translate(20px,14.5px) scale(0.85); transform-origin: 156px 103px; transform-box: view-box; }
+        .judge-scene .strike-flash { opacity: 0; transform: scale(0.4); transform-box: view-box; transform-origin: 334px 242px; }
+        .judge-scene.strike .strike-flash { animation: flashBurst 0.45s ease-out forwards; }
+        @keyframes flashBurst { 0% { opacity: 1; transform: scale(0.4); } 100% { opacity: 0; transform: scale(2.6); } }
+
+        .judge-scene .strike-ripple { opacity: 0; transform: scale(0.3); transform-box: view-box; transform-origin: 334px 242px; }
+        .judge-scene.strike .strike-ripple { animation: rippleOut 0.75s ease-out forwards; }
+        @keyframes rippleOut { 0% { opacity: 0.9; transform: scale(0.3); } 100% { opacity: 0; transform: scale(2.9); } }
 
         .success-msg { opacity: 0; text-align: center; padding: 0 1.5rem; }
         .success-msg.show { opacity: 1; transition: opacity 0.5s ease; }
@@ -281,11 +300,11 @@
         .success-msg.show .msg2 { animation: msgIn 0.55s cubic-bezier(0.16,1,0.3,1) 0.28s forwards; }
         @keyframes msgIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 
-        .gold-burst { position: fixed; width: 90px; height: 90px; border-radius: 50%; pointer-events: none;
-            opacity: 0; transform: scale(0); margin-left: -45px; margin-top: -45px; will-change: transform, opacity;
-            background: radial-gradient(circle, rgba(240,217,138,0.95) 0%, rgba(212,175,55,0.55) 35%, rgba(200,169,107,0.25) 60%, transparent 78%); }
-        .gold-burst.go { animation: goldBurstOut 0.7s cubic-bezier(0.4,0,0.6,1) 0.3s forwards; }
-        @keyframes goldBurstOut { 0% { opacity: 0.95; transform: scale(0.15); } 60% { opacity: 1; } 100% { opacity: 0; transform: scale(55); } }
+        .gold-wipe { position: absolute; inset: -60%; pointer-events: none; opacity: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(232,213,164,0.85) 0%, rgba(200,169,107,0.35) 40%, transparent 72%);
+            transform: scale(0.2); }
+        .gold-wipe.go { animation: goldWipeOut 0.6s ease-in forwards; }
+        @keyframes goldWipeOut { 0% { opacity: 0; transform: scale(0.2); } 55% { opacity: 1; } 100% { opacity: 0; transform: scale(3); } }
 
         /* ---- error state ---- */
         .panel-shake { animation: panelNudge 0.5s cubic-bezier(0.36,0.07,0.19,0.97); }
@@ -608,10 +627,6 @@
                         <stop offset="0" stop-color="#F0D98A"/>
                         <stop offset="1" stop-color="#A98218"/>
                     </linearGradient>
-                    <linearGradient id="judgeWood" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" stop-color="#1B2130"/>
-                        <stop offset="1" stop-color="#0D111B"/>
-                    </linearGradient>
                     <filter id="judgeSoft" x="-50%" y="-50%" width="200%" height="200%">
                         <feGaussianBlur stdDeviation="4" result="b"/>
                         <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
@@ -621,61 +636,36 @@
                 {{-- halo --}}
                 <circle cx="210" cy="150" r="170" fill="url(#judgeHalo)"/>
 
-                {{-- table (dark wood) --}}
-                <g class="table">
-                    <rect x="40" y="238" width="340" height="14" rx="5" fill="url(#judgeWood)"/>
-                    <line x1="52" y1="243" x2="368" y2="243" stroke="rgba(240,217,138,0.06)" stroke-width="1"/>
-                    <line x1="58" y1="247" x2="362" y2="247" stroke="rgba(240,217,138,0.05)" stroke-width="1"/>
-                    <rect x="192" y="238" width="36" height="4" rx="2" fill="url(#judgeGold)" opacity="0.85"/>
-                    <rect x="36" y="252" width="348" height="16" rx="4" fill="#0D111B"/>
-                    <line x1="40" y1="253" x2="380" y2="253" stroke="rgba(200,169,107,0.35)" stroke-width="1"/>
-                    <rect x="56" y="268" width="14" height="26" rx="2" fill="#0B1019"/>
-                    <rect x="350" y="268" width="14" height="26" rx="2" fill="#0B1019"/>
+                {{-- bench (منصة القضاء) --}}
+                <rect x="74" y="224" width="272" height="9" rx="4" fill="url(#judgeGold)" opacity="0.65"/>
+                <rect x="66" y="233" width="288" height="16" rx="3" fill="#121826"/>
+                <rect x="66" y="249" width="288" height="10" rx="3" fill="#0D111B"/>
+                <line x1="74" y1="228" x2="346" y2="228" stroke="rgba(224,201,138,0.5)" stroke-width="1"/>
+                <circle cx="210" cy="248" r="4.5" fill="rgba(224,201,138,0.45)"/>
+                <circle cx="210" cy="248" r="10.5" fill="none" stroke="rgba(200,169,107,0.25)"/>
+
+                {{-- judge silhouette: shoulder + head --}}
+                <path d="M150 176 Q150 150 178 146 Q196 144 210 144 Q224 144 242 146 Q270 150 270 176 L272 220 L148 220 Z" fill="#080B12"/>
+                <path d="M146 176 L274 176 L272 222 L148 222 Z" fill="#182033"/>
+                <path d="M196 146 Q205 152 210 152 Q215 152 224 146" stroke="rgba(224,201,138,0.35)" stroke-width="2" fill="none"/>
+                <ellipse cx="210" cy="132" rx="27" ry="29" fill="#080B12"/>
+                <ellipse cx="210" cy="132" rx="27" ry="29" fill="none" stroke="rgba(224,201,138,0.18)" stroke-width="1"/>
+                <path d="M196 128 Q210 136 224 128" stroke="rgba(224,201,138,0.25)" stroke-width="1.5" fill="none"/>
+                <rect x="204" y="152" width="12" height="10" fill="#080B12"/>
+
+                {{-- hammer (raised) --}}
+                <g class="gavel">
+                    <rect x="326.5" y="172" width="5.5" height="62" rx="2.7" fill="url(#judgeGold)"/>
+                    <rect x="307" y="164" width="46" height="12" rx="3" fill="url(#judgeGold)"/>
+                    <rect x="307" y="164" width="46" height="4" rx="2" fill="rgba(255,248,228,0.5)"/>
                 </g>
 
-                {{-- scales of justice (no figure) --}}
-                <g class="scales">
-                    <ellipse cx="160" cy="268" rx="116" ry="13" fill="rgba(200,169,107,0.16)" filter="url(#lexGlow)"/>
-                    <ellipse cx="160" cy="268" rx="62" ry="7" fill="rgba(240,217,138,0.18)"/>
-                    <rect x="157" y="86" width="6" height="18" rx="3" fill="url(#lexGoldV)"/>
-                    <circle cx="160" cy="80" r="8" fill="url(#lexGold)"/>
-                    <circle cx="157.5" cy="77.5" r="3" fill="rgba(240,217,138,0.75)"/>
-                    <line x1="40" y1="104" x2="280" y2="104" stroke="url(#lexGold)" stroke-width="8" stroke-linecap="round"/>
-                    <line x1="40" y1="101" x2="280" y2="101" stroke="rgba(240,217,138,0.5)" stroke-width="1.5" stroke-linecap="round"/>
-                    <circle cx="40" cy="104" r="6.5" fill="url(#lexGoldV)"/>
-                    <circle cx="280" cy="104" r="6.5" fill="url(#lexGoldV)"/>
-                    <circle cx="38.5" cy="102" r="2" fill="rgba(240,217,138,0.8)"/>
-                    <circle cx="278.5" cy="102" r="2" fill="rgba(240,217,138,0.8)"/>
-                    <circle cx="160" cy="104" r="7.5" fill="url(#lexGold)"/>
-                    <circle cx="158" cy="101.5" r="2.8" fill="rgba(240,217,138,0.7)"/>
-                    <rect x="149" y="104" width="22" height="118" rx="4" fill="url(#lexGoldV)"/>
-                    <rect x="153" y="112" width="4" height="102" rx="2" fill="rgba(240,217,138,0.30)"/>
-                    <rect x="143" y="124" width="34" height="6" rx="3" fill="rgba(232,213,164,0.5)"/>
-                    <rect x="145" y="160" width="30" height="5" rx="2.5" fill="rgba(232,213,164,0.4)"/>
-                    <rect x="145" y="194" width="30" height="5" rx="2.5" fill="rgba(232,213,164,0.4)"/>
-                    <path d="M134 222 L186 222 L198 240 L122 240 Z" fill="url(#lexGoldV)"/>
-                    <rect x="138" y="226" width="44" height="2" rx="1" fill="rgba(240,217,138,0.4)"/>
-                    <rect x="106" y="240" width="108" height="10" rx="5" fill="url(#lexGold)"/>
-                    <rect x="90" y="252" width="140" height="11" rx="5.5" fill="url(#lexGold)"/>
-                    <rect x="90" y="254" width="140" height="3" rx="1.5" fill="rgba(240,217,138,0.45)"/>
-                    <line x1="64" y1="106" x2="64" y2="122" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
-                    <circle cx="64" cy="122" r="3.5" fill="url(#lexGold)"/>
-                    <path d="M64 122 L24 152 M64 122 L104 152 M64 122 L64 142" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
-                    <path d="M24 152 A40 9.5 0 0 1 104 152" stroke="rgba(232,213,164,0.65)" stroke-width="1.6" fill="none"/>
-                    <path d="M24 152 C28 176 40 188 64 188 C88 188 100 176 104 152 Z" fill="url(#lexPan)" stroke="url(#lexGold)" stroke-width="2.2"/>
-                    <path d="M24 152 A40 9.5 0 0 0 104 152" stroke="url(#lexGold)" stroke-width="2.4" fill="none"/>
-                    <path d="M31 158 Q64 174 97 158" stroke="rgba(240,217,138,0.35)" stroke-width="1" fill="none"/>
-                    <line x1="256" y1="106" x2="256" y2="122" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
-                    <circle cx="256" cy="122" r="3.5" fill="url(#lexGold)"/>
-                    <path d="M256 122 L216 152 M256 122 L296 152 M256 122 L256 142" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
-                    <path d="M216 152 A40 9.5 0 0 1 296 152" stroke="rgba(232,213,164,0.65)" stroke-width="1.6" fill="none"/>
-                    <path d="M216 152 C220 176 232 188 256 188 C280 188 292 176 296 152 Z" fill="url(#lexPan)" stroke="url(#lexGold)" stroke-width="2.2"/>
-                    <path d="M216 152 A40 9.5 0 0 0 296 152" stroke="url(#lexGold)" stroke-width="2.4" fill="none"/>
-                    <path d="M223 158 Q256 174 289 158" stroke="rgba(240,217,138,0.35)" stroke-width="1" fill="none"/>
-                </g>
+                {{-- impact point --}}
+                <circle class="strike-flash" cx="334" cy="242" r="6" fill="none" stroke="#F0D98A" stroke-width="3"/>
+                <circle class="strike-ripple" cx="334" cy="242" r="6" fill="none" stroke="rgba(224,201,138,0.8)" stroke-width="2"/>
 
-                {{-- base glow under table --}}
-                <ellipse cx="210" cy="298" rx="170" ry="10" fill="rgba(200,169,107,0.10)" filter="url(#judgeSoft)"/>
+                {{-- base glow under bench --}}
+                <ellipse cx="210" cy="272" rx="150" ry="10" fill="rgba(200,169,107,0.10)" filter="url(#judgeSoft)"/>
             </svg>
         </div>
 
@@ -684,7 +674,7 @@
             <p class="msg2 font-editorial text-lg sm:text-xl mt-3" style="color:var(--ivory);">مرحبًا بك في منظومتك القانونية</p>
         </div>
 
-        <div class="gold-burst" id="goldBurst" aria-hidden="true"></div>
+        <div class="gold-wipe" id="goldWipe" aria-hidden="true"></div>
     </div>
 
     {{-- ===== FOOTER ===== --}}
@@ -692,6 +682,15 @@
         <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 text-xs" style="color:rgba(146,153,165,0.65);">
             <p class="flex items-center gap-2"><span style="color:var(--gold);">◆</span> {{ $officeName }} — © 2026 جميع الحقوق محفوظة</p>
             <div class="flex items-center gap-5">
+                <button type="button" id="soundToggle" class="link-soft font-medium flex items-center gap-1.5" aria-pressed="false" aria-label="{{ $isRtl ? 'تفعيل صوت ضربة المطرقة' : 'Enable hammer sound' }}" title="{{ $isRtl ? 'صوت ضربة المطرقة' : 'Hammer strike sound' }}">
+                    <svg class="w-4 h-4" id="soundOnIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="display:none;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15.54 8.46a5 5 0 010 7.07"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.07 4.93a10 10 0 010 14.14"/>
+                    </svg>
+                    <svg class="w-4 h-4" id="soundOffIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 9l-6 6M16 9l6 6"/>
+                    </svg>
+                    <span id="soundLabel">{{ $isRtl ? 'الصوت' : 'Sound' }}</span>
+                </button>
                 <a href="{{ route('language.switch', $isRtl ? 'en' : 'ar') }}" class="link-soft font-medium" aria-label="{{ $isRtl ? 'Switch to English' : 'التبديل إلى العربية' }}">
                     {{ $isRtl ? 'English' : 'العربية' }}
                 </a>
@@ -773,32 +772,71 @@
             const successOverlay = document.getElementById('successOverlay');
             const judgeScene = document.getElementById('judgeScene');
             const successMsg = document.getElementById('successMsg');
-            const goldBurst = document.getElementById('goldBurst');
+            const goldWipe = document.getElementById('goldWipe');
             const authLoadGlow = document.getElementById('authLoadGlow');
 
-            /* ---------- success cinematic ---------- */
-            function positionGoldBurst() {
-                const svgEl = judgeScene.querySelector('svg');
-                if (!svgEl) return;
-                const r = svgEl.getBoundingClientRect();
-                goldBurst.style.left = (r.left + (r.width * 156) / 420) + 'px';
-                goldBurst.style.top = (r.top + (r.height * 103) / 320) + 'px';
+            /* ---------- sound (Web Audio, OFF by default) ---------- */
+            const soundToggle = document.getElementById('soundToggle');
+            let soundOn = localStorage.getItem('lexpro_sound_hammer') === '1';
+            let audioCtx = null;
+            function refreshSoundUI() {
+                if (!soundToggle) return;
+                document.getElementById('soundOnIcon').style.display = soundOn ? 'block' : 'none';
+                document.getElementById('soundOffIcon').style.display = soundOn ? 'none' : 'block';
+                soundToggle.setAttribute('aria-pressed', String(soundOn));
+            }
+            refreshSoundUI();
+            if (soundToggle) soundToggle.addEventListener('click', function () {
+                soundOn = !soundOn;
+                localStorage.setItem('lexpro_sound_hammer', soundOn ? '1' : '0');
+                refreshSoundUI();
+            });
+            function playHammerSound() {
+                if (!soundOn || reduced) return;
+                try {
+                    const Ctx = window.AudioContext || window.webkitAudioContext;
+                    if (!Ctx) return;
+                    audioCtx = audioCtx || new Ctx();
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    const t = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(220, t);
+                    osc.frequency.exponentialRampToValueAtTime(70, t + 0.12);
+                    gain.gain.setValueAtTime(0.0001, t);
+                    gain.gain.exponentialRampToValueAtTime(0.3, t + 0.005);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(t); osc.stop(t + 0.2);
+                    const thump = audioCtx.createOscillator();
+                    const tg = audioCtx.createGain();
+                    thump.type = 'triangle';
+                    thump.frequency.setValueAtTime(120, t + 0.02);
+                    thump.frequency.exponentialRampToValueAtTime(50, t + 0.15);
+                    tg.gain.setValueAtTime(0.0001, t + 0.02);
+                    tg.gain.exponentialRampToValueAtTime(0.18, t + 0.03);
+                    tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+                    thump.connect(tg); tg.connect(audioCtx.destination);
+                    thump.start(t + 0.02); thump.stop(t + 0.22);
+                } catch (e) { /* sound unavailable — flow continues */ }
             }
 
+            /* ---------- success cinematic ---------- */
             function playSuccess(navigateTo) {
                 if (reduced) { navigateTo(); return; }
                 successOverlay.setAttribute('aria-hidden', 'false');
                 successOverlay.classList.add('show');
-                goldBurst.classList.remove('go');
+                goldWipe.classList.remove('go');
                 successMsg.classList.remove('show');
-                judgeScene.classList.remove('show');
-                setTimeout(function () { judgeScene.classList.add('show'); }, 120);
-                setTimeout(function () { successMsg.classList.add('show'); }, 700);
+                setTimeout(function () { judgeScene.classList.add('show'); }, 150);
                 setTimeout(function () {
-                    positionGoldBurst();
-                    goldBurst.classList.add('go');
-                }, 1000);
-                setTimeout(function () { navigateTo(); }, 1450);
+                    judgeScene.classList.add('strike');
+                    playHammerSound();
+                }, 1100);
+                setTimeout(function () { successMsg.classList.add('show'); }, 1550);
+                setTimeout(function () { goldWipe.classList.add('go'); }, 2150);
+                setTimeout(function () { navigateTo(); }, 2750);
             }
 
             /* ---------- error presentation ---------- */
