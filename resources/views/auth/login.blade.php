@@ -285,20 +285,21 @@
             82% { transform: translateY(0.6px); }
         }
 
-        .judge-scene .gavel { transform: translateY(-24px); transform-box: view-box; }
+        .judge-scene .gavel { transform: rotate(36deg); transform-box: view-box; transform-origin: 288px 140px; }
         .judge-scene.raise .gavel { animation: gavelRaise 0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
-        @keyframes gavelRaise { from { transform: translateY(-24px); } to { transform: translateY(-36px); } }
+        @keyframes gavelRaise { from { transform: rotate(36deg); } to { transform: rotate(42deg); } }
         .judge-scene.strike .gavel { animation: gavelHit 0.5s linear forwards; }
         @keyframes gavelHit {
-            0% { transform: translateY(-36px); }
-            18% { transform: translateY(-28px); }
-            38% { transform: translateY(-14px); }
-            54% { transform: translateY(1px); }
-            62% { transform: translateY(4px); }
-            70% { transform: translateY(-3px); }
-            80% { transform: translateY(0); }
-            90% { transform: translateY(0.7px); }
-            100% { transform: translateY(0); }
+            0% { transform: rotate(42deg); }
+            15% { transform: rotate(36deg); }
+            30% { transform: rotate(24deg); }
+            45% { transform: rotate(10deg); }
+            55% { transform: rotate(2deg); }
+            62% { transform: rotate(-2deg); }
+            70% { transform: rotate(2.5deg); }
+            80% { transform: rotate(0deg); }
+            90% { transform: rotate(0.5deg); }
+            100% { transform: rotate(0deg); }
         }
 
         .judge-scene .scales { transform: translate(20px,1.3px) scale(0.85); transform-origin: 156px 90px; transform-box: view-box; }
@@ -720,12 +721,12 @@
                     <path d="M223 158 Q256 174 289 158" stroke="rgba(240,217,138,0.35)" stroke-width="1" fill="none"/>
                 </g>
 
-                {{-- gavel (raised, ready to strike straight down) --}}
+                {{-- gavel (hanging from top, swings in from the side like hammering) --}}
                 <g class="gavel">
-                    <rect x="285" y="116" width="6" height="108" rx="3" fill="url(#judgeGold)"/>
-                    <rect x="285" y="116" width="6" height="14" rx="3" fill="rgba(255,248,228,0.55)"/>
-                    <rect x="262" y="224" width="52" height="16" rx="4" fill="url(#judgeGold)"/>
-                    <rect x="262" y="224" width="52" height="4" rx="2" fill="rgba(255,248,228,0.5)"/>
+                    <rect x="285" y="140" width="6" height="86" rx="3" fill="url(#judgeGold)"/>
+                    <rect x="285" y="140" width="6" height="14" rx="3" fill="rgba(255,248,228,0.55)"/>
+                    <rect x="263" y="226" width="50" height="14" rx="4" fill="url(#judgeGold)"/>
+                    <rect x="263" y="226" width="50" height="4" rx="2" fill="rgba(255,248,228,0.5)"/>
                 </g>
 
                 {{-- impact point --}}
