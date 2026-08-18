@@ -36,7 +36,7 @@
             --gold: #E5C158;
             --gold-soft: #F0D98A;
             --gold-dim: #A98218;
-            --ivory: #121826;
+            --ivory: #FFFFFF;
             --muted: #94A3B8;
         }
 
@@ -179,7 +179,7 @@
             font-size: 0.95rem;
             transition: border-color 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s cubic-bezier(0.16,1,0.3,1), background 0.45s;
             outline: none; }
-        .field::placeholder { color: rgba(146,153,165,0.55); }
+        .field::placeholder { color: rgba(255,255,255,0.75); }
         .field:hover { border-color: rgba(146,153,165,0.38); }
         .field:focus, .field-wrap:focus-within .field {
             border-color: rgba(224,201,138,0.55);
