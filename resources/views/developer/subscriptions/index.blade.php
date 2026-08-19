@@ -3,6 +3,20 @@
 @section('title', 'إدارة الاشتراكات')
 
 @section('content')
+<style nonce="{{ $cspNonce }}">
+    .duration-option input:checked + span {
+        background-color: #D4AF37;
+        border-color: #D4AF37;
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(212, 175, 55, 0.25);
+    }
+    .duration-option-green input:checked + span {
+        background-color: #10B981;
+        border-color: #10B981;
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+    }
+</style>
 <div class="space-y-6" dir="rtl">
 
     {{-- Header --}}
@@ -244,9 +258,9 @@
                     @csrf
                     <div class="grid grid-cols-5 gap-2">
                         @foreach(\App\Models\Subscription::DURATION_OPTIONS as $d)
-                            <label class="cursor-pointer">
-                                <input type="radio" name="duration" value="{{ $d }}" {{ $d === 1 ? 'checked' : '' }} class="peer sr-only" required>
-                                <span class="block text-center text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-2.5 peer-checked:bg-gold peer-checked:text-white peer-checked:border-gold transition-colors">{{ \App\Services\SubscriptionService::durationLabel($d) }}</span>
+                            <label class="cursor-pointer duration-option">
+                                <input type="radio" name="duration" value="{{ $d }}" {{ $d === 1 ? 'checked' : '' }} class="sr-only" required>
+                                <span class="block text-center text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-2.5 transition-colors">{{ \App\Services\SubscriptionService::durationLabel($d) }}</span>
                             </label>
                         @endforeach
                     </div>
@@ -267,9 +281,9 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">المدة (إعادة حساب تاريخ الانتهاء من البداية)</label>
                         <div class="grid grid-cols-5 gap-2">
                             @foreach(\App\Models\Subscription::DURATION_OPTIONS as $d)
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="duration" value="{{ $d }}" {{ $s->plan_duration_months === $d ? 'checked' : '' }} class="peer sr-only">
-                                    <span class="block text-center text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-2.5 peer-checked:bg-gold peer-checked:text-white peer-checked:border-gold transition-colors">{{ $d }} شهر</span>
+                                <label class="cursor-pointer duration-option">
+                                    <input type="radio" name="duration" value="{{ $d }}" {{ $s->plan_duration_months === $d ? 'checked' : '' }} class="sr-only">
+                                    <span class="block text-center text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-2.5 transition-colors">{{ $d }} شهر</span>
                                 </label>
                             @endforeach
                         </div>
@@ -296,9 +310,9 @@
                         @csrf
                         <div class="grid grid-cols-5 gap-2">
                             @foreach(\App\Models\Subscription::DURATION_OPTIONS as $d)
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="duration" value="{{ $d }}" {{ $d === 1 ? 'checked' : '' }} class="peer sr-only" required>
-                                    <span class="block text-center text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-2.5 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 transition-colors">{{ $d }} شهر</span>
+                                <label class="cursor-pointer duration-option-green">
+                                    <input type="radio" name="duration" value="{{ $d }}" {{ $d === 1 ? 'checked' : '' }} class="sr-only" required>
+                                    <span class="block text-center text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-2.5 transition-colors">{{ $d }} شهر</span>
                                 </label>
                             @endforeach
                         </div>

@@ -3,6 +3,14 @@
 @section('title', 'إنشاء اشتراك')
 
 @section('content')
+<style nonce="{{ $cspNonce }}">
+    .duration-option input:checked + span {
+        background-color: #D4AF37;
+        border-color: #D4AF37;
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(212, 175, 55, 0.25);
+    }
+</style>
 <div class="max-w-2xl mx-auto space-y-6" dir="rtl">
 
     <div class="flex items-center justify-between">
@@ -50,9 +58,9 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">مدة الاشتراك <span class="text-red-500">*</span></label>
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 @foreach($durations as $d)
-                    <label class="cursor-pointer">
-                        <input type="radio" name="duration" value="{{ $d }}" {{ old('duration', 3) == $d ? 'checked' : '' }} class="peer sr-only" required>
-                        <span class="block text-center text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-3 peer-checked:bg-gold peer-checked:text-white peer-checked:border-gold transition-colors">
+                    <label class="cursor-pointer duration-option">
+                        <input type="radio" name="duration" value="{{ $d }}" {{ old('duration', 3) == $d ? 'checked' : '' }} class="sr-only" required>
+                        <span class="block text-center text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-3 transition-colors duration-150">
                             {{ \App\Services\SubscriptionService::durationLabel($d) }}
                         </span>
                     </label>
