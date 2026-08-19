@@ -70,31 +70,63 @@ class GeminiService
         ]);
     }
 
+    protected ?int $lastStatus = null;
+
     protected function generate(array $payload): ?string
     {
         if (!$this->isConfigured()) {
             return null;
         }
 
+        $models = array_values(array_unique(array_filter([
+            $this->model,
+            ...config('services.gemini.fallback_models', []),
+        ])));
+
+        $lastTransientError = null;
+        foreach ($models as $model) {
+            try {
+                return $this->callModel($model, $payload);
+            } catch (\RuntimeException $e) {
+                $isTransient = in_array($this->lastStatus, [429, 503], true);
+                if (!$isTransient) {
+                    throw $e;
+                }
+                $lastTransientError = $e;
+            }
+        }
+
+        $tried = implode(', ', $models);
+        throw $lastTransientError
+            ?? new \RuntimeException('Gemini API error — tried models: ' . $tried);
+    }
+
+    protected function callModel(string $model, array $payload): string
+    {
         try {
             $response = Http::timeout(120)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                     'X-goog-api-key' => $this->apiKey,
                 ])
-                ->post('https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . ':generateContent', array_merge($payload, [
+                ->post('https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent', array_merge($payload, [
                     'generationConfig' => [
                         'temperature' => 0.4,
                         'maxOutputTokens' => 8192,
                     ],
                 ]));
 
+            $this->lastStatus = $response->status();
+
             if (!$response->successful()) {
                 $status = $response->status();
                 $errorBody = $response->body();
-                Log::error('Gemini API error: ' . $status . ' - ' . $errorBody);
+                Log::error('Gemini API error (' . $model . '): ' . $status . ' - ' . $errorBody);
                 if ($status === 429) {
                     throw new \RuntimeException('تم تجاوز الحصة المجانية من خدمة Gemini أو أن مفتاح API غير صالح. يرجى إنشاء مفتاح جديد من https://aistudio.google.com/apikey ثم تحديث GEMINI_API_KEY في ملف .env');
+                }
+                if ($status === 503) {
+                    throw new \RuntimeException('النموذج ' . $model . ' مزدحم حاليًا من خدمة Gemini. سيتم تجربة نموذج احتياطي تلقائيًا، وإن استمرت المشكلة حاول لاحقًا.');
                 }
                 throw new \RuntimeException('Gemini API responded with status ' . $status . ': ' . $errorBody);
             }
@@ -110,7 +142,7 @@ class GeminiService
         } catch (\RuntimeException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            Log::error('Gemini API exception: ' . $e->getMessage());
+            Log::error('Gemini API exception (' . $model . '): ' . $e->getMessage());
             throw new \RuntimeException('Gemini connection error: ' . $e->getMessage());
         }
     }
