@@ -15,7 +15,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@300;400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <script nonce="{{ $cspNonce }}" src="https://cdn.tailwindcss.com"></script>
     <script nonce="{{ $cspNonce }}">
@@ -144,28 +144,6 @@
             opacity: 0; animation: sealSpin 46s linear infinite, fadeIn 2.4s ease 1.2s forwards; }
         @keyframes sealSpin { to { transform: rotate(360deg); } }
         .seal-rotor svg { width: 100%; height: 100%; }
-
-        .article-marks { position: absolute; bottom: 14%; inset-inline-end: 5.5%;
-            display: flex; flex-direction: column; align-items: flex-start; gap: 0.9rem;
-            font-family: 'IBM Plex Sans Arabic', 'Noto Kufi Arabic', sans-serif;
-            font-weight: 300; text-align: right; line-height: 1.1; direction: rtl;
-            user-select: none; pointer-events: none;
-            opacity: 0; animation: marksFade 2.2s cubic-bezier(0.16,1,0.3,1) 1.3s forwards; }
-        @keyframes marksFade { to { opacity: 1; } }
-
-        .am-word { display: block; opacity: 0;
-            animation: wordRise 1.6s cubic-bezier(0.16,1,0.3,1) forwards,
-                       wordFloat 20s ease-in-out 3.4s infinite;
-            color: rgba(224,201,138,0.42); letter-spacing: 0.02em; }
-        .am-kufi { font-family: 'Noto Kufi Arabic', 'IBM Plex Sans Arabic', sans-serif; }
-        @keyframes wordRise {
-            from { opacity: 0; transform: translateY(9px); filter: blur(2px); }
-            to { opacity: 1; transform: translateY(0); filter: blur(0); }
-        }
-        @keyframes wordFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
-        }
 
         .arch-trace { position: absolute; inset: 0; pointer-events: none; opacity: 0.055; }
 
@@ -348,7 +326,8 @@
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
             }
-            .reveal, .reveal-bg, .scales-wrap, .visual-frame, .watermark-word, .article-marks, .am-word, .verses-box .verse-ring,
+            .reveal, .reveal-bg, .scales-wrap, .visual-frame, .watermark-word,
+            .verses-box .verse-ring,
             .hairline-gold, .seal-rotor, #cursorGlow, .dust { opacity: 1; animation: none !important; }
             #cursorGlow { display: none; }
         }
@@ -522,14 +501,6 @@
                         <path d="M50 45a5 5 0 000 10z" fill="rgba(200,169,107,0.35)"/>
                     </svg>
                 </div>
-            </div>
-
-            <div class="article-marks" dir="rtl" data-depth="0.04">
-                <span class="am-word" style="font-size:0.86rem;font-weight:400;color:rgba(232,213,164,0.40);letter-spacing:0.06em;animation-delay:1.45s;">عدل</span>
-                <span class="am-word am-kufi" style="font-size:0.72rem;color:rgba(224,201,138,0.28);animation-delay:1.6s;margin-inline-start:2.2rem;">ح</span>
-                <span class="am-word" style="font-size:0.74rem;color:rgba(224,201,138,0.24);animation-delay:1.75s;margin-inline-start:0.7rem;">نص</span>
-                <span class="am-word am-kufi" style="font-size:0.68rem;color:rgba(224,201,138,0.32);animation-delay:1.9s;margin-inline-start:3.1rem;">ق</span>
-                <span class="am-word" style="font-size:0.8rem;font-weight:400;color:rgba(232,213,164,0.34);letter-spacing:0.04em;animation-delay:2.05s;margin-inline-start:1.6rem;">حق</span>
             </div>
 
             {{-- Oman arch traces --}}
@@ -706,15 +677,6 @@
         <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 text-xs" style="color:rgba(146,153,165,0.65);">
             <p class="flex items-center gap-2"><span style="color:var(--gold);">◆</span> {{ $officeName }} — © 2026 جميع الحقوق محفوظة</p>
             <div class="flex items-center gap-5">
-                <button type="button" id="soundToggle" class="link-soft font-medium flex items-center gap-1.5" aria-pressed="false" aria-label="{{ $isRtl ? 'تفعيل صوت ضربة المطرقة' : 'Enable hammer sound' }}" title="{{ $isRtl ? 'صوت ضربة المطرقة' : 'Hammer strike sound' }}">
-                    <svg class="w-4 h-4" id="soundOnIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="display:none;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15.54 8.46a5 5 0 010 7.07"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.07 4.93a10 10 0 010 14.14"/>
-                    </svg>
-                    <svg class="w-4 h-4" id="soundOffIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 9l-6 6M16 9l6 6"/>
-                    </svg>
-                    <span id="soundLabel">{{ $isRtl ? 'الصوت' : 'Sound' }}</span>
-                </button>
                 <a href="{{ route('language.switch', $isRtl ? 'en' : 'ar') }}" class="link-soft font-medium" aria-label="{{ $isRtl ? 'Switch to English' : 'التبديل إلى العربية' }}">
                     {{ $isRtl ? 'English' : 'العربية' }}
                 </a>
@@ -799,53 +761,6 @@
             const goldWipe = document.getElementById('goldWipe');
             const authLoadGlow = document.getElementById('authLoadGlow');
 
-            /* ---------- sound (Web Audio, OFF by default) ---------- */
-            const soundToggle = document.getElementById('soundToggle');
-            let soundOn = localStorage.getItem('lexpro_sound_hammer') === '1';
-            let audioCtx = null;
-            function refreshSoundUI() {
-                if (!soundToggle) return;
-                document.getElementById('soundOnIcon').style.display = soundOn ? 'block' : 'none';
-                document.getElementById('soundOffIcon').style.display = soundOn ? 'none' : 'block';
-                soundToggle.setAttribute('aria-pressed', String(soundOn));
-            }
-            refreshSoundUI();
-            if (soundToggle) soundToggle.addEventListener('click', function () {
-                soundOn = !soundOn;
-                localStorage.setItem('lexpro_sound_hammer', soundOn ? '1' : '0');
-                refreshSoundUI();
-            });
-            function playHammerSound() {
-                if (!soundOn || reduced) return;
-                try {
-                    const Ctx = window.AudioContext || window.webkitAudioContext;
-                    if (!Ctx) return;
-                    audioCtx = audioCtx || new Ctx();
-                    if (audioCtx.state === 'suspended') audioCtx.resume();
-                    const t = audioCtx.currentTime;
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(220, t);
-                    osc.frequency.exponentialRampToValueAtTime(70, t + 0.12);
-                    gain.gain.setValueAtTime(0.0001, t);
-                    gain.gain.exponentialRampToValueAtTime(0.3, t + 0.005);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.start(t); osc.stop(t + 0.2);
-                    const thump = audioCtx.createOscillator();
-                    const tg = audioCtx.createGain();
-                    thump.type = 'triangle';
-                    thump.frequency.setValueAtTime(120, t + 0.02);
-                    thump.frequency.exponentialRampToValueAtTime(50, t + 0.15);
-                    tg.gain.setValueAtTime(0.0001, t + 0.02);
-                    tg.gain.exponentialRampToValueAtTime(0.18, t + 0.03);
-                    tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
-                    thump.connect(tg); tg.connect(audioCtx.destination);
-                    thump.start(t + 0.02); thump.stop(t + 0.22);
-                } catch (e) { /* sound unavailable — flow continues */ }
-            }
-
             /* ---------- success cinematic ---------- */
             function playSuccess(navigateTo) {
                 if (reduced) { navigateTo(); return; }
@@ -856,7 +771,6 @@
                 setTimeout(function () { judgeScene.classList.add('show'); }, 150);
                 setTimeout(function () {
                     judgeScene.classList.add('strike');
-                    playHammerSound();
                 }, 1100);
                 setTimeout(function () { successMsg.classList.add('show'); }, 1550);
                 setTimeout(function () { goldWipe.classList.add('go'); }, 2150);
