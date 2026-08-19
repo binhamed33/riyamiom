@@ -766,8 +766,8 @@ PROMPT;
 
         if (!$analysis) {
             return response()->json([
-                'error' => 'تعذر الحصول على التحليل، حاول مرة أخرى لاحقاً',
-            ], 500);
+                'error' => $service->getLastError() ?: 'تعذر الحصول على التحليل من خدمة Gemini، حاول مرة أخرى لاحقاً',
+            ], 502);
         }
 
         $case->ai_analysis = $analysis;
@@ -849,8 +849,8 @@ SYSTEM;
 
             if (!$reply) {
                 return response()->json([
-                    'error' => 'تعذر الحصول على رد من الذكاء الاصطناعي، حاول مرة أخرى لاحقاً',
-                ], 500);
+                    'error' => $service->getLastError() ?: 'تعذر الحصول على رد من الذكاء الاصطناعي، حاول مرة أخرى لاحقاً',
+                ], 502);
             }
 
             $case->aiMessages()->create([

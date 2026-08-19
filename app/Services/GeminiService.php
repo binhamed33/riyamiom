@@ -10,6 +10,11 @@ class GeminiService
     protected ?string $apiKey;
     protected string $model;
 
+    public function getLastError(): ?string
+    {
+        return $this->lastError ?? null;
+    }
+
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key') ?: null;
@@ -35,6 +40,7 @@ class GeminiService
             ]);
         } catch (\Throwable $e) {
             Log::error('Gemini analyze failed: ' . $e->getMessage());
+            $this->lastError = $e->getMessage();
             return null;
         }
     }
@@ -71,6 +77,12 @@ class GeminiService
     }
 
     protected ?int $lastStatus = null;
+    protected ?string $lastError = null;
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
+    }
 
     protected function generate(array $payload): ?string
     {
@@ -97,6 +109,7 @@ class GeminiService
         }
 
         $tried = implode(', ', $models);
+        $this->lastError = $lastTransientError?->getMessage() ?? ('Gemini API error — tried models: ' . $tried);
         throw $lastTransientError
             ?? new \RuntimeException('Gemini API error — tried models: ' . $tried);
     }
