@@ -95,8 +95,8 @@ class GeminiService
             try {
                 return $this->callModel($model, $payload);
             } catch (\RuntimeException $e) {
-                $isTransient = in_array($this->lastStatus, [429, 503], true);
-                if (!$isTransient) {
+                $retryable = in_array($this->lastStatus, [404, 429, 500, 502, 503], true);
+                if (!$retryable) {
                     throw $e;
                 }
                 $lastTransientError = $e;
