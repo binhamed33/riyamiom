@@ -24,14 +24,24 @@ class MarketingPageController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        // فخ للروبوتات: حقل مخفي — إذا مُلئ لا ننفذ شيئًا
+        # فخ للروبوتات
         if (filled($request->input('website'))) {
-            return back()->with('success', 'تم استلام طلبك بنجاح، سنتواصل معك قريبًا.');
+            return back()->with('success', ' تم استلام طلبك بنجاح، سنتواصل معك قريباً.');
         }
 
+        # حفظ البيانات في قاعدة البيانات
         RegistrationRequest::create($validated + ['status' => RegistrationRequest::STATUS_NEW]);
 
-        return back()->with('success', 'تم استلام طلبك بنجاح! سنراجع بياناتك ونتواصل معك خلال ٢٤–٤٨ ساعة.');
+        # إرسال الإيميل مباشرة عبر دالة mail() في السيرفر (بما أنه يعمل بالفعل)
+        $headers = "From: binhamed333@gmail.com\r\n" .
+                   "Content-type: text/html; charset=utf-8\r\n";
+        $message = "اسم المكتب: " . $validated['office_name'] . "\n" .
+                   "اسم المسؤول: " . $validated['contact_name'] . "\n" .
+                   "البريد الإلكتروني: " . $validated['email'] . "\n" .
+                   "الرسالة: " . $validated['notes'] . "\n";
+        mail('binhamed333@gmail.com', 'طلب تسجيل من LexPro', $message, $headers);
+
+        return back()->with('success', ' تم استلام طلبك بنجاح! سنتواصل معك خلال ٢٤–٤٨ ساعة.');
     }
 
     public function requests()
