@@ -15,7 +15,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=El+Messiri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@300;400&display=swap" rel="stylesheet">
 
     <script nonce="{{ $cspNonce }}" src="https://cdn.tailwindcss.com"></script>
     <script nonce="{{ $cspNonce }}">
@@ -145,19 +145,26 @@
         @keyframes sealSpin { to { transform: rotate(360deg); } }
         .seal-rotor svg { width: 100%; height: 100%; }
 
-        .article-marks { position: absolute; bottom: 13%; inset-inline-end: 6%;
-            display: flex; flex-direction: column; align-items: flex-start; gap: 1.15rem;
-            font-family: 'El Messiri', serif; text-align: right; line-height: 1;
+        .article-marks { position: absolute; bottom: 14%; inset-inline-end: 5.5%;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 0.9rem;
+            font-family: 'IBM Plex Sans Arabic', 'Noto Kufi Arabic', sans-serif;
+            font-weight: 300; text-align: right; line-height: 1.1; direction: rtl;
             user-select: none; pointer-events: none;
-            opacity: 0; animation: marksFade 2.4s cubic-bezier(0.16,1,0.3,1) 1.25s forwards; }
+            opacity: 0; animation: marksFade 2.2s cubic-bezier(0.16,1,0.3,1) 1.3s forwards; }
         @keyframes marksFade { to { opacity: 1; } }
 
         .am-word { display: block; opacity: 0;
-            animation: wordRise 1.7s cubic-bezier(0.16,1,0.3,1) forwards;
-            color: rgba(224,201,138,0.45); text-shadow: 0 0 26px rgba(200,169,107,0.12); }
+            animation: wordRise 1.6s cubic-bezier(0.16,1,0.3,1) forwards,
+                       wordFloat 20s ease-in-out 3.4s infinite;
+            color: rgba(224,201,138,0.42); letter-spacing: 0.02em; }
+        .am-kufi { font-family: 'Noto Kufi Arabic', 'IBM Plex Sans Arabic', sans-serif; }
         @keyframes wordRise {
-            from { opacity: 0; transform: translateY(24px); filter: blur(5px); }
+            from { opacity: 0; transform: translateY(9px); filter: blur(2px); }
             to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+        @keyframes wordFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
         }
 
         .arch-trace { position: absolute; inset: 0; pointer-events: none; opacity: 0.055; }
@@ -518,10 +525,11 @@
             </div>
 
             <div class="article-marks" dir="rtl" data-depth="0.04">
-                <span class="am-word" style="font-size:clamp(1.7rem,3.4vw,2.5rem);color:rgba(232,213,164,0.55);animation-delay:1.55s;">عدل</span>
-                <span class="am-word" style="font-size:clamp(1rem,2vw,1.5rem);color:rgba(224,201,138,0.32);animation-delay:1.75s;margin-inline-start:2.9rem;">حق</span>
-                <span class="am-word" style="font-size:clamp(1.35rem,2.7vw,2rem);color:rgba(224,201,138,0.44);animation-delay:1.95s;margin-inline-start:1.1rem;">قانون</span>
-                <span class="am-word" style="font-size:clamp(0.95rem,1.9vw,1.4rem);color:rgba(224,201,138,0.26);animation-delay:2.15s;margin-inline-start:4.2rem;">ثقة</span>
+                <span class="am-word" style="font-size:0.86rem;font-weight:400;color:rgba(232,213,164,0.40);letter-spacing:0.06em;animation-delay:1.45s;">عدل</span>
+                <span class="am-word am-kufi" style="font-size:0.72rem;color:rgba(224,201,138,0.28);animation-delay:1.6s;margin-inline-start:2.2rem;">ح</span>
+                <span class="am-word" style="font-size:0.74rem;color:rgba(224,201,138,0.24);animation-delay:1.75s;margin-inline-start:0.7rem;">نص</span>
+                <span class="am-word am-kufi" style="font-size:0.68rem;color:rgba(224,201,138,0.32);animation-delay:1.9s;margin-inline-start:3.1rem;">ق</span>
+                <span class="am-word" style="font-size:0.8rem;font-weight:400;color:rgba(232,213,164,0.34);letter-spacing:0.04em;animation-delay:2.05s;margin-inline-start:1.6rem;">حق</span>
             </div>
 
             {{-- Oman arch traces --}}
