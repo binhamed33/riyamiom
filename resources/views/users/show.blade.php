@@ -7,7 +7,9 @@
     <div class="flex items-center justify-between">
         <h1 class="text-3xl font-bold text-gold-dark">{{ $user->name }}</h1>
         <div class="flex items-center gap-3">
+            @if(!$user->isDeveloper() || auth()->user()->isDeveloper())
             <a href="{{ route('users.edit', $user) }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.edit') }}</a>
+            @endif
             <a href="{{ route('users.index') }}" class="text-gray-500 hover:text-gray-700 transition-colors text-sm flex items-center gap-1">{{ __('app.back') }}</a>
         </div>
     </div>

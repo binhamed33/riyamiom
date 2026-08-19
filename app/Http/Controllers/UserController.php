@@ -53,6 +53,12 @@ class UserController extends Controller
             'permissions.*' => 'string',
         ]);
 
+        if ($validated['role'] === 'developer' && !auth()->user()->isDeveloper()) {
+            return redirect()->back()->withInput()->withErrors([
+                'role' => 'فقط المطور يمكنه إضافة مستخدم بدور مطور.',
+            ]);
+        }
+
         $validated['password'] = Hash::make($validated['password']);
         $validated['is_active'] = $request->boolean('is_active', true);
 
@@ -88,6 +94,12 @@ class UserController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
+        if ($user->isDeveloper() && !auth()->user()->isDeveloper()) {
+            return redirect()->back()->withErrors([
+                'error' => 'لا يمكنك تعديل مطور إلا إذا كنت مطورًا.',
+            ]);
+        }
+
         $validated = $request->validate([
             'name'       => 'required|string|max:255',
             'email'      => 'required|email|unique:users,email,' . $user->id,
@@ -98,6 +110,12 @@ class UserController extends Controller
             'permissions' => 'nullable|array',
             'permissions.*' => 'string',
         ]);
+
+        if ($validated['role'] === 'developer' && !auth()->user()->isDeveloper()) {
+            return redirect()->back()->withInput()->withErrors([
+                'role' => 'فقط المطور يمكنه منح دور مطور.',
+            ]);
+        }
 
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
@@ -128,6 +146,11 @@ class UserController extends Controller
 
     public function destroy(User $user): RedirectResponse
     {
+        if ($user->isDeveloper() && !auth()->user()->isDeveloper()) {
+            return redirect()->route('users.index')
+                ->withErrors(['error' => 'لا يمكنك حذف مطور إلا إذا كنت مطورًا.']);
+        }
+
         if ($user->id === auth()->id()) {
             return redirect()->route('users.index')
                 ->withErrors(['error' => 'You cannot delete your own account.']);

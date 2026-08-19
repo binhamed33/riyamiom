@@ -79,7 +79,9 @@
                     required
                 >
                     <option value="">{{ __('app.choose_role') }}</option>
+                    @if(auth()->user()->isDeveloper())
                     <option value="developer" {{ old('role') === 'developer' ? 'selected' : '' }}>{{ __('app.developer') }}</option>
+                    @endif
                     <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>{{ __('app.admin') }}</option>
                     <option value="lawyer" {{ old('role') === 'lawyer' ? 'selected' : '' }}>{{ __('app.lawyer') }}</option>
                     <option value="staff" {{ old('role') === 'staff' ? 'selected' : '' }}>{{ __('app.staff') }}</option>

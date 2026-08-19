@@ -80,7 +80,9 @@
                     class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
                     required
                 >
+                    @if(auth()->user()->isDeveloper())
                     <option value="developer" {{ old('role', $user->role) === 'developer' ? 'selected' : '' }}>{{ __('app.developer') }}</option>
+                    @endif
                     <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>{{ __('app.admin') }}</option>
                     <option value="lawyer" {{ old('role', $user->role) === 'lawyer' ? 'selected' : '' }}>{{ __('app.lawyer') }}</option>
                     <option value="staff" {{ old('role', $user->role) === 'staff' ? 'selected' : '' }}>{{ __('app.staff') }}</option>
