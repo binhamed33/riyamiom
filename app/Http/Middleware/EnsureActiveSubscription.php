@@ -27,7 +27,7 @@ class EnsureActiveSubscription
 
         if ($request->expectsJson() || $request->is('api/*')) {
             return response()->json([
-                'error' => 'انتهت صلاحية اشتراك النظام، يرجى التواصل مع الإدارة.',
+                'error' => 'انتهت صلاحية اشتراك النظام، يرجى التواصل مع المطور لتفعيل النظام من جديد.',
             ], 403);
         }
 

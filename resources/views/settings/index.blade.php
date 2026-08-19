@@ -11,25 +11,25 @@
     @php
         $subService = app(\App\Services\SubscriptionService::class);
         $isDev = auth()->user()->isDeveloper();
-        $subInfo = $isDev ? null : $subService->statusFor(auth()->user());
+        $subInfo = $isDev ? null : $subService->info();
         $subKey = $subInfo['key'] ?? null;
         $subPct = 0;
-        if ($subInfo && $subInfo['subscription']) {
-            $totalDays = max(1, $subInfo['subscription']->start_date->diffInDays($subInfo['subscription']->end_date));
-            $elapsedDays = max(0, $subInfo['subscription']->start_date->diffInDays(now()));
-            $subPct = (int) min(100, round($elapsedDays / $totalDays * 100));
+        if ($subInfo && $subInfo['start_at'] && $subInfo['end_at']) {
+            $totalSecs = max(1, (int) $subInfo['start_at']->diffInSeconds($subInfo['end_at']));
+            $elapsedSecs = max(0, min($totalSecs, (int) $subInfo['start_at']->diffInSeconds(now())));
+            $subPct = (int) round($elapsedSecs / $totalSecs * 100);
         }
     @endphp
 
     @if($isDev)
-        <a href="{{ route('developer.subscriptions.index') }}" class="block bg-white rounded-xl border border-gray-200 p-5 hover:border-gold/50 transition-colors">
+        <a href="{{ route('developer.subscription.config') }}" class="block bg-white rounded-xl border border-gray-200 p-5 hover:border-gold/50 transition-colors">
             <div class="flex items-center gap-3">
                 <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0">
                     <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                 </div>
                 <div class="flex-1">
-                    <h2 class="text-base font-bold text-gray-800">إدارة الاشتراكات</h2>
-                    <p class="text-xs text-gray-500 mt-0.5">إنشاء وإدارة اشتراكات العملاء — متاح للمطور فقط</p>
+                    <h2 class="text-base font-bold text-gray-800">Subscription Configuration</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">إدارة اشتراك هذه النسخة من النظام — متاح للمطور فقط</p>
                 </div>
                 <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
             </div>
@@ -41,21 +41,21 @@
                     <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                 </div>
                 <div class="flex-1">
-                    <h2 class="text-base font-bold text-gray-800">حالة اشتراك النظام</h2>
-                    <p class="text-xs text-gray-500 mt-0.5">تُدار من قبل إدارة النظام</p>
+                    <h2 class="text-base font-bold text-gray-800">اشتراك النظام</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">يُدار من قبل المطور</p>
                 </div>
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold {{ \App\Services\SubscriptionService::colorClasses($subInfo['color']) }}">{{ $subInfo['label'] }}</span>
             </div>
 
-            @if($subInfo['subscription'])
+            @if($subInfo['start_at'] && $subInfo['end_at'])
                 <div class="grid grid-cols-2 gap-4 text-sm mb-4">
                     <div class="bg-gray-50 rounded-lg px-4 py-3">
                         <p class="text-xs text-gray-400 mb-1">تاريخ البدء</p>
-                        <p class="font-semibold text-gray-800">{{ $subInfo['subscription']->start_date->format('d/m/Y') }}</p>
+                        <p class="font-semibold text-gray-800" dir="ltr">{{ $subInfo['start_at']->format('d/m/Y') }}</p>
                     </div>
                     <div class="bg-gray-50 rounded-lg px-4 py-3">
                         <p class="text-xs text-gray-400 mb-1">تاريخ الانتهاء</p>
-                        <p class="font-semibold text-gray-800">{{ $subInfo['subscription']->end_date->format('d/m/Y') }}</p>
+                        <p class="font-semibold text-gray-800" dir="ltr">{{ $subInfo['end_at']->format('d/m/Y') }}</p>
                     </div>
                 </div>
 
@@ -74,7 +74,7 @@
                 @endif
             @else
                 <div class="bg-gray-50 rounded-lg px-4 py-3 text-sm text-gray-500">
-                    لا يوجد اشتراك مُسجّل لمكتبك حاليًا. يرجى التواصل مع إدارة النظام لتفعيل الوصول الكامل.
+                    لا يوجد اشتراك مفعّل لهذا النظام حاليًا. يرجى التواصل مع المطور لتفعيل الوصول الكامل.
                 </div>
             @endif
         </div>

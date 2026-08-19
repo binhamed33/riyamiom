@@ -386,16 +386,11 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::post('/features/toggle', [App\Http\Controllers\DeveloperController::class, 'toggleFeature'])->name('developer.features.toggle');
         Route::post('/announcement', [App\Http\Controllers\AnnouncementController::class, 'publish'])->name('announcements.publish');
 
-        // Subscription management - developer only
-        Route::get('/subscriptions', [App\Http\Controllers\DeveloperSubscriptionController::class, 'index'])->name('developer.subscriptions.index');
-        Route::get('/subscriptions/create', [App\Http\Controllers\DeveloperSubscriptionController::class, 'create'])->name('developer.subscriptions.create');
-        Route::post('/subscriptions/store', [App\Http\Controllers\DeveloperSubscriptionController::class, 'store'])->name('developer.subscriptions.store');
-        Route::post('/subscriptions/{tenant}/extend', [App\Http\Controllers\DeveloperSubscriptionController::class, 'extend'])->name('developer.subscriptions.extend');
-        Route::post('/subscriptions/{tenant}/change', [App\Http\Controllers\DeveloperSubscriptionController::class, 'change'])->name('developer.subscriptions.change');
-        Route::post('/subscriptions/{tenant}/suspend', [App\Http\Controllers\DeveloperSubscriptionController::class, 'suspend'])->name('developer.subscriptions.suspend');
-        Route::post('/subscriptions/{tenant}/reactivate', [App\Http\Controllers\DeveloperSubscriptionController::class, 'reactivate'])->name('developer.subscriptions.reactivate');
-        Route::post('/subscriptions/{tenant}/terminate', [App\Http\Controllers\DeveloperSubscriptionController::class, 'terminate'])->name('developer.subscriptions.terminate');
-        Route::post('/tenants/store', [App\Http\Controllers\DeveloperSubscriptionController::class, 'storeTenant'])->name('developer.subscriptions.tenant.store');
+        // Subscription configuration - developer only (site-level subscription)
+        Route::get('/subscription', [App\Http\Controllers\DeveloperSubscriptionController::class, 'config'])->name('developer.subscription.config');
+        Route::post('/subscription/activate', [App\Http\Controllers\DeveloperSubscriptionController::class, 'activate'])->name('developer.subscription.activate');
+        Route::post('/subscription/suspend', [App\Http\Controllers\DeveloperSubscriptionController::class, 'suspend'])->name('developer.subscription.suspend');
+        Route::post('/subscription/reactivate', [App\Http\Controllers\DeveloperSubscriptionController::class, 'reactivate'])->name('developer.subscription.reactivate');
     });
 
     }); // end throttle group

@@ -98,8 +98,8 @@
             </div>
             <h1 class="font-serif text-2xl sm:text-3xl font-bold mb-3" style="color:var(--gold-soft);">انتهت صلاحية الاشتراك</h1>
             <p class="text-sm leading-relaxed mb-6" style="color:var(--muted);">
-                انتهت مدة اشتراك مكتبك في النظام.
-                لإعادة تفعيل الوصول إلى جميع ميزات النظام، يرجى التواصل مع إدارة النظام.
+                انتهت مدة الاشتراك الخاصة بهذا النظام.
+                يرجى التواصل مع المطور لتفعيل النظام من جديد.
             </p>
 
             <div class="space-y-3 mb-6">

@@ -2,12 +2,41 @@
 
 namespace App\Services;
 
-use App\Models\Subscription;
-use App\Models\Tenant;
+use App\Models\Setting;
 use App\Models\User;
+use Carbon\Carbon;
 
 class SubscriptionService
 {
+    public const STATUS_NONE = 'none';
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_EXPIRING = 'expiring_soon';
+    public const STATUS_SUSPENDED = 'suspended';
+    public const STATUS_EXPIRED = 'expired';
+
+    public const DURATION_OPTIONS = [1, 2, 3, 6, 12];
+
+    public const EXPIRING_SOON_DAYS = 7;
+
+    private function rawStatus(): string
+    {
+        return (string) Setting::get('subscription_status', self::STATUS_NONE);
+    }
+
+    private function startAt(): ?Carbon
+    {
+        $start = Setting::get('subscription_start_at');
+
+        return $start ? Carbon::parse($start) : null;
+    }
+
+    private function endAt(): ?Carbon
+    {
+        $end = Setting::get('subscription_end_at');
+
+        return $end ? Carbon::parse($end) : null;
+    }
+
     public function isAllowed(?User $user): bool
     {
         if (!$user) {
@@ -18,114 +47,106 @@ class SubscriptionService
             return true;
         }
 
-        $tenant = $user->tenant;
-
-        if (!$tenant) {
-            return false;
-        }
-
-        return $this->hasValidSubscription($tenant);
+        return in_array($this->status(), [self::STATUS_ACTIVE, self::STATUS_EXPIRING], true);
     }
 
-    public function hasValidSubscription(Tenant $tenant): bool
+    /**
+     * Source of truth: server time only (now() < subscription_end_at).
+     */
+    public function status(): string
     {
-        $subscription = $tenant->subscription;
+        $raw = $this->rawStatus();
+        $end = $this->endAt();
 
-        if (!$subscription) {
-            return false;
+        if ($raw === self::STATUS_NONE || $raw === '' || !$end) {
+            return self::STATUS_NONE;
         }
 
-        return $subscription->isActive();
+        if ($raw === self::STATUS_SUSPENDED) {
+            return self::STATUS_SUSPENDED;
+        }
+
+        if ($end->lessThanOrEqualTo(now())) {
+            return self::STATUS_EXPIRED;
+        }
+
+        if ($this->daysRemaining() <= self::EXPIRING_SOON_DAYS) {
+            return self::STATUS_EXPIRING;
+        }
+
+        return self::STATUS_ACTIVE;
     }
 
-    public function statusFor(?User $user): ?array
+    public function info(): array
     {
-        if (!$user) {
-            return null;
-        }
-
-        if ($user->isDeveloper()) {
-            return [
-                'key' => 'system',
-                'label' => 'مالك النظام',
-                'color' => 'purple',
-                'allowed' => true,
-                'subscription' => null,
-                'remaining_days' => null,
-                'end_date' => null,
-            ];
-        }
-
-        $tenant = $user->tenant;
-
-        if (!$tenant) {
-            return $this->statusForTenant(null, null);
-        }
-
-        return $this->statusForTenant($tenant, $tenant->subscription);
-    }
-
-    public function statusForTenant(?Tenant $tenant, ?Subscription $subscription = null): array
-    {
-        if (!$tenant || !$subscription) {
-            return [
-                'key' => 'none',
-                'label' => 'لا يوجد اشتراك',
-                'color' => 'gray',
-                'allowed' => false,
-                'subscription' => $subscription,
-                'remaining_days' => 0,
-                'end_date' => null,
-            ];
-        }
-
-        if ($subscription->isSuspended()) {
-            return [
-                'key' => 'suspended',
-                'label' => 'متوقف يدويًا',
-                'color' => 'black',
-                'allowed' => false,
-                'subscription' => $subscription,
-                'remaining_days' => 0,
-                'end_date' => $subscription->end_date,
-            ];
-        }
-
-        if ($subscription->isExpired()) {
-            return [
-                'key' => 'expired',
-                'label' => 'منتهي',
-                'color' => 'red',
-                'allowed' => false,
-                'subscription' => $subscription,
-                'remaining_days' => 0,
-                'end_date' => $subscription->end_date,
-            ];
-        }
-
-        $days = $subscription->daysRemaining();
-
-        if ($subscription->isExpiringSoon()) {
-            return [
-                'key' => 'expiring_soon',
-                'label' => 'قريب من الانتهاء',
-                'color' => 'amber',
-                'allowed' => true,
-                'subscription' => $subscription,
-                'remaining_days' => $days,
-                'end_date' => $subscription->end_date,
-            ];
-        }
+        $status = $this->status();
+        $start = $this->startAt();
+        $end = $this->endAt();
+        $duration = Setting::get('subscription_duration');
+        $created = Setting::get('subscription_created_at');
 
         return [
-            'key' => 'active',
-            'label' => 'نشط',
-            'color' => 'green',
-            'allowed' => true,
-            'subscription' => $subscription,
-            'remaining_days' => $days,
-            'end_date' => $subscription->end_date,
+            'key' => $status,
+            'label' => match ($status) {
+                self::STATUS_ACTIVE => 'نشط',
+                self::STATUS_EXPIRING => 'قريب من الانتهاء',
+                self::STATUS_EXPIRED => 'منتهي',
+                self::STATUS_SUSPENDED => 'متوقف',
+                default => 'لا يوجد اشتراك',
+            },
+            'color' => match ($status) {
+                self::STATUS_ACTIVE => 'green',
+                self::STATUS_EXPIRING => 'amber',
+                self::STATUS_EXPIRED => 'red',
+                self::STATUS_SUSPENDED => 'black',
+                default => 'gray',
+            },
+            'allowed' => in_array($status, [self::STATUS_ACTIVE, self::STATUS_EXPIRING], true),
+            'duration_months' => $duration ? (int) $duration : null,
+            'start_at' => $start,
+            'end_at' => $end,
+            'created_at' => $created ? Carbon::parse($created) : null,
+            'remaining_days' => $end ? $this->daysRemaining() : 0,
+            'end_timestamp' => $end ? $end->timestamp : null,
         ];
+    }
+
+    public function daysRemaining(): int
+    {
+        $end = $this->endAt();
+
+        if (!$end || $end->lessThanOrEqualTo(now())) {
+            return 0;
+        }
+
+        return (int) now()->startOfDay()->diffInDays($end->copy()->endOfDay());
+    }
+
+    public function activate(int $months): array
+    {
+        $start = now();
+        $end = (clone $start)->addMonthsNoOverflow($months);
+
+        Setting::set('subscription_status', self::STATUS_ACTIVE, 'subscription');
+        Setting::set('subscription_duration', $months, 'subscription');
+        Setting::set('subscription_start_at', $start, 'subscription');
+        Setting::set('subscription_end_at', $end, 'subscription');
+        Setting::set('subscription_created_at', now(), 'subscription');
+        Setting::set('subscription_updated_at', now(), 'subscription');
+
+        return ['start' => $start, 'end' => $end];
+    }
+
+    public function suspend(): void
+    {
+        Setting::set('subscription_status', self::STATUS_SUSPENDED, 'subscription');
+        Setting::set('subscription_updated_at', now(), 'subscription');
+    }
+
+    public function reactivate(): void
+    {
+        Setting::set('subscription_status', self::STATUS_ACTIVE, 'subscription');
+        Setting::set('subscription_updated_at', now(), 'subscription');
     }
 
     public static function durationLabel(int $months): string
@@ -157,7 +178,6 @@ class SubscriptionService
             'red' => 'bg-red-50 text-red-700 border-red-200',
             'black' => 'bg-gray-100 text-gray-700 border-gray-300',
             'gray' => 'bg-gray-50 text-gray-500 border-gray-200',
-            'purple' => 'bg-purple-50 text-purple-700 border-purple-200',
             default => 'bg-gray-50 text-gray-600 border-gray-200',
         };
     }
