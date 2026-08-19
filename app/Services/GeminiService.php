@@ -10,11 +10,6 @@ class GeminiService
     protected ?string $apiKey;
     protected string $model;
 
-    public function getLastError(): ?string
-    {
-        return $this->lastError ?? null;
-    }
-
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key') ?: null;
