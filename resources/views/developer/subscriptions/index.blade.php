@@ -17,7 +17,11 @@
         box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
     }
 </style>
-<div class="space-y-6" dir="rtl">
+<div class="space-y-6" dir="rtl" x-data="{
+        openModal(id) { const el = document.getElementById(id); if (!el) return; el.classList.remove('hidden'); el.classList.add('flex'); },
+        closeModal(id) { const el = document.getElementById(id); if (!el) return; el.classList.add('hidden'); el.classList.remove('flex'); },
+        confirmAction(formId, message) { if (confirm(message)) document.getElementById(formId).submit(); }
+    }">
 
     {{-- Header --}}
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -33,7 +37,7 @@
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                 إنشاء اشتراك
             </a>
-            <a href="#new-tenant" onclick="document.getElementById('newTenantModal').classList.remove('hidden');document.getElementById('newTenantModal').classList.add('flex');" class="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-sm">
+            <a href="#new-tenant" @click="openModal('newTenantModal')" class="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-sm">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
                 إضافة عميل
             </a>
@@ -192,26 +196,26 @@
                             <td class="px-5 py-4">
                                 @if($s)
                                     <div class="flex items-center gap-1.5 flex-wrap">
-                                        <button onclick="openModal('extendModal{{ $t->id }}')" class="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition-colors" title="تمديد">
+                                        <button @click="openModal('extendModal{{ $t->id }}')" class="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition-colors" title="تمديد">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                             تمديد
                                         </button>
-                                        <button onclick="openModal('changeModal{{ $t->id }}')" class="inline-flex items-center gap-1 text-xs font-medium text-gold-dark hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition-colors" title="تغيير">
+                                        <button @click="openModal('changeModal{{ $t->id }}')" class="inline-flex items-center gap-1 text-xs font-medium text-gold-dark hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition-colors" title="تغيير">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"/></svg>
                                             تغيير
                                         </button>
                                         @if(!$s->isSuspended())
-                                            <button onclick="confirmAction('suspendForm{{ $t->id }}', 'إيقاف اشتراك {{ $t->name }}؟')" class="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 rounded-lg transition-colors" title="إيقاف">
+                                            <button @click="confirmAction('suspendForm{{ $t->id }}', 'إيقاف اشتراك {{ $t->name }}؟')" class="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 rounded-lg transition-colors" title="إيقاف">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                                 إيقاف
                                             </button>
                                         @else
-                                            <button onclick="openModal('reactivateModal{{ $t->id }}')" class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition-colors" title="إعادة تفعيل">
+                                            <button @click="openModal('reactivateModal{{ $t->id }}')" class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition-colors" title="إعادة تفعيل">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                                                 تفعيل
                                             </button>
                                         @endif
-                                        <button onclick="confirmAction('terminateForm{{ $t->id }}', 'إنهاء اشتراك {{ $t->name }} نهائيًا؟ لا يمكن التراجع.')" class="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors" title="إنهاء">
+                                        <button @click="confirmAction('terminateForm{{ $t->id }}', 'إنهاء اشتراك {{ $t->name }} نهائيًا؟ لا يمكن التراجع.')" class="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors" title="إنهاء">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             إنهاء
                                         </button>
@@ -251,7 +255,7 @@
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold text-gray-800">تمديد اشتراك {{ $t->name }}</h3>
-                    <button type="button" onclick="closeModal('extendModal{{ $t->id }}')" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    <button type="button" @click="closeModal('extendModal{{ $t->id }}')" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <p class="text-sm text-gray-500 mb-4">ينتهي الاشتراك حاليًا في <span class="font-semibold" dir="ltr">{{ $s->end_date->format('d/m/Y') }}</span>. اختر المدة المراد إضافتها:</p>
                 <form method="POST" action="{{ route('developer.subscriptions.extend', $t) }}" class="space-y-4">
@@ -273,7 +277,7 @@
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold text-gray-800">تغيير اشتراك {{ $t->name }}</h3>
-                    <button type="button" onclick="closeModal('changeModal{{ $t->id }}')" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    <button type="button" @click="closeModal('changeModal{{ $t->id }}')" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <form method="POST" action="{{ route('developer.subscriptions.change', $t) }}" class="space-y-4">
                     @csrf
@@ -303,7 +307,7 @@
                 <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-bold text-gray-800">إعادة تفعيل اشتراك {{ $t->name }}</h3>
-                        <button type="button" onclick="closeModal('reactivateModal{{ $t->id }}')" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                        <button type="button" @click="closeModal('reactivateModal{{ $t->id }}')" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
                     </div>
                     <p class="text-sm text-gray-500 mb-4">اختر مدة الاشتراك الجديدة (إن كان الاشتراك منتهيًا فسيبدأ من اليوم):</p>
                     <form method="POST" action="{{ route('developer.subscriptions.reactivate', $t) }}" class="space-y-4">
@@ -329,7 +333,7 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold text-gray-800">إضافة عميل / مكتب محاماة جديد</h3>
-            <button type="button" onclick="closeModal('newTenantModal')" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            <button type="button" @click="closeModal('newTenantModal')" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <form method="POST" action="{{ route('developer.subscriptions.tenant.store') }}" class="space-y-4">
             @csrf
@@ -358,26 +362,11 @@
 
 @push('scripts')
 <script nonce="{{ $cspNonce }}">
-    window.openModal = function (id) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.classList.remove('hidden');
-        el.classList.add('flex');
-    };
-    window.closeModal = function (id) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.classList.add('hidden');
-        el.classList.remove('flex');
-    };
     document.querySelectorAll('.fixed.inset-0.z-50').forEach(function (m) {
         m.addEventListener('click', function (e) {
             if (e.target === m) m.classList.add('hidden');
         });
     });
-    window.confirmAction = function (formId, message) {
-        if (confirm(message)) document.getElementById(formId).submit();
-    };
 </script>
 @endpush
 @endsection
