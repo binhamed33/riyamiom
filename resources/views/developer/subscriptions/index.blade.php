@@ -174,7 +174,6 @@
                                     @php
                                         $ratio = (int) round($s->elapsedRatio() * 100);
                                         $bar = $info['key'] === 'expired' ? 'bg-red-500' : ($info['key'] === 'expiring_soon' ? 'bg-amber-500' : 'bg-emerald-500');
-                                        $parts = \App\Services\SubscriptionService::countdownParts($s->secondsRemaining());
                                     @endphp
                                     <div class="space-y-1.5">
                                         <div class="flex items-center justify-between text-xs">
@@ -185,7 +184,15 @@
                                             <div class="h-full rounded-full transition-all {{ $bar }}" style="width: {{ $ratio }}%"></div>
                                         </div>
                                         @if($info['key'] !== 'expired')
-                                            <p class="text-[11px] text-gray-400" dir="ltr">{{ $parts['days'] }}d · {{ $parts['hours'] }}h · {{ $parts['minutes'] }}m</p>
+                                            <p class="text-[11px] text-gray-400 font-mono" dir="ltr"
+                                               x-data="{
+                                                   endTs: {{ $s->end_date->endOfDay()->getTimestamp() }},
+                                                   remaining: {{ $s->secondsRemaining() }},
+                                                   init() { const self = this; const tick = () => { self.remaining = Math.max(0, self.endTs - Math.floor(Date.now() / 1000)); }; tick(); this._t = setInterval(tick, 1000); },
+                                                   destroy() { if (this._t) clearInterval(this._t); }
+                                               }">
+                                                <span x-text="Math.floor(this.remaining / 86400) + 'd · ' + Math.floor(this.remaining % 86400 / 3600) + 'h · ' + Math.floor(this.remaining % 3600 / 60) + 'm · ' + (this.remaining % 60) + 's'"></span>
+                                            </p>
                                         @endif
                                     </div>
                                 @else

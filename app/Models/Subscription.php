@@ -92,8 +92,10 @@ class Subscription extends Model
     public function secondsRemaining(): int
     {
         $end = $this->end_date->endOfDay();
-        $diff = $end->diffInSeconds(now());
-        return $diff > 0 ? $diff : 0;
+        if ($end->lessThanOrEqualTo(now())) {
+            return 0;
+        }
+        return (int) $end->diffInSeconds(now(), true);
     }
 
     public function elapsedRatio(): float
