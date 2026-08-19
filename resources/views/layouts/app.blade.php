@@ -9,6 +9,9 @@
             break;
         }
     }
+    $subscriptionInfo = auth()->check() && !auth()->user()->isDeveloper()
+        ? app(\App\Services\SubscriptionService::class)->statusFor(auth()->user())
+        : null;
 @endphp
 <!DOCTYPE html>
 <html dir="{{ $isRtl ? 'rtl' : 'ltr' }}" lang="{{ app()->getLocale() }}">
@@ -793,12 +796,18 @@
                 </a>
                 @endif
 
-                @if(Auth::user()->role === 'developer')
-                <a href="{{ route('developer.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('developer.*') ? 'active' : '' }}">
+@if(Auth::user()->role === 'developer')
+                <a href="{{ route('developer.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('developer.index') ? 'active' : '' }}">
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
                     </svg>
                     <span>{{ __('app.developer_panel') }}</span>
+                </a>
+                <a href="{{ route('developer.subscriptions.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('developer.subscriptions.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    <span>إدارة الاشتراكات</span>
                 </a>
                 @endif
             @endif
@@ -1015,7 +1024,29 @@
                     </div>
                 </div>
             </div>
-        </header>
+</header>
+
+        {{-- Subscription expiry banner --}}
+        @if($subscriptionInfo)
+            @if($subscriptionInfo['key'] === 'expired')
+                <div class="px-4 sm:px-6 lg:px-8 pt-4">
+                    <div class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                        <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5 13h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2zm14 0v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/></svg>
+                        <p class="text-sm font-semibold text-red-700 flex-1">انتهت صلاحية اشتراكك في النظام.</p>
+                        <a href="{{ route('subscription.expired') }}" class="text-xs font-bold text-red-700 underline underline-offset-4 whitespace-nowrap">التفاصيل</a>
+                    </div>
+                </div>
+            @elseif($subscriptionInfo['key'] === 'expiring_soon')
+                <div class="px-4 sm:px-6 lg:px-8 pt-4">
+                    <div class="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                        <svg class="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <p class="text-sm font-semibold text-amber-700 flex-1">
+                            اشتراكك ينتهي بعد {{ $subscriptionInfo['remaining_days'] }} يوم — يرجى التواصل مع إدارة النظام للتجديد.
+                        </p>
+                    </div>
+                </div>
+            @endif
+        @endif
 
         {{-- Page Content --}}
         <main class="p-4 sm:p-6 lg:p-8 page-enter">

@@ -93,8 +93,13 @@ Route::post('/client-access', [App\Http\Controllers\PublicClientController::clas
 Route::get('/client-access/cases/{case}', [App\Http\Controllers\PublicClientController::class, 'showCase'])->name('client.access.case');
 Route::post('/client-access/logout', [App\Http\Controllers\PublicClientController::class, 'logout'])->name('client.access.logout');
 
+// Subscription expired page (reachable while authenticated, not gated)
+Route::middleware('auth')->get('/subscription-expired', function () {
+    return view('subscription.expired');
+})->name('subscription.expired');
+
 // Protected routes
-Route::middleware(['auth', 'active'])->group(function () {
+Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     
     // Rate limit all protected routes
     Route::middleware('throttle:120,1')->group(function () {
@@ -380,6 +385,17 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/features', [App\Http\Controllers\DeveloperController::class, 'features'])->name('developer.features');
         Route::post('/features/toggle', [App\Http\Controllers\DeveloperController::class, 'toggleFeature'])->name('developer.features.toggle');
         Route::post('/announcement', [App\Http\Controllers\AnnouncementController::class, 'publish'])->name('announcements.publish');
+
+        // Subscription management - developer only
+        Route::get('/subscriptions', [App\Http\Controllers\DeveloperSubscriptionController::class, 'index'])->name('developer.subscriptions.index');
+        Route::get('/subscriptions/create', [App\Http\Controllers\DeveloperSubscriptionController::class, 'create'])->name('developer.subscriptions.create');
+        Route::post('/subscriptions/store', [App\Http\Controllers\DeveloperSubscriptionController::class, 'store'])->name('developer.subscriptions.store');
+        Route::post('/subscriptions/{tenant}/extend', [App\Http\Controllers\DeveloperSubscriptionController::class, 'extend'])->name('developer.subscriptions.extend');
+        Route::post('/subscriptions/{tenant}/change', [App\Http\Controllers\DeveloperSubscriptionController::class, 'change'])->name('developer.subscriptions.change');
+        Route::post('/subscriptions/{tenant}/suspend', [App\Http\Controllers\DeveloperSubscriptionController::class, 'suspend'])->name('developer.subscriptions.suspend');
+        Route::post('/subscriptions/{tenant}/reactivate', [App\Http\Controllers\DeveloperSubscriptionController::class, 'reactivate'])->name('developer.subscriptions.reactivate');
+        Route::post('/subscriptions/{tenant}/terminate', [App\Http\Controllers\DeveloperSubscriptionController::class, 'terminate'])->name('developer.subscriptions.terminate');
+        Route::post('/tenants/store', [App\Http\Controllers\DeveloperSubscriptionController::class, 'storeTenant'])->name('developer.subscriptions.tenant.store');
     });
 
     }); // end throttle group
