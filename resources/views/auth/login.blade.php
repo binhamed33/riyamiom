@@ -15,7 +15,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=El+Messiri:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <script nonce="{{ $cspNonce }}" src="https://cdn.tailwindcss.com"></script>
     <script nonce="{{ $cspNonce }}">
@@ -145,9 +145,20 @@
         @keyframes sealSpin { to { transform: rotate(360deg); } }
         .seal-rotor svg { width: 100%; height: 100%; }
 
-        .article-marks { position: absolute; bottom: 12%; inset-inline-end: 6%; text-align: center;
-            font-family: 'Amiri', serif; color: rgba(200,169,107,0.30); font-size: 0.85rem; line-height: 2.1;
-            letter-spacing: 0.4em; user-select: none; opacity: 0; animation: fadeIn 2.5s ease 1.4s forwards; }
+        .article-marks { position: absolute; bottom: 13%; inset-inline-end: 6%;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 1.15rem;
+            font-family: 'El Messiri', serif; text-align: right; line-height: 1;
+            user-select: none; pointer-events: none;
+            opacity: 0; animation: marksFade 2.4s cubic-bezier(0.16,1,0.3,1) 1.25s forwards; }
+        @keyframes marksFade { to { opacity: 1; } }
+
+        .am-word { display: block; opacity: 0;
+            animation: wordRise 1.7s cubic-bezier(0.16,1,0.3,1) forwards;
+            color: rgba(224,201,138,0.45); text-shadow: 0 0 26px rgba(200,169,107,0.12); }
+        @keyframes wordRise {
+            from { opacity: 0; transform: translateY(24px); filter: blur(5px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
 
         .arch-trace { position: absolute; inset: 0; pointer-events: none; opacity: 0.055; }
 
@@ -330,7 +341,7 @@
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
             }
-            .reveal, .reveal-bg, .scales-wrap, .visual-frame, .watermark-word, .article-marks, .verses-box .verse-ring,
+            .reveal, .reveal-bg, .scales-wrap, .visual-frame, .watermark-word, .article-marks, .am-word, .verses-box .verse-ring,
             .hairline-gold, .seal-rotor, #cursorGlow, .dust { opacity: 1; animation: none !important; }
             #cursorGlow { display: none; }
         }
@@ -506,7 +517,12 @@
                 </div>
             </div>
 
-            <div class="article-marks" dir="rtl">م ٥٨<br>م ٤٤<br>م ٢٥<br>م ١٢</div>
+            <div class="article-marks" dir="rtl" data-depth="0.04">
+                <span class="am-word" style="font-size:clamp(1.7rem,3.4vw,2.5rem);color:rgba(232,213,164,0.55);animation-delay:1.55s;">عدل</span>
+                <span class="am-word" style="font-size:clamp(1rem,2vw,1.5rem);color:rgba(224,201,138,0.32);animation-delay:1.75s;margin-inline-start:2.9rem;">حق</span>
+                <span class="am-word" style="font-size:clamp(1.35rem,2.7vw,2rem);color:rgba(224,201,138,0.44);animation-delay:1.95s;margin-inline-start:1.1rem;">قانون</span>
+                <span class="am-word" style="font-size:clamp(0.95rem,1.9vw,1.4rem);color:rgba(224,201,138,0.26);animation-delay:2.15s;margin-inline-start:4.2rem;">ثقة</span>
+            </div>
 
             {{-- Oman arch traces --}}
             <svg class="arch-trace" data-depth="0.03" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
