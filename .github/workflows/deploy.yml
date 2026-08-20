@@ -15,7 +15,6 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script_stop: true
           script: |
             sudo -u riyami-office bash -c "cd /home/riyami-office/htdocs/office.riyami.om && git pull"
             sudo -u riyami-office php /home/riyami-office/htdocs/office.riyami.om/artisan config:clear
