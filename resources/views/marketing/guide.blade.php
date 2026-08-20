@@ -7,7 +7,7 @@
         <div class="pointer-events-none absolute inset-0" style="background:radial-gradient(120% 90% at 78% 8%, rgba(227,189,98,.06), transparent 45%)"></div>
         <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-16 text-center relative">
             <p class="eyebrow text-[11px]">الدليل</p>
-            <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold leading-tight">كيف تبدأ مع <span class="gold-text">LexPro</span></h1>
+            <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold leading-tight">كيف تبدأ مع <span class="gold-text">مُداوَلة</span></h1>
             <p class="mx-auto mt-5 max-w-2xl text-base leading-9 text-muted">
                 من التسجيل إلى تشغيل مكتبك كاملًا في خطوات بسيطة — لا تحتاج خبرة تقنية.
             </p>

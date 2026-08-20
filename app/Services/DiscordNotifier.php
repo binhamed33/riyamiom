@@ -65,7 +65,7 @@ class DiscordNotifier
         ];
 
         $payload = [
-            'username' => 'نظام المكتب — LexPro',
+            'username' => 'نظام المكتب — مُداوَلة',
             'embeds' => [$embed],
         ];
 
@@ -118,7 +118,7 @@ class DiscordNotifier
             : $text;
 
         $payload = [
-            'username' => 'نظام المكتب — LexPro',
+            'username' => 'نظام المكتب — مُداوَلة',
             'embeds' => [[
                 'title' => 'اقتراح',
                 'color' => 0x2563EB,

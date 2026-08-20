@@ -12,7 +12,7 @@
             <section>
                 <h2 class="text-lg font-bold text-ivory">١. قبول الشروط</h2>
                 <p class="mt-3">
-                    باستخدامك لمنظومة LexPro المقدمة من {{ config('marketing.office_name') }}
+                    باستخدامك لمنظومة مُداوَلة المقدمة من {{ config('marketing.office_name') }}
                     فإنك توافق على هذه الشروط. إذا لم توافق عليها، يرجى عدم استخدام الخدمة.
                 </p>
             </section>

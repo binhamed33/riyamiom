@@ -112,7 +112,7 @@ class LoginController extends Controller
                         ['name' => 'الجهاز', 'value' => $userAgent ?? 'غير معروف', 'inline' => false],
                         ['name' => 'الوقت', 'value' => now()->format('Y-m-d H:i:s'), 'inline' => true],
                     ],
-                    'footer' => ['text' => 'LexPro - نظام الإنذار'],
+                    'footer' => ['text' => 'مُداوَلة - نظام الإنذار'],
                     'timestamp' => now()->toIso8601String(),
                 ]],
             ]);

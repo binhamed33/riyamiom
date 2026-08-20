@@ -25,7 +25,7 @@ class ClientNotifier
                     Mail::raw(self::updateMessage(), function ($m) use ($client, $case) {
                         $m->from(
                             Setting::get('office_email', config('mail.from.address', 'hello@example.com')),
-                            Setting::get('office_name', config('mail.from.name', 'LexPro'))
+                            Setting::get('office_name', config('mail.from.name', 'مُداوَلة'))
                         );
                         $m->to($client->email)
                             ->subject('إشعار بتحديث بيانات قضيتك - شركة حمد الريامي للمحاماة (قضية ' . $case->case_number . ')');

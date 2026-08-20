@@ -1,5 +1,5 @@
 @php
-    $officeName = \App\Models\Setting::get('office_name', 'LexPro');
+    $officeName = \App\Models\Setting::get('office_name', 'مُداوَلة');
     $supportEmail = \App\Models\Setting::get('office_email', 'admin@riyami.om');
     $supportPhone = \App\Models\Setting::get('office_phone', '');
     $isRtl = app()->getLocale() === 'ar';

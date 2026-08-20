@@ -136,7 +136,7 @@ class StaffDiscordService
                 'title' => $isLogin ? '🟢 دخول موظف' : '🔴 خروج موظف',
                 'color' => $isLogin ? 0x2ECC71 : 0xE74C3C,
                 'fields' => $fields,
-                'footer' => ['text' => 'LexPro - نظام حضور الموظفين'],
+                'footer' => ['text' => 'مُداوَلة - نظام حضور الموظفين'],
                 'timestamp' => now()->toIso8601String(),
             ]],
         ]);

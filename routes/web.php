@@ -113,7 +113,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::post('/ai-assistant', [App\Http\Controllers\AssistantController::class, 'chat'])->name('assistant.chat');
     Route::post('/ai-assistant/clear', [App\Http\Controllers\AssistantController::class, 'clear'])->name('assistant.clear');
 
-    // LexPro landing page
+    // صفحة تعريف مُداوَلة الداخلية
     Route::get('/lexpro', function () {
         return view('lexpro.index');
     })->name('lexpro');

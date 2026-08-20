@@ -22,7 +22,7 @@ class DiscordHandler extends AbstractProcessingHandler
     protected function write(LogRecord $record): void
     {
         $data = [
-            'username' => config('app.name', 'LexPro'),
+            'username' => config('app.name', 'مُداوَلة'),
             'avatar_url' => null,
             'content' => null,
             'embeds' => [

@@ -1,5 +1,5 @@
 @php
-    $officeName = \App\Models\Setting::get('office_name', 'LexPro');
+    $officeName = \App\Models\Setting::get('office_name', 'مُداوَلة');
     $isRtl = app()->getLocale() === 'ar';
     $officeLogo = null;
     foreach (['svg', 'png', 'jpg', 'jpeg'] as $ext) {
@@ -9,7 +9,8 @@
             break;
         }
     }
-    $subscriptionInfo = auth()->check() && !auth()->user()->isDeveloper()
+    {{-- تنبيهات الاشتراك إدارية: تظهر لمدير المكتب فقط — لا للمحامين والموظفين --}}
+    $subscriptionInfo = auth()->check() && auth()->user()->isAdmin()
         ? app(\App\Services\SubscriptionService::class)->info()
         : null;
 @endphp
@@ -1106,14 +1107,14 @@
         <footer style="border-top: 1px solid #E2E6EC; background: rgba(244,242,238,0.5);">
             <div class="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-sm font-heading font-bold hover:opacity-80 transition-opacity" style="color: #E5C158;">LexPro</a>
+                    <a href="https://dev.riyami.om/" target="_blank" class="text-sm font-heading font-bold hover:opacity-80 transition-opacity" style="color: #E5C158;">مُداوَلة</a>
                     <span class="text-xs text-gray-400">&copy;</span>
                     <span class="text-sm text-gray-500">{{ date('Y') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <p class="text-xs text-gray-400">{{ $officeName }}</p>
                     <span class="text-gray-300">|</span>
-                    <a href="https://office.riyami.om/portfolio/" target="_blank" class="text-xs text-gray-400 hover:text-gold-dark transition">{{ __('app.developer_credit') }}</a>
+                    <a href="https://dev.riyami.om/" target="_blank" class="text-xs text-gray-400 hover:text-gold-dark transition">{{ __('app.developer_credit') }}</a>
                 </div>
             </div>
         </footer>

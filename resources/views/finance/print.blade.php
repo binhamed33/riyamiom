@@ -50,7 +50,7 @@
     <button class="print-btn" onclick="window.print()">طباعة / Print</button>
 
     <div class="header">
-        <h1>{{ \App\Models\Setting::get('office_name', 'LexPro') }}</h1>
+        <h1>{{ \App\Models\Setting::get('office_name', 'مُداوَلة') }}</h1>
         <p>{{ \App\Models\Setting::get('office_address', '') }}</p>
     </div>
 
@@ -103,7 +103,7 @@
 
     <div class="footer">
         <p>تمت الطباعة في {{ now()->format('Y-m-d H:i') }}</p>
-        <p>{{ \App\Models\Setting::get('office_name', 'LexPro') }} &mdash; جميع الحقوق محفوظة</p>
+        <p>{{ \App\Models\Setting::get('office_name', 'مُداوَلة') }} &mdash; جميع الحقوق محفوظة</p>
     </div>
 </body>
 </html>

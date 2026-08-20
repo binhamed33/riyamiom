@@ -24,14 +24,14 @@ class DiscordService
             'content' => '',
             'embeds' => [
                 [
-                    'title' => '🔴 LexPro Exception: ' . class_basename($e),
+                    'title' => '🔴 مُداوَلة Exception: ' . class_basename($e),
                     'color' => 0xFF0000,
                     'fields' => [
                         ['name' => 'Message', 'value' => mb_substr($e->getMessage(), 0, 1000), 'inline' => false],
                         ['name' => 'File', 'value' => $e->getFile() . ':' . $e->getLine(), 'inline' => true],
                         ['name' => 'Code', 'value' => (string) $e->getCode(), 'inline' => true],
                     ],
-                    'footer' => ['text' => 'LexPro Error Monitor • ' . now()->format('Y-m-d H:i:s')],
+                    'footer' => ['text' => 'مُداوَلة Error Monitor • ' . now()->format('Y-m-d H:i:s')],
                     'timestamp' => now()->toIso8601String(),
                 ]
             ]
@@ -66,7 +66,7 @@ class DiscordService
             'content' => '',
             'embeds' => [
                 [
-                    'title' => "{$statusEmoji} LexPro Server Status",
+                    'title' => "{$statusEmoji} مُداوَلة Server Status",
                     'color' => $statusColor,
                     'fields' => [
                         ['name' => '⏱ Uptime', 'value' => $uptime, 'inline' => true],
@@ -79,7 +79,7 @@ class DiscordService
                         ['name' => '⚖️ Cases', 'value' => "{$stats['total_cases']} total ({$stats['active_cases']} active)", 'inline' => true],
                         ['name' => '📋 Tasks', 'value' => "{$stats['total_tasks']} total ({$stats['pending_tasks']} pending)", 'inline' => true],
                     ],
-                    'footer' => ['text' => 'LexPro Monitor • ' . now()->format('Y-m-d H:i:s')],
+                    'footer' => ['text' => 'مُداوَلة Monitor • ' . now()->format('Y-m-d H:i:s')],
                     'timestamp' => now()->toIso8601String(),
                 ]
             ]

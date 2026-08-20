@@ -49,7 +49,7 @@
         <div class="mt-12 rounded-2xl border border-gold/20 bg-gold/5 p-8 text-center">
             <h2 class="text-xl font-bold">أرسل لنا رسالة</h2>
             <p class="mt-2 text-sm text-muted">راسلنا على البريد الإلكتروني {{ config('marketing.email') }} وسنرد عليك بأسرع وقت.</p>
-            <a href="mailto:{{ config('marketing.email') }}?subject={{ urlencode('استفسار عن LexPro') }}" class="btn-gold mt-6 inline-block rounded-full px-8 py-3.5 text-sm font-semibold">راسلنا الآن</a>
+            <a href="mailto:{{ config('marketing.email') }}?subject={{ urlencode('استفسار عن مُداوَلة') }}" class="btn-gold mt-6 inline-block rounded-full px-8 py-3.5 text-sm font-semibold">راسلنا الآن</a>
         </div>
     </section>
 @endsection

@@ -13,3 +13,6 @@ Schedule::command('discord:status')->everyFiveMinutes();
 
 // Staff presence board to Discord every 5 minutes
 Schedule::command('discord:staff-status')->everyFiveMinutes();
+
+// إشعارات الاشتراك — لمدير المكتب فقط (الساعة 8 صباحاً بتوقيت مسقط)
+Schedule::command('subscription:notices')->dailyAt('4:00');

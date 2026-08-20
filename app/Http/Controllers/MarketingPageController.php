@@ -39,7 +39,7 @@ class MarketingPageController extends Controller
                    "اسم المسؤول: " . $validated['contact_name'] . "\n" .
                    "البريد الإلكتروني: " . $validated['email'] . "\n" .
                    "الرسالة: " . $validated['notes'] . "\n";
-        mail('binhamed333@gmail.com', 'طلب تسجيل من LexPro', $message, $headers);
+        mail('binhamed333@gmail.com', 'طلب تسجيل من مُداوَلة', $message, $headers);
 
         return back()->with('success', ' تم استلام طلبك بنجاح! سنتواصل معك خلال ٢٤–٤٨ ساعة.');
     }

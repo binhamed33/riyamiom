@@ -1,5 +1,5 @@
 @php
-    $officeName = \App\Models\Setting::get('office_name', 'LexPro');
+    $officeName = \App\Models\Setting::get('office_name', 'مُداوَلة');
     $isRtl = app()->getLocale() === 'ar';
 @endphp
 <!DOCTYPE html>
@@ -11,7 +11,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __('app.login_title') }} — LexPro</title>
+    <title>{{ __('app.login_title') }} — مُداوَلة</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -379,7 +379,7 @@
                         </div>
                     </div>
                     <h1 class="font-editorial text-4xl sm:text-[2.6rem] font-bold leading-snug mb-2" style="color:var(--ivory);" dir="rtl">{{ $officeName }}</h1>
-                    <p class="text-muted text-sm tracking-wide" style="color:var(--muted);">{{ __('app.login_title') }} · LexPro ⚖</p>
+                    <p class="text-muted text-sm tracking-wide" style="color:var(--muted);">{{ __('app.login_title') }} · مُداوَلة ⚖</p>
                 </div>
 
                 <div class="reveal" style="animation-delay:0.85s;">
@@ -478,7 +478,7 @@
                         </form>
 
                         <div class="mt-5 pt-5 border-t text-center" style="border-color:rgba(146,153,165,0.14);">
-                            <p class="text-xs" style="color:rgba(146,153,165,0.6);">{{ $officeName }} — <a href="{{ url('/portfolio') }}" target="_blank" class="link-soft" rel="noopener">LexPro</a> · منظومة قانونية متكاملة</p>
+                            <p class="text-xs" style="color:rgba(146,153,165,0.6);">{{ $officeName }} — <a href="{{ url('/portfolio') }}" target="_blank" class="link-soft" rel="noopener">مُداوَلة</a> · منظومة قانونية متكاملة</p>
                         </div>
                     </div>
                 </div>

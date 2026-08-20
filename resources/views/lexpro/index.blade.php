@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'LexPro - نظام إدارة المكاتب القانونية')
+@section('title', 'مُداوَلة - نظام إدارة المكاتب القانونية')
 
 @section('content')
 <div class="max-w-4xl mx-auto space-y-8" dir="rtl">
@@ -10,15 +10,15 @@
         <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-gold to-gold-light flex items-center justify-center mx-auto mb-6 shadow-lg shadow-gold/30">
             <span class="text-3xl font-bold text-gray-900">LP</span>
         </div>
-        <h1 class="text-4xl md:text-5xl font-bold text-gold-dark font-heading mb-4">LexPro</h1>
+        <h1 class="text-4xl md:text-5xl font-bold text-gold-dark font-heading mb-4">مُداوَلة</h1>
         <p class="text-gray-600 text-xl">نظام متكامل لإدارة المكاتب القانونية والمحاماة</p>
     </div>
 
-    {{-- What is LexPro --}}
+    {{-- What is مُداوَلة --}}
     <div class="bg-white rounded-2xl border border-gray-200 p-8">
-        <h2 class="text-2xl font-bold text-gold-dark mb-6">ما هو LexPro؟</h2>
+        <h2 class="text-2xl font-bold text-gold-dark mb-6">ما هو مُداوَلة؟</h2>
         <p class="text-gray-800 leading-relaxed text-lg">
-            <strong class="text-gold-dark">LexPro</strong> هو نظام إلكتروني متكامل لإدارة المكاتب القانونية، تم تطويره خصيصاً<br class="hidden md:block">
+            <strong class="text-gold-dark">مُداوَلة</strong> هو نظام إلكتروني متكامل لإدارة المكاتب القانونية، تم تطويره خصيصاً<br class="hidden md:block">
             ليسهل على المحامين وإدارة المكتب إدارة القضايا والعملاء والجلسات والمهام اليومية.
         </p>
     </div>
@@ -128,7 +128,7 @@
 
     {{-- Footer --}}
     <div class="text-center py-8 text-gray-400 text-sm border-t border-gray-100">
-        <p>LexPro — نظام إدارة المكاتب القانونية</p>
+        <p>مُداوَلة — نظام إدارة المكاتب القانونية</p>
     </div>
 </div>
 @endsection

@@ -1,5 +1,5 @@
 @php
-    $officeName = \App\Models\Setting::get('office_name', 'LexPro');
+    $officeName = \App\Models\Setting::get('office_name', 'مُداوَلة');
     $isRtl = app()->getLocale() === 'ar';
 @endphp
 <!DOCTYPE html>
@@ -105,11 +105,11 @@
     <footer class="bg-white/50 border-t border-gold/15">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
             <div class="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 text-[10px] sm:text-xs text-gray-400">
-                <a href="https://office.riyami.om/portfolio/" target="_blank" class="hover:text-gold-dark transition-colors">LexPro &copy; {{ date('Y') }}</a>
+                <a href="https://dev.riyami.om/" target="_blank" class="hover:text-gold-dark transition-colors">مُداوَلة &copy; {{ date('Y') }}</a>
                 <span class="hidden sm:inline text-gray-300">|</span>
                 <span>{{ $officeName }}</span>
                 <span class="hidden sm:inline text-gray-300">|</span>
-                <a href="https://office.riyami.om/portfolio/" target="_blank" class="hover:text-gold-dark transition-colors">المطور عبدالرحمن الريامي</a>
+                <a href="https://dev.riyami.om/" target="_blank" class="hover:text-gold-dark transition-colors">المطور عبدالرحمن الريامي</a>
             </div>
         </div>
     </footer>

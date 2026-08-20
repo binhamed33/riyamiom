@@ -916,7 +916,7 @@ SYSTEM;
                     Mail::raw($message, function ($m) use ($client, $case) {
                         $m->from(
                             \App\Models\Setting::get('office_email', config('mail.from.address', 'hello@example.com')),
-                            \App\Models\Setting::get('office_name', config('mail.from.name', 'LexPro'))
+                            \App\Models\Setting::get('office_name', config('mail.from.name', 'مُداوَلة'))
                         );
                         $m->to($client->email)
                             ->subject('متابعة قضيتك إلكترونياً - شركة حمد الريامي للمحاماة (قضية ' . $case->case_number . ')');
