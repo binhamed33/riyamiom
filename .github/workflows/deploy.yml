@@ -1,0 +1,23 @@
+name: Deploy to server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            sudo -u riyami-office bash -c "cd /home/riyami-office/htdocs/office.riyami.om && git pull"
+            sudo -u riyami-office php /home/riyami-office/htdocs/office.riyami.om/artisan config:clear
+            sudo -u riyami-office php /home/riyami-office/htdocs/office.riyami.om/artisan view:clear
+            sudo -u riyami-office php /home/riyami-office/htdocs/office.riyami.om/artisan cache:clear
