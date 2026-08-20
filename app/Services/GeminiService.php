@@ -91,22 +91,35 @@ class GeminiService
         ])));
 
         $lastTransientError = null;
+        $maxAttemptsPerModel = 2; // محاولة إضافية عند الازدحام قبل الانتقال للنموذج الاحتياطي
+
         foreach ($models as $model) {
-            try {
-                return $this->callModel($model, $payload);
-            } catch (\RuntimeException $e) {
-                $retryable = in_array($this->lastStatus, [404, 429, 500, 502, 503], true);
-                if (!$retryable) {
-                    throw $e;
+            for ($attempt = 1; $attempt <= $maxAttemptsPerModel; $attempt++) {
+                try {
+                    return $this->callModel($model, $payload);
+                } catch (\RuntimeException $e) {
+                    $retryable = in_array($this->lastStatus, [404, 429, 500, 502, 503], true);
+                    if (!$retryable) {
+                        throw $e;
+                    }
+                    $lastTransientError = $e;
+
+                    // 404 = النموذج غير موجود → انتقل مباشرة للنموذج التالي بدون انتظار
+                    if ($this->lastStatus === 404) {
+                        break;
+                    }
+
+                    // 429/500/502/503 = ازدحام مؤقت → أعد المحاولة بعد فاصل قصير
+                    if ($attempt < $maxAttemptsPerModel) {
+                        usleep(1500000); // 1.5 ثانية
+                    }
                 }
-                $lastTransientError = $e;
             }
         }
 
-        $tried = implode(', ', $models);
-        $this->lastError = $lastTransientError?->getMessage() ?? ('Gemini API error — tried models: ' . $tried);
+        $this->lastError = 'خدمة الذكاء الاصطناعي مزدحمة حاليًا، حاول مرة أخرى بعد لحظات.';
         throw $lastTransientError
-            ?? new \RuntimeException('Gemini API error — tried models: ' . $tried);
+            ?? new \RuntimeException('Gemini API error — tried models: ' . implode(', ', $models));
     }
 
     protected function callModel(string $model, array $payload): string

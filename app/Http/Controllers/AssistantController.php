@@ -52,8 +52,8 @@ class AssistantController extends Controller
         } catch (\Throwable $e) {
             Log::error('Assistant chat failed: ' . $e->getMessage());
             return response()->json([
-                'error' => 'خطأ من خدمة الذكاء الاصطناعي: ' . $e->getMessage(),
-            ], 500);
+                'error' => $service->getLastError() ?: 'المساعد القانوني مزدحم حاليًا، حاول مرة أخرى بعد لحظات.',
+            ], 503);
         }
     }
 
