@@ -130,6 +130,7 @@ class CaseController extends Controller
             'note_title'          => 'nullable|string|max:255',
             'note_content'        => 'nullable|string|max:2000',
             'opened_at'           => 'nullable|date',
+            'template_id'         => 'nullable|exists:case_templates,id',
         ]);
 
         if (empty($validated['title'])) {
@@ -174,7 +175,13 @@ class CaseController extends Controller
 
         DB::beginTransaction();
         try {
-            $legalCase = LegalCase::create($validated);
+            $legalCase = LegalCase::create(collect($validated)->except('template_id')->all());
+
+            // قالب القضية (#30): يجهّز مهام البيئة تلقائياً
+            if (!empty($validated['template_id'])) {
+                \App\Models\CaseTemplate::find($validated['template_id'])
+                    ?->applyTo($legalCase, auth()->id());
+            }
 
             if (is_array($sessionsData)) {
                 foreach ($sessionsData as $sessionData) {

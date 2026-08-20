@@ -16,3 +16,6 @@ Schedule::command('discord:staff-status')->everyFiveMinutes();
 
 // إشعارات الاشتراك — لمدير المكتب فقط (الساعة 8 صباحاً بتوقيت مسقط)
 Schedule::command('subscription:notices')->dailyAt('4:00');
+
+// محرك الأتمتة — يعمل كل ساعة، ويخرج فوراً ما لم يُفعَّل من لوحة المطور
+Schedule::command('mudawala:automation')->hourly();

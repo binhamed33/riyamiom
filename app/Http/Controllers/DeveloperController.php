@@ -136,4 +136,13 @@ class DeveloperController extends Controller
         $status = $value === '1' ? 'معطّلة' : 'مفعلة';
         return redirect()->route('developer.features')->with('success', "✅ تم تغيير حالة الميزة إلى $status");
     }
+
+    /** تفعيل/تعطيل محرك الأتمتة (مهام الجلسات وتنبيهات الركود) */
+    public function toggleAutomation()
+    {
+        $on = \App\Models\Setting::get('automation_enabled', '0') === '1';
+        \App\Models\Setting::set('automation_enabled', $on ? '0' : '1', 'automation');
+
+        return back()->with('success', $on ? 'عُطّلت الأتمتة.' : 'فُعّلت الأتمتة — ستعمل قواعدها في الجولة المجدولة القادمة.');
+    }
 }

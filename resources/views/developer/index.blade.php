@@ -83,6 +83,13 @@
             </form>
             <a href="{{ route('developer.features') }}" class="bg-indigo-100 border border-indigo-200 text-indigo-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-200 inline-block transition">🔘 إدارة الميزات</a>
             <a href="{{ route('developer.subscription.config') }}" class="bg-gold/12 border border-gold/15 text-gold-dark px-4 py-2 rounded-lg text-sm font-medium hover:bg-gold/15 inline-block transition">🛡️ Subscription Configuration</a>
+            <form action="{{ route('developer.automation.toggle') }}" method="POST" class="inline">
+                @csrf
+                @php $autoOn = \App\Models\Setting::get('automation_enabled', '0') === '1'; @endphp
+                <button type="submit" class="{{ $autoOn ? 'bg-green-100 border-green-200 text-green-700 hover:bg-green-200' : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200' }} border px-4 py-2 rounded-lg text-sm font-medium transition">
+                    ⚙️ الأتمتة: {{ $autoOn ? 'مفعّلة' : 'معطّلة' }}
+                </button>
+            </form>
         </div>
     </div>
 

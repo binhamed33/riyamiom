@@ -287,6 +287,11 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     
     // Users & Admin - all team roles
     Route::resource('users', UserController::class)->middleware(['role:developer,admin', 'feature:users']);
+
+    // قوالب القضايا (#30) — إدارة القوالب للإدارة فقط
+    Route::resource('case-templates', App\Http\Controllers\CaseTemplateController::class)
+        ->only(['index', 'store', 'destroy'])
+        ->middleware('role:developer,admin');
     Route::get('/feasibility', [FeasibilityController::class, 'index'])->middleware(['role:developer,admin,permission:feasibility.view', 'feature:feasibility'])->name('feasibility.index');
     Route::get('/audit-log', [AuditLogController::class, 'index'])->middleware(['role:developer,admin,permission:audit_log.view', 'feature:audit_log'])->name('audit-log.index');
     Route::get('/settings', [SettingController::class, 'index'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.index');
@@ -384,6 +389,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::post('/storage-link', [App\Http\Controllers\DeveloperController::class, 'storageLink'])->name('developer.storage-link');
         Route::get('/features', [App\Http\Controllers\DeveloperController::class, 'features'])->name('developer.features');
         Route::post('/features/toggle', [App\Http\Controllers\DeveloperController::class, 'toggleFeature'])->name('developer.features.toggle');
+        Route::post('/automation/toggle', [App\Http\Controllers\DeveloperController::class, 'toggleAutomation'])->name('developer.automation.toggle');
         Route::post('/announcement', [App\Http\Controllers\AnnouncementController::class, 'publish'])->name('announcements.publish');
 
         // Subscription configuration - developer only (site-level subscription)
