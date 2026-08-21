@@ -8,7 +8,7 @@
     {{-- Hero --}}
     <div class="text-center py-12">
         <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-gold to-gold-light flex items-center justify-center mx-auto mb-6 shadow-lg shadow-gold/30">
-            <span class="text-3xl font-bold text-gray-900">LP</span>
+            <span class="text-3xl font-bold text-gray-900">م</span>
         </div>
         <h1 class="text-4xl md:text-5xl font-bold text-gold-dark font-heading mb-4">مُداوَلة</h1>
         <p class="text-gray-600 text-xl">نظام متكامل لإدارة المكاتب القانونية والمحاماة</p>

@@ -15,11 +15,16 @@
         </a>
     </div>
 
-    <form method="GET" action="{{ route('sessions.index') }}" class="bg-white rounded-xl border border-gray-200 p-4">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    @php
+        $activeFilters = collect(['status', 'case_id', 'lawyer_id', 'court', 'range', 'date_from', 'date_to'])
+            ->filter(fn ($k) => filled(request($k)))->count();
+        $selCls = 'w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40';
+    @endphp
+    <x-filter-panel :action="route('sessions.index')" :count="$activeFilters" :clear-url="route('sessions.index')">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.status') }}</label>
-                <select name="status" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
+                <select name="status" class="{{ $selCls }}">
                     <option value="">{{ __('app.all') }}</option>
                     <option value="upcoming" {{ request('status') === 'upcoming' ? 'selected' : '' }}>{{ __('app.status_upcoming') }}</option>
                     <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>{{ __('app.status_completed') }}</option>
@@ -28,25 +33,56 @@
                 </select>
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case') }}</label>
+                <select name="case_id" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all_cases') }}</option>
+                    @foreach($filterCases as $fc)
+                        <option value="{{ $fc->id }}" {{ request('case_id') == $fc->id ? 'selected' : '' }}>{{ $fc->office_case_number }} — {{ \Illuminate\Support\Str::limit($fc->title, 35) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case_lawyer') }}</label>
+                <select name="lawyer_id" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all_lawyers') }}</option>
+                    @foreach($filterLawyers as $fl)
+                        <option value="{{ $fl->id }}" {{ request('lawyer_id') == $fl->id ? 'selected' : '' }}>{{ $fl->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.court') }}</label>
+                <select name="court" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all_courts') }}</option>
+                    @foreach($filterCourts as $court)
+                        <option value="{{ $court }}" {{ request('court') === $court ? 'selected' : '' }}>{{ $court }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.quick_range') }}</label>
+                <select name="range" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all') }}</option>
+                    <option value="today" {{ request('range') === 'today' ? 'selected' : '' }}>{{ __('app.range_today') }}</option>
+                    <option value="week" {{ request('range') === 'week' ? 'selected' : '' }}>{{ __('app.range_week') }}</option>
+                    <option value="month" {{ request('range') === 'month' ? 'selected' : '' }}>{{ __('app.range_month') }}</option>
+                </select>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.from_date') }}</label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}"
-                       class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="{{ $selCls }}">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.to_date') }}</label>
-                <input type="date" name="date_to" value="{{ request('date_to') }}"
-                       class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
+                <input type="date" name="date_to" value="{{ request('date_to') }}" class="{{ $selCls }}">
             </div>
             <div class="flex items-end gap-2">
-                <button type="submit" class="bg-gray-100 border border-gold/25 text-gold-dark px-5 py-2 rounded-lg hover:bg-gold/15 transition text-sm">
+                <button type="submit" class="flex-1 bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-lg font-semibold transition-colors text-sm">
                     {{ __('app.filter') }}
                 </button>
-                <a href="{{ route('sessions.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">
-                    {{ __('app.reset') }}
-                </a>
             </div>
         </div>
-    </form>
+    </x-filter-panel>
 
     <div class="bg-white rounded-xl border border-gray-200">
         <div class="overflow-x-auto">

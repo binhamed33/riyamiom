@@ -68,6 +68,22 @@ class CaseController extends Controller
             $query->where('cases.lawyer_id', $request->lawyer_id);
         }
 
+        if ($request->filled('court')) {
+            $query->where('cases.court', $request->court);
+        }
+
+        if ($request->filled('case_type')) {
+            $query->where('cases.case_type', $request->case_type);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('cases.created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('cases.created_at', '<=', $request->date_to);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -89,8 +105,10 @@ class CaseController extends Controller
 
         $cases = $query->paginate(15)->withQueryString();
         $users = User::where('is_active', true)->orderBy('name')->get();
+        $filterCourts = LegalCase::whereNotNull('court')->where('court', '!=', '')->distinct()->orderBy('court')->pluck('court');
+        $filterTypes = LegalCase::whereNotNull('case_type')->where('case_type', '!=', '')->distinct()->orderBy('case_type')->pluck('case_type');
 
-        return view('cases.index', compact('cases', 'users', 'sort', 'dir'));
+        return view('cases.index', compact('cases', 'users', 'sort', 'dir', 'filterCourts', 'filterTypes'));
     }
 
     public function create(): View

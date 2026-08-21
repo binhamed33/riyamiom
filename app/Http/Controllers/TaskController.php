@@ -35,6 +35,21 @@ class TaskController extends Controller
             $query->where('assigned_to', $request->assigned_to);
         }
 
+        if ($request->filled('due')) {
+            $today = now()->startOfDay();
+            match ($request->due) {
+                'overdue' => $query->whereNotNull('due_date')
+                    ->where('due_date', '<', $today)
+                    ->where('status', '!=', 'completed'),
+                'today' => $query->whereDate('due_date', $today),
+                'week' => $query->whereBetween('due_date', [$today, $today->copy()->addDays(7)->endOfDay()]),
+                'upcoming' => $query->whereNotNull('due_date')
+                    ->where('due_date', '>=', $today)
+                    ->where('status', '!=', 'completed'),
+                default => null,
+            };
+        }
+
         $tasks = $query->latest()->paginate(15)->withQueryString();
         $users = User::where('role', '!=', 'client')->orderBy('name')->get();
 

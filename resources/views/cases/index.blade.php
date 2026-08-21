@@ -69,7 +69,14 @@ document.addEventListener('alpine:init', () => {
     </div>
 
     {{-- Filter Bar --}}
-    <form method="GET" action="{{ route('cases.index') }}" class="bg-white rounded-xl border border-gold/15 p-4">
+    @php
+        $activeFilters = collect(['search', 'status', 'priority', 'lawyer_id', 'court', 'case_type', 'date_from', 'date_to'])
+            ->filter(fn ($k) => filled(request($k)))->count();
+        $selCls = 'w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40';
+    @endphp
+    <x-filter-panel :action="route('cases.index')" :count="$activeFilters"
+                    :clear-url="route('cases.index', ['sort' => $sort, 'dir' => $dir])"
+                    :hidden="['sort' => $sort, 'dir' => $dir]">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {{-- Search --}}
             <div class="lg:col-span-1">
@@ -113,7 +120,7 @@ document.addEventListener('alpine:init', () => {
 
             {{-- Priority --}}
             <div>
-                <select name="priority" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
+                <select name="priority" class="{{ $selCls }}">
                     <option value="">{{ __('app.all') }}</option>
                     <option value="low" {{ request('priority') === 'low' ? 'selected' : '' }}>{{ __('app.priority_low') }}</option>
                     <option value="medium" {{ request('priority') === 'medium' ? 'selected' : '' }}>{{ __('app.priority_medium') }}</option>
@@ -122,17 +129,50 @@ document.addEventListener('alpine:init', () => {
                 </select>
             </div>
 
+            {{-- Lawyer --}}
+            <div>
+                <select name="lawyer_id" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all_lawyers') }}</option>
+                    @foreach($users as $u)
+                        <option value="{{ $u->id }}" {{ request('lawyer_id') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Court --}}
+            <div>
+                <select name="court" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all_courts') }}</option>
+                    @foreach($filterCourts as $court)
+                        <option value="{{ $court }}" {{ request('court') === $court ? 'selected' : '' }}>{{ $court }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Type --}}
+            <div>
+                <select name="case_type" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all_types') }}</option>
+                    @foreach($filterTypes as $type)
+                        <option value="{{ $type }}" {{ request('case_type') === $type ? 'selected' : '' }}>{{ $type }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Date range --}}
+            <div class="flex items-center gap-2">
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="{{ $selCls }}" title="{{ __('app.from_date') }}">
+                <input type="date" name="date_to" value="{{ request('date_to') }}" class="{{ $selCls }}" title="{{ __('app.to_date') }}">
+            </div>
+
             {{-- Submit --}}
             <div class="flex items-center gap-2">
                 <button type="submit" class="flex-1 bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                     {{ __('app.filter') }}
                 </button>
-                <a href="{{ route('cases.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">
-                    {{ __('app.reset') }}
-                </a>
             </div>
         </div>
-    </form>
+    </x-filter-panel>
 
     {{-- Cases Table --}}
     <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">

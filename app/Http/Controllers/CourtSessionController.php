@@ -33,6 +33,23 @@ class CourtSessionController extends Controller
             $query->where('case_id', $request->case_id);
         }
 
+        if ($request->filled('lawyer_id')) {
+            $query->whereHas('case', fn ($q) => $q->where('lawyer_id', $request->lawyer_id));
+        }
+
+        if ($request->filled('court')) {
+            $query->whereHas('case', fn ($q) => $q->where('court', $request->court));
+        }
+
+        if ($request->filled('range')) {
+            match ($request->range) {
+                'today' => $query->whereDate('date', now()->startOfDay()),
+                'week' => $query->whereBetween('date', [now()->startOfWeek(), now()->endOfWeek()]),
+                'month' => $query->whereBetween('date', [now()->startOfMonth(), now()->endOfMonth()]),
+                default => null,
+            };
+        }
+
         if ($request->filled('date_from')) {
             $query->where('date', '>=', $request->date_from);
         }
@@ -43,7 +60,11 @@ class CourtSessionController extends Controller
 
         $sessions = $query->orderBy('date', 'asc')->orderBy('id', 'asc')->paginate(15)->withQueryString();
 
-        return view('sessions.index', compact('sessions'));
+        $filterCases = LegalCase::orderBy('office_case_number')->get(['id', 'office_case_number', 'title']);
+        $filterLawyers = User::where('role', '!=', 'client')->orderBy('name')->get(['id', 'name']);
+        $filterCourts = LegalCase::whereNotNull('court')->where('court', '!=', '')->distinct()->orderBy('court')->pluck('court');
+
+        return view('sessions.index', compact('sessions', 'filterCases', 'filterLawyers', 'filterCourts'));
     }
 
     public function create(Request $request): View

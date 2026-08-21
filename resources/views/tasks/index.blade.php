@@ -15,11 +15,34 @@
         </a>
     </div>
 
-    <form method="GET" action="{{ route('tasks.index') }}" class="bg-white rounded-xl border border-gray-200 p-4">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    @php
+        $activeFilters = collect(['status', 'priority', 'assigned_to', 'due'])
+            ->filter(fn ($k) => filled(request($k)))->count();
+        $selCls = 'w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40';
+        $tabs = [
+            ['label' => __('app.tab_all'), 'params' => [], 'active' => !request()->filled('due') && !request()->filled('status')],
+            ['label' => __('app.tab_today'), 'params' => ['due' => 'today'], 'active' => request('due') === 'today'],
+            ['label' => __('app.tab_upcoming'), 'params' => ['due' => 'upcoming'], 'active' => request('due') === 'upcoming'],
+            ['label' => __('app.tab_overdue'), 'params' => ['due' => 'overdue'], 'active' => request('due') === 'overdue'],
+            ['label' => __('app.tab_completed'), 'params' => ['status' => 'completed'], 'active' => request('status') === 'completed' && !request()->filled('due')],
+        ];
+    @endphp
+
+    {{-- Quick tabs --}}
+    <div class="flex flex-wrap items-center gap-2">
+        @foreach($tabs as $tab)
+            <a href="{{ route('tasks.index', $tab['params']) }}"
+               class="px-4 py-1.5 rounded-full text-xs font-bold border transition-colors {{ $tab['active'] ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-gold/40 hover:text-gold-dark' }}">
+                {{ $tab['label'] }}
+            </a>
+        @endforeach
+    </div>
+
+    <x-filter-panel :action="route('tasks.index')" :count="$activeFilters" :clear-url="route('tasks.index')">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.status') }}</label>
-                <select name="status" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
+                <select name="status" class="{{ $selCls }}">
                     <option value="">{{ __('app.all') }}</option>
                     <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>{{ __('app.status_pending') }}</option>
                     <option value="in_progress" {{ request('status') === 'in_progress' ? 'selected' : '' }}>{{ __('app.status_in_progress') }}</option>
@@ -28,7 +51,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.priority') }}</label>
-                <select name="priority" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
+                <select name="priority" class="{{ $selCls }}">
                     <option value="">{{ __('app.all') }}</option>
                     <option value="low" {{ request('priority') === 'low' ? 'selected' : '' }}>{{ __('app.priority_low') }}</option>
                     <option value="medium" {{ request('priority') === 'medium' ? 'selected' : '' }}>{{ __('app.priority_medium') }}</option>
@@ -38,7 +61,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.task_assigned_to') }}</label>
-                <select name="assigned_to" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
+                <select name="assigned_to" class="{{ $selCls }}">
                     <option value="">{{ __('app.all') }}</option>
                     @foreach ($users as $user)
                         <option value="{{ $user->id }}" {{ request('assigned_to') == $user->id ? 'selected' : '' }}>
@@ -47,16 +70,23 @@
                     @endforeach
                 </select>
             </div>
-            <div class="flex items-end gap-2">
-                <button type="submit" class="bg-gray-100 border border-gold/25 text-gold-dark px-5 py-2 rounded-lg hover:bg-gold/15 transition text-sm">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.due_filter') }}</label>
+                <select name="due" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all') }}</option>
+                    <option value="today" {{ request('due') === 'today' ? 'selected' : '' }}>{{ __('app.due_today') }}</option>
+                    <option value="week" {{ request('due') === 'week' ? 'selected' : '' }}>{{ __('app.due_week') }}</option>
+                    <option value="upcoming" {{ request('due') === 'upcoming' ? 'selected' : '' }}>{{ __('app.due_upcoming') }}</option>
+                    <option value="overdue" {{ request('due') === 'overdue' ? 'selected' : '' }}>{{ __('app.due_overdue') }}</option>
+                </select>
+            </div>
+            <div class="flex items-end gap-2 lg:col-start-4">
+                <button type="submit" class="flex-1 bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-lg font-semibold transition-colors text-sm">
                     {{ __('app.filter') }}
                 </button>
-                <a href="{{ route('tasks.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">
-                    {{ __('app.reset') }}
-                </a>
             </div>
         </div>
-    </form>
+    </x-filter-panel>
 
     <div class="bg-white rounded-xl border border-gray-200">
         <div class="overflow-x-auto">
