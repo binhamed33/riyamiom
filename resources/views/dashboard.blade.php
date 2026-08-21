@@ -7,6 +7,32 @@
 
 @php $isMgmt = auth()->user()->isAdmin() || auth()->user()->isDeveloper() || auth()->user()->hasPermission('users.view') || auth()->user()->hasPermission('feasibility.view') || auth()->user()->hasPermission('audit_log.view') || auth()->user()->hasPermission('settings.manage') || auth()->user()->hasPermission('backup.manage'); @endphp
 
+{{-- نبض الأتمتة — للإدارة: ماذا فعلت مُداوَلة نيابة عنك اليوم؟ --}}
+@if($isMgmt)
+    @php
+        try {
+            $autoToday = \App\Models\AutomationRun::whereDate('created_at', today())->where('status', 'success')->count();
+            $autoFailed = \App\Models\AutomationRun::where('status', 'failed')->where('created_at', '>=', now()->subDay())->count();
+        } catch (\Throwable $e) {
+            $autoToday = 0;
+            $autoFailed = 0;
+        }
+    @endphp
+    @if($autoToday > 0 || $autoFailed > 0)
+    <a href="{{ route('automations.runs') }}"
+       class="flex items-center gap-3 rounded-2xl border px-5 py-3 transition hover:shadow-sm {{ $autoFailed ? 'bg-red-50/60 border-red-200' : 'bg-white border-gold/20' }}">
+        <span class="text-xl">⚙️</span>
+        <p class="flex-1 text-sm text-gray-700">
+            <b class="text-gold-dark">مُداوَلة</b> نفّذت <b>{{ $autoToday }}</b> إجراءً تلقائياً اليوم
+            @if($autoFailed)
+                — <b class="text-red-600">{{ $autoFailed }} إخفاق يحتاج مراجعتك</b>
+            @endif
+        </p>
+        <span class="text-xs font-bold text-gold-dark whitespace-nowrap">التفاصيل ←</span>
+    </a>
+    @endif
+@endif
+
 {{-- Today's Brief --}}
 <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
     <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between gap-3">

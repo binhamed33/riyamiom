@@ -85,6 +85,18 @@ return [
                 'audit_log.view' => 'عرض سجل الحركات',
             ],
         ],
+        'automations' => [
+            'label' => 'مركز الأتمتة',
+            'permissions' => [
+                'automations.manage' => 'إدارة قواعد الأتمتة',
+            ],
+        ],
+        'templates' => [
+            'label' => 'القوالب الذكية',
+            'permissions' => [
+                'templates.manage' => 'إدارة قوالب القضايا',
+            ],
+        ],
     ],
 
     'role_defaults' => [

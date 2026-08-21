@@ -68,11 +68,20 @@ class DocumentController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'case_id'      => 'nullable|exists:cases,id',
-            'title'        => 'required|string|max:255',
-            'file'         => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:' . (self::MAX_SIZE / 1024),
-            'access_level' => 'required|in:all,team,private',
+            'case_id'        => 'nullable|exists:cases,id',
+            'case_folder_id' => 'nullable|integer|exists:case_folders,id',
+            'title'          => 'required|string|max:255',
+            'file'           => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:' . (self::MAX_SIZE / 1024),
+            'access_level'   => 'required|in:all,team,private',
         ]);
+
+        // المجلد يجب أن يتبع نفس القضية — لا قبول لمجلد من قضية أخرى
+        $folderId = null;
+        if (!empty($validated['case_folder_id']) && !empty($validated['case_id'])) {
+            $folderId = \App\Models\CaseFolder::where('id', $validated['case_folder_id'])
+                ->where('case_id', $validated['case_id'])
+                ->value('id');
+        }
 
         if ($request->filled('case_id')) {
             $case = LegalCase::find($request->input('case_id'));
@@ -94,6 +103,7 @@ class DocumentController extends Controller
 
         $document = Document::create([
             'case_id'      => $validated['case_id'] ?? null,
+            'case_folder_id' => $folderId,
             'uploaded_by'  => auth()->id(),
             'title'        => $validated['title'],
             'doc_type'     => $docType,

@@ -16,6 +16,7 @@ class Document extends Model
 
     protected $fillable = [
         'case_id',
+        'case_folder_id',
         'uploaded_by',
         'title',
         'doc_type',
@@ -41,5 +42,10 @@ class Document extends Model
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(CaseFolder::class, 'case_folder_id');
     }
 }

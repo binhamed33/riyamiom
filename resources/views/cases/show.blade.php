@@ -8,6 +8,16 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('caseDetail', () => ({
         activeTab: 'sessions',
         showSummary: false,
+        // وضع التركيز: UX فقط — لا يغيّر أي صلاحية؛ ما لا تستطيع تعديله يبقى كذلك
+        focusMode: false,
+        toggleFocus() {
+            this.focusMode = !this.focusMode;
+            document.documentElement.classList.toggle('focus-mode', this.focusMode);
+            if (this.focusMode && !['sessions', 'tasks', 'documents', 'checklist', 'timeline'].includes(this.activeTab)) {
+                this.activeTab = 'sessions';
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
         quickOpen: false,
         quickTab: 'note',
         quickBusy: false,
@@ -309,6 +319,16 @@ document.addEventListener('alpine:init', () => {
     }
     .print-only { display: none; }
     @media print { .print-only { display: block !important; } }
+
+    /* ===== وضع التركيز: يخفي كل ما يشتت ويترك جوهر القضية =====
+       UX فقط — لا يغيّر أي صلاحيات؛ نفس الأزرار والنماذج تخضع لنفس الحماية */
+    aside, .content-area, [data-hide-on-focus] { transition: opacity 0.25s ease; }
+    html.focus-mode aside { display: none !important; }
+    html.focus-mode .ct-open, html.focus-mode .ct-closed { margin-right: 0 !important; margin-left: 0 !important; }
+    html.focus-mode [data-hide-on-focus] { display: none !important; }
+    html.focus-mode main { max-width: 64rem; margin-inline: auto; }
+    .focus-enter { animation: focusIn 0.3s ease; }
+    @keyframes focusIn { from { opacity: 0.4; transform: scale(0.995); } to { opacity: 1; transform: scale(1); } }
 </style>
 @endpush
 
@@ -345,21 +365,31 @@ document.addEventListener('alpine:init', () => {
                 </span>
             @endif
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
+            {{-- Focus Mode --}}
+            <button @click="toggleFocus()"
+                    :class="focusMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 border border-gray-200 hover:border-gold/40'"
+                    class="px-5 py-2.5 rounded-lg font-semibold transition-all text-sm flex items-center gap-2"
+                    :title="focusMode ? 'الخروج من وضع التركيز' : 'وضع التركيز: إخفاء كل ما يشتت'">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>
+                </svg>
+                <span x-text="focusMode ? 'خروج من التركيز' : 'تركيز'"></span>
+            </button>
             {{-- Quick Actions Button --}}
             <button @click="quickOpen = true" class="bg-gradient-to-r from-gold to-gold-dark hover:from-gold-dark hover:to-gold-deep text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 shadow-lg shadow-gold/25">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
                 إجراءات سريعة
             </button>
             {{-- Summarize Button --}}
-            <button @click="showSummary = true" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
+            <button data-hide-on-focus @click="showSummary = true" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 {{ __('app.case_summary') }}
             </button>
             {{-- AI Analysis Button --}}
-            <button @click="runAnalysis()" :disabled="analyzing" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
+            <button data-hide-on-focus @click="runAnalysis()" :disabled="analyzing" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
                 <svg x-show="!analyzing" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
                 </svg>
@@ -370,31 +400,31 @@ document.addEventListener('alpine:init', () => {
                 <span x-text="analyzing ? 'جارِ التحليل...' : 'تحليل بالذكاء الاصطناعي'"></span>
             </button>
             {{-- AI Chat Button --}}
-            <button @click="openAiChat()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
+            <button data-hide-on-focus @click="openAiChat()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
                 </svg>
                 {{ __('app.ai_chat_title') }}
             </button>
             {{-- Print Button --}}
-            <button @click="window.print()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 no-print">
+            <button data-hide-on-focus @click="window.print()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm flex items-center gap-2 no-print">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                 </svg>
                 {{ __('app.print') }}
             </button>
             {{-- Download PDF Button --}}
-            <a href="{{ route('cases.file', $case) }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
+            <a data-hide-on-focus href="{{ route('cases.file', $case) }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 {{ __('app.download_case_pdf') }}
             </a>
-            <a href="{{ route('cases.edit', $case->id) }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+            <a data-hide-on-focus href="{{ route('cases.edit', $case->id) }}" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                 {{ __('app.edit') }}
             </a>
             @if($case->created_by === auth()->id() || in_array(auth()->user()->role, ['developer', 'admin']))
-            <span class="inline-block" x-data="{ open: false }">
+            <span data-hide-on-focus class="inline-block" x-data="{ open: false }">
                 <button type="button" @click="open = true" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm">
                     {{ __('app.delete') }}
                 </button>
@@ -519,7 +549,7 @@ document.addEventListener('alpine:init', () => {
     </div>
 
     {{-- Opponent Data Card --}}
-    <div class="bg-white rounded-xl border border-gold/15 p-6">
+    <div data-hide-on-focus class="bg-white rounded-xl border border-gold/15 p-6">
         <h2 class="text-lg font-bold text-gold-dark border-b border-gray-200 pb-3 mb-5">{{ __('app.opponent_data') }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
@@ -547,9 +577,27 @@ document.addEventListener('alpine:init', () => {
 
     {{-- Description --}}
     @if($case->description)
-    <div class="bg-white rounded-xl border border-gold/15 p-6">
+    <div data-hide-on-focus class="bg-white rounded-xl border border-gold/15 p-6">
         <p class="text-gray-400 text-xs mb-2">{{ __('app.case_description') }}</p>
         <p class="text-gray-900 text-sm leading-relaxed">{{ $case->description }}</p>
+    </div>
+    @endif
+
+    {{-- الجلسة القادمة — شريط بارز (أساسي في وضع التركيز) --}}
+    @php $nextSession = $case->sessions->where('status', 'upcoming')->where('date', '>=', now())->sortBy('date')->first(); @endphp
+    @if($nextSession)
+    <div class="flex flex-wrap items-center gap-3 bg-gradient-to-l from-gold/10 to-transparent border border-gold/25 rounded-xl px-4 py-3">
+        <span class="text-xl">📅</span>
+        <div class="flex-1 min-w-0">
+            <p class="text-xs text-gray-400">الجلسة القادمة</p>
+            <p class="text-sm font-bold text-gray-900">
+                {{ $nextSession->date->format('Y-m-d H:i') }}
+                @if($nextSession->location) — {{ $nextSession->location }} @endif
+            </p>
+        </div>
+        <span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $nextSession->date->diffInDays(now()) <= 2 ? 'bg-red-100 text-red-700' : 'bg-gold/15 text-gold-dark' }}">
+            {{ $nextSession->date->isToday() ? 'اليوم' : ($nextSession->date->isTomorrow() ? 'غداً' : 'بعد ' . now()->diffInDays($nextSession->date) . ' أيام') }}
+        </span>
     </div>
     @endif
 
@@ -569,11 +617,56 @@ document.addEventListener('alpine:init', () => {
                 class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
                 {{ __('app.documents_tab') }} ({{ $case->documents->count() ?? 0 }})
             </button>
+            @if($case->checklistItems->count())
+            <button @click="activeTab = 'checklist'" :class="activeTab === 'checklist' ? 'text-gold-dark border-b-2 border-gold-dark bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
+                class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
+                ☑️ التحقق ({{ $case->checklistItems->where('is_done', true)->count() }}/{{ $case->checklistItems->count() }})
+            </button>
+            @endif
             <button @click="activeTab = 'timeline'" :class="activeTab === 'timeline' ? 'text-gold-dark border-b-2 border-gold-dark bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
                 class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
                 الخط الزمني ({{ $timeline->count() }})
             </button>
         </div>
+
+        {{-- Tab Content: Checklist (من القالب الذكي) --}}
+        @if($case->checklistItems->count())
+        <div x-show="activeTab === 'checklist'" x-cloak class="p-4">
+            @php
+                $doneCount = $case->checklistItems->where('is_done', true)->count();
+                $totalCount = $case->checklistItems->count();
+                $pct = $totalCount ? (int) round($doneCount * 100 / $totalCount) : 0;
+            @endphp
+            <div class="mb-4">
+                <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                    <span>التقدم: {{ $doneCount }} من {{ $totalCount }}</span>
+                    <span class="font-bold text-gold-dark">{{ $pct }}%</span>
+                </div>
+                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-l from-gold to-gold-dark transition-all duration-500" style="width: {{ $pct }}%"></div>
+                </div>
+            </div>
+            <div class="space-y-2">
+                @foreach($case->checklistItems as $item)
+                    <form method="POST" action="{{ route('cases.checklist.toggle', [$case, $item]) }}"
+                          class="flex items-center gap-3 p-3 rounded-xl border transition {{ $item->is_done ? 'bg-green-50/60 border-green-100' : 'bg-gray-50 border-gray-100 hover:border-gold/25' }}">
+                        @csrf
+                        <button type="submit"
+                                class="w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition {{ $item->is_done ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-gold-dark' }}"
+                                title="{{ $item->is_done ? 'إلغاء الإنجاز' : 'تعليم كمنجز' }}">
+                            @if($item->is_done)
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            @endif
+                        </button>
+                        <span class="flex-1 text-sm {{ $item->is_done ? 'text-gray-400 line-through' : 'text-gray-800' }}">{{ $item->title }}</span>
+                        @if($item->is_done && $item->doneBy)
+                            <span class="text-[10px] text-gray-400 whitespace-nowrap">✓ {{ $item->doneBy->name }} • {{ $item->done_at?->format('m/d') }}</span>
+                        @endif
+                    </form>
+                @endforeach
+            </div>
+        </div>
+        @endif
 
         {{-- Tab Content: Sessions --}}
         <div x-show="activeTab === 'sessions'" x-cloak class="p-4">
@@ -710,8 +803,18 @@ document.addEventListener('alpine:init', () => {
                 </a>
             </div>
             @if($case->documents && $case->documents->count() > 0)
+                @php
+                    // تجميع المستندات بمجلدات القضية (من القالب الذكي) — «عام» لغير المصنف
+                    $docGroups = $case->documents->groupBy(fn ($d) => $d->folder?->name ?? '');
+                    $emptyFolders = $case->folders->pluck('name')->filter(fn ($n) => !$docGroups->has($n));
+                @endphp
+                @foreach($docGroups->sortKeys() as $folderName => $docs)
+                <div class="mb-4 last:mb-0">
+                    @if($case->folders->count() || $folderName !== '')
+                        <p class="text-xs font-bold text-gold-dark mb-2">🗂 {{ $folderName !== '' ? $folderName : 'عام' }} <span class="text-gray-400 font-normal">({{ $docs->count() }})</span></p>
+                    @endif
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    @foreach($case->documents as $document)
+                    @foreach($docs as $document)
                         <div class="p-3 rounded-lg bg-gray-100 border border-gray-100 hover:border-gold/15 transition-colors">
         <div class="flex flex-wrap items-center gap-3">
                                 <div class="w-10 h-10 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0">
@@ -752,7 +855,19 @@ document.addEventListener('alpine:init', () => {
                         </div>
                     @endforeach
                 </div>
+                </div>
+                @endforeach
+                @foreach($emptyFolders as $folderName)
+                    <p class="text-xs font-bold text-gray-400 mb-2">🗂 {{ $folderName }} <span class="font-normal">(فارغ)</span></p>
+                @endforeach
             @else
+                @if($case->folders->count())
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        @foreach($case->folders as $folder)
+                            <span class="text-xs font-bold text-gray-400 bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1">🗂 {{ $folder->name }}</span>
+                        @endforeach
+                    </div>
+                @endif
                 <div class="text-center py-8 text-gray-500">
                     <svg class="w-12 h-12 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -771,6 +886,7 @@ document.addEventListener('alpine:init', () => {
                         'session'   => ['dot' => 'bg-purple-500', 'text' => 'text-purple-700', 'bg' => 'bg-purple-50', 'border' => 'border-purple-200'],
                         'task'      => ['dot' => 'bg-emerald-500', 'text' => 'text-emerald-700', 'bg' => 'bg-emerald-50', 'border' => 'border-emerald-200'],
                         'document'  => ['dot' => 'bg-blue-500', 'text' => 'text-blue-700', 'bg' => 'bg-blue-50', 'border' => 'border-blue-200'],
+                        'audit'     => ['dot' => 'bg-gray-400', 'text' => 'text-gray-600', 'bg' => 'bg-gray-100', 'border' => 'border-gray-200'],
                     ];
                 @endphp
                 <span class="absolute top-0 bottom-0 start-3 w-px bg-gradient-to-b from-gold-light via-gray-200 to-transparent"></span>
@@ -1070,6 +1186,12 @@ document.addEventListener('alpine:init', () => {
         </div>
     </div>
 </div>
+
+{{-- زر الإجراءات السريعة العائم — للجوال (نفس الصلاحيات، وصول أسرع) --}}
+<button @click="quickOpen = true" aria-label="إجراءات سريعة"
+        class="md:hidden fixed bottom-20 {{ app()->getLocale() === 'ar' ? 'left-4' : 'right-4' }} z-40 w-14 h-14 rounded-full bg-gradient-to-br from-gold to-gold-dark text-white shadow-xl shadow-gold/30 flex items-center justify-center active:scale-95 transition-transform">
+    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+</button>
 
 {{-- Quick Actions Modal --}}
 <div x-show="quickOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"

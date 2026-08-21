@@ -236,6 +236,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::post('/cases/{case}/ai-chat', [CaseController::class, 'aiChat'])->name('cases.ai_chat');
         Route::post('/cases/{case}/send-portal-message', [CaseController::class, 'sendPortalMessage'])->name('cases.sendPortalMessage');
         Route::post('/cases/{case}/activities', [CaseActivityController::class, 'store'])->name('cases.activities.store');
+        Route::post('/cases/{case}/checklist/{item}/toggle', [CaseController::class, 'toggleChecklistItem'])->name('cases.checklist.toggle');
         Route::get('/cases/{case}/timeline', [CaseActivityController::class, 'timeline'])->name('cases.timeline');
         Route::delete('/cases/{case}/activities/{activity}', [CaseActivityController::class, 'destroy'])->name('cases.activities.destroy');
     });
@@ -288,10 +289,26 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     // Users & Admin - all team roles
     Route::resource('users', UserController::class)->middleware(['role:developer,admin', 'feature:users']);
 
-    // قوالب القضايا (#30) — إدارة القوالب للإدارة فقط
-    Route::resource('case-templates', App\Http\Controllers\CaseTemplateController::class)
-        ->only(['index', 'store', 'destroy'])
-        ->middleware('role:developer,admin');
+    // القوالب الذكية — للإدارة أو من يملك صلاحية templates.manage صراحةً
+    Route::middleware(['role:developer,admin,permission:templates.manage', 'feature:case_templates'])->group(function () {
+        Route::resource('case-templates', App\Http\Controllers\CaseTemplateController::class)
+            ->only(['index', 'store', 'update', 'destroy']);
+        Route::post('/case-templates/{case_template}/duplicate', [App\Http\Controllers\CaseTemplateController::class, 'duplicate'])->name('case-templates.duplicate');
+        Route::post('/case-templates/{case_template}/toggle', [App\Http\Controllers\CaseTemplateController::class, 'toggle'])->name('case-templates.toggle');
+    });
+
+    // مركز الأتمتة — للإدارة أو من يملك صلاحية automations.manage صراحةً
+    Route::middleware(['role:developer,admin,permission:automations.manage', 'feature:automations'])->prefix('automations')->group(function () {
+        Route::get('/', [App\Http\Controllers\AutomationController::class, 'index'])->name('automations.index');
+        Route::post('/', [App\Http\Controllers\AutomationController::class, 'store'])->name('automations.store');
+        Route::get('/runs', [App\Http\Controllers\AutomationController::class, 'runs'])->name('automations.runs');
+        Route::post('/seed-defaults', [App\Http\Controllers\AutomationController::class, 'seedDefaults'])->name('automations.seed');
+        Route::post('/toggle-engine', [App\Http\Controllers\AutomationController::class, 'toggleEngine'])->name('automations.engine');
+        Route::put('/{automation}', [App\Http\Controllers\AutomationController::class, 'update'])->name('automations.update');
+        Route::post('/{automation}/toggle', [App\Http\Controllers\AutomationController::class, 'toggle'])->name('automations.toggle');
+        Route::post('/{automation}/test', [App\Http\Controllers\AutomationController::class, 'test'])->name('automations.test');
+        Route::delete('/{automation}', [App\Http\Controllers\AutomationController::class, 'destroy'])->name('automations.destroy');
+    });
     Route::get('/feasibility', [FeasibilityController::class, 'index'])->middleware(['role:developer,admin,permission:feasibility.view', 'feature:feasibility'])->name('feasibility.index');
     Route::get('/audit-log', [AuditLogController::class, 'index'])->middleware(['role:developer,admin,permission:audit_log.view', 'feature:audit_log'])->name('audit-log.index');
     Route::get('/settings', [SettingController::class, 'index'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.index');

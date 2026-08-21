@@ -72,6 +72,9 @@ class ClientController extends Controller
             $client->toArray()
         );
 
+        // مشغّل الأتمتة اللحظي — آمن: لا يكسر إنشاء العميل أبداً
+        \App\Services\Automation\AutomationEngine::fire('client_created', $client);
+
         return redirect()->route('clients.show', $client)
             ->with('success', 'Client created successfully.');
     }

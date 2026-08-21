@@ -195,11 +195,15 @@ class CaseController extends Controller
         try {
             $legalCase = LegalCase::create(collect($validated)->except('template_id')->all());
 
-            // قالب القضية (#30): يجهّز مهام البيئة تلقائياً
+            // القالب الذكي: يجهّز القضية تلقائياً (مهام + قائمة تحقق + مجلدات + تذكيرات)
             if (!empty($validated['template_id'])) {
-                \App\Models\CaseTemplate::find($validated['template_id'])
+                \App\Models\CaseTemplate::where('is_active', true)
+                    ->find($validated['template_id'])
                     ?->applyTo($legalCase, auth()->id());
             }
+
+            // مشغّل الأتمتة اللحظي — آمن: لا يكسر إنشاء القضية أبداً
+            \App\Services\Automation\AutomationEngine::fire('case_created', $legalCase);
 
             if (is_array($sessionsData)) {
                 foreach ($sessionsData as $sessionData) {
@@ -356,7 +360,7 @@ class CaseController extends Controller
     {
         $this->authorizeCaseAccess($case);
 
-        $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader', 'aiMessages']);
+        $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader', 'documents.folder', 'aiMessages', 'checklistItems.doneBy', 'folders', 'reminders']);
 
         $events = collect();
 
@@ -412,6 +416,15 @@ class CaseController extends Controller
             ]);
         });
 
+        // سجل التدقيق الحقيقي: من فعل ماذا، والقيمة القديمة → الجديدة
+        $case->auditLogs()->with('user')->latest('id')->limit(100)->get()
+            ->each(function ($log) use ($events) {
+                $entry = $this->describeAuditForTimeline($log);
+                if ($entry) {
+                    $events->push($entry + ['date' => $log->created_at, 'key' => 'g' . $log->id]);
+                }
+            });
+
         $timeline = $events->sortByDesc('date')->values();
         } catch (\Throwable $e) {
             logger()->warning('Timeline degraded (case ' . $case->id . '): ' . $e->getMessage());
@@ -436,6 +449,99 @@ class CaseController extends Controller
         ])->values();
 
         return view('cases.show', compact('case', 'sessionsData', 'aiMessagesData', 'timeline'));
+    }
+
+    /**
+     * تحويل سجل تدقيق إلى بند خط زمني مقروء: من فعل ماذا، القديم → الجديد.
+     * يعيد null للسجلات غير المفيدة للعرض (تفادياً للضجيج).
+     */
+    private function describeAuditForTimeline(\App\Models\AuditLog $log): ?array
+    {
+        $who = $log->user?->name ?? 'النظام';
+
+        $modelLabel = match ($log->model_type) {
+            LegalCase::class => 'القضية',
+            Session::class => 'الجلسة',
+            \App\Models\Task::class => 'المهمة',
+            \App\Models\Document::class => 'المستند',
+            \App\Models\CaseActivity::class => null, // النشاطات تظهر بنفسها في الخط الزمني
+            default => null,
+        };
+        if ($modelLabel === null) {
+            return null;
+        }
+
+        $fieldLabels = [
+            'status' => 'الحالة', 'priority' => 'الأولوية', 'court' => 'المحكمة',
+            'case_type' => 'النوع', 'title' => 'العنوان', 'lawyer_id' => 'المحامي',
+            'date' => 'الموعد', 'location' => 'المكان', 'due_date' => 'الاستحقاق',
+            'assigned_to' => 'المسؤول', 'notes' => 'الملاحظات', 'report' => 'القرار',
+        ];
+        $statusLabels = [
+            'active' => 'نشطة', 'pending' => 'قيد المتابعة', 'overdue' => 'متأخرة',
+            'closed' => 'مغلقة', 'won' => 'مكسوبة', 'lost' => 'مخسورة',
+            'adjudicated' => 'مفصولة', 'fees_pending' => 'أتعاب معلقة',
+            'upcoming' => 'قادمة', 'completed' => 'منجزة', 'postponed' => 'مؤجلة',
+            'cancelled' => 'ملغاة', 'in_progress' => 'قيد الإنجاز',
+        ];
+        $fmt = fn ($v) => $statusLabels[$v] ?? (is_scalar($v) ? mb_substr((string) $v, 0, 40) : '—');
+
+        if ($log->action === \App\Models\AuditLog::ACTION_DELETE) {
+            $name = $log->old_values['title'] ?? '';
+
+            return [
+                'kind' => 'audit',
+                'label' => '🗑️ ' . $who . ' حذف ' . $modelLabel . ($name ? ' «' . mb_substr($name, 0, 50) . '»' : ''),
+                'sub' => 'حذف مسجّل في سجل التدقيق',
+            ];
+        }
+
+        if ($log->action === \App\Models\AuditLog::ACTION_UPDATE) {
+            $changes = [];
+            foreach ((array) $log->new_values as $field => $new) {
+                $old = $log->old_values[$field] ?? null;
+                if (!isset($fieldLabels[$field]) || $old == $new) {
+                    continue;
+                }
+                $changes[] = $fieldLabels[$field] . ': ' . $fmt($old) . ' ← ' . $fmt($new);
+                if (count($changes) >= 3) {
+                    break;
+                }
+            }
+            if (!$changes) {
+                return null;
+            }
+
+            return [
+                'kind' => 'audit',
+                'label' => '✏️ ' . $who . ' عدّل ' . $modelLabel,
+                'sub' => implode(' • ', $changes),
+            ];
+        }
+
+        // الإنشاء يظهر أصلاً كبنود (جلسة/مهمة/مستند) — نعرض من أنشأه للقضية فقط
+        if ($log->action === \App\Models\AuditLog::ACTION_CREATE && $log->model_type === LegalCase::class) {
+            return [
+                'kind' => 'audit',
+                'label' => '⚖️ ' . $who . ' أنشأ القضية',
+                'sub' => 'فُتح الملف',
+            ];
+        }
+
+        return null;
+    }
+
+    /** تبديل حالة بند قائمة التحقق (من القالب الذكي) — ضمن صلاحية الوصول للقضية. */
+    public function toggleChecklistItem(LegalCase $case, \App\Models\CaseChecklistItem $item): RedirectResponse
+    {
+        $this->authorizeCaseAccess($case);
+        abort_unless($item->case_id === $case->id, 404);
+
+        $item->update($item->is_done
+            ? ['is_done' => false, 'done_by' => null, 'done_at' => null]
+            : ['is_done' => true, 'done_by' => auth()->id(), 'done_at' => now()]);
+
+        return back()->with('success', $item->is_done ? 'أُنجز البند ✓' : 'أُعيد البند لغير منجز.');
     }
 
     public function edit(LegalCase $case): View

@@ -334,20 +334,24 @@
             <div class="guide-card bg-gradient-to-br from-white to-gray-100 rounded-2xl border border-gray-200 p-8">
                 <div class="flex items-center gap-4 mb-6"><span class="text-3xl">⚙️</span><h2 class="text-2xl font-bold text-gold-dark">الأتمتة وقوالب القضايا</h2></div>
                 <div class="space-y-4 text-gray-700 leading-relaxed">
-                    <h3 class="text-lg font-bold text-gray-700">🔁 الأتمتة الذكية (عند تفعيلها):</h3>
+                    <h3 class="text-lg font-bold text-gray-700">⚙️ مركز الأتمتة (للإدارة):</h3>
+                    <p>من قسم «مركز الأتمتة» يبني المدير قواعد بلا أي كود، على شكل: <strong class="text-gold-dark">متى → إذا → نفّذ</strong>:</p>
                     <ul class="space-y-2 pr-6">
-                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span><strong class="text-gray-700">تحضير الجلسات:</strong> أي جلسة قادمة خلال 3 أيام بلا مهمة تحضير → تُنشأ مهمة «تحضير جلسة» تلقائياً للمحامي المسؤول</span></li>
-                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span><strong class="text-gray-700">متابعة ما بعد الجلسة:</strong> في اليوم التالي لانعقاد الجلسة تُنشأ مهمة متابعة (تسجيل النتيجة والخطوة التالية)</span></li>
-                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span><strong class="text-gray-700">القضايا الراكدة:</strong> قضية نشطة بلا أي تحديث 14 يوماً → إشعار تنبيه للإدارة</span></li>
+                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span><strong class="text-gray-700">متى:</strong> جلسة تقترب، انتهت جلسة، قضية بلا تحديث، مهمة متأخرة أو يقترب استحقاقها، أُنشئت قضية أو عميل جديد</span></li>
+                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span><strong class="text-gray-700">إذا:</strong> شروط اختيارية — حالة القضية، المحكمة، المحامي، نوع العميل، عدد الأيام…</span></li>
+                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span><strong class="text-gray-700">نفّذ:</strong> إنشاء مهمة، إشعار داخلي (للمحامي المسؤول أو المدير)، حدث في الخط الزمني، تغيير حالة، أو تذكير</span></li>
+                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span><strong class="text-gray-700">أمان:</strong> كل قاعدة تُنفَّذ مرة واحدة على كل عنصر (لا تكرار)، ويمكن تعطيلها بدون حذف، وكل تنفيذ مسجّل في «سجل التنفيذ» — بما فيه الأخطاء</span></li>
+                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span><strong class="text-gray-700">اختبار قبل التشغيل:</strong> زر «اختبار» يخبرك كم عنصراً سيطابق القاعدة الآن — دون تنفيذ أي شيء</span></li>
                     </ul>
-                    <h3 class="text-lg font-bold text-gray-700 mt-4">📋 قوالب القضايا (للإدارة):</h3>
+                    <h3 class="text-lg font-bold text-gray-700 mt-4">📋 القوالب الذكية (للإدارة):</h3>
                     <ul class="space-y-2 pr-6">
-                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span>أنشئ قالباً باسم النوع (مثلاً «قضية عمالية») وحدد مهامه: العنوان، بعد كم يوم، والأولوية</span></li>
-                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span>عند إنشاء قضية جديدة اختر القالب — فتُنشأ كل مهامه تلقائياً بمواعيدها</span></li>
+                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span>من قسم «القوالب الذكية» أنشئ قالباً (مثلاً «قضية تجارية») يضم: <strong class="text-gray-700">مهام</strong> بمواعيد وأولويات، <strong class="text-gray-700">قائمة تحقق</strong>، <strong class="text-gray-700">مجلدات مستندات</strong>، و<strong class="text-gray-700">تذكيرات</strong> — مع حالة افتراضية اختيارية</span></li>
+                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span>عند إنشاء قضية جديدة اختر القالب — تظهر لك <strong class="text-gray-700">معاينة</strong> بما سيُنشأ، ثم تُجهَّز القضية كاملة تلقائياً ويُسجَّل ذلك في خطّها الزمني</span></li>
+                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span>قائمة التحقق تظهر تبويباً داخل القضية بشريط تقدم، ويُسجَّل من أنجز كل بند ومتى</span></li>
+                        <li class="flex items-start gap-3"><span class="text-gold-dark mt-1">•</span><span>القالب المستخدم في قضايا سابقة لا يُحذف — يُعطَّل فقط حفاظاً على السجل</span></li>
                     </ul>
-                    <div class="bg-white rounded-xl p-4 border border-gray-100">
-                        <p class="text-gray-600 text-sm">💡 تفعيل الأتمتة وإيقافها يتم من لوحة المطوّر بطلب من إدارة المكتب.</p>
-                    </div>
+                    <h3 class="text-lg font-bold text-gray-700 mt-4">👁 وضع التركيز:</h3>
+                    <p>داخل صفحة القضية زر «تركيز» يخفي كل ما يشتت (القوائم والأزرار الثانوية) ويترك جوهر القضية: الموكل، الحالة، الجلسة القادمة، المهام، المستندات، والخط الزمني — وزر واضح للخروج. لا يغيّر أي صلاحيات.</p>
                 </div>
             </div>
         </section>

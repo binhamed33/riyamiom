@@ -368,18 +368,33 @@
                     @enderror
                 </div>
 
-                {{-- قالب القضية (#30) — اختياري: يُنشئ مهام البيئة تلقائياً --}}
-                @php $caseTemplates = \App\Models\CaseTemplate::orderBy('name')->get(); @endphp
+                {{-- القالب الذكي — اختياري: يجهّز القضية كاملة تلقائياً --}}
+                @php
+                    $caseTemplates = \App\Models\CaseTemplate::where('is_active', true)->orderBy('name')->get();
+                    $tplPreview = $caseTemplates->keyBy('id')->map(fn ($t) => $t->summary() + ['description' => $t->description]);
+                @endphp
                 @if ($caseTemplates->count())
-                <div>
-                    <label for="template_id" class="block text-sm font-medium text-gray-400 mb-1.5">قالب القضية (اختياري)</label>
-                    <select name="template_id" id="template_id"
+                <div x-data='{ tplId: @json((string) old("template_id", "")), previews: @json($tplPreview) }'>
+                    <label for="template_id" class="block text-sm font-medium text-gray-400 mb-1.5">📋 هل تريد استخدام قالب؟ (اختياري)</label>
+                    <select name="template_id" id="template_id" x-model="tplId"
                         class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
                         <option value="">بدون قالب</option>
                         @foreach ($caseTemplates as $tpl)
-                            <option value="{{ $tpl->id }}" {{ old('template_id') == $tpl->id ? 'selected' : '' }}>{{ $tpl->name }} ({{ count($tpl->items) }} مهام)</option>
+                            <option value="{{ $tpl->id }}">{{ $tpl->name }}</option>
                         @endforeach
                     </select>
+                    {{-- معاينة القالب: ماذا سيُنشأ تلقائياً؟ --}}
+                    <div x-show="tplId && previews[tplId]" x-cloak x-transition
+                         class="mt-2 rounded-xl border border-gold/25 bg-gold/5 p-3 text-xs text-gray-700">
+                        <p class="font-bold text-gold-dark mb-1">سيُنشأ تلقائياً مع القضية:</p>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1">
+                            <span>✅ <b x-text="previews[tplId]?.tasks"></b> مهام</span>
+                            <span>☑️ <b x-text="previews[tplId]?.checklist"></b> بنود تحقق</span>
+                            <span>🗂 <b x-text="previews[tplId]?.folders"></b> مجلدات</span>
+                            <span>⏰ <b x-text="previews[tplId]?.reminders"></b> تذكيرات</span>
+                        </div>
+                        <p class="text-gray-400 mt-1" x-show="previews[tplId]?.description" x-text="previews[tplId]?.description"></p>
+                    </div>
                 </div>
                 @endif
             </div>

@@ -23,6 +23,7 @@ class AuditLog extends Model
         'action',
         'model_type',
         'model_id',
+        'case_id',
         'old_values',
         'new_values',
         'ip_address',

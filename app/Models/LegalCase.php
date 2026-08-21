@@ -104,4 +104,24 @@ class LegalCase extends Model
     {
         return $this->hasMany(CaseActivity::class, 'case_id');
     }
+
+    public function checklistItems(): HasMany
+    {
+        return $this->hasMany(CaseChecklistItem::class, 'case_id')->orderBy('sort');
+    }
+
+    public function folders(): HasMany
+    {
+        return $this->hasMany(CaseFolder::class, 'case_id')->orderBy('sort');
+    }
+
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(CaseReminder::class, 'case_id')->orderBy('remind_at');
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class, 'case_id');
+    }
 }
