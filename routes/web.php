@@ -80,6 +80,11 @@ Route::middleware('auth')->get('/subscription-expired', function () {
     return view('subscription.expired');
 })->name('subscription.expired');
 
+// صفحة الصيانة — حالة مستقلة عن انتهاء الاشتراك
+Route::middleware('auth')->get('/maintenance', function () {
+    return response()->view('maintenance.index', [], 503);
+})->name('maintenance.page');
+
 // Protected routes
 Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     

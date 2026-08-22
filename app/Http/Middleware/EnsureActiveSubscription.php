@@ -15,7 +15,7 @@ class EnsureActiveSubscription
             return $next($request);
         }
 
-        if ($request->routeIs('subscription.expired')) {
+        if ($request->routeIs('subscription.expired') || $request->routeIs('maintenance.page')) {
             return $next($request);
         }
 
@@ -25,12 +25,17 @@ class EnsureActiveSubscription
             return $next($request);
         }
 
+        // الصيانة حالة مستقلة عن انتهاء الاشتراك، ولها صفحتها ورسالتها
+        $inMaintenance = app(SubscriptionService::class)->status() === SubscriptionService::STATUS_MAINTENANCE;
+
         if ($request->expectsJson() || $request->is('api/*')) {
             return response()->json([
-                'error' => 'انتهت صلاحية اشتراك النظام، يرجى التواصل مع المطور لتفعيل النظام من جديد.',
-            ], 403);
+                'error' => $inMaintenance
+                    ? 'النظام تحت الصيانة حالياً، سنعود قريباً.'
+                    : 'انتهت صلاحية اشتراك النظام، يرجى التواصل مع المطور لتفعيل النظام من جديد.',
+            ], 503);
         }
 
-        return redirect()->route('subscription.expired');
+        return redirect()->route($inMaintenance ? 'maintenance.page' : 'subscription.expired');
     }
 }

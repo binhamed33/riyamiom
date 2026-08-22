@@ -13,6 +13,7 @@ class SubscriptionService
     public const STATUS_EXPIRING = 'expiring_soon';
     public const STATUS_SUSPENDED = 'suspended';
     public const STATUS_EXPIRED = 'expired';
+    public const STATUS_MAINTENANCE = 'maintenance';
 
     public const DURATION_OPTIONS = [1, 2, 3, 6, 12];
 
@@ -64,6 +65,11 @@ class SubscriptionService
 
         if ($raw === self::STATUS_SUSPENDED) {
             return self::STATUS_SUSPENDED;
+        }
+
+        // الصيانة تتقدّم على الانتهاء: المكتب مجمَّد بقرار إداري لا لانقضاء المدة
+        if ($raw === self::STATUS_MAINTENANCE) {
+            return self::STATUS_MAINTENANCE;
         }
 
         if ($end->lessThanOrEqualTo(now())) {
