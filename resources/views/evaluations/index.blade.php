@@ -47,7 +47,14 @@
     {{-- Rankings --}}
     <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
         @if(count($rows) === 0)
-            <div class="text-center py-10 text-gray-400 text-sm">{{ __('app.no_data') }}</div>
+            {{-- «لا توجد بيانات» لا تقول للمستخدم ما الذي ينقص ولا ماذا يفعل --}}
+            <div class="text-center px-6 py-14">
+                <svg class="w-10 h-10 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 20h18M7 20V10m5 10V4m5 16v-7"/>
+                </svg>
+                <p class="text-gray-700 font-semibold text-sm">{{ __('app.empty_evaluations_title') }}</p>
+                <p class="text-gray-400 text-xs mt-1.5 max-w-md mx-auto leading-relaxed">{{ __('app.empty_evaluations_body') }}</p>
+            </div>
         @else
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-right">

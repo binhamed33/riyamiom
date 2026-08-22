@@ -778,4 +778,8 @@ return [
     'unauthorized_access' => 'You are not authorised to access this.',
     'scope' => 'Scope',
     'all_office_sessions' => 'All office sessions',
+    'empty_evaluations_title' => 'No evaluation yet',
+    'empty_evaluations_body' => 'Scores are computed from real work: cases, hearings, tasks and documents. Record some, then come back.',
+    'empty_feasibility_title' => 'No figures for this period',
+    'empty_feasibility_body' => 'Feasibility is computed from cases closed and fees recorded in the chosen period. Try a wider period, or close a case and record its fee.',
 ];

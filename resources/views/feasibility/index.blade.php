@@ -267,7 +267,13 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="px-6 py-12 text-center text-gray-400">{{ __('app.no_data_available') }}</td>
+                            <td colspan="10" class="px-6 py-14 text-center">
+                                <svg class="w-10 h-10 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 15l4-4 3 3 5-6"/>
+                                </svg>
+                                <p class="text-gray-700 font-semibold text-sm">{{ __('app.empty_feasibility_title') }}</p>
+                                <p class="text-gray-400 text-xs mt-1.5 max-w-md mx-auto leading-relaxed">{{ __('app.empty_feasibility_body') }}</p>
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>
