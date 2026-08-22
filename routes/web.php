@@ -139,7 +139,10 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     // صندوق الاقتراحات — لفريق المكتب وحده، والقيد معلن هنا لا مستنتَجاً من طبقة أعلى
     Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
         Route::get('/suggestions', [App\Http\Controllers\SuggestionController::class, 'index'])->name('suggestions.index');
-        Route::post('/suggestions', [App\Http\Controllers\SuggestionController::class, 'store'])->middleware('throttle:5,10')->name('suggestions.store');
+        // بلا throttle هنا: كان يستهلك محاولةً حتى على خطأ تحقّق، فمن
+        // كتب نصّاً قصيراً خمس مرّات يُحبس عشر دقائق. الحدّ صار داخل
+        // المتحكّم بعد نجاح التحقّق — انظر SuggestionController::store
+        Route::post('/suggestions', [App\Http\Controllers\SuggestionController::class, 'store'])->name('suggestions.store');
     });
     
     // Global Search API

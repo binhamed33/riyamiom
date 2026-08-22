@@ -1249,7 +1249,7 @@
                             <div class="max-h-80 overflow-y-auto">
                                 @forelse($recentNotifications as $notification)
                                     @php
-                                        $notifTitle = $notification->title ?? ($notification->type === 'chat' ? __('app.new_message') : null);
+                                        $notifTitle = $notification->localizedTitle() ?: ($notification->type === 'chat' ? __('app.new_message') : null);
                                     @endphp
                                         @if($notification->is_read)
                                         <div class="block px-4 py-3 transition" style="border-bottom: 1px solid rgba(212,175,55,0.04);">
@@ -1259,7 +1259,7 @@
                                                     <span class="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{{ $notification->message_count }}</span>
                                                 @endif
                                             </div>
-                                            <p class="text-sm text-gray-500">{{ $notification->message }}</p>
+                                            <p class="text-sm text-gray-500">{{ $notification->localizedMessage() }}</p>
                                             <p class="text-xs text-gray-400 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
                                         </div>
                                     @else
@@ -1272,7 +1272,7 @@
                                                         <span class="text-[10px] text-gold-dark bg-gold/12 px-1.5 py-0.5 rounded-full">{{ $notification->message_count }}</span>
                                                     @endif
                                                 </div>
-                                                <p class="text-sm text-gray-700">{{ $notification->message }}</p>
+                                                <p class="text-sm text-gray-700">{{ $notification->localizedMessage() }}</p>
                                                 <p class="text-xs text-gray-400 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
                                             </button>
                                         </form>

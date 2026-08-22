@@ -203,21 +203,54 @@ class SuggestionDeliveryTest extends TestCase
         Queue::fake();
         $user = $this->staff();
 
-        // الحدّ خمس محاولات لكل عشر دقائق
-        for ($i = 0; $i < 5; $i++) {
+        // الحدّ عشرة اقتراحات ناجحة لكل عشر دقائق
+        for ($i = 0; $i < 10; $i++) {
             $this->actingAs($user)->post(route('suggestions.store'), [
                 'title' => 'اقتراح ' . $i,
                 'content' => str_repeat('ن', 40) . $i,
             ]);
         }
 
-        $response = $this->actingAs($user)->post(route('suggestions.store'), $this->payload());
+        $this->actingAs($user)->post(route('suggestions.store'), $this->payload());
 
         $message = (string) session('error');
 
-        $this->assertStringContainsString('انتظر', $message, 'يجب أن تقول الرسالة ما العمل.');
+        // الرسالة من ملف اللغة — تُقارَن به لا بنصّ عربي مكتوب حرفياً
+        $this->assertNotSame('', $message, 'لا رسالة تشرح سبب المنع.');
+        $this->assertStringContainsString(
+            \Illuminate\Support\Str::before(__('app.suggestion_rate_limited'), ':minutes'),
+            $message,
+        );
         $this->assertStringNotContainsString('Too Many Attempts', $message);
         $this->assertStringNotContainsString('حدث خطأ أثناء تنفيذ العملية', $message);
+    }
+
+    /**
+     * خطأ الكتابة ليس محاولة إغراق.
+     *
+     * كان الحدّ في المسار فيُستهلك قبل التحقّق: من كتب نصّاً أقصر من
+     * عشرين حرفاً خمس مرّات يُحبس عشر دقائق ويظنّ صندوق الاقتراحات
+     * معطّلاً. الحدّ الآن بعد نجاح التحقّق.
+     */
+    public function test_a_short_message_does_not_burn_the_rate_limit(): void
+    {
+        Queue::fake();
+        $user = $this->staff();
+
+        // عشر محاولات كلها مرفوضة لقِصَر النصّ
+        for ($i = 0; $i < 10; $i++) {
+            $this->actingAs($user)->post(route('suggestions.store'), [
+                'title' => 'قصير',
+                'content' => 'قصير جداً',
+            ]);
+        }
+
+        // ثم اقتراح صحيح — يجب أن يُقبل لا أن يُحبَس
+        $this->actingAs($user)
+            ->post(route('suggestions.store'), $this->payload())
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseCount('suggestions', 1);
     }
 
     /** لا تفاصيل تقنية للمستخدم — تُسجَّل ويُعطى مرجعاً */

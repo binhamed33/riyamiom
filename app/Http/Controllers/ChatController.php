@@ -272,16 +272,15 @@ class ChatController extends Controller
                 $existing->increment('message_count');
                 $existing->touch();
             } else {
-                \App\Models\Notification::create([
-                    'user_id' => $participant->id,
-                    'title' => $sender->name . ' أرسل لك',
-                    'message' => substr($message, 0, 100),
-                    'type' => \App\Models\Notification::TYPE_CHAT,
-                    'notifiable_type' => \App\Models\Conversation::class,
-                    'notifiable_id' => $conversation->id,
-                    'is_read' => false,
-                    'message_count' => 1,
-                ]);
+                \App\Support\Notify::send(
+                    userId: $participant->id,
+                    titleKey: 'app.notif_chat_title',
+                    messageKey: 'app.notif_passthrough',
+                    params: ['sender' => $sender->name, 'text' => substr($message, 0, 100)],
+                    type: \App\Models\Notification::TYPE_CHAT,
+                    notifiableType: \App\Models\Conversation::class,
+                    notifiableId: $conversation->id,
+                );
             }
         }
     }

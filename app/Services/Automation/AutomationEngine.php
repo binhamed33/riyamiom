@@ -434,16 +434,15 @@ class AutomationEngine
             'due_date' => now()->addDays(max(0, (int) ($action['due_in_days'] ?? 1))),
         ]);
 
-        Notification::create([
-            'user_id' => $assignee->id,
-            'title' => 'مهمة جديدة (تلقائي): ' . $title,
-            'message' => 'من قاعدة الأتمتة: ' . $rule->name,
-            'type' => Notification::TYPE_INFO,
-            'notifiable_type' => Task::class,
-            'notifiable_id' => $task->id,
-            'is_read' => false,
-            'message_count' => 1,
-        ]);
+        \App\Support\Notify::send(
+            userId: $assignee->id,
+            titleKey: 'app.notif_auto_task_title',
+            messageKey: 'app.notif_auto_task_body',
+            params: ['task' => $title, 'rule' => $rule->name],
+            type: Notification::TYPE_INFO,
+            notifiableType: Task::class,
+            notifiableId: $task->id,
+        );
 
         return 'مهمة: ' . $title;
     }
@@ -458,16 +457,15 @@ class AutomationEngine
         $message = $this->fillPlaceholders($action['message'] ?? 'تنبيه من الأتمتة', $subject, $case);
 
         foreach ($users as $user) {
-            Notification::create([
-                'user_id' => $user->id,
-                'title' => '🔔 ' . $rule->name,
-                'message' => $message,
-                'type' => Notification::TYPE_INFO,
-                'notifiable_type' => $subject->getMorphClass(),
-                'notifiable_id' => $subject->getKey(),
-                'is_read' => false,
-                'message_count' => 1,
-            ]);
+            \App\Support\Notify::send(
+                userId: $user->id,
+                titleKey: 'app.notif_auto_rule_title',
+                messageKey: 'app.notif_passthrough',
+                params: ['rule' => $rule->name, 'text' => $message],
+                type: Notification::TYPE_INFO,
+                notifiableType: $subject->getMorphClass(),
+                notifiableId: $subject->getKey(),
+            );
         }
 
         return 'إشعار لـ ' . $users->count();
@@ -544,16 +542,15 @@ class AutomationEngine
                 try {
                     $users = $this->resolveUsers($reminder->target === 'manager' ? 'manager' : ($reminder->target === 'both' ? 'both' : 'case_lawyer'), $reminder->case);
                     foreach ($users as $user) {
-                        Notification::create([
-                            'user_id' => $user->id,
-                            'title' => '⏰ تذكير: ' . $reminder->title,
-                            'message' => $reminder->case ? 'قضية: ' . $reminder->case->title : '',
-                            'type' => Notification::TYPE_INFO,
-                            'notifiable_type' => CaseReminder::class,
-                            'notifiable_id' => $reminder->id,
-                            'is_read' => false,
-                            'message_count' => 1,
-                        ]);
+                        \App\Support\Notify::send(
+                            userId: $user->id,
+                            titleKey: 'app.notif_reminder_title',
+                            messageKey: 'app.notif_reminder_body',
+                            params: ['title' => $reminder->title, 'case' => $reminder->case?->title ?? ''],
+                            type: Notification::TYPE_INFO,
+                            notifiableType: CaseReminder::class,
+                            notifiableId: $reminder->id,
+                        );
                     }
                     $reminder->update(['notified_at' => now()]);
 

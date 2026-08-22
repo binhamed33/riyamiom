@@ -35,6 +35,19 @@ class SuggestionController extends Controller
     {
         $this->denyClients();
 
+        // الحدّ بعد التحقّق لا قبله: كتابة نصّ قصير خطأٌ يُصحَّح لا
+        // محاولةُ إغراق. كان الحدّ في المسار فيُستهلك على كل خطأ، فمن
+        // أخطأ خمس مرّات يُحبس عشر دقائق ويظنّ النظام معطّلاً.
+        $limitKey = 'suggestion:' . auth()->id();
+
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($limitKey, 10)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($limitKey);
+
+            return back()->withInput()->with('error', __('app.suggestion_rate_limited', [
+                'minutes' => max(1, (int) ceil($seconds / 60)),
+            ]));
+        }
+
         $validated = $request->validate([
             'title' => ['nullable', 'string', 'max:160'],
             'content' => ['required', 'string', 'min:20', 'max:2000'],
@@ -44,6 +57,8 @@ class SuggestionController extends Controller
             'content.max' => 'الاقتراح أطول من المسموح (2000 حرف كحد أقصى)',
             'title.max' => 'العنوان أطول من المسموح (160 حرفاً)',
         ]);
+
+        \Illuminate\Support\Facades\RateLimiter::hit($limitKey, 600);
 
         $suggestion = Suggestion::create([
             'user_id' => auth()->id(),
@@ -88,16 +103,15 @@ class SuggestionController extends Controller
             'reply_read' => false,
         ]);
 
-        Notification::create([
-            'user_id' => $suggestion->user_id,
-            'title' => 'ردّ المطوّر على اقتراحك',
-            'message' => mb_substr($validated['reply'], 0, 100),
-            'type' => Notification::TYPE_INFO,
-            'notifiable_type' => Suggestion::class,
-            'notifiable_id' => $suggestion->id,
-            'is_read' => false,
-            'message_count' => 1,
-        ]);
+        \App\Support\Notify::send(
+            userId: $suggestion->user_id,
+            titleKey: 'app.notif_suggestion_reply_title',
+            messageKey: 'app.notif_passthrough',
+            params: ['text' => mb_substr($validated['reply'], 0, 100)],
+            type: Notification::TYPE_INFO,
+            notifiableType: Suggestion::class,
+            notifiableId: $suggestion->id,
+        );
 
         return back()->with('success', 'تم إرسال الرد وإشعار صاحب الاقتراح');
     }
@@ -114,16 +128,15 @@ class SuggestionController extends Controller
         $suggestion->update(['status' => $request->status]);
 
         if ($request->status === Suggestion::STATUS_IMPLEMENTED) {
-            Notification::create([
-                'user_id' => $suggestion->user_id,
-                'title' => 'تم تنفيذ اقتراحك',
-                'message' => 'اقتراحك «' . mb_substr($suggestion->content, 0, 60) . '» تم تنفيذه — شكراً لمشاركتك',
-                'type' => Notification::TYPE_SUCCESS,
-                'notifiable_type' => Suggestion::class,
-                'notifiable_id' => $suggestion->id,
-                'is_read' => false,
-                'message_count' => 1,
-            ]);
+            \App\Support\Notify::send(
+                userId: $suggestion->user_id,
+                titleKey: 'app.notif_suggestion_done_title',
+                messageKey: 'app.notif_suggestion_done_body',
+                params: ['excerpt' => mb_substr($suggestion->content, 0, 60)],
+                type: Notification::TYPE_SUCCESS,
+                notifiableType: Suggestion::class,
+                notifiableId: $suggestion->id,
+            );
         }
 
         return back()->with('success', $request->status === Suggestion::STATUS_IMPLEMENTED

@@ -270,15 +270,15 @@ class CaseController extends Controller
                 );
 
                 if ($task->assigned_to && $task->assigned_to !== auth()->id()) {
-                    Notification::create([
-                        'user_id'         => $task->assigned_to,
-                        'title'           => 'New Task Assigned',
-                        'message'         => "You have been assigned a new task: '{$task->title}'.",
-                        'type'            => Notification::TYPE_INFO,
-                        'is_read'         => false,
-                        'notifiable_type' => Task::class,
-                        'notifiable_id'   => $task->id,
-                    ]);
+                    \App\Support\Notify::send(
+                        userId: $task->assigned_to,
+                        titleKey: 'app.notif_task_assigned_title',
+                        messageKey: 'app.notif_task_assigned_body',
+                        params: ['task' => $task->title],
+                        type: Notification::TYPE_INFO,
+                        notifiableType: Task::class,
+                        notifiableId: $task->id,
+                    );
                 }
             }
 
@@ -609,15 +609,18 @@ class CaseController extends Controller
             $case->update($validated);
 
             if (isset($validated['status']) && $oldValues['status'] !== $validated['status'] && $case->lawyer_id) {
-                Notification::create([
-                    'user_id'         => $case->lawyer_id,
-                    'title'           => 'تم تغيير حالة القضية',
-                    'message'         => "تم تغيير حالة قضية '{$case->title}' من {$oldValues['status']} إلى {$validated['status']}",
-                    'type'            => Notification::TYPE_INFO,
-                    'is_read'         => false,
-                    'notifiable_type' => LegalCase::class,
-                    'notifiable_id'   => $case->id,
-                ]);
+                \App\Support\Notify::send(
+                    userId: $case->lawyer_id,
+                    titleKey: 'app.notif_case_status_title',
+                    messageKey: 'app.notif_case_status_body',
+                    params: [
+                        'case' => $case->title,
+                        'from' => __('app.status_' . $oldValues['status']),
+                        'to' => __('app.status_' . $validated['status']),
+                    ],
+                    notifiableType: LegalCase::class,
+                    notifiableId: $case->id,
+                );
             }
 
             // Process sessions

@@ -27,10 +27,10 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-gray-700 font-medium {{ $notification->is_read ? 'text-gray-600' : '' }}">
-                            {{ $notification->title ?? __('app.notification_default') }}
+                            {{ $notification->localizedTitle() ?: __('app.notification_default') }}
                         </p>
-                        @if($notification->message)
-                            <p class="text-gray-500 text-sm mt-1">{{ $notification->message }}</p>
+                        @if($notification->localizedMessage())
+                            <p class="text-gray-500 text-sm mt-1">{{ $notification->localizedMessage() }}</p>
                         @endif
                         <p class="text-gray-400 text-xs mt-2">{{ $notification->created_at?->diffForHumans() ?? '—' }}</p>
                     </div>

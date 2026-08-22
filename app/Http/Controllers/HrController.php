@@ -142,14 +142,15 @@ class HrController extends Controller
         // Notify all admins
         $admins = User::whereIn('role', ['developer', 'admin'])->get();
         foreach ($admins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'title' => 'طلب إجازة جديد',
-                'message' => 'قدم ' . ($leave->employee->name ?? 'موظف') . ' طلب إجازة ' . __('hr_leave_type_' . $leave->type),
-                'type' => Notification::TYPE_INFO,
-                'notifiable_type' => 'App\\Models\\HrLeave',
-                'notifiable_id' => $leave->id,
-            ]);
+            \App\Support\Notify::send(
+                userId: $admin->id,
+                titleKey: 'app.notif_leave_new_title',
+                messageKey: 'app.notif_leave_new_body',
+                params: ['employee' => $leave->employee->name ?? __('app.employee'), 'type' => __('hr_leave_type_' . $leave->type)],
+                type: Notification::TYPE_INFO,
+                notifiableType: 'App\\Models\\HrLeave',
+                notifiableId: $leave->id,
+            );
         }
 
         return redirect()->route('hr.index', ['tab' => 'leaves'])->with('success', 'تم تقديم طلب الإجازة');
@@ -160,14 +161,15 @@ class HrController extends Controller
         abort_unless($this->isAdmin(), 403);
         $leave->update(['status' => 'approved', 'approved_by' => auth()->id()]);
 
-        Notification::create([
-            'user_id' => $leave->employee_id,
-            'title' => 'تم الموافقة على الإجازة',
-            'message' => 'تمت الموافقة على طلب إجازتك (' . __('hr_leave_type_' . $leave->type) . ')',
-            'type' => Notification::TYPE_SUCCESS,
-            'notifiable_type' => 'App\\Models\\HrLeave',
-            'notifiable_id' => $leave->id,
-        ]);
+        \App\Support\Notify::send(
+            userId: $leave->employee_id,
+            titleKey: 'app.notif_leave_approved_title',
+            messageKey: 'app.notif_leave_approved_body',
+            params: ['type' => __('hr_leave_type_' . $leave->type)],
+            type: Notification::TYPE_SUCCESS,
+            notifiableType: 'App\\Models\\HrLeave',
+            notifiableId: $leave->id,
+        );
 
         return redirect()->route('hr.index', ['tab' => 'leaves'])->with('success', 'تم الموافقة على الإجازة');
     }
@@ -177,14 +179,15 @@ class HrController extends Controller
         abort_unless($this->isAdmin(), 403);
         $leave->update(['status' => 'rejected', 'approved_by' => auth()->id()]);
 
-        Notification::create([
-            'user_id' => $leave->employee_id,
-            'title' => 'تم رفض الإجازة',
-            'message' => 'تم رفض طلب إجازتك (' . __('hr_leave_type_' . $leave->type) . ')',
-            'type' => Notification::TYPE_WARNING,
-            'notifiable_type' => 'App\\Models\\HrLeave',
-            'notifiable_id' => $leave->id,
-        ]);
+        \App\Support\Notify::send(
+            userId: $leave->employee_id,
+            titleKey: 'app.notif_leave_rejected_title',
+            messageKey: 'app.notif_leave_rejected_body',
+            params: ['type' => __('hr_leave_type_' . $leave->type)],
+            type: Notification::TYPE_WARNING,
+            notifiableType: 'App\\Models\\HrLeave',
+            notifiableId: $leave->id,
+        );
 
         return redirect()->route('hr.index', ['tab' => 'leaves'])->with('success', 'تم رفض الإجازة');
     }

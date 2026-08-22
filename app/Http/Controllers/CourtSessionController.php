@@ -128,15 +128,15 @@ class CourtSessionController extends Controller
 
         $case = LegalCase::find($validated['case_id']);
         if ($case && $case->lawyer_id) {
-            Notification::create([
-                'user_id'         => $case->lawyer_id,
-                'title'           => 'New Court Session Scheduled',
-                'message'         => "A court session has been scheduled for case '{$case->title}' on {$session->date}.",
-                'type'            => Notification::TYPE_INFO,
-                'is_read'         => false,
-                'notifiable_type' => Session::class,
-                'notifiable_id'   => $session->id,
-            ]);
+            \App\Support\Notify::send(
+                userId: $case->lawyer_id,
+                titleKey: 'app.notif_session_title',
+                messageKey: 'app.notif_session_body',
+                params: ['case' => $case->title, 'date' => $session->date],
+                type: Notification::TYPE_INFO,
+                notifiableType: Session::class,
+                notifiableId: $session->id,
+            );
         }
 
         return redirect()->route('sessions.show', $session)
@@ -171,15 +171,15 @@ class CourtSessionController extends Controller
         \App\Services\ClientNotifier::notifyCaseUpdate($case);
 
         if ($case->lawyer_id) {
-            Notification::create([
-                'user_id'         => $case->lawyer_id,
-                'title'           => 'New Court Session Scheduled',
-                'message'         => "A court session has been scheduled for case '{$case->title}' on {$session->date}.",
-                'type'            => Notification::TYPE_INFO,
-                'is_read'         => false,
-                'notifiable_type' => Session::class,
-                'notifiable_id'   => $session->id,
-            ]);
+            \App\Support\Notify::send(
+                userId: $case->lawyer_id,
+                titleKey: 'app.notif_session_title',
+                messageKey: 'app.notif_session_body',
+                params: ['case' => $case->title, 'date' => $session->date],
+                type: Notification::TYPE_INFO,
+                notifiableType: Session::class,
+                notifiableId: $session->id,
+            );
         }
 
         return response()->json([

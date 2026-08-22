@@ -106,15 +106,15 @@ class TaskController extends Controller
         );
 
         if ($task->assigned_to && $task->assigned_to !== auth()->id()) {
-            Notification::create([
-                'user_id'         => $task->assigned_to,
-                'title'           => 'New Task Assigned',
-                'message'         => "You have been assigned a new task: '{$task->title}'.",
-                'type'            => Notification::TYPE_INFO,
-                'is_read'         => false,
-                'notifiable_type' => Task::class,
-                'notifiable_id'   => $task->id,
-            ]);
+            \App\Support\Notify::send(
+                userId: $task->assigned_to,
+                titleKey: 'app.notif_task_assigned_title',
+                messageKey: 'app.notif_task_assigned_body',
+                params: ['task' => $task->title],
+                type: Notification::TYPE_INFO,
+                notifiableType: Task::class,
+                notifiableId: $task->id,
+            );
         }
 
         return redirect()->route('tasks.show', $task)
@@ -163,15 +163,15 @@ class TaskController extends Controller
         $task->update($validated);
 
         if ($task->status === 'completed' && $oldValues['status'] !== 'completed' && $task->created_by && $task->created_by !== auth()->id()) {
-            Notification::create([
-                'user_id'         => $task->created_by,
-                'title'           => 'تم إكمال المهمة',
-                'message'         => "تم إكمال المهمة '{$task->title}'",
-                'type'            => Notification::TYPE_SUCCESS,
-                'is_read'         => false,
-                'notifiable_type' => Task::class,
-                'notifiable_id'   => $task->id,
-            ]);
+            \App\Support\Notify::send(
+                userId: $task->created_by,
+                titleKey: 'app.notif_task_done_title',
+                messageKey: 'app.notif_task_done_body',
+                params: ['task' => $task->title],
+                type: Notification::TYPE_SUCCESS,
+                notifiableType: Task::class,
+                notifiableId: $task->id,
+            );
         }
 
         $this->logAudit(

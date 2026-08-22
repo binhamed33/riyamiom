@@ -49,35 +49,28 @@ class SubscriptionNotices extends Command
             return self::SUCCESS;
         }
 
-        [$title, $message] = match ($stage) {
-            'expired' => [
-                'انتهى اشتراك المكتب',
-                'انتهى اشتراك مُداوَلة وتم إيقاف النظام مؤقتاً. بياناتكم محفوظة بالكامل — جدّدوا الاشتراك ليعود المكتب للعمل فوراً.',
-            ],
-            'expiring_1' => [
-                'اشتراك المكتب ينتهي غداً',
-                'يتبقى يوم واحد على انتهاء اشتراك مُداوَلة. جدّدوا اليوم لتفادي توقف النظام.',
-            ],
-            'expiring_3' => [
-                'اشتراك المكتب ينتهي خلال ' . $days . ' أيام',
-                'اقترب انتهاء اشتراك مُداوَلة. يُنصح بالتجديد الآن لضمان استمرار العمل دون انقطاع.',
-            ],
-            default => [
-                'اشتراك المكتب ينتهي خلال ' . $days . ' أيام',
-                'هذا تذكير مبكر بموعد تجديد اشتراك مُداوَلة.',
-            ],
+        // مفاتيح لا نصوص: الإشعار يُقرأ بلغة مديره لا بلغة الخادم
+        [$titleKey, $messageKey] = match ($stage) {
+            'expired' => ['app.notif_sub_expired_title', 'app.notif_sub_expired_body'],
+            'expiring_1' => ['app.notif_sub_tomorrow_title', 'app.notif_sub_tomorrow_body'],
+            'expiring_3' => ['app.notif_sub_soon_title', 'app.notif_sub_soon_body'],
+            default => ['app.notif_sub_soon_title', 'app.notif_sub_early_body'],
         };
+
+        $params = ['days' => $days];
+        $title = __($titleKey, $params, config('app.locale'));
 
         // المستلمون: مدير المكتب فقط.
         $admins = User::where('role', 'admin')->where('is_active', true)->get();
 
         foreach ($admins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'title' => $title,
-                'message' => $message,
-                'type' => 'subscription',
-            ]);
+            \App\Support\Notify::send(
+                userId: $admin->id,
+                titleKey: $titleKey,
+                messageKey: $messageKey,
+                params: $params,
+                type: 'subscription',
+            );
         }
 
         Setting::set('subscription_notice_sent', $marker, 'subscription');
