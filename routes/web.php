@@ -143,6 +143,8 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         // كتب نصّاً قصيراً خمس مرّات يُحبس عشر دقائق. الحدّ صار داخل
         // المتحكّم بعد نجاح التحقّق — انظر SuggestionController::store
         Route::post('/suggestions', [App\Http\Controllers\SuggestionController::class, 'store'])->name('suggestions.store');
+        // الحذف: صاحبه أو مدير المكتب أو المطوّر — والشرط في الخادم
+        Route::delete('/suggestions/{suggestion}', [App\Http\Controllers\SuggestionController::class, 'destroy'])->name('suggestions.destroy');
     });
     
     // Global Search API
@@ -430,7 +432,6 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::post('/suggestions/{suggestion}/reply', [App\Http\Controllers\SuggestionController::class, 'reply'])->name('suggestions.reply');
         Route::post('/suggestions/{suggestion}/status', [App\Http\Controllers\SuggestionController::class, 'setStatus'])->name('suggestions.status');
         Route::put('/suggestions/{suggestion}', [App\Http\Controllers\SuggestionController::class, 'update'])->name('suggestions.update');
-        Route::delete('/suggestions/{suggestion}', [App\Http\Controllers\SuggestionController::class, 'destroy'])->name('suggestions.destroy');
         Route::post('/cache-clear', [App\Http\Controllers\DeveloperController::class, 'clearCache'])->name('developer.cache-clear');
         Route::post('/cache-all', [App\Http\Controllers\DeveloperController::class, 'cacheAll'])->name('developer.cache-all');
         Route::post('/optimize', [App\Http\Controllers\DeveloperController::class, 'optimize'])->name('developer.optimize');

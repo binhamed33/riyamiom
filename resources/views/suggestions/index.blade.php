@@ -106,7 +106,21 @@
                         <p class="text-[11px] text-gray-400 mt-1">{{ $suggestion->replied_at?->diffForHumans() }}</p>
                     </div>
                 @endif
-                <p class="text-[11px] text-gray-400 mt-2">{{ $suggestion->created_at->diffForHumans() }}</p>
+                <div class="flex items-center justify-between gap-3 mt-2">
+                    <p class="text-[11px] text-gray-400">{{ $suggestion->created_at->diffForHumans() }}</p>
+
+                    {{-- الحذف لصاحبه ومدير المكتب — والشرط نفسه مفروض في الخادم --}}
+                    @if ($suggestion->deletableBy(auth()->user()))
+                        <form method="POST" action="{{ route('suggestions.destroy', $suggestion) }}"
+                              data-confirm="{{ __('app.suggestion_delete_confirm') }}">
+                            @csrf @method('DELETE')
+                            <button type="submit"
+                                    class="text-[11px] font-semibold text-gray-400 hover:text-red-600 transition px-2 py-1 -m-1">
+                                {{ __('app.suggestion_delete') }}
+                            </button>
+                        </form>
+                    @endif
+                </div>
             </div>
         @empty
             <div class="bg-gray-50 rounded-xl border border-gray-100 p-8 text-center">

@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Suggestion extends Model
 {
+    use SoftDeletes;
+
     const STATUS_PENDING = 'pending';
     const STATUS_IMPLEMENTED = 'implemented';
 
@@ -42,6 +45,19 @@ class Suggestion extends Model
                 ? ['label' => __('app.suggestion_state_done'), 'tone' => 'done']
                 : ['label' => __('app.suggestion_state_reviewing'), 'tone' => 'reviewing'],
         };
+    }
+
+    /**
+     * من يملك حذفه: صاحبه، أو مدير المكتب، أو المطوّر.
+     * موظّف لا يحذف اقتراح زميله.
+     */
+    public function deletableBy(?User $user): bool
+    {
+        if (!$user || $user->isClient()) {
+            return false;
+        }
+
+        return $user->id === $this->user_id || $user->isAdmin() || $user->isDeveloper();
     }
 
     public function user(): BelongsTo

@@ -10,7 +10,7 @@
                     @if($officeLogoData)
                         <img src="{{ $officeLogoData }}" alt="" style="max-height:46px;max-width:150px;margin-bottom:4px;">
                     @endif
-                    <div class="office-name">{{ \App\Models\Setting::get('office_name', 'مكتب حمد الريامي للمحاماة') }}</div>
+                    <div class="office-name">{{ \App\Models\Setting::get('office_name', config('app.name', 'مُداوَلة')) }}</div>
                     <div class="office-sub">هاتف: {{ \App\Models\Setting::get('phone', '99331700') }} | بريد: {{ \App\Models\Setting::get('email', 'info@riyami.om') }}</div>
                 </td>
                 <td style="text-align: left;">
@@ -257,7 +257,7 @@
         <table class="pdf-footer-table">
             <tr>
                 <td style="text-align: right; width: 33%;">تاريخ الإنشاء: {{ $case->created_at?->format('Y/m/d H:i') ?? '—' }}</td>
-                <td style="text-align: center; width: 34%; color: #D4AF37; font-weight: bold;">{{ \App\Models\Setting::get('office_name', 'مكتب حمد الريامي للمحاماة') }}</td>
+                <td style="text-align: center; width: 34%; color: #D4AF37; font-weight: bold;">{{ \App\Models\Setting::get('office_name', config('app.name', 'مُداوَلة')) }}</td>
                 <td style="text-align: left; width: 33%;">آخر تعديل: {{ $case->updated_at?->format('Y/m/d H:i') ?? '—' }}</td>
             </tr>
         </table>

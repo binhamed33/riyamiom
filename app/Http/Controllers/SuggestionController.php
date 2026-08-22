@@ -165,14 +165,28 @@ class SuggestionController extends Controller
         return back()->with('success', 'تم تعديل الاقتراح');
     }
 
+    /**
+     * حذف اقتراح.
+     *
+     * صاحبه يحذفه، ومدير المكتب والمطوّر يحذفان أيّ اقتراح — وموظّف
+     * لا يحذف اقتراح زميله. الشرط في الخادم لا في إخفاء الزر.
+     *
+     * والحذف ناعم: يختفي من القائمة ويبقى في القاعدة، فضغطة خطأ لا
+     * تُتلف ما كُتب.
+     */
     public function destroy(Suggestion $suggestion)
     {
+        $this->denyClients();
+
+        abort_unless($suggestion->deletableBy(auth()->user()), 403, __('app.suggestion_delete_denied'));
+
+        // إشعارات تشير إلى اقتراح غادر القائمة لا معنى لها
         Notification::where('notifiable_type', Suggestion::class)
             ->where('notifiable_id', $suggestion->id)
             ->delete();
 
         $suggestion->delete();
 
-        return back()->with('success', 'تم حذف الاقتراح نهائياً');
+        return back()->with('success', __('app.suggestion_deleted'));
     }
 }

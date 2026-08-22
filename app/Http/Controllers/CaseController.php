@@ -8,6 +8,7 @@ use App\Models\CaseAiMessage;
 use App\Models\Client;
 use App\Models\Document;
 use App\Models\LegalCase;
+use App\Support\ClientMessage;
 use App\Models\Notification;
 use App\Models\Session;
 use App\Models\Task;
@@ -1059,7 +1060,7 @@ SYSTEM;
             return ['sent' => [], 'failures' => ['لا يوجد موكل مرتبط بهذه القضية'], 'fallback_wa_link' => null];
         }
 
-        $message = $this->portalInviteMessage();
+        $message = ClientMessage::portalInvite($case);
         $sentChannels = [];
         $failures = [];
 
@@ -1068,12 +1069,9 @@ SYSTEM;
             if (config('mail.default', 'log') !== 'log') {
                 try {
                     Mail::raw($message, function ($m) use ($client, $case) {
-                        $m->from(
-                            \App\Models\Setting::get('office_email', config('mail.from.address', 'hello@example.com')),
-                            \App\Models\Setting::get('office_name', config('mail.from.name', 'مُداوَلة'))
-                        );
+                        $m->from(ClientMessage::fromAddress(), ClientMessage::officeName());
                         $m->to($client->email)
-                            ->subject('متابعة قضيتك إلكترونياً - شركة حمد الريامي للمحاماة (قضية ' . $case->case_number . ')');
+                            ->subject(ClientMessage::inviteSubject($case));
                     });
                     $sentChannels[] = 'email';
                 } catch (\Throwable $e) {
@@ -1224,22 +1222,10 @@ SYSTEM;
         }
     }
 
-    protected function portalInviteMessage(): string
+    /** النصّ من مصدر واحد يحمل اسم كل مكتب ورابطه. */
+    protected function portalInviteMessage(?LegalCase $case = null): string
     {
-        return <<<TXT
-يسر **شركة حمد الريامي للمحاماة (شركة مدنية للمحاماة)** أن تضع بين أيديكم خدمة **متابعة القضايا إلكترونياً**، وذلك حرصاً منا على تعزيز جودة الخدمات القانونية، وتوفير تجربة أكثر سهولة وشفافية لموكلينا الكرام.
-
-يمكنكم الاطلاع على آخر مستجدات القضية، ومتابعة تفاصيلها بكل يسر، من خلال الدخول إلى الرابط التالي:
-
-https://office.riyami.om/client-access
-
-بعد فتح الرابط، يُرجى إدخال **رقم الهاتف** أو **البريد الإلكتروني** المسجل لدى المكتب، لتظهر لكم جميع تفاصيل القضية والمستجدات المتعلقة بها بشكل مباشر.
-
-وفي حال واجهتكم أي صعوبة في الدخول أو كانت لديكم أي استفسارات، فإن فريقنا على أتم الاستعداد لخدمتكم والإجابة عن جميع استفساراتكم.
-
-**شركة حمد الريامي للمحاماة (شركة مدنية للمحاماة)**
-نعتز بثقتكم، ونسعى دائماً إلى تقديم خدمات قانونية احترافية بأعلى معايير الجودة.
-TXT;
+        return ClientMessage::portalInvite($case);
     }
 
     private function sessionsText(LegalCase $case): string

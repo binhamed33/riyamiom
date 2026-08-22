@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\LegalCase;
-use App\Models\Setting;
+use App\Support\ClientMessage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -22,13 +22,10 @@ class ClientNotifier
 
             if ($client->email) {
                 try {
-                    Mail::raw(self::updateMessage(), function ($m) use ($client, $case) {
-                        $m->from(
-                            Setting::get('office_email', config('mail.from.address', 'hello@example.com')),
-                            Setting::get('office_name', config('mail.from.name', 'مُداوَلة'))
-                        );
+                    Mail::raw(ClientMessage::caseUpdate($case), function ($m) use ($client, $case) {
+                        $m->from(ClientMessage::fromAddress(), ClientMessage::officeName());
                         $m->to($client->email)
-                            ->subject('إشعار بتحديث بيانات قضيتك - شركة حمد الريامي للمحاماة (قضية ' . $case->case_number . ')');
+                            ->subject(ClientMessage::updateSubject($case));
                     });
                 } catch (\Throwable $e) {
                     Log::error('Client update email failed for case ' . $case->id . ': ' . $e->getMessage());
@@ -43,20 +40,7 @@ class ClientNotifier
 
     public static function updateMessage(): string
     {
-        return <<<TXT
-يسرّ **شركة حمد الريامي للمحاماة (شركة مدنية للمحاماة)** إشعاركم بأنه **تم تحديث بياناتكم** في نظام المكتب، وذلك لضمان تقديم خدماتنا القانونية بصورة أكثر كفاءة وسهولة.
-
-يمكنكم الآن الاطلاع على بياناتكم المحدثة، ومتابعة جميع المستجدات المتعلقة بقضاياكم وخدماتكم، من خلال الدخول إلى الرابط التالي:
-
-https://office.riyami.om/client-access
-
-بعد فتح الرابط، يُرجى إدخال **رقم الهاتف** أو **البريد الإلكتروني** المسجل لدى المكتب، لتظهر لكم بياناتكم المحدثة، بالإضافة إلى جميع تفاصيل القضايا وآخر المستجدات المتعلقة بها.
-
-وفي حال واجهتكم أي صعوبة في الدخول أو كانت لديكم أي استفسارات، فإن فريقنا على أتم الاستعداد لخدمتكم والإجابة عن جميع استفساراتكم.
-
-**شركة حمد الريامي للمحاماة (شركة مدنية للمحاماة)**
-نعتز بثقتكم، ونسعى دائماً إلى تقديم خدمات قانونية احترافية بأعلى معايير الجودة.
-TXT;
+        return ClientMessage::caseUpdate();
     }
 
     public static function sendWhatsApp(?string $phone, LegalCase $case): bool
@@ -87,7 +71,7 @@ TXT;
                             'components' => [
                                 ['type' => 'body', 'parameters' => [
                                     ['type' => 'text', 'text' => $case->case_number ?: '—'],
-                                    ['type' => 'text', 'text' => 'https://office.riyami.om/client-access'],
+                                    ['type' => 'text', 'text' => ClientMessage::portalUrl()],
                                 ]],
                             ],
                         ],

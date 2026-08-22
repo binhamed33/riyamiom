@@ -248,7 +248,7 @@
                     </p>
                     <div class="flex items-center gap-2">
                         <button type="button" @click="editing = !editing" class="text-[11px] text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-lg transition font-medium">تعديل</button>
-                        <form method="POST" action="{{ route('suggestions.destroy', $suggestion) }}" @submit.prevent="if (confirm('حذف هذا الاقتراح نهائياً؟')) $el.submit()">
+                        <form method="POST" action="{{ route('suggestions.destroy', $suggestion) }}" @submit.prevent="if (confirm('حذف هذا الاقتراح؟ يختفي من القائمة ويبقى محفوظاً في القاعدة.')) $el.submit()">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-[11px] text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-lg transition font-medium">حذف</button>
