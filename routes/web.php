@@ -284,6 +284,13 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
         Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
         Route::post('/documents/{document}/client-visibility', [DocumentController::class, 'toggleClientVisibility'])->name('documents.clientVisibility');
+
+        // التنزيل والمعاينة لفريق المكتب — كانا بالخطأ داخل مجموعة إدارة
+        // «أنواع المستندات» المحصورة بمدير المكتب، فلم يستطع محامٍ ولا
+        // موظف تنزيل مستند واحد ولا معاينته. والصلاحية لكل مستند على
+        // حدة تبقى مفروضة في المتحكّم: الخاص لرافعه، والفريق لفريقه.
+        Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+        Route::get('/documents/{document}/preview', [DocumentController::class, 'preview'])->name('documents.preview');
     });
 
     // أنواع المستندات — إدارة لمدير المكتب
@@ -293,8 +300,6 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::put('/document-types/{documentType}', [App\Http\Controllers\DocumentTypeController::class, 'update'])->name('document-types.update');
         Route::post('/document-types/{documentType}/toggle', [App\Http\Controllers\DocumentTypeController::class, 'toggle'])->name('document-types.toggle');
         Route::delete('/document-types/{documentType}', [App\Http\Controllers\DocumentTypeController::class, 'destroy'])->name('document-types.destroy');
-        Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
-        Route::get('/documents/{document}/preview', [DocumentController::class, 'preview'])->name('documents.preview');
     });
 
     // Reports & Export - developer, admin, lawyer, staff

@@ -214,6 +214,26 @@ class DocumentController extends Controller
             ->with('success', 'Document deleted successfully.');
     }
 
+
+    /**
+     * اسم الملف عند التنزيل أو المعاينة.
+     *
+     * العنوان يكتبه المستخدم، وعنوان مثل «عقد 2024/2025» شائع في
+     * المكاتب. والشرطة المائلة تجعل Symfony يرفض الاسم فيسقط الطلب
+     * برسالة عامة — فلا يستطيع أحد تنزيل ذلك المستند أبداً ولا يفهم
+     * السبب. نُنظّف الاسم بدل أن نمنع العنوان.
+     */
+    private function downloadName(Document $document): string
+    {
+        $title = str_replace(['/', '\\'], '-', (string) $document->title);
+        $title = trim(preg_replace('/\s+/u', ' ', $title)) ?: 'document';
+
+        $ext = ltrim((string) $document->file_type, '.');
+        $ext = preg_replace('/[^A-Za-z0-9]/', '', $ext);
+
+        return $ext === '' ? $title : $title . '.' . $ext;
+    }
+
     public function download(Document $document): StreamedResponse|RedirectResponse
     {
         $user = auth()->user();
@@ -244,7 +264,7 @@ class DocumentController extends Controller
 
         return Storage::disk('private')->download(
             $document->file_path,
-            $document->title . '.' . $document->file_type
+            $this->downloadName($document)
         );
     }
 
@@ -278,7 +298,7 @@ class DocumentController extends Controller
 
         return Storage::disk('private')->response(
             $document->file_path,
-            $document->title . '.' . $document->file_type
+            $this->downloadName($document)
         );
     }
 
