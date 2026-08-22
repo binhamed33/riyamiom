@@ -17,31 +17,87 @@
         </div>
     </div>
 
-    {{-- Office-Wide Summary Cards --}}
-    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+    {{-- ما الذي تقوله هذه الصفحة — قبل أي رقم --}}
+    @php
+        $decidedAll = $wonCasesAll + $lostCasesAll;
+        $verdictKey = $decidedAll === 0
+            ? 'mixed'
+            : ($officeWinRate >= 60 && $officeTaskRate >= 60 ? 'strong'
+                : ($officeWinRate >= 40 || $officeTaskRate >= 40 ? 'mixed' : 'weak'));
+        $verdictTone = ['strong' => 'good', 'mixed' => 'warn', 'weak' => 'bad'][$verdictKey];
+        $toneClass = [
+            'good' => 'border-green-200 bg-green-50',
+            'warn' => 'border-yellow-200 bg-amber-50',
+            'bad'  => 'border-red-200 bg-red-50',
+        ][$verdictTone];
+        $toneText = ['good' => 'text-green-800', 'warn' => 'text-amber-800', 'bad' => 'text-red-800'][$verdictTone];
+    @endphp
+
+    <div class="rounded-xl border {{ $toneClass }} p-5">
+        <p class="text-xs font-bold text-gray-500">{{ __('app.feas_verdict') }}</p>
+        <p class="text-lg font-bold {{ $toneText }} mt-1">{{ __('app.feas_verdict_' . $verdictKey) }}</p>
+        <p class="text-sm text-gray-600 mt-2 leading-relaxed">
+            {{ __('app.feas_verdict_body', [
+                'won' => $wonCasesAll,
+                'decided' => $decidedAll,
+                'done' => $completedTasksAll,
+                'tasks' => $totalTasksAll,
+            ]) }}
+        </p>
+        <p class="text-xs text-gray-500 mt-3 leading-relaxed border-t border-gray-200 pt-3">
+            <span class="font-semibold">{{ __('app.feas_intro_title') }}</span>
+            {{ __('app.feas_intro_body') }}
+        </p>
+    </div>
+
+    {{-- الأرقام، وكلٌّ منها يقول مِمَّ حُسب --}}
+    @php
+        $cards = [
+            ['label' => __('app.office_win_rate'), 'value' => $officeWinRate . '%',
+             'how' => __('app.feas_how_win'), 'accent' => 'text-green-700',
+             'empty' => $decidedAll === 0 ? __('app.feas_no_decided_hint') : null],
+            ['label' => __('app.office_task_rate'), 'value' => $officeTaskRate . '%',
+             'how' => __('app.feas_how_task'), 'accent' => 'text-purple-700', 'empty' => null],
+            ['label' => __('app.deadline_compliance'), 'value' => $avgDeadline . '%',
+             'how' => __('app.feas_how_deadline'), 'accent' => 'text-blue-700', 'empty' => null],
+            ['label' => __('app.team_average'), 'value' => $avgOverall . '%',
+             'how' => __('app.feas_how_overall'), 'accent' => 'text-gold-dark', 'empty' => null],
+        ];
+    @endphp
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        @foreach ($cards as $card)
+            <div class="bg-white rounded-xl border border-gold/15 p-4 flex flex-col">
+                <p class="text-gray-500 text-xs font-semibold">{{ $card['label'] }}</p>
+                <p class="text-3xl font-bold {{ $card['accent'] }} mt-1 num">{{ $card['value'] }}</p>
+                <p class="text-[11px] text-gray-400 mt-2 leading-relaxed flex-1">
+                    <span class="font-semibold text-gray-500">{{ __('app.feas_how') }}:</span>
+                    {{ $card['how'] }}
+                </p>
+                @if ($card['empty'])
+                    <p class="text-[11px] text-amber-700 mt-2 leading-relaxed">{{ $card['empty'] }}</p>
+                @endif
+            </div>
+        @endforeach
+    </div>
+
+    {{-- أرقام المكتب الخام --}}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div class="bg-white rounded-xl border border-gold/15 p-4">
             <p class="text-gray-400 text-xs">{{ __('app.total_lawyers') }}</p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $totalLawyers }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1 num">{{ $totalLawyers }}</p>
         </div>
         <div class="bg-white rounded-xl border border-gold/15 p-4">
             <p class="text-gray-400 text-xs">{{ __('app.total_cases') }}</p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $totalCasesAll }}</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gold/15 p-4">
-            <p class="text-gray-400 text-xs">{{ __('app.office_win_rate') }}</p>
-            <p class="text-2xl font-bold text-green-700 mt-1">{{ $officeWinRate }}%</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gold/15 p-4">
-            <p class="text-gray-400 text-xs">{{ __('app.office_task_rate') }}</p>
-            <p class="text-2xl font-bold text-purple-700 mt-1">{{ $officeTaskRate }}%</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1 num">{{ $totalCasesAll }}</p>
         </div>
         <div class="bg-white rounded-xl border border-gold/15 p-4">
             <p class="text-gray-400 text-xs">{{ __('app.total_tasks') }}</p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $totalTasksAll }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1 num">{{ $totalTasksAll }}</p>
         </div>
         <div class="bg-white rounded-xl border border-gold/15 p-4">
-            <p class="text-gray-400 text-xs">{{ __('app.team_average') }}</p>
-            <p class="text-2xl font-bold text-gold-dark mt-1">{{ $avgOverall }}%</p>
+            <p class="text-gray-400 text-xs">{{ __('app.status_won') }} / {{ __('app.status_lost') }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1 num">{{ $wonCasesAll }} / {{ $lostCasesAll }}</p>
         </div>
     </div>
 
@@ -78,8 +134,8 @@
                     <p class="text-[10px] text-gray-400">{{ __('app.deadline_compliance') }}</p>
                 </div>
                 <div class="text-center">
-                    <p class="text-sm font-bold text-gold-dark">{{ $topPerformer['productivity'] }}</p>
-                    <p class="text-[10px] text-gray-400">{{ __('app.productivity') }}</p>
+                    <p class="text-sm font-bold text-gold-dark num">{{ $topPerformer['productivity'] }}</p>
+                    <p class="text-[10px] text-gray-400">{{ __('app.feas_unit_tasks_day') }}</p>
                 </div>
             </div>
         </div>
@@ -116,8 +172,8 @@
                     <p class="text-[10px] text-gray-400">{{ __('app.deadline_compliance') }}</p>
                 </div>
                 <div class="text-center">
-                    <p class="text-sm font-bold text-gray-500">{{ $leastPerformer['productivity'] }}</p>
-                    <p class="text-[10px] text-gray-400">{{ __('app.productivity') }}</p>
+                    <p class="text-sm font-bold text-gray-500 num">{{ $leastPerformer['productivity'] }}</p>
+                    <p class="text-[10px] text-gray-400">{{ __('app.feas_unit_tasks_day') }}</p>
                 </div>
             </div>
         </div>
@@ -285,9 +341,10 @@
 @push('scripts')
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
-    const goldColor = 'var(--accent)';
-    const bgColor = '#FFFFFF';
-    const gridColor = 'rgba(0,0,0,0.06)';
+    // الألوان من الرموز وقت البناء — الـcanvas لا يفهم var(--accent)
+    var goldColor = MdChart.accent(1);
+    var bgColor = MdChart.surface();
+    var gridColor = MdChart.grid();
     const tickColor = '#4B5563';
 
     // === Efficiency Comparison (Grouped Bar) ===
@@ -299,9 +356,9 @@ document.addEventListener('DOMContentLoaded', function () {
             data: {
                 labels: data.map(d => d.user.name),
                 datasets: [
-                    { label: '{{ __("app.efficiency_rate") }}', data: data.map(d => d.overall), backgroundColor: goldColor + 'cc', borderRadius: 4 },
-                    { label: '{{ __("app.success_rate") }}', data: data.map(d => d.success_rate), backgroundColor: '#22C55E99', borderRadius: 4 },
-                    { label: '{{ __("app.task_completion") }}', data: data.map(d => d.task_completion), backgroundColor: '#8B5CF699', borderRadius: 4 },
+                    { label: '{{ __("app.efficiency_rate") }}', data: data.map(d => d.overall), backgroundColor: MdChart.series(0), borderRadius: 4, borderSkipped: false },
+                    { label: '{{ __("app.success_rate") }}', data: data.map(d => d.success_rate), backgroundColor: MdChart.series(1), borderRadius: 4, borderSkipped: false },
+                    { label: '{{ __("app.task_completion") }}', data: data.map(d => d.task_completion), backgroundColor: MdChart.series(2), borderRadius: 4, borderSkipped: false },
                 ]
             },
             options: {
@@ -312,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 plugins: {
                     legend: { labels: { color: tickColor, font: { size: 10 }, usePointStyle: true, pointStyleWidth: 8, padding: 12 } },
-                    tooltip: { backgroundColor: bgColor, titleColor: goldColor, bodyColor: '#fff', borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true }
+                    tooltip: MdChart.tooltip()
                 }
             }
         });
@@ -327,9 +384,9 @@ document.addEventListener('DOMContentLoaded', function () {
             data: {
                 labels: trend.map(t => t.label),
                 datasets: [
-                    { label: '{{ __("app.new_cases") }}', data: trend.map(t => t.new), borderColor: goldColor, backgroundColor: goldColor + '22', fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: goldColor },
-                    { label: '{{ __("app.won") }}', data: trend.map(t => t.won), borderColor: '#22C55E', backgroundColor: '#22C55E22', fill: false, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#22C55E' },
-                    { label: '{{ __("app.lost") }}', data: trend.map(t => t.lost), borderColor: '#EF4444', backgroundColor: '#EF444422', fill: false, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#EF4444' },
+                    { label: '{{ __("app.new_cases") }}', data: trend.map(t => t.new), borderColor: MdChart.series(0), backgroundColor: MdChart.withAlpha(MdChart.series(0), 0.14), fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4, pointBackgroundColor: MdChart.series(0) },
+                    { label: '{{ __("app.won") }}', data: trend.map(t => t.won), borderColor: MdChart.status('good'), backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 4, pointBackgroundColor: MdChart.status('good') },
+                    { label: '{{ __("app.lost") }}', data: trend.map(t => t.lost), borderColor: MdChart.status('bad'), backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 4, pointBackgroundColor: MdChart.status('bad') },
                 ]
             },
             options: {
@@ -340,55 +397,74 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 plugins: {
                     legend: { labels: { color: tickColor, font: { size: 10 }, usePointStyle: true, pointStyleWidth: 8, padding: 12 } },
-                    tooltip: { backgroundColor: bgColor, titleColor: goldColor, bodyColor: '#fff', borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true }
+                    tooltip: MdChart.tooltip()
                 }
             }
         });
     }
 
-    // === Cases by Type (Doughnut) ===
+    // === توزيع القضايا حسب النوع (حلقي) ===
     const typeCtx = document.getElementById('casesTypeChart');
     if (typeCtx) {
         const typeData = @json($casesByType);
-        const typeColors = ['var(--accent)', '#22C55E', '#3B82F6', '#8B5CF6', '#EF4444', 'var(--accent)', '#06B6D4', '#EC4899'];
-        const labels = @json($casesByType);
-        const keys = Object.keys(labels);
-        new Chart(typeCtx.getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: keys,
-                datasets: [{
-                    data: keys.map(k => labels[k]),
-                    backgroundColor: keys.map((_, i) => typeColors[i % typeColors.length] + 'cc'),
-                    borderColor: bgColor, borderWidth: 3,
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, cutout: '60%',
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: tickColor, padding: 10, font: { size: 10 }, usePointStyle: true, pointStyleWidth: 8 } },
-                    tooltip: { backgroundColor: bgColor, titleColor: goldColor, bodyColor: '#fff', borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true }
+        // ثلاث فئات بألوان ثابتة ثم «أخرى» — لا لون رابعاً مولَّداً،
+        // ولا دوران يعيد استعمال اللون نفسه لفئتين
+        const sorted = Object.keys(typeData)
+            .filter(k => typeData[k] > 0)
+            .sort((a, b) => typeData[b] - typeData[a]);
+        const top = sorted.slice(0, 3);
+        const restTotal = sorted.slice(3).reduce((sum, k) => sum + typeData[k], 0);
+
+        const labels = top.slice();
+        const values = top.map(k => typeData[k]);
+        const colors = top.map((_, i) => MdChart.series(i));
+
+        if (restTotal > 0) {
+            labels.push('{{ __("app.other") ?? "أخرى" }}');
+            values.push(restTotal);
+            colors.push(MdChart.status('idle'));
+        }
+
+        if (labels.length) {
+            new Chart(typeCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: MdChart.surface(),
+                        borderWidth: 2,
+                        hoverOffset: 6,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '62%',
+                    plugins: { legend: MdChart.legend(), tooltip: MdChart.tooltip() }
                 }
-            }
-        });
+            });
+        }
     }
 
     // === Radar Chart (Team Comparison) ===
     const radarCtx = document.getElementById('radarChart');
     if (radarCtx) {
         const radarData = @json($efficiencyData);
-        const radarColors = ['var(--accent)', '#22C55E', '#3B82F6', '#8B5CF6', 'var(--accent)', '#EF4444'];
+        // ثلاثة على الأكثر: رادار بستّ سلاسل لا يُقرأ، والألوان ثابتة لا تدور
+        const radarTop = radarData.slice(0, 3);
         new Chart(radarCtx.getContext('2d'), {
             type: 'radar',
             data: {
                 labels: ['{{ __("app.success_rate") }}', '{{ __("app.task_completion") }}', '{{ __("app.deadline_compliance") }}', '{{ __("app.productivity") }}'],
-                datasets: radarData.map((d, i) => ({
+                datasets: radarTop.map((d, i) => ({
                     label: d.user.name,
-                    data: [d.success_rate, d.task_completion, d.deadline_compliance, Math.min(d.productivity, 100)],
-                    borderColor: radarColors[i % radarColors.length],
-                    backgroundColor: radarColors[i % radarColors.length] + '22',
-                    pointBackgroundColor: radarColors[i % radarColors.length],
-                    pointBorderColor: radarColors[i % radarColors.length],
+                    // الإنتاجية بمقياسها المُعايَر (٠–١٠٠) لا بعدد المهام في اليوم،
+                    // فتُقارَن على نفس محور بقية المقاييس
+                    data: [d.success_rate, d.task_completion, d.deadline_compliance, d.productivity_score],
+                    borderColor: MdChart.series(i),
+                    backgroundColor: MdChart.withAlpha(MdChart.series(i), 0.14),
+                    pointBackgroundColor: MdChart.series(i),
+                    pointBorderColor: MdChart.series(i),
                     borderWidth: 2,
                     pointRadius: 3,
                 }))
@@ -406,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 plugins: {
                     legend: { position: 'bottom', labels: { color: tickColor, font: { size: 10 }, usePointStyle: true, pointStyleWidth: 8, padding: 12 } },
-                    tooltip: { backgroundColor: bgColor, titleColor: goldColor, bodyColor: '#fff', borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true }
+                    tooltip: MdChart.tooltip()
                 }
             }
         });

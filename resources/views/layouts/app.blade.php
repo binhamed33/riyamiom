@@ -1775,6 +1775,9 @@
         })();
     </script>
 
+    {{-- ألوان الرسوم: تُقرأ من الرموز وقت التشغيل، قبل أي سكربت يبني رسماً --}}
+    @include('partials.chart-theme')
+
     @stack('scripts')
 
     <script nonce="{{ $cspNonce }}">

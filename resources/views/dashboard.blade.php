@@ -497,131 +497,130 @@
 @push('scripts')
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
-    const goldColor = 'var(--accent)';
-    const bgColor = '#FFFFFF';
+    // الألوان تُقرأ من الرموز وقت البناء لا كنصّ 'var(--accent)':
+    // الـcanvas لا يفهم متغيّرات CSS، فكانت كل الأعمدة تُرسم سوداء.
+    var charts = [];
 
-    // === Cases by Status (Doughnut) ===
-    const statusCtx = document.getElementById('casesStatusChart');
-    if (statusCtx) {
-        const chartData = @json($casesByStatus);
-        const labels = {
-            active: '{{ __("app.status_active") }}',
-            pending: '{{ __("app.status_pending") }}',
-            overdue: '{{ __("app.status_overdue") }}',
-            closed: '{{ __("app.status_closed") }}',
-            won: '{{ __("app.status_won") }}',
-            lost: '{{ __("app.status_lost") }}',
-            adjudicated: '{{ __("app.status_adjudicated") }}',
-            fees_pending: '{{ __("app.status_fees_pending") }}',
-        };
-        const colors = {
-            active: '#22C55E', pending: '#F59E0B', overdue: '#EF4444',
-            closed: '#6B7280', won: '#3B82F6', lost: '#991B1B',
-            adjudicated: '#22C55E', fees_pending: '#EF4444',
-        };
-        const data = Object.keys(chartData).filter(k => chartData[k] > 0);
-        new Chart(statusCtx.getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: data.map(k => labels[k] || k),
-                datasets: [{
-                    data: data.map(k => chartData[k]),
-                    backgroundColor: data.map(k => colors[k] || '#6B7280'),
-                    borderColor: bgColor, borderWidth: 3,
-                    hoverBorderColor: goldColor, hoverBorderWidth: 2,
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, cutout: '65%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#6B7280', padding: 12, font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8 }
+    function build() {
+        charts.forEach(function (c) { c.destroy(); });
+        charts = [];
+
+        // === القضايا حسب الحالة (حلقي) ===
+        var statusCtx = document.getElementById('casesStatusChart');
+        if (statusCtx) {
+            var chartData = @json($casesByStatus);
+            var labels = {
+                active: '{{ __("app.status_active") }}',
+                pending: '{{ __("app.status_pending") }}',
+                overdue: '{{ __("app.status_overdue") }}',
+                closed: '{{ __("app.status_closed") }}',
+                won: '{{ __("app.status_won") }}',
+                lost: '{{ __("app.status_lost") }}',
+                adjudicated: '{{ __("app.status_adjudicated") }}',
+                fees_pending: '{{ __("app.status_fees_pending") }}',
+            };
+            // حالة لا فئة: ألوان الحالة محجوزة، والاسم مكتوب في المفتاح
+            // فلا يُعرَف الحال باللون وحده
+            var tone = {
+                active: 'good', adjudicated: 'good', won: 'good',
+                pending: 'warn', fees_pending: 'warn',
+                overdue: 'bad', lost: 'bad',
+                closed: 'idle',
+            };
+            var keys = Object.keys(chartData).filter(function (k) { return chartData[k] > 0; });
+
+            if (keys.length) {
+                charts.push(new Chart(statusCtx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: keys.map(function (k) { return labels[k] || k; }),
+                        datasets: [{
+                            data: keys.map(function (k) { return chartData[k]; }),
+                            backgroundColor: keys.map(function (k) { return MdChart.status(tone[k] || 'idle'); }),
+                            // فاصل بلون السطح بين الشرائح — يفصلها بلا خطّ ثقيل
+                            borderColor: MdChart.surface(),
+                            borderWidth: 2,
+                            hoverOffset: 6,
+                        }]
                     },
-                    tooltip: {
-                        backgroundColor: '#121826', titleColor: goldColor, bodyColor: '#fff',
-                        borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
+                    options: {
+                        responsive: true, maintainAspectRatio: false, cutout: '66%',
+                        plugins: { legend: MdChart.legend(), tooltip: MdChart.tooltip() }
                     }
-                }
+                }));
             }
-        });
-    }
+        }
 
-    // === Monthly Trend (Bar) ===
-    const trendCtx = document.getElementById('monthlyTrendChart');
-    if (trendCtx) {
-        const trendData = @json($monthlyTrend);
-        new Chart(trendCtx.getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: trendData.map(d => d.label),
-                datasets: [
-                    {
-                        label: '{{ __("app.new_cases") }}',
-                        data: trendData.map(d => d.new),
-                        backgroundColor: goldColor + '99',
-                        borderRadius: 4,
-                    },
-                    {
-                        label: '{{ __("app.closed") }}',
-                        data: trendData.map(d => d.closed),
-                        backgroundColor: '#6B728099',
-                        borderRadius: 4,
-                    }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#6B7280', font: { size: 11 } } },
-                    y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#6B7280', font: { size: 11 }, stepSize: 1 } }
+        // === الاتجاه الشهري (أعمدة) ===
+        var trendCtx = document.getElementById('monthlyTrendChart');
+        if (trendCtx) {
+            var trendData = @json($monthlyTrend);
+            charts.push(new Chart(trendCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: trendData.map(function (d) { return d.label; }),
+                    datasets: [
+                        {
+                            label: '{{ __("app.new_cases") }}',
+                            data: trendData.map(function (d) { return d.new; }),
+                            backgroundColor: MdChart.series(0),
+                            borderRadius: 4,
+                            borderSkipped: false,
+                        },
+                        {
+                            label: '{{ __("app.closed") }}',
+                            data: trendData.map(function (d) { return d.closed; }),
+                            backgroundColor: MdChart.series(1),
+                            borderRadius: 4,
+                            borderSkipped: false,
+                        }
+                    ]
                 },
-                plugins: {
-                    legend: {
-                        labels: { color: '#6B7280', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8, padding: 12 }
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: MdChart.scale({ grid: { display: false } }),
+                        y: MdChart.scale({ beginAtZero: true, ticks: { color: MdChart.inkMuted(), precision: 0, font: { size: 11 } } })
                     },
-                    tooltip: {
-                        backgroundColor: '#121826', titleColor: goldColor, bodyColor: '#fff',
-                        borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
-                    }
+                    plugins: { legend: MdChart.legend(), tooltip: MdChart.tooltip() }
                 }
-            }
-        });
+            }));
+        }
+
+        // === القضايا حسب المحامي (أعمدة أفقية) ===
+        var lawyerCtx = document.getElementById('casesByLawyerChart');
+        if (lawyerCtx) {
+            var lawyerData = @json($casesByLawyer);
+            // سلسلة واحدة = مقدار لا هويّة: لون واحد بلون سمة المكتب،
+            // ولا مفتاح ألوان لأن العنوان يسمّيها
+            charts.push(new Chart(lawyerCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(lawyerData),
+                    datasets: [{
+                        data: Object.values(lawyerData),
+                        backgroundColor: MdChart.accent(0.85),
+                        hoverBackgroundColor: MdChart.accent(1),
+                        borderRadius: 4,
+                        borderSkipped: false,
+                        barThickness: 18,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: MdChart.scale({ beginAtZero: true, ticks: { color: MdChart.inkMuted(), precision: 0, font: { size: 11 } } }),
+                        y: MdChart.scale({ grid: { display: false } })
+                    },
+                    plugins: { legend: { display: false }, tooltip: MdChart.tooltip() }
+                }
+            }));
+        }
     }
 
-    // === Cases by Lawyer (Horizontal Bar) ===
-    const lawyerCtx = document.getElementById('casesByLawyerChart');
-    if (lawyerCtx) {
-        const lawyerData = @json($casesByLawyer);
-        const names = Object.keys(lawyerData);
-        const counts = Object.values(lawyerData);
-        new Chart(lawyerCtx.getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: names,
-                datasets: [{
-                    data: counts,
-                    backgroundColor: goldColor + '99',
-                    borderRadius: 4,
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#6B7280', font: { size: 11 }, stepSize: 1 } },
-                    y: { grid: { display: false }, ticks: { color: '#6B7280', font: { size: 11 } } }
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#121826', titleColor: goldColor, bodyColor: '#fff',
-                        borderColor: goldColor, borderWidth: 1, padding: 10, rtl: true,
-                    }
-                }
-            }
-        });
-    }
+    build();
+    MdChart.onThemeChange(build);   // تبديل الوضع يعيد الرسم بألوان الوضع الجديد
 });
 </script>
 @endpush

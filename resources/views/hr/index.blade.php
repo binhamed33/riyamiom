@@ -396,9 +396,11 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: ['ممتاز (4-5)', 'جيد (3-4)', 'ضعيف (>3)'],
             datasets: [{
                 data: [{{ $ratingDistribution['excellent'] }}, {{ $ratingDistribution['good'] }}, {{ $ratingDistribution['poor'] }}],
-                backgroundColor: ['#4ADE80', '#F59E0B', '#F87171'],
-                borderColor: '#E2E6EC',
-                borderWidth: 3
+                // تقدير لا فئة: ألوان الحالة، وتتبع الوضع الفاتح والداكن
+                backgroundColor: [MdChart.status('good'), MdChart.status('warn'), MdChart.status('bad')],
+                borderColor: MdChart.surface(),
+                borderWidth: 2,
+                hoverOffset: 6
             }]
         },
         options: {
@@ -406,12 +408,13 @@ document.addEventListener('DOMContentLoaded', function() {
             maintainAspectRatio: true,
             cutout: '65%',
             plugins: {
-                legend: { display: false },
-                tooltip: {
+                // المفتاح ظاهر: التقدير لا يُعرَف باللون وحده
+                legend: MdChart.legend(),
+                tooltip: Object.assign(MdChart.tooltip(), {
                     callbacks: {
-                        label: function(ctx) { return ctx.parsed + ' موظف'; }
+                        label: function (ctx) { return ctx.parsed + ' {{ __("app.employee") ?? "موظف" }}'; }
                     }
-                }
+                })
             }
         }
     });

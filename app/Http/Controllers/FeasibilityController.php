@@ -11,6 +11,12 @@ use Illuminate\View\View;
 
 class FeasibilityController extends Controller
 {
+    /**
+     * هدف الإنتاجية: مهمّتان مكتملتان في اليوم = 100%.
+     * رقمٌ معلن يُشرح للمستخدم بدل معامل مخفيّ في الشيفرة.
+     */
+    public const PRODUCTIVITY_TARGET = 2.0;
+
     public function index(): View
     {
         $userIds = User::whereIn('role', ['developer', 'admin', 'lawyer', 'staff'])->pluck('id');
@@ -127,12 +133,23 @@ class FeasibilityController extends Controller
 
             $firstTaskDate = $s['firstTaskDate'] ?? null;
             $activeDays = $firstTaskDate ? max(\Carbon\Carbon::parse($firstTaskDate)->diffInDays(now()), 1) : 1;
-            $productivity = round(($completedTasks / $activeDays) * 100, 2);
+
+            // الإنتاجية مهامٌ في اليوم، لا نسبة مئوية. كانت تُضرب في مئة
+            // وتُعرض بعلامة % وتدخل «الكفاءة» بوزن 15% — فمن أنجز ثلاث
+            // مهام يومياً كان يرفع كفاءته إلى ما فوق المئة، وهي نسبة
+            // لا معنى لها. نُبقي الرقم الحقيقي كما هو، ونُدخل في الحساب
+            // قيمة مُعايَرة: مهمّتان في اليوم = 100.
+            $tasksPerDay = round($completedTasks / $activeDays, 2);
+            $productivity = $tasksPerDay;
+            $productivityScore = min(100, round(($tasksPerDay / self::PRODUCTIVITY_TARGET) * 100, 1));
 
             $overall = ($successRate * 0.35)
                 + ($taskCompletion * 0.25)
                 + ($deadlineCompliance * 0.25)
-                + ($productivity * 0.15);
+                + ($productivityScore * 0.15);
+
+            // الكفاءة نسبة: تبقى بين صفر ومئة مهما بلغت مكوّناتها
+            $overall = max(0, min(100, $overall));
 
             return [
                 'user' => $user,
@@ -152,6 +169,8 @@ class FeasibilityController extends Controller
                 'task_completion' => $taskCompletion,
                 'deadline_compliance' => $deadlineCompliance,
                 'productivity' => $productivity,
+                'productivity_score' => $productivityScore,
+                'tasks_per_day' => $tasksPerDay,
                 'overall' => round($overall, 1),
                 'active_days' => $activeDays,
             ];
@@ -225,6 +244,7 @@ class FeasibilityController extends Controller
         return view('feasibility.index', compact(
             'efficiencyData', 'topPerformer', 'leastPerformer',
             'totalCasesAll', 'totalTasksAll', 'totalLawyers',
+            'completedTasksAll', 'wonCasesAll', 'lostCasesAll',
             'officeWinRate', 'officeTaskRate',
             'avgOverall', 'avgSuccess', 'avgTaskComp', 'avgDeadline',
             'casesByType', 'monthlyTrend', 'casesByLawyer', 'tasksByPriority'
