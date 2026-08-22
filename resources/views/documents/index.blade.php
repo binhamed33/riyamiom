@@ -28,6 +28,24 @@
            class="md-tab px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ $currentAccess === 'private' ? 'bg-gold text-[#111827]' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             {{ __('app.access_private') }}
         </a>
+
+        {{-- فلترة بالنوع: تُنفَّذ في قاعدة البيانات فتصحّ مع الترقيم --}}
+        <form method="GET" class="flex items-center gap-2">
+            @foreach (request()->except(['doc_type', 'page']) as $key => $value)
+                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+            @endforeach
+            <select name="doc_type" data-auto-submit
+                    class="px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 border-0 text-gray-700 focus:ring-2 focus:ring-gold">
+                <option value="">كل الأنواع</option>
+                @foreach ($documentTypes as $type)
+                    <option value="{{ $type }}" @selected(request('doc_type') === $type)>{{ $type }}</option>
+                @endforeach
+                @if ($untypedCount > 0)
+                    <option value="__untyped__" @selected(request('doc_type') === '__untyped__')>غير محدد ({{ $untypedCount }})</option>
+                @endif
+            </select>
+            <noscript><button class="px-3 py-2 rounded-lg text-sm bg-gray-100">تصفية</button></noscript>
+        </form>
     </div>
 
 
@@ -58,6 +76,23 @@
                         @error('title')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
+                    </div>
+
+                    <div>
+                        <label for="doc_type" class="block text-sm font-medium text-gray-700 mb-1">نوع المستند</label>
+                        <select id="doc_type" name="doc_type"
+                                class="w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold focus:border-gold">
+                            <option value="">— يُستنتج من اسم الملف —</option>
+                            @foreach ($documentTypes as $type)
+                                <option value="{{ $type }}" @selected(old('doc_type') === $type)>{{ $type }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">
+                            اتركه فارغاً ليستنتجه النظام من اسم الملف.
+                            @if (in_array(auth()->user()->role, ['developer', 'admin'], true))
+                                <a href="{{ route('document-types.index') }}" class="text-gold-dark font-semibold hover:underline">إدارة الأنواع</a>
+                            @endif
+                        </p>
                     </div>
 
                     <div>
@@ -153,6 +188,9 @@
                                 </svg>
                                 <div class="min-w-0">
                                     <p class="truncate">{{ $document->title }}</p>
+                                    @if(!$document->doc_type)
+                                        <span class="bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-gray-500">غير محدد</span>
+                                    @endif
                                     @if($document->doc_type)
                                         <p class="text-[11px] font-bold text-gold-dark mt-0.5 flex items-center gap-1.5">
                                             <span class="bg-gold/10 border border-gold/15 rounded-full px-2 py-0.5">{{ $document->doc_type }}</span>

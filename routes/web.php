@@ -279,6 +279,15 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
         Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
         Route::post('/documents/{document}/client-visibility', [DocumentController::class, 'toggleClientVisibility'])->name('documents.clientVisibility');
+    });
+
+    // أنواع المستندات — إدارة لمدير المكتب
+    Route::middleware(['role:developer,admin,permission:settings.manage'])->group(function () {
+        Route::get('/document-types', [App\Http\Controllers\DocumentTypeController::class, 'index'])->name('document-types.index');
+        Route::post('/document-types', [App\Http\Controllers\DocumentTypeController::class, 'store'])->name('document-types.store');
+        Route::put('/document-types/{documentType}', [App\Http\Controllers\DocumentTypeController::class, 'update'])->name('document-types.update');
+        Route::post('/document-types/{documentType}/toggle', [App\Http\Controllers\DocumentTypeController::class, 'toggle'])->name('document-types.toggle');
+        Route::delete('/document-types/{documentType}', [App\Http\Controllers\DocumentTypeController::class, 'destroy'])->name('document-types.destroy');
         Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
         Route::get('/documents/{document}/preview', [DocumentController::class, 'preview'])->name('documents.preview');
     });

@@ -50,10 +50,23 @@ class DocumentController extends Controller
             $query->where('file_type', $request->file_type);
         }
 
+        // فلترة بنوع المستند — في قاعدة البيانات لا في المتصفّح، فتصحّ
+        // مع الترقيم مهما كثرت المستندات. و«غير محدد» تعني ما لا نوع له.
+        if ($request->filled('doc_type')) {
+            $docType = $request->input('doc_type');
+
+            if ($docType === '__untyped__') {
+                $query->where(fn ($q) => $q->whereNull('doc_type')->orWhere('doc_type', ''));
+            } else {
+                $query->where('doc_type', $docType);
+            }
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('doc_type', 'like', "%{$search}%")
                     ->orWhere('file_type', 'like', "%{$search}%");
             });
         }
@@ -62,7 +75,13 @@ class DocumentController extends Controller
         $cases = LegalCase::with('client')->orderBy('office_case_number')->get();
         $selectedCaseId = (int) $request->query('case_id', 0);
 
-        return view('documents.index', compact('documents', 'cases', 'selectedCaseId'));
+        // الأنواع النشطة للقائمة، وعدد بلا نوع ليُعرض خيار «غير محدد»
+        $documentTypes = \App\Models\DocumentType::active()->pluck('name');
+        $untypedCount = Document::where(fn ($q) => $q->whereNull('doc_type')->orWhere('doc_type', ''))->count();
+
+        return view('documents.index', compact(
+            'documents', 'cases', 'selectedCaseId', 'documentTypes', 'untypedCount'
+        ));
     }
 
     public function store(Request $request): RedirectResponse
@@ -74,6 +93,7 @@ class DocumentController extends Controller
             'file'           => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:' . (self::MAX_SIZE / 1024),
             'access_level'   => 'required|in:all,team,private',
             'client_visible' => 'nullable|boolean',
+            'doc_type'       => 'nullable|string|max:80',
         ]);
 
         // المجلد يجب أن يتبع نفس القضية — لا قبول لمجلد من قضية أخرى

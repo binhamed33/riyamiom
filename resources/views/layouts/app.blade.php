@@ -928,6 +928,13 @@
                 </svg>
                 <span>{{ __('app.settings') }}</span>
                 </a>
+
+                <a href="{{ route('document-types.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('document-types.*') ? 'active' : '' }}">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2 2h12v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7zM9 13h6" />
+                </svg>
+                <span>أنواع المستندات</span>
+                </a>
                 @endif
             @endif
 
@@ -1675,6 +1682,15 @@
                 try { if (new URL(href, location.href).origin !== location.origin) return; } catch (err) { return; }
                 start();
             }, true);
+
+            // قائمة تُرسل نموذجها عند التغيير — مفوَّضة لا مضمَّنة،
+            // فسياسة CSP هنا تحجب onchange وأمثاله بصمت.
+            document.addEventListener('change', function (e) {
+                var el = e.target;
+                if (!(el instanceof HTMLElement) || !el.hasAttribute('data-auto-submit')) return;
+                var form = el.form || el.closest('form');
+                if (form) form.requestSubmit ? form.requestSubmit() : form.submit();
+            });
 
             // إرسال النماذج: شريط + منع الضغط المزدوج
             document.addEventListener('submit', function (e) {
