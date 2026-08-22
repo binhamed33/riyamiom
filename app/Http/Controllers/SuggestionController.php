@@ -78,7 +78,13 @@ class SuggestionController extends Controller
         }
 
         try {
-            \App\Jobs\DeliverSuggestionJob::dispatch($suggestion->id);
+            // طابور بلا عامل يشغّله هو أشيع سبب لتعلّق الاقتراحات: تُدفَع
+            // المهمّة إلى طابور لا أحد يقرؤه، فتبقى «قيد الإرسال» أبداً
+            // بينما يبدو أن التسليم جارٍ. فإن كان الطابور متزامناً سلّمنا
+            // في الطلب نفسه — والنداء مغلَّف فلا يُفشل عمل الموظف.
+            config('queue.default') === 'sync'
+                ? \App\Jobs\DeliverSuggestionJob::dispatchSync($suggestion->id)
+                : \App\Jobs\DeliverSuggestionJob::dispatch($suggestion->id);
         } catch (\Throwable $e) {
             // تعذّر وضعه في الطابور: يبقى «معلّقاً» ويلتقطه الأمر الدوري
             report($e);

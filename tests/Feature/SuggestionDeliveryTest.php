@@ -146,10 +146,16 @@ class SuggestionDeliveryTest extends TestCase
             ]);
         }
 
+        // اللوحة تستقبل بنجاح
+        Http::fake(['*' => Http::response(['ok' => true, 'id' => 1], 201)]);
+
         $this->artisan('suggestions:retry-delivery')->assertSuccessful();
 
-        // الثلاثة العالقة تُعاد، والمُسلَّم لا يُعاد
-        Queue::assertPushed(DeliverSuggestionJob::class, 3);
+        // الثلاثة العالقة تُسلَّم مباشرةً — لا تُعاد جدولتها إلى طابور
+        // قد يكون بلا عامل. والمُسلَّم سابقاً لا يُمسّ.
+        $this->assertSame(3, Suggestion::where('delivery_state', 'sent')
+            ->whereIn('title', ['pending', 'failed', 'skipped'])->count());
+        $this->assertSame('sent', Suggestion::where('title', 'sent')->value('delivery_state'));
     }
 
     /** إعادة التسليم لا تُنشئ نسخة ثانية عند اللوحة */
@@ -267,5 +273,76 @@ class SuggestionDeliveryTest extends TestCase
             'نص الاستثناء لا يجوز أن يصل المستخدم.'
         );
         $this->assertStringContainsString('أبلغ الدعم بالرمز', $bootstrap);
+    }
+
+    /**
+     * أشيع سبب لتعلّق الاقتراحات: طابور بلا عامل.
+     *
+     * المهمّة تُدفع إلى طابور لا أحد يقرؤه، فتبقى الحالة «pending» أبداً
+     * ويظهر للموظّف «محفوظ — قيد الإرسال» بينما لا شيء يجري. وشبكة
+     * الأمان كانت تُعيد الجدولة إلى الطابور نفسه، فلا تصلح شيئاً.
+     * الآن الأمر الدوري يُسلّم مباشرةً.
+     */
+    public function test_the_hourly_command_delivers_directly_when_no_queue_worker_runs(): void
+    {
+        $this->linkOfficeToPanel();
+
+        // طابور بلا عامل: نلتقط المهام ولا نشغّلها — كحال الخادم تماماً
+        Queue::fake();
+
+        $user = $this->staff();
+        $this->actingAs($user)->post(route('suggestions.store'), $this->payload());
+
+        $suggestion = Suggestion::firstOrFail();
+        $this->assertSame('pending', $suggestion->delivery_state, 'يجب أن تبقى معلّقة بلا عامل.');
+
+        // اللوحة تستقبل بنجاح
+        Http::fake(['*' => Http::response(['ok' => true, 'id' => 7], 201)]);
+
+        $this->artisan('suggestions:retry-delivery')->assertSuccessful();
+
+        $this->assertSame('sent', $suggestion->fresh()->delivery_state,
+            'شبكة الأمان لم تُسلّم — أعادت الجدولة إلى الطابور المعطّل نفسه.');
+        $this->assertNotNull($suggestion->fresh()->delivered_at);
+    }
+
+    public function test_a_sync_queue_delivers_inside_the_request(): void
+    {
+        $this->linkOfficeToPanel();
+        config(['queue.default' => 'sync']);
+        Http::fake(['*' => Http::response(['ok' => true, 'id' => 8], 201)]);
+
+        $this->actingAs($this->staff())
+            ->post(route('suggestions.store'), $this->payload())
+            ->assertSessionHas('success');
+
+        // لا انتظار عامل: وصل في الطلب نفسه
+        $this->assertSame('sent', Suggestion::firstOrFail()->delivery_state);
+    }
+
+    public function test_the_doctor_names_the_missing_link_instead_of_guessing(): void
+    {
+        config(['panel.ingest_url' => null, 'panel.ingest_token' => null]);
+
+        $this->artisan('suggestions:doctor')
+            ->expectsOutputToContain('غير مربوط')
+            ->assertFailed();
+    }
+
+    public function test_the_doctor_reports_a_healthy_bridge(): void
+    {
+        $this->linkOfficeToPanel();
+        Http::fake(['*' => Http::response(['ok' => true], 200)]);
+
+        $this->artisan('suggestions:doctor')->assertSuccessful();
+    }
+
+    /** يضبط الربط كما يضبطه المكتب في .env */
+    private function linkOfficeToPanel(): void
+    {
+        config([
+            'panel.ingest_url' => 'https://dev.riyami.om',
+            'panel.ingest_token' => str_repeat('t', 48),
+        ]);
     }
 }

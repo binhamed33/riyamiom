@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\DeliverSuggestionJob;
 use App\Models\Suggestion;
 use App\Services\PanelReporter;
 use Illuminate\Console\Command;
@@ -41,11 +40,44 @@ class RetrySuggestionDelivery extends Command
             return self::SUCCESS;
         }
 
+        // تُسلَّم هنا مباشرةً لا بإعادة جدولتها.
+        //
+        // هذا هو جوهر «شبكة الأمان»: أشيع سبب لتعلّق الاقتراحات هو أن
+        // الطابور بلا عامل يشغّله (QUEUE_CONNECTION=database ولا
+        // queue:work). فإعادة الجدولة إلى الطابور نفسه لا تصلح شيئاً —
+        // تضيف مهمّة أخرى إلى طابور لا أحد يقرؤه، وتبقى الاقتراحات
+        // «قيد الإرسال» إلى الأبد بينما يبدو أن هناك محاولات تجري.
+        //
+        // الأمر الدوري يعمل في الخلفية أصلاً، فنداء HTTP فيه لا يُبطئ أحداً.
+        $sent = 0;
+        $failed = 0;
+
         foreach ($stuck as $suggestion) {
-            DeliverSuggestionJob::dispatch($suggestion->id);
+            $suggestion->increment('delivery_attempts');
+
+            if (PanelReporter::sendSuggestion($suggestion)) {
+                $suggestion->forceFill([
+                    'delivery_state' => 'sent',
+                    'delivered_at' => now(),
+                    'delivery_error' => null,
+                ])->save();
+                $sent++;
+
+                continue;
+            }
+
+            $suggestion->forceFill([
+                'delivery_state' => 'failed',
+                'delivery_error' => 'تعذّر الوصول إلى اللوحة — سيُعاد في الدورة القادمة',
+            ])->save();
+            $failed++;
         }
 
-        $this->info('أُعيدت جدولة ' . $stuck->count() . ' اقتراحاً للتسليم.');
+        $this->info('سُلِّم ' . $sent . ' اقتراحاً' . ($failed ? '، وتعذّر ' . $failed : '') . '.');
+
+        if ($failed > 0) {
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }
