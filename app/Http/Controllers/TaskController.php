@@ -50,10 +50,28 @@ class TaskController extends Controller
             };
         }
 
+        // القضية: كانت الفلترة عليها ناقصة رغم أن المهمة مرتبطة بقضية
+        if ($request->filled('case_id')) {
+            $query->where('case_id', $request->case_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(fn ($q) => $q->where('title', 'like', "%{$search}%")
+                ->orWhere('description', 'like', "%{$search}%"));
+        }
+
         $tasks = $query->latest()->paginate(15)->withQueryString();
         $users = User::where('role', '!=', 'client')->orderBy('name')->get();
 
-        return view('tasks.index', compact('tasks', 'users'));
+        // المحامي لا يرى إلا قضايا مهامه — نفس نطاق القائمة أعلاه
+        $caseQuery = \App\Models\LegalCase::query();
+        if (auth()->user() && auth()->user()->isLawyer()) {
+            $caseQuery->where('lawyer_id', auth()->id());
+        }
+        $filterCases = $caseQuery->orderByDesc('id')->limit(300)->get(['id', 'office_case_number', 'title']);
+
+        return view('tasks.index', compact('tasks', 'users', 'filterCases'));
     }
 
     public function create(Request $request): View
@@ -197,7 +215,14 @@ class TaskController extends Controller
 
         $users = User::where('role', '!=', 'client')->orderBy('name')->get();
 
-        return view('tasks.index', compact('tasks', 'users'));
+        // نفس القالب يُستخدم هنا، فيحتاج نفس قوائم الفلترة
+        $caseQuery = \App\Models\LegalCase::query();
+        if (auth()->user() && auth()->user()->isLawyer()) {
+            $caseQuery->where('lawyer_id', auth()->id());
+        }
+        $filterCases = $caseQuery->orderByDesc('id')->limit(300)->get(['id', 'office_case_number', 'title']);
+
+        return view('tasks.index', compact('tasks', 'users', 'filterCases'));
     }
 
     private function authorizeTaskAccess(Task $task): void

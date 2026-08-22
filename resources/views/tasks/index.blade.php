@@ -16,7 +16,7 @@
     </div>
 
     @php
-        $activeFilters = collect(['status', 'priority', 'assigned_to', 'due'])
+        $activeFilters = collect(['status', 'priority', 'assigned_to', 'due', 'case_id', 'search'])
             ->filter(fn ($k) => filled(request($k)))->count();
         $selCls = 'w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40';
         $tabs = [
@@ -80,7 +80,20 @@
                     <option value="overdue" {{ request('due') === 'overdue' ? 'selected' : '' }}>{{ __('app.due_overdue') }}</option>
                 </select>
             </div>
-            <div class="flex items-end gap-2 lg:col-start-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case') }}</label>
+                <select name="case_id" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all_cases') }}</option>
+                    @foreach($filterCases as $fc)
+                        <option value="{{ $fc->id }}" {{ request('case_id') == $fc->id ? 'selected' : '' }}>{{ $fc->office_case_number }} — {{ \Illuminate\Support\Str::limit($fc->title, 35) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.search') }}</label>
+                <input type="text" name="search" value="{{ request('search') }}" class="{{ $selCls }}">
+            </div>
+            <div class="flex items-end gap-2">
                 <button type="submit" class="flex-1 bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-lg font-semibold transition-colors text-sm">
                     {{ __('app.filter') }}
                 </button>

@@ -39,9 +39,30 @@ class ClientController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
+        // المحامي المسؤول: لا عمود له على العميل، فنشتقّه من قضاياه
+        if ($request->filled('lawyer_id')) {
+            $lawyerId = $request->lawyer_id;
+            $query->whereHas('cases', fn ($q) => $q->where('lawyer_id', $lawyerId));
+        }
+
+        // الحالة مشتقّة من القضايا — لا يوجد عمود حالة على العميل نفسه
+        $activeStatuses = [\App\Models\LegalCase::STATUS_ACTIVE, \App\Models\LegalCase::STATUS_PENDING, \App\Models\LegalCase::STATUS_OVERDUE];
+        match ($request->get('activity')) {
+            'active' => $query->whereHas('cases', fn ($q) => $q->whereIn('status', $activeStatuses)),
+            'idle' => $query->has('cases')->whereDoesntHave('cases', fn ($q) => $q->whereIn('status', $activeStatuses)),
+            'none' => $query->doesntHave('cases'),
+            default => null,
+        };
+
         $clients = $query->latest()->paginate(15)->withQueryString();
 
-        return view('clients.index', compact('clients'));
+        $filterLawyers = \App\Models\User::whereIn('role', ['lawyer', 'admin'])
+            ->where('is_active', true)->orderBy('name')->get(['id', 'name']);
+
+        $activeFilters = collect(['search', 'type', 'date_from', 'date_to', 'lawyer_id', 'activity'])
+            ->filter(fn ($k) => filled($request->get($k)))->count();
+
+        return view('clients.index', compact('clients', 'filterLawyers', 'activeFilters'));
     }
 
     public function create(): View

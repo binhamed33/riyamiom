@@ -12,8 +12,6 @@
     </div>
 
     @php
-        $activeFilters = collect(['search', 'type', 'date_from', 'date_to'])
-            ->filter(fn ($k) => filled(request($k)))->count();
         $selCls = 'w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40';
     @endphp
     <x-filter-panel :action="route('clients.index')" :count="$activeFilters" :clear-url="route('clients.index')">
@@ -39,7 +37,25 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.registered_to') }}</label>
                 <input type="date" name="date_to" value="{{ request('date_to') }}" class="{{ $selCls }}">
             </div>
-            <div class="flex items-end gap-2 lg:col-start-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case_lawyer') }}</label>
+                <select name="lawyer_id" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all_lawyers') }}</option>
+                    @foreach($filterLawyers as $fl)
+                        <option value="{{ $fl->id }}" {{ request('lawyer_id') == $fl->id ? 'selected' : '' }}>{{ $fl->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.client_activity') }}</label>
+                <select name="activity" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all') }}</option>
+                    <option value="active" {{ request('activity') === 'active' ? 'selected' : '' }}>{{ __('app.client_has_active_cases') }}</option>
+                    <option value="idle" {{ request('activity') === 'idle' ? 'selected' : '' }}>{{ __('app.client_no_active_cases') }}</option>
+                    <option value="none" {{ request('activity') === 'none' ? 'selected' : '' }}>{{ __('app.client_no_cases') }}</option>
+                </select>
+            </div>
+            <div class="flex items-end gap-2">
                 <button type="submit" class="flex-1 bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-lg font-semibold transition-colors text-sm">
                     {{ __('app.filter') }}
                 </button>
