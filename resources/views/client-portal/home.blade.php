@@ -20,7 +20,7 @@
     }
     .hm-day { display: block; font-size: 1.7rem; font-weight: 700; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; }
     .hm-month { display: block; font-size: .68rem; font-weight: 600; color: var(--gold); margin-top: .2rem; }
-    .hm-next-body { min-width: 0; }
+    .hm-next-body { min-width: 0; flex: 1; }
     .hm-next-title { font-weight: 700; font-size: .95rem; margin: 0 0 .25rem; }
     .hm-next-meta { font-size: .78rem; color: var(--fg-3); margin: 0; }
 

@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         // يُطبَّق قبل أول رسم فلا تومض الصفحة
         (function () {
             try {
@@ -321,7 +321,7 @@
     <a href="https://dev.riyami.om/" target="_blank" rel="noopener">{{ __('portal.powered_by', ['brand' => __('portal.brand')]) }}</a>
 </footer>
 
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
         btn.addEventListener('click', function () {
             var root = document.documentElement;

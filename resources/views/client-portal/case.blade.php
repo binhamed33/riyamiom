@@ -178,7 +178,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     document.querySelectorAll('[data-acc]').forEach(function (btn) {
         var panel = document.getElementById(btn.getAttribute('aria-controls'));
         if (!panel) return;

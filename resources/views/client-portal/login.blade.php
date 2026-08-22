@@ -147,7 +147,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
 (function () {
     // ---- حالة الإرسال: قفل ضد النقر المزدوج ومؤشّر واضح
     document.querySelectorAll('[data-portal-form]').forEach(function (form) {
