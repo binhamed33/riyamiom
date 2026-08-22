@@ -776,4 +776,6 @@ return [
     'a11y_toggle_menu' => 'إظهار القائمة أو إخفاؤها',
     'a11y_toggle_sidebar' => 'طيّ القائمة الجانبية أو بسطها',
     'unauthorized_access' => 'غير مصرح لك بالوصول',
+    'scope' => 'النطاق',
+    'all_office_sessions' => 'كل جلسات المكتب',
 ];

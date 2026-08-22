@@ -31,7 +31,7 @@ class LawyerScopingTest extends TestCase
         ]);
     }
 
-    public function test_lawyer_sees_only_own_sessions_tasks_and_alerts(): void
+    public function test_browse_lists_show_the_office_while_personal_screens_stay_personal(): void
     {
         $lawyerA = User::factory()->create(['role' => 'lawyer', 'is_active' => true]);
         $lawyerB = User::factory()->create(['role' => 'lawyer', 'is_active' => true]);
@@ -54,18 +54,47 @@ class LawyerScopingTest extends TestCase
             'status' => 'pending', 'priority' => 'medium', 'due_date' => now()->subDay(),
         ]);
 
+        // ١) قوائم التصفّح تعرض المكتب كلّه: صفحة القضية مفتوحة لكل عضو،
+        //    فإخفاء صفوفها من القوائم كان تناقضاً لا حماية.
         $this->actingAs($lawyerA)
             ->get('/sessions')
             ->assertOk()
             ->assertSee('A-100')
-            ->assertDontSee('B-200');
+            ->assertSee('B-200');
 
         $this->actingAs($lawyerA)
             ->get('/tasks')
             ->assertOk()
             ->assertSee('مهمة المحامي أ')
-            ->assertDontSee('مهمة المحامي ب');
+            ->assertSee('مهمة المحامي ب');
 
+        // ٢) ومن أراد عرضه الشخصي فله «جلساتي» و«مهامي» — لم يُفقَد شيء.
+        //    نفحص الصفوف نفسها لا نصّ الصفحة: قوائم التصفية تسرد قضايا
+        //    المكتب كلّها عن قصد، فوجود اسم قضية في الصفحة لا يعني أن
+        //    صفّها معروض.
+        $mineSessions = $this->actingAs($lawyerA)
+            ->get('/sessions?mine=1')
+            ->assertOk()
+            ->viewData('sessions');
+
+        $this->assertSame(
+            ['A-100'],
+            $mineSessions->pluck('case.case_number')->unique()->values()->all(),
+        );
+
+        $mineTasks = $this->actingAs($lawyerA)
+            ->get('/tasks?mine=1')
+            ->assertOk()
+            ->viewData('tasks');
+
+        $this->assertSame(
+            ['مهمة المحامي أ'],
+            $mineTasks->pluck('title')->all(),
+        );
+
+        // ٣) أمّا الشاشات الشخصية — لوحة المتابعة ومركز الانتباه والبحث —
+        //    فتبقى شخصية: سؤالها «ما الذي يخصّني اليوم؟» لا «ما الموجود؟».
+        //    هذا ليس منعاً من الوصول، بل خلاصة لصاحبها.
         $this->actingAs($lawyerA)
             ->get('/attention')
             ->assertOk()

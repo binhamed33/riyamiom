@@ -21,7 +21,10 @@ class CourtSessionController extends Controller
     {
         $query = Session::with(['case.client', 'case.lawyer']);
 
-        if (auth()->user() && auth()->user()->isLawyer()) {
+        // سياسة المكتب: كل عضو في الفريق يرى جلسات المكتب كلّها — كما هي
+        // صفحة القضية نفسها. ومن أراد جلساته وحده فله «جلساتي» أدناه،
+        // فلا يفقد أحد العرض الذي اعتاده.
+        if ($request->boolean('mine')) {
             $query->whereHas('case', fn ($q) => $q->where('lawyer_id', auth()->id()));
         }
 
@@ -71,25 +74,19 @@ class CourtSessionController extends Controller
      * المستخدم إلى لوحة المتابعة برسالة عامة. القوائم هنا فلا يفترق موضع
      * عن آخر.
      *
-     * والنطاق نفسه نطاق القائمة: المحامي الذي لا تظهر له جلسات قضية لا
-     * يُعرض له رقمها وعنوانها في المِصفاة.
      */
     private function filterLists(): array
     {
-        $mine = fn ($q) => auth()->user()?->isLawyer()
-            ? $q->where('lawyer_id', auth()->id())
-            : $q;
-
         return [
-            'filterCases' => $mine(LegalCase::query())
-                ->orderBy('office_case_number')
+            'filterCases' => LegalCase::orderBy('office_case_number')
                 ->get(['id', 'office_case_number', 'title']),
 
             'filterLawyers' => User::where('role', '!=', 'client')
                 ->orderBy('name')
                 ->get(['id', 'name']),
 
-            'filterCourts' => $mine(LegalCase::whereNotNull('court')->where('court', '!=', ''))
+            'filterCourts' => LegalCase::whereNotNull('court')
+                ->where('court', '!=', '')
                 ->distinct()
                 ->orderBy('court')
                 ->pluck('court'),
@@ -277,10 +274,6 @@ class CourtSessionController extends Controller
     public function today(): View
     {
         $query = Session::with(['case.client', 'case.lawyer']);
-
-        if (auth()->user() && auth()->user()->isLawyer()) {
-            $query->whereHas('case', fn ($q) => $q->where('lawyer_id', auth()->id()));
-        }
 
         $query->whereDate('date', Carbon::today())
             ->where('status', 'upcoming')

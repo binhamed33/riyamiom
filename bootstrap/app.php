@@ -37,7 +37,32 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
             if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json(['error' => 'Server Error'], 500);
+                // رمز الحالة الحقيقي لا 500 دائماً: منعُ صلاحية ليس عطلاً في
+                // الخادم، وطلبٌ لصفحة غير موجودة ليس عطلاً كذلك. إرجاع 500
+                // لكل شيء يُضلّل من يستدعي النقطة ويُخفي السبب الحقيقي.
+                if ($e instanceof \Illuminate\Validation\ValidationException) {
+                    return;   // Laravel يردّ 422 بتفاصيل الحقول
+                }
+
+                if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                    $status = $e->getStatusCode();
+
+                    return response()->json([
+                        'ok' => false,
+                        'error' => match (true) {
+                            $status === 403 => $e->getMessage() ?: 'غير مصرح لك بالوصول',
+                            $status === 404 => 'غير موجود',
+                            $status === 429 => 'محاولات كثيرة خلال وقت قصير',
+                            default => $e->getMessage() ?: 'تعذّر إتمام العملية',
+                        },
+                    ], $status);
+                }
+
+                if ($e instanceof \Illuminate\Auth\AuthenticationException) {
+                    return response()->json(['ok' => false, 'error' => 'الجلسة منتهية'], 401);
+                }
+
+                return response()->json(['ok' => false, 'error' => 'تعذّر إتمام العملية'], 500);
             }
             if ($e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
                 || $e instanceof \Illuminate\Auth\AuthenticationException

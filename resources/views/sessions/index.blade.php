@@ -42,6 +42,13 @@
                 </select>
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.scope') }}</label>
+                <select name="mine" class="{{ $selCls }}">
+                    <option value="">{{ __('app.all_office_sessions') }}</option>
+                    <option value="1" {{ request('mine') ? 'selected' : '' }}>{{ __('app.my_sessions') }}</option>
+                </select>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case_lawyer') }}</label>
                 <select name="lawyer_id" class="{{ $selCls }}">
                     <option value="">{{ __('app.all_lawyers') }}</option>

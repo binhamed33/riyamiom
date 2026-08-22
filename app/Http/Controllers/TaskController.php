@@ -19,7 +19,8 @@ class TaskController extends Controller
     {
         $query = Task::with(['assignee', 'creator', 'case']);
 
-        if (auth()->user() && auth()->user()->isLawyer()) {
+        // كل عضو يرى مهام المكتب، و«مهامي» تُعيد العرض الشخصي لمن أراده
+        if ($request->boolean('mine')) {
             $query->where('assigned_to', auth()->id());
         }
 
@@ -64,12 +65,9 @@ class TaskController extends Controller
         $tasks = $query->latest()->paginate(15)->withQueryString();
         $users = User::where('role', '!=', 'client')->orderBy('name')->get();
 
-        // المحامي لا يرى إلا قضايا مهامه — نفس نطاق القائمة أعلاه
-        $caseQuery = \App\Models\LegalCase::query();
-        if (auth()->user() && auth()->user()->isLawyer()) {
-            $caseQuery->where('lawyer_id', auth()->id());
-        }
-        $filterCases = $caseQuery->orderByDesc('id')->limit(300)->get(['id', 'office_case_number', 'title']);
+        $filterCases = \App\Models\LegalCase::orderByDesc('id')
+            ->limit(300)
+            ->get(['id', 'office_case_number', 'title']);
 
         return view('tasks.index', compact('tasks', 'users', 'filterCases'));
     }
@@ -216,11 +214,9 @@ class TaskController extends Controller
         $users = User::where('role', '!=', 'client')->orderBy('name')->get();
 
         // نفس القالب يُستخدم هنا، فيحتاج نفس قوائم الفلترة
-        $caseQuery = \App\Models\LegalCase::query();
-        if (auth()->user() && auth()->user()->isLawyer()) {
-            $caseQuery->where('lawyer_id', auth()->id());
-        }
-        $filterCases = $caseQuery->orderByDesc('id')->limit(300)->get(['id', 'office_case_number', 'title']);
+        $filterCases = \App\Models\LegalCase::orderByDesc('id')
+            ->limit(300)
+            ->get(['id', 'office_case_number', 'title']);
 
         return view('tasks.index', compact('tasks', 'users', 'filterCases'));
     }

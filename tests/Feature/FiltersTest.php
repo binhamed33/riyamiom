@@ -131,7 +131,12 @@ class FiltersTest extends TestCase
         $page->assertSee(__('app.clear_filters'), false);
     }
 
-    public function test_a_lawyer_only_sees_their_own_cases_in_the_task_filter(): void
+    /**
+     * مِصفاة القضايا تتبع القائمة التي تُصفّيها: القائمة صارت تعرض مهام
+     * المكتب كلّها، فالمِصفاة تعرض قضاياه كلّها. مِصفاة أضيق من قائمتها
+     * تعني خيارات لا تُطابق ما يُعرض.
+     */
+    public function test_the_task_case_filter_matches_the_list_it_filters(): void
     {
         $lawyer = User::factory()->create(['role' => 'lawyer', 'is_active' => true]);
         $mine = $this->makeCase(['title' => 'قضيتي أنا', 'lawyer_id' => $lawyer->id]);
@@ -140,6 +145,6 @@ class FiltersTest extends TestCase
         $html = $this->actingAs($lawyer)->get('/tasks')->assertOk()->getContent();
 
         $this->assertStringContainsString('value="' . $mine->id . '"', $html);
-        $this->assertStringNotContainsString('قضية زميل آخر', $html);
+        $this->assertStringContainsString('value="' . $theirs->id . '"', $html);
     }
 }

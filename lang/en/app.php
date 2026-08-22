@@ -776,4 +776,6 @@ return [
     'a11y_toggle_menu' => 'Show or hide the menu',
     'a11y_toggle_sidebar' => 'Collapse or expand the sidebar',
     'unauthorized_access' => 'You are not authorised to access this.',
+    'scope' => 'Scope',
+    'all_office_sessions' => 'All office sessions',
 ];

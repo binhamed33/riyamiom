@@ -269,7 +269,12 @@ class SessionTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_lawyer_cannot_view_other_lawyer_case_session()
+    /**
+     * سياسة المكتب: كل عضو في الفريق يصل إلى كل قضية وجلساتها —
+     * authorizeSessionAccess() تقول ذلك صراحةً. الاختبارات القديمة كانت
+     * تفترض تقييد المحامي بجلسات قضاياه، وهو تصميم سابق تُرك.
+     */
+    public function test_a_lawyer_can_open_a_session_on_a_colleagues_case()
     {
         $lawyer1 = $this->lawyer();
         $lawyer2 = $this->lawyer();
@@ -277,12 +282,10 @@ class SessionTest extends TestCase
         $case = LegalCase::factory()->create(['lawyer_id' => $lawyer2->id, 'client_id' => $client->id]);
         $session = Session::factory()->create(['case_id' => $case->id]);
 
-        $response = $this->actingAs($lawyer1)->get("/sessions/{$session->id}");
-
-        $response->assertStatus(403);
+        $this->actingAs($lawyer1)->get("/sessions/{$session->id}")->assertStatus(200);
     }
 
-    public function test_lawyer_cannot_edit_other_lawyer_case_session()
+    public function test_a_lawyer_can_edit_a_session_on_a_colleagues_case()
     {
         $lawyer1 = $this->lawyer();
         $lawyer2 = $this->lawyer();
@@ -290,12 +293,10 @@ class SessionTest extends TestCase
         $case = LegalCase::factory()->create(['lawyer_id' => $lawyer2->id, 'client_id' => $client->id]);
         $session = Session::factory()->create(['case_id' => $case->id]);
 
-        $response = $this->actingAs($lawyer1)->get("/sessions/{$session->id}/edit");
-
-        $response->assertStatus(403);
+        $this->actingAs($lawyer1)->get("/sessions/{$session->id}/edit")->assertStatus(200);
     }
 
-    public function test_lawyer_cannot_update_other_lawyer_case_session()
+    public function test_a_lawyer_can_update_a_session_on_a_colleagues_case()
     {
         $lawyer1 = $this->lawyer();
         $lawyer2 = $this->lawyer();
@@ -305,15 +306,16 @@ class SessionTest extends TestCase
 
         $response = $this->actingAs($lawyer1)->put("/sessions/{$session->id}", [
             'case_id' => $case->id,
-            'date' => now()->addDay()->format('Y-m-d H:i:s'),
-            'location' => 'Test',
+            'date' => now()->addWeek()->format('Y-m-d\TH:i'),
+            'location' => 'قاعة بعد التعديل',
             'status' => 'upcoming',
         ]);
 
-        $response->assertStatus(403);
+        $response->assertSessionHasNoErrors();
+        $this->assertSame('قاعة بعد التعديل', $session->fresh()->location);
     }
 
-    public function test_lawyer_cannot_delete_other_lawyer_case_session()
+    public function test_a_lawyer_can_delete_a_session_on_a_colleagues_case()
     {
         $lawyer1 = $this->lawyer();
         $lawyer2 = $this->lawyer();
@@ -321,9 +323,8 @@ class SessionTest extends TestCase
         $case = LegalCase::factory()->create(['lawyer_id' => $lawyer2->id, 'client_id' => $client->id]);
         $session = Session::factory()->create(['case_id' => $case->id]);
 
-        $response = $this->actingAs($lawyer1)->delete("/sessions/{$session->id}");
-
-        $response->assertStatus(403);
+        $this->actingAs($lawyer1)->delete("/sessions/{$session->id}")->assertRedirect();
+        $this->assertDatabaseMissing('sessions', ['id' => $session->id]);
     }
 
     public function test_can_filter_sessions_by_status()
