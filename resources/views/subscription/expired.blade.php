@@ -23,7 +23,7 @@
         tailwind.config = {
             theme: { extend: { colors: {
                 obsidian: '#080B12', navy: '#0D111B', charcoal: '#121826',
-                gold: { DEFAULT: '#E5C158', soft: '#F0D98A', dim: '#A98218' },
+                gold: { DEFAULT: 'var(--accent-hover)', soft: 'var(--accent-light)', dim: 'var(--accent-dark)' },
                 muted: '#94A3B8'
             } } }
         }
@@ -31,7 +31,7 @@
     <style>
         :root {
             --obsidian: #080B12; --navy: #0D111B; --charcoal: #121826;
-            --gold: #E5C158; --gold-soft: #F0D98A; --gold-dim: #A98218;
+            --gold: var(--accent-hover); --gold-soft: var(--accent-light); --gold-dim: var(--accent-dark);
             --ivory: #FFFFFF; --muted: #94A3B8;
         }
         body {
@@ -73,7 +73,7 @@
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
             width: 100%; padding: 0.95rem; border-radius: 14px; font-weight: 700; font-size: 0.95rem;
             transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s, opacity 0.3s; }
-        .btn-gold { background: linear-gradient(120deg, var(--gold-soft), var(--gold) 50%, #D4AF37);
+        .btn-gold { background: linear-gradient(120deg, var(--gold-soft), var(--gold) 50%, var(--accent));
             color: #0D111B; }
         .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 14px 44px rgba(200,169,107,0.3); }
         .btn-ghost { border: 1px solid rgba(146,153,165,0.25); color: var(--muted); background: transparent; }
@@ -90,7 +90,7 @@
     <div class="relative z-10 min-h-screen flex items-center justify-center px-6 py-14">
         <div class="panel text-center">
             <div class="seal">
-                <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="#E5C158" stroke-width="1.2">
+                <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hover)" stroke-width="1.2">
                     <circle cx="12" cy="12" r="9"/>
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/>
                     <path stroke-linecap="round" stroke-linejoin="round" d="M7 3.5L12 2l5 1.5"/>

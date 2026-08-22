@@ -5,8 +5,8 @@
 @section('content')
 <style nonce="{{ $cspNonce }}">
     .duration-option input:checked + span {
-        background-color: #D4AF37;
-        border-color: #D4AF37;
+        background-color: var(--accent);
+        border-color: var(--accent);
         color: #ffffff;
         box-shadow: 0 4px 14px rgba(212, 175, 55, 0.25);
     }
@@ -118,7 +118,7 @@
 
                     <div class="sm:w-64 bg-gradient-to-br from-charcoal to-navy text-white rounded-2xl p-6 text-center" style="background:linear-gradient(150deg,#121826,#0D111B);">
                         <p class="text-[11px] tracking-widest text-gray-400 mb-1">المدة المتبقية</p>
-                        <p class="text-4xl font-extrabold text-gold-light mb-2" style="color:#F0D98A;">{{ $info['remaining_days'] }} <span class="text-base font-semibold">يوم</span></p>
+                        <p class="text-4xl font-extrabold text-gold-light mb-2" style="color:var(--accent-light);">{{ $info['remaining_days'] }} <span class="text-base font-semibold">يوم</span></p>
                         <p class="text-[11px] text-gray-400 font-mono" dir="ltr" x-data="{
                             endTs: {{ $info['end_timestamp'] }},
                             remaining: {{ max(0, $info['end_timestamp'] - now()->timestamp) }},

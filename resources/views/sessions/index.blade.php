@@ -84,8 +84,36 @@
         </div>
     </x-filter-panel>
 
-    <div class="bg-white rounded-xl border border-gray-200">
-        <div class="overflow-x-auto">
+    {{-- الهاتف: بطاقات بدل جدول يُسحب أفقياً --}}
+    <div class="md:hidden bg-white rounded-xl border border-gray-200 overflow-hidden">
+        @forelse ($sessions as $session)
+            <x-list-card
+                :url="$session->case ? route('cases.show', $session->case) : null"
+                :title="$session->case->court ?? __('app.session')"
+                :subtitle="$session->case->case_number ?? null">
+                <x-slot:badges>
+                    @php $stMap = ['upcoming' => 'bg-blue-100 text-blue-700', 'completed' => 'bg-green-100 text-green-700', 'postponed' => 'bg-yellow-100 text-yellow-700', 'cancelled' => 'bg-red-100 text-red-700']; @endphp
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $stMap[$session->status] ?? 'bg-gray-100 text-gray-700' }}">
+                        {{ __('app.status_' . $session->status) }}
+                    </span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gold/12 text-gold-dark" dir="ltr">
+                        {{ $session->date->format('Y-m-d H:i') }}
+                    </span>
+                </x-slot:badges>
+                <x-slot:meta>
+                    <x-list-meta :label="__('app.case_principal')">{{ $session->case->client->name ?? '—' }}</x-list-meta>
+                    <x-list-meta :label="__('app.case_opponent')">{{ $session->case->opponent ?? '—' }}</x-list-meta>
+                </x-slot:meta>
+            </x-list-card>
+        @empty
+            <x-empty-state :title="__('app.no_sessions')" :hint="__('app.no_sessions_hint')" icon="sessions"
+                :action-url="route('sessions.create')" :action-label="__('app.new_session')"
+                :filtered="($activeFilters ?? 0) > 0" :clear-url="url()->current()" compact />
+        @endforelse
+    </div>
+
+    <div class="hidden md:block bg-white rounded-xl border border-gray-200">
+        <div class="overflow-x-auto md-scroll-x">
         <table class="w-full text-sm">
             <thead class=" text-gray-900">
                 <tr>
@@ -160,11 +188,18 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-                            {{ __('app.no_sessions') }}
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="7" class="p-0">
+                                <x-empty-state
+                                    :title="__('app.no_sessions')"
+                                    :hint="__('app.no_sessions_hint')"
+                                    icon="sessions"
+                                    :action-url="route('sessions.create')"
+                                    :action-label="__('app.new_session')"
+                                    :filtered="($activeFilters ?? 0) > 0"
+                                    :clear-url="url()->current()" />
+                            </td>
+                        </tr>
                 @endforelse
             </tbody>
         </table>

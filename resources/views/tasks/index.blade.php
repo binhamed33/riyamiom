@@ -32,7 +32,7 @@
     <div class="flex flex-wrap items-center gap-2">
         @foreach($tabs as $tab)
             <a href="{{ route('tasks.index', $tab['params']) }}"
-               class="px-4 py-1.5 rounded-full text-xs font-bold border transition-colors {{ $tab['active'] ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-gold/40 hover:text-gold-dark' }}">
+               class="md-tab inline-flex items-center px-4 py-2 rounded-full text-xs font-bold border transition-colors {{ $tab['active'] ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-gold/40 hover:text-gold-dark' }}">
                 {{ $tab['label'] }}
             </a>
         @endforeach
@@ -101,8 +101,40 @@
         </div>
     </x-filter-panel>
 
-    <div class="bg-white rounded-xl border border-gray-200">
-        <div class="overflow-x-auto">
+    {{-- الهاتف: بطاقات بدل جدول يُسحب أفقياً --}}
+    <div class="md:hidden bg-white rounded-xl border border-gray-200 overflow-hidden">
+        @forelse ($tasks as $task)
+            @php
+                $tStatus = ['pending' => 'bg-gray-100 text-gray-800', 'in_progress' => 'bg-blue-100 text-blue-700', 'completed' => 'bg-green-100 text-green-700'];
+                $tPrio = ['low' => 'bg-gray-100 text-gray-600', 'medium' => 'bg-blue-100 text-blue-700', 'high' => 'bg-orange-100 text-orange-700', 'urgent' => 'bg-red-100 text-red-700'];
+                $overdue = $task->due_date && $task->status !== 'completed' && $task->due_date->isPast();
+            @endphp
+            <x-list-card :url="route('tasks.show', $task)" :title="$task->title" :subtitle="$task->case->title ?? null">
+                <x-slot:badges>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $tStatus[$task->status] ?? 'bg-gray-100 text-gray-700' }}">
+                        {{ __('app.status_' . $task->status) }}
+                    </span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $tPrio[$task->priority] ?? 'bg-gray-100 text-gray-600' }}">
+                        {{ __('app.priority_' . $task->priority) }}
+                    </span>
+                    @if($overdue)
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">{{ __('app.due_overdue') }}</span>
+                    @endif
+                </x-slot:badges>
+                <x-slot:meta>
+                    <x-list-meta :label="__('app.task_assigned_to')">{{ $task->assignee->name ?? '—' }}</x-list-meta>
+                    <x-list-meta :label="__('app.due_date')">{{ $task->due_date?->format('Y-m-d') ?? '—' }}</x-list-meta>
+                </x-slot:meta>
+            </x-list-card>
+        @empty
+            <x-empty-state :title="__('app.no_tasks')" :hint="__('app.no_tasks_hint')" icon="tasks"
+                :action-url="route('tasks.create')" :action-label="__('app.new_task')"
+                :filtered="($activeFilters ?? 0) > 0" :clear-url="url()->current()" compact />
+        @endforelse
+    </div>
+
+    <div class="hidden md:block bg-white rounded-xl border border-gray-200">
+        <div class="overflow-x-auto md-scroll-x">
         <table class="w-full text-sm">
             <thead class=" text-gray-900">
                 <tr>
@@ -199,11 +231,18 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-                            {{ __('app.no_tasks') }}
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="7" class="p-0">
+                                <x-empty-state
+                                    :title="__('app.no_tasks')"
+                                    :hint="__('app.no_tasks_hint')"
+                                    icon="tasks"
+                                    :action-url="route('tasks.create')"
+                                    :action-label="__('app.new_task')"
+                                    :filtered="($activeFilters ?? 0) > 0"
+                                    :clear-url="url()->current()" />
+                            </td>
+                        </tr>
                 @endforelse
             </tbody>
         </table>

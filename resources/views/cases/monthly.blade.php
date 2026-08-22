@@ -132,13 +132,13 @@
     h1, h2, h3, h4, h5, h6, p, span, div:not(.print\\:hidden) { color: #000 !important; }
     .text-gold, .text-ivory, .text-ivory\\/50, .text-ivory\\/60, .text-ivory\\/70, .text-ivory\\/80, .text-ivory\\/30, .text-white { color: #000 !important; }
     table { width: 100%; border-collapse: collapse; }
-    th { background: #D4AF37 !important; color: #000 !important; padding: 10px 14px !important; font-size: 13px !important; font-weight: 700 !important; border: 2px solid #000 !important; }
+    th { background: var(--accent) !important; color: #000 !important; padding: 10px 14px !important; font-size: 13px !important; font-weight: 700 !important; border: 2px solid #000 !important; }
     td { padding: 8px 14px !important; border: 1px solid #000 !important; font-size: 12px !important; color: #000 !important; }
     tr:nth-child(even) td { background: #F2F4F7 !important; }
     tr:nth-child(odd) td { background: #fff !important; }
     a { color: #000 !important; text-decoration: underline !important; font-weight: 600 !important; }
     .bg-navy-light, .bg-navy, .bg-navy-darker { background: #fff !important; border: 1px solid #000 !important; }
-    .bg-gold { background: #D4AF37 !important; color: #000 !important; }
+    .bg-gold { background: var(--accent) !important; color: #000 !important; }
     .bg-gold\\/10, .bg-gold\\/15, .bg-gold\\/20 { background: #F2F4F7 !important; }
     .text-green-400 { color: #166534 !important; font-weight: 700 !important; }
     .text-blue-400 { color: #1E40AF !important; font-weight: 700 !important; }

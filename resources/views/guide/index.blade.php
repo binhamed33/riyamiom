@@ -7,9 +7,9 @@
     html { scroll-behavior: smooth; }
     .guide-toc-link { transition: all 0.15s ease; border-inline-start: 2px solid transparent; }
     .guide-toc-link.is-active {
-        color: #A98218;
+        color: var(--accent-dark);
         font-weight: 700;
-        border-inline-start-color: #D4AF37;
+        border-inline-start-color: var(--accent);
         background: rgba(212, 175, 55, 0.08);
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

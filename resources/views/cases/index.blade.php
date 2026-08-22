@@ -174,9 +174,52 @@ document.addEventListener('alpine:init', () => {
         </div>
     </x-filter-panel>
 
+    {{-- الهاتف: بطاقات — جدول القضايا يبلغ ثلاثة أضعاف عرض الشاشة --}}
+    <div class="md:hidden bg-white rounded-xl border border-gold/15 overflow-hidden">
+        @forelse($cases ?? [] as $case)
+            @php
+                $csMap = [
+                    'active' => 'bg-green-100 text-green-700 border-green-200',
+                    'pending' => 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                    'overdue' => 'bg-red-100 text-red-700 border-red-200',
+                    'closed' => 'bg-gray-100 text-gray-500 border-gray-200',
+                    'won' => 'bg-blue-100 text-blue-700 border-blue-200',
+                    'lost' => 'bg-red-100 text-red-700 border-red-200',
+                    'adjudicated' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                    'fees_pending' => 'bg-red-100 text-red-700 border-red-200',
+                ];
+                $cpMap = ['low' => 'bg-gray-100 text-gray-600', 'medium' => 'bg-blue-100 text-blue-700',
+                          'high' => 'bg-orange-100 text-orange-700', 'urgent' => 'bg-red-100 text-red-700'];
+            @endphp
+            <x-list-card :url="route('cases.show', $case)"
+                         :title="$case->client->name ?? $case->title"
+                         :subtitle="$case->court . ($case->case_number ? ' — ' . $case->case_number : '')">
+                <x-slot:badges>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-gold/12 text-gold-dark border border-gold/20" dir="ltr">{{ $case->office_case_number }}</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $csMap[$case->status] ?? 'bg-gray-100 text-gray-500 border-gray-200' }}">
+                        {{ __('app.status_' . $case->status) }}
+                    </span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $cpMap[$case->priority] ?? 'bg-gray-100 text-gray-600' }}">
+                        {{ __('app.priority_' . $case->priority) }}
+                    </span>
+                </x-slot:badges>
+                <x-slot:meta>
+                    <x-list-meta :label="__('app.case_opponent')">{{ $case->opponent ?? '—' }}</x-list-meta>
+                    <x-list-meta :label="__('app.case_lawyer')">{{ $case->lawyer->name ?? '—' }}</x-list-meta>
+                    <x-list-meta :label="__('app.case_type')">{{ $case->case_type ?? '—' }}</x-list-meta>
+                    <x-list-meta :label="__('app.created_at')">{{ $case->created_at?->format('Y-m-d') ?? '—' }}</x-list-meta>
+                </x-slot:meta>
+            </x-list-card>
+        @empty
+            <x-empty-state :title="__('app.no_cases')" icon="cases"
+                :action-url="route('cases.create')" :action-label="__('app.add_case_prompt')"
+                :filtered="($activeFilters ?? 0) > 0" :clear-url="url()->current()" compact />
+        @endforelse
+    </div>
+
     {{-- Cases Table --}}
-    <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
-        <div class="overflow-x-auto">
+    <div class="hidden md:block bg-white rounded-xl border border-gold/15 overflow-hidden">
+        <div class="overflow-x-auto md-scroll-x">
             <table class="w-full text-sm text-right">
                 <thead>
                     <tr class="border-b border-gray-200">
@@ -335,12 +378,15 @@ document.addEventListener('alpine:init', () => {
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="px-4 py-12 text-center text-gray-500">
-                                <svg class="w-16 h-16 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                                </svg>
-                                <p class="text-lg">{{ __('app.no_cases') }}</p>
-                                <a href="{{ route('cases.create') }}" class="mt-3 inline-block text-gold-dark hover:underline text-sm">{{ __('app.add_case_prompt') }}</a>
+                            <td colspan="10" class="p-0">
+                                <x-empty-state
+                                    :title="__('app.no_cases')"
+                                    
+                                    icon="cases"
+                                    :action-url="route('cases.create')"
+                                    :action-label="__('app.add_case_prompt')"
+                                    :filtered="($activeFilters ?? 0) > 0"
+                                    :clear-url="url()->current()" />
                             </td>
                         </tr>
                     @endforelse

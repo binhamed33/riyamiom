@@ -295,7 +295,7 @@ document.addEventListener('alpine:init', () => {
             win.document.write('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap">');
             win.document.write('</head><body>');
             win.document.write('<div style="max-width:700px;margin:30px auto;font-family:Tajawal,Cairo,sans-serif;direction:rtl;padding:20px;color:#333;">');
-            win.document.write('<h2 style="color:#D4AF37;border-bottom:2px solid #D4AF37;padding-bottom:10px;">{{ __("app.case_summary") }} - {{ $case->case_number }}</h2>');
+            win.document.write('<h2 style="color:var(--accent);border-bottom:2px solid var(--accent);padding-bottom:10px;">{{ __("app.case_summary") }} - {{ $case->case_number }}</h2>');
             win.document.write(printContent.innerHTML);
             win.document.write('</div></body></html>');
             win.document.close();
@@ -314,7 +314,7 @@ document.addEventListener('alpine:init', () => {
         [dir="ltr"] .content-area { margin: 0 !important; }
         main { padding: 0 !important; }
         * { box-shadow: none !important; text-shadow: none !important; }
-        .print-header { border-bottom: 2px solid #D4AF37; padding-bottom: 10px; margin-bottom: 20px; }
+        .print-header { border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; }
         .print-footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 5px; }
     }
     .print-only { display: none; }
@@ -348,7 +348,7 @@ document.addEventListener('alpine:init', () => {
 
     {{-- Print Header (visible only in print) --}}
     <div class="print-only print-header">
-        <h1 style="font-size:20px;color:#D4AF37;margin:0;">{{ __('app.case_number') }}: {{ $case->case_number }}</h1>
+        <h1 style="font-size:20px;color:var(--accent);margin:0;">{{ __('app.case_number') }}: {{ $case->case_number }}</h1>
         <p style="color:#666;font-size:12px;margin:2px 0;">{{ $case->created_at->format('Y-m-d') }}</p>
     </div>
 

@@ -271,6 +271,31 @@
     </style>
     <style>
         [x-cloak] { display: none !important; }
+        /* الرسوم البيانية لا تتجاوز عرض حاويتها على أي مقاس */
+        canvas { max-width: 100%; }
+
+        /* شريط التقدّم العلوي */
+        #mdProgress { position: fixed; top: 0; inset-inline-start: 0; height: 3px; width: 0;
+            background: linear-gradient(90deg, var(--accent-dark), var(--accent), var(--accent-light));
+            box-shadow: 0 0 10px var(--accent-a40); z-index: 9999; opacity: 0;
+            transition: width 0.18s ease, opacity 0.25s ease; pointer-events: none; }
+        @media (prefers-reduced-motion: reduce) { #mdProgress { transition: none; } }
+
+        @media (max-width: 767px) {
+            /* أهداف لمس مريحة: لا عنصر تفاعلي أقل من 44 بكسل */
+            .sidebar-link, .bottom-nav a, .md-touch { min-height: 44px; }
+            /* الجداول العريضة: تمرير أفقي سلس مع تلميح بصري */
+            .md-scroll-x { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+            /* رابط ممتدّ على البطاقة كلها */
+            .md-stretch::after { content: ''; position: absolute; inset: 0; z-index: 1; }
+            /* شرائح التبويب وأزرار الاختيار: هدف لمس مقبول */
+            .md-tab, label:has(input[type="radio"]), label:has(input[type="checkbox"]) { min-height: 40px; display: inline-flex; align-items: center; }
+            /* روابط التذييل وأزرار الطيّ: مساحة لمس معقولة بلا تغيير في الشكل */
+            footer a { display: inline-flex; align-items: center; min-height: 40px; }
+            .md-touch-pad { display: flex; align-items: center; min-height: 44px; }
+            /* الشرائح الدائرية (تبويبات ومرشِّحات) تصبح أهدافاً قابلة للّمس */
+            a[class*="rounded-full"], button[class*="rounded-full"] { min-height: 40px; display: inline-flex; align-items: center; }
+        }
 
         /* Warm ivory surfaces (light mode) */
         .bg-white, .bg-white\/60, .bg-white\/70, .bg-white\/80, .bg-white\/90 { background-color: #FFFFFF; }
@@ -640,7 +665,7 @@
                 </div>
                 <span class="sidebar-logo-text text-gold-dark font-heading font-bold text-[10px] leading-tight whitespace-normal max-w-[160px]" style="color: #D4AF37;">{{ $officeName }}</span>
             </div>
-            <button @click="mobileOpen = false" class="md:hidden text-gray-400 hover:text-gray-800 transition">
+            <button @click="mobileOpen = false" class="md:hidden p-2 -m-2 text-gray-400 hover:text-gray-800 transition" aria-label="{{ __('app.close') }}">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
@@ -1393,7 +1418,7 @@
 
         var indicator = document.createElement('div');
         indicator.id = 'syncIndicator';
-        indicator.style.cssText = 'position:fixed;bottom:12px;left:12px;z-index:9999;display:none;padding:4px 10px;border-radius:8px;font-size:11px;color:#A98218;background:rgba(244,242,238,0.9);border:1px solid rgba(212,175,55,0.3);transition:opacity 0.3s;pointer-events:none;';
+        indicator.style.cssText = 'position:fixed;bottom:12px;left:12px;z-index:9999;display:none;padding:4px 10px;border-radius:8px;font-size:11px;color:var(--accent-dark);background:rgba(244,242,238,0.92);border:1px solid var(--accent-a30);transition:opacity 0.3s;pointer-events:none;';
         document.body.appendChild(indicator);
 
         function showIndicator() {
@@ -1448,6 +1473,73 @@
     })();
     </script>
     @endauth
+
+    {{-- حالة التحميل: شريط علوي عند التنقّل والإرسال، وحارس ضدّ الإرسال المزدوج --}}
+    <div id="mdProgress" aria-hidden="true"></div>
+    <script nonce="{{ $cspNonce }}">
+        (function () {
+            'use strict';
+            var bar = document.getElementById('mdProgress');
+            var timer = null, width = 0;
+
+            function start() {
+                if (timer) return;
+                width = 8;
+                bar.style.opacity = '1';
+                bar.style.width = width + '%';
+                timer = setInterval(function () {
+                    width += Math.max(0.4, (88 - width) / 14);
+                    if (width > 92) width = 92;
+                    bar.style.width = width + '%';
+                }, 180);
+            }
+            function done() {
+                if (!timer) return;
+                clearInterval(timer); timer = null;
+                bar.style.width = '100%';
+                setTimeout(function () { bar.style.opacity = '0'; setTimeout(function () { bar.style.width = '0'; }, 250); }, 180);
+            }
+
+            // التنقّل بين الصفحات
+            document.addEventListener('click', function (e) {
+                var a = e.target.closest('a[href]');
+                if (!a || a.target === '_blank' || e.metaKey || e.ctrlKey || e.shiftKey) return;
+                var href = a.getAttribute('href') || '';
+                if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
+                if (a.hasAttribute('download') || a.hasAttribute('x-on:click') || a.hasAttribute('@click')) return;
+                try { if (new URL(href, location.href).origin !== location.origin) return; } catch (err) { return; }
+                start();
+            }, true);
+
+            // إرسال النماذج: شريط + منع الضغط المزدوج
+            document.addEventListener('submit', function (e) {
+                var form = e.target;
+                if (!(form instanceof HTMLFormElement) || form.dataset.noProgress === '1') return;
+                start();
+                var btns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                setTimeout(function () {
+                    btns.forEach(function (b) {
+                        if (b.disabled) return;
+                        b.disabled = true;
+                        b.dataset.mdBusy = '1';
+                        b.style.opacity = '0.75';
+                        b.style.cursor = 'progress';
+                    });
+                }, 0);
+            }, true);
+
+            // العودة من ذاكرة المتصفح: أعد تفعيل الأزرار وأخفِ الشريط
+            window.addEventListener('pageshow', function () {
+                done();
+                document.querySelectorAll('[data-md-busy="1"]').forEach(function (b) {
+                    b.disabled = false; b.removeAttribute('data-md-busy');
+                    b.style.opacity = ''; b.style.cursor = '';
+                });
+            });
+            window.addEventListener('beforeunload', start);
+            window.addEventListener('load', done);
+        })();
+    </script>
 
     @stack('scripts')
 

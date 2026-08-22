@@ -279,7 +279,7 @@
 @push('scripts')
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function () {
-    const goldColor = '#D4AF37';
+    const goldColor = 'var(--accent)';
     const bgColor = '#FFFFFF';
     const gridColor = 'rgba(0,0,0,0.06)';
     const tickColor = '#4B5563';
@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const typeCtx = document.getElementById('casesTypeChart');
     if (typeCtx) {
         const typeData = @json($casesByType);
-        const typeColors = ['#D4AF37', '#22C55E', '#3B82F6', '#8B5CF6', '#EF4444', '#D4AF37', '#06B6D4', '#EC4899'];
+        const typeColors = ['var(--accent)', '#22C55E', '#3B82F6', '#8B5CF6', '#EF4444', 'var(--accent)', '#06B6D4', '#EC4899'];
         const labels = @json($casesByType);
         const keys = Object.keys(labels);
         new Chart(typeCtx.getContext('2d'), {
@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const radarCtx = document.getElementById('radarChart');
     if (radarCtx) {
         const radarData = @json($efficiencyData);
-        const radarColors = ['#D4AF37', '#22C55E', '#3B82F6', '#8B5CF6', '#D4AF37', '#EF4444'];
+        const radarColors = ['var(--accent)', '#22C55E', '#3B82F6', '#8B5CF6', 'var(--accent)', '#EF4444'];
         new Chart(radarCtx.getContext('2d'), {
             type: 'radar',
             data: {

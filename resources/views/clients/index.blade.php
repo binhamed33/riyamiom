@@ -63,8 +63,36 @@
         </div>
     </x-filter-panel>
 
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div class="overflow-x-auto">
+    {{-- الهاتف: بطاقات بدل جدول يُسحب أفقياً --}}
+    <div class="md:hidden bg-white rounded-xl border border-gray-200 overflow-hidden">
+        @forelse($clients as $client)
+            <x-list-card :url="route('clients.show', $client)" :title="$client->name" :subtitle="$client->email">
+                <x-slot:badges>
+                    @if($client->type === 'company')
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gold/12 text-gold-dark border border-gold/15">{{ __('app.company') }}</span>
+                    @else
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">{{ __('app.individual') }}</span>
+                    @endif
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{{ __('app.cases') }}: {{ $client->cases_count ?? 0 }}</span>
+                </x-slot:badges>
+                <x-slot:meta>
+                    <x-list-meta :label="__('app.phone')"><span dir="ltr">{{ $client->phone ?? '—' }}</span></x-list-meta>
+                </x-slot:meta>
+                <x-slot:actions>
+                    <a href="{{ route('clients.edit', $client) }}" class="md-touch inline-flex items-center justify-center w-11 h-11 rounded-xl bg-gold/12 text-gold-dark" aria-label="{{ __('app.edit') }}">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+                    </a>
+                </x-slot:actions>
+            </x-list-card>
+        @empty
+            <x-empty-state :title="__('app.no_clients')" :hint="__('app.no_clients_hint')" icon="clients"
+                :action-url="route('clients.create')" :action-label="__('app.new_client_button')"
+                :filtered="($activeFilters ?? 0) > 0" :clear-url="url()->current()" compact />
+        @endforelse
+    </div>
+
+    <div class="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto md-scroll-x">
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-gray-200">
@@ -113,7 +141,16 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-gray-400">{{ __('app.no_clients') }}</td>
+                            <td colspan="6" class="p-0">
+                                <x-empty-state
+                                    :title="__('app.no_clients')"
+                                    :hint="__('app.no_clients_hint')"
+                                    icon="clients"
+                                    :action-url="route('clients.create')"
+                                    :action-label="__('app.new_client_button')"
+                                    :filtered="($activeFilters ?? 0) > 0"
+                                    :clear-url="url()->current()" />
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>
