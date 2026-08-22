@@ -68,7 +68,24 @@
                             قيد الدراسة أو التنفيذ
                         </span>
                     @endif
+
+                    {{-- حالة الوصول: الموظف يستحقّ أن يعرف أن اقتراحه لم يضع --}}
+                    @if ($suggestion->delivery_state === 'sent')
+                        <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500" title="وصل فريق التطوير">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            وصل فريق التطوير
+                        </span>
+                    @elseif (in_array($suggestion->delivery_state, ['pending', 'failed'], true))
+                        <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-400" title="محفوظ وسيُرسَل تلقائياً">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            محفوظ — قيد الإرسال
+                        </span>
+                    @endif
                 </div>
+
+                @if ($suggestion->title)
+                    <p class="text-sm font-bold text-gray-900 mb-1">{{ $suggestion->title }}</p>
+                @endif
                 <p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{{ $suggestion->content }}</p>
                 @if($suggestion->developer_reply)
                     <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">

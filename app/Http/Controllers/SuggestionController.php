@@ -53,14 +53,23 @@ class SuggestionController extends Controller
             'context' => \App\Support\SuggestionContext::capture($request, auth()->user()),
         ]);
 
-        $sent = DiscordNotifier::sendSuggestion(auth()->user(), $suggestion);
+        // الاقتراح حُفظ. وما بعده إبلاغ لا يجوز أن يُفشل عمل الموظف:
+        // لو تعذّر ديسكورد أو تعذّرت اللوحة، اقتراحه محفوظ عنده ويُسلَّم
+        // لاحقاً. ولهذا كل ما يلي مغلَّف، والتسليم في الطابور.
+        try {
+            DiscordNotifier::sendSuggestion(auth()->user(), $suggestion);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
-        // وإلى لوحة مُداوَلة إن كان هذا المكتب مربوطاً بها — خامد وإلا
-        $reached = PanelReporter::sendSuggestion($suggestion);
+        try {
+            \App\Jobs\DeliverSuggestionJob::dispatch($suggestion->id);
+        } catch (\Throwable $e) {
+            // تعذّر وضعه في الطابور: يبقى «معلّقاً» ويلتقطه الأمر الدوري
+            report($e);
+        }
 
-        return back()->with('success', ($sent || $reached)
-            ? 'تم إرسال اقتراحك بنجاح — شكراً لمساهمتك'
-            : 'تم حفظ اقتراحك وسنراجعه — تعذّر إبلاغ فريق التطوير فوراً');
+        return back()->with('success', 'تم إرسال اقتراحك بنجاح — شكراً لمساهمتك');
     }
 
     public function reply(Request $request, Suggestion $suggestion)

@@ -10,7 +10,11 @@ class Suggestion extends Model
     const STATUS_PENDING = 'pending';
     const STATUS_IMPLEMENTED = 'implemented';
 
-    protected $fillable = ['user_id', 'title', 'content', 'context', 'status', 'developer_reply', 'replied_at', 'reply_read'];
+    protected $fillable = [
+        'user_id', 'title', 'content', 'context', 'status',
+        'developer_reply', 'replied_at', 'reply_read',
+        'delivery_state', 'delivery_attempts', 'delivered_at', 'delivery_error',
+    ];
 
     protected function casts(): array
     {
@@ -18,6 +22,7 @@ class Suggestion extends Model
             'replied_at' => 'datetime',
             'reply_read' => 'boolean',
             'context' => 'array',
+            'delivered_at' => 'datetime',
         ];
     }
 

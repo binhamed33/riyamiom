@@ -22,3 +22,7 @@ Schedule::command('mudawala:automation')->hourly();
 
 // نبضة إلى لوحة مُداوَلة — خامدة ما لم يُضبط الربط
 Schedule::command('panel:heartbeat')->hourly();
+
+// شبكة أمان الاقتراحات: ما لم يصل اللوحة يُعاد إرساله — خامد إن لم
+// يكن المكتب مربوطاً.
+Schedule::command('suggestions:retry-delivery')->hourly()->withoutOverlapping();

@@ -42,6 +42,7 @@ class PanelReporter
                     'user_email' => data_get($context, 'user.email'),
                     'user_role' => data_get($context, 'user.role_label') ?: data_get($context, 'user.role'),
                     'remote_user_id' => data_get($context, 'user.id'),
+                    'employee_code' => data_get($context, 'user.code'),
                     'page' => data_get($context, 'origin.page'),
                     'device' => self::deviceLine($context),
                     'submitted_at' => data_get($context, 'submitted_at'),

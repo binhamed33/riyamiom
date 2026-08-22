@@ -21,6 +21,9 @@ class SuggestionContext
         return [
             'user' => [
                 'id' => $user->id,
+                // رمز مقروء مشتقّ من المعرّف نفسه — تنسيق لا بيانات
+                // جديدة، فلا يوجد في النظام حقل «رقم موظف» مستقل.
+                'code' => 'EMP-' . str_pad((string) $user->id, 3, '0', STR_PAD_LEFT),
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,

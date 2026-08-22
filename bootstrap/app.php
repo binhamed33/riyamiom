@@ -56,9 +56,20 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // تجاوز حد المحاولات لزائر غير مسجّل: يعود لصفحة الدخول برسالة واضحة
             // بدل إرساله إلى لوحة التحكم حيث لا يرى التنبيه أصلاً
-            if ($e instanceof \Illuminate\Http\Exceptions\ThrottleRequestsException && !auth()->check()) {
-                return redirect()->route('login')
-                    ->with('login_error', 'محاولات كثيرة خلال وقت قصير. انتظر دقيقة ثم أعد المحاولة.');
+            if ($e instanceof \Illuminate\Http\Exceptions\ThrottleRequestsException) {
+                if (!auth()->check()) {
+                    return redirect()->route('login')
+                        ->with('login_error', 'محاولات كثيرة خلال وقت قصير. انتظر دقيقة ثم أعد المحاولة.');
+                }
+
+                // مستخدم مسجَّل تجاوز حدّ نموذج ما: يعود لصفحته برسالة
+                // تقول السبب. كانت تسقط في المعالج العام فتخرج «حدث خطأ
+                // أثناء تنفيذ العملية: Too Many Attempts» — رسالة تُقلق
+                // ولا تُفهم، وتُرسله إلى لوحة التحكم بعيداً عن نموذجه.
+                $seconds = (int) ($e->getHeaders()['Retry-After'] ?? 60);
+                $minutes = max(1, (int) ceil($seconds / 60));
+
+                return back()->with('error', "أرسلت عدة طلبات متتالية. انتظر {$minutes} دقيقة ثم أعد المحاولة.");
             }
 
             $route = $request->route();
@@ -67,7 +78,23 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return response('تعذر تحميل لوحة التحكم، يرجى مراجعة السجلات.', 500);
             }
-            return redirect()->route('dashboard')
-                ->with('error', 'حدث خطأ أثناء تنفيذ العملية: ' . $e->getMessage());
+            // تفاصيل الاستثناء للسجلّ لا للمستخدم: رسائل SQL وأسماء
+            // الأصناف لا تعني له شيئاً، وقد تكشف بنية النظام. ويُعطى
+            // مرجعاً يُربط به السجلّ عند الشكوى.
+            $reference = strtoupper(substr(md5($e->getMessage() . microtime()), 0, 8));
+
+            logger()->error('Unhandled exception [' . $reference . ']: ' . $e->getMessage(), [
+                'exception' => $e,
+                'url' => $request->fullUrl(),
+                'user_id' => auth()->id(),
+            ]);
+
+            $message = 'تعذّر إتمام العملية. أعد المحاولة، وإن تكرّر أبلغ الدعم بالرمز: ' . $reference;
+
+            // إرسال نموذج: نُعيده إلى نموذجه ليصحّح ويعيد المحاولة.
+            // أما فشل عرض صفحة فالرجوع إليها يُنتج حلقة، فنُخرجه منها.
+            return $request->isMethod('GET')
+                ? redirect()->route('dashboard')->with('error', $message)
+                : back()->with('error', $message);
         });
     })->create();
