@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => \App\Http\Middleware\CheckActiveUser::class,
             'feature' => \App\Http\Middleware\CheckFeatureAccess::class,
             'subscription' => \App\Http\Middleware\EnsureActiveSubscription::class,
+            'client.portal' => \App\Http\Middleware\ClientPortalGuard::class,
         ]);
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\PreventBrowserCache::class);

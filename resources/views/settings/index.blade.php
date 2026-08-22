@@ -438,6 +438,63 @@
             </div>
         </div>
 
+        {{-- بوابة العملاء --}}
+        @php $cp = \App\Support\ClientPortal::class; @endphp
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <input type="hidden" name="client_portal_section" value="1">
+
+            <div class="flex items-start justify-between gap-4 mb-1">
+                <h2 class="text-lg font-bold text-gray-900">بوابة العملاء</h2>
+                <a href="{{ route('client.access') }}" target="_blank" rel="noopener"
+                   class="text-xs font-semibold text-gold-dark hover:underline shrink-0">فتح البوابة ↗</a>
+            </div>
+            <p class="text-sm text-gray-500 mb-5">
+                صفحة يدخل إليها عميلك برقم هويته ليتابع قضاياه. تُدار من هنا، وما لا تُفعّله لا يظهر له.
+            </p>
+
+            <label class="flex items-start gap-3 mb-5 cursor-pointer">
+                <input type="checkbox" name="{{ $cp::KEY_ENABLED }}" value="1" class="mt-1 rounded"
+                       @checked(\App\Support\ClientPortal::enabled())>
+                <span>
+                    <span class="block text-sm font-semibold text-gray-800">تفعيل البوابة</span>
+                    <span class="block text-xs text-gray-500">عند التعطيل تُغلق الصفحة تماماً ولا يستطيع أي عميل الدخول.</span>
+                </span>
+            </label>
+
+            <div class="mb-5">
+                <label for="client_portal_welcome" class="block text-sm font-medium text-gray-700 mb-2">رسالة الترحيب</label>
+                <input type="text" name="client_portal_welcome" id="client_portal_welcome" maxlength="300"
+                       value="{{ old('client_portal_welcome', $settings['client_portal_welcome'] ?? '') }}"
+                       placeholder="تظهر للعميل في صفحة الدخول — اتركها فارغة للنص الافتراضي"
+                       class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
+            </div>
+
+            <p class="text-sm font-semibold text-gray-800 mb-3">ما يستطيع العميل رؤيته</p>
+            <div class="grid sm:grid-cols-2 gap-3">
+                @foreach ([
+                    [$cp::KEY_SHOW_SESSIONS, 'الجلسات', 'مواعيد جلسات قضاياه وحالتها'],
+                    [$cp::KEY_SHOW_TIMELINE, 'مسار القضية', 'أحداث القضية — دون الملاحظات الداخلية'],
+                    [$cp::KEY_SHOW_DOCUMENTS, 'المستندات', 'المستندات التي علّمتها «مرئية للعميل» فقط'],
+                    [$cp::KEY_SHOW_LAWYER, 'المحامي المسؤول', 'اسم المحامي المكلَّف بقضيته'],
+                    [$cp::KEY_SHOW_OPPONENT, 'بيانات الخصم', 'اسم الخصم كما هو مسجَّل في القضية'],
+                ] as [$key, $label, $hint])
+                    <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-gold/40">
+                        <input type="checkbox" name="{{ $key }}" value="1" class="mt-1 rounded"
+                               @checked(\App\Support\ClientPortal::flag($key))>
+                        <span>
+                            <span class="block text-sm font-semibold text-gray-800">{{ $label }}</span>
+                            <span class="block text-xs text-gray-500">{{ $hint }}</span>
+                        </span>
+                    </label>
+                @endforeach
+            </div>
+
+            <p class="mt-4 text-xs text-gray-500 leading-relaxed bg-gray-50 border border-gray-200 rounded-lg p-3">
+                لا يُعرض للعميل أي مستند إلا إذا فعّلت «المستندات» <span class="font-semibold">و</span> علّمت المستند نفسه
+                «مرئي للعميل» من صفحة القضية. والمستندات الخاصة لا تظهر له مهما كان.
+            </p>
+        </div>
+
         <div class="flex items-center gap-4">
             <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.save_settings') }}</button>
         </div>

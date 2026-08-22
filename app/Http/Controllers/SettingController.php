@@ -31,7 +31,27 @@ class SettingController extends Controller
             'deadline_alerts'    => 'nullable',
             'date_format'        => 'nullable|string',
             'items_per_page'     => 'nullable|integer|min:5|max:100',
+
+            // بوابة العملاء
+            'client_portal_welcome' => 'nullable|string|max:300',
         ]);
+
+        // مفاتيح البوابة الثنائية: خانة غير مؤشَّرة تعني «لا»، والغياب
+        // الكامل للنموذج لا يُغيّر شيئاً (حماية من حفظ جزئي).
+        $portalFlags = [
+            \App\Support\ClientPortal::KEY_ENABLED,
+            \App\Support\ClientPortal::KEY_SHOW_SESSIONS,
+            \App\Support\ClientPortal::KEY_SHOW_TIMELINE,
+            \App\Support\ClientPortal::KEY_SHOW_DOCUMENTS,
+            \App\Support\ClientPortal::KEY_SHOW_OPPONENT,
+            \App\Support\ClientPortal::KEY_SHOW_LAWYER,
+        ];
+
+        if ($request->has('client_portal_section')) {
+            foreach ($portalFlags as $flag) {
+                Setting::set($flag, $request->boolean($flag) ? '1' : '0', 'client_portal');
+            }
+        }
 
         $groupMap = [
             'office_name'        => 'general',
@@ -43,6 +63,7 @@ class SettingController extends Controller
             'deadline_alerts'    => 'notifications',
             'date_format'        => 'system',
             'items_per_page'     => 'system',
+            'client_portal_welcome' => 'client_portal',
         ];
 
         foreach ($validated as $key => $value) {

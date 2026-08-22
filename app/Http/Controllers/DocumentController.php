@@ -73,6 +73,7 @@ class DocumentController extends Controller
             'title'          => 'required|string|max:255',
             'file'           => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:' . (self::MAX_SIZE / 1024),
             'access_level'   => 'required|in:all,team,private',
+            'client_visible' => 'nullable|boolean',
         ]);
 
         // المجلد يجب أن يتبع نفس القضية — لا قبول لمجلد من قضية أخرى
@@ -112,6 +113,9 @@ class DocumentController extends Controller
             'file_type'    => $extension,
             'file_size'    => $file->getSize(),
             'access_level' => $validated['access_level'],
+            // لا يُعرض للعميل إلا بقرار صريح، والخاص لا يُعرض مهما كان
+            'client_visible' => $request->boolean('client_visible')
+                && $validated['access_level'] !== Document::ACCESS_PRIVATE,
         ]);
 
         $this->logAudit(
@@ -124,6 +128,38 @@ class DocumentController extends Controller
 
         return redirect()->route('documents.index')
             ->with('success', 'Document uploaded successfully.');
+    }
+
+    /**
+     * تبديل ظهور المستند للعميل.
+     *
+     * لا يُسمح به لمستند خاص إطلاقاً: الخصوصية قرار سابق على المشاركة.
+     * والصلاحية تُفحص هنا كما تُفحص في الحذف — لا يكفي إخفاء الزر.
+     */
+    public function toggleClientVisibility(Document $document): RedirectResponse
+    {
+        $user = auth()->user();
+
+        if ($document->access_level === Document::ACCESS_PRIVATE) {
+            return back()->with('error', 'المستند الخاص لا يمكن مشاركته مع العميل. غيّر مستوى الوصول أولاً.');
+        }
+
+        if ($document->access_level === 'team' && !in_array($user->role, ['developer', 'admin', 'lawyer'], true)) {
+            abort(403);
+        }
+
+        $document->update(['client_visible' => !$document->client_visible]);
+
+        $this->logAudit(
+            AuditLog::ACTION_UPDATE,
+            Document::class,
+            $document->id,
+            'تغيير ظهور المستند للعميل: ' . ($document->client_visible ? 'مرئي' : 'مخفي')
+        );
+
+        return back()->with('success', $document->client_visible
+            ? 'صار المستند مرئياً للعميل في بوابته.'
+            : 'أُخفي المستند عن بوابة العميل.');
     }
 
     public function destroy(Document $document): RedirectResponse

@@ -25,13 +25,21 @@ class Document extends Model
         'file_type',
         'file_size',
         'access_level',
+        'client_visible',
     ];
 
     protected function casts(): array
     {
         return [
             'doc_date' => 'date',
+            'client_visible' => 'boolean',
         ];
+    }
+
+    /** هل يجوز عرضه للعميل؟ شرطان معاً — والخاص لا يُعرض أبداً. */
+    public function visibleToClient(): bool
+    {
+        return (bool) $this->client_visible && $this->access_level !== self::ACCESS_PRIVATE;
     }
 
     public function case(): BelongsTo

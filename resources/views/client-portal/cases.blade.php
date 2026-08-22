@@ -1,100 +1,78 @@
-@extends('layouts.app')
+@extends('client-portal.layout')
+@section('title', __('portal.cases.title'))
 
-@section('title', __('app.page_my_cases'))
+@push('styles')
+<style>
+    .cs-grid { display: grid; gap: .75rem; }
+    .cs-card { padding: 1.15rem 1.25rem; transition: transform .18s cubic-bezier(.2,.7,.3,1), border-color .18s; }
+    .cs-card:hover { transform: translateY(-2px); border-color: var(--line-2); }
+    .cs-head { display: flex; align-items: flex-start; gap: .8rem; margin-bottom: .7rem; }
+    .cs-title { font-weight: 700; font-size: .98rem; margin: 0; line-height: 1.5; flex: 1; min-width: 0; }
+    .cs-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem .9rem; }
+    .cs-meta dt { font-size: .66rem; color: var(--fg-3); font-weight: 600; margin: 0; }
+    .cs-meta dd { font-size: .8rem; margin: .1rem 0 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cs-foot {
+        display: flex; align-items: center; justify-content: space-between; gap: .8rem;
+        margin-top: .9rem; padding-top: .8rem; border-top: 1px solid var(--line);
+    }
+    .cs-updated { font-size: .7rem; color: var(--fg-3); }
+    .cs-go { font-size: .78rem; font-weight: 700; color: var(--gold); }
+    @media (min-width: 700px) { .cs-meta { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+</style>
+@endpush
 
 @section('content')
-<div class="space-y-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
-
-    <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-gold-dark">{{ __('app.my_cases') }}</h1>
-    </div>
-
-    <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-right">
-                <thead>
-                    <tr class="border-b border-gray-200">
-                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.case_number') }}</th>
-                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.title') }}</th>
-                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.court') }}</th>
-                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.status') }}</th>
-                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.priority') }}</th>
-                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.case_lawyer') }}</th>
-                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.case_next_date') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @forelse($cases as $case)
-                        <tr class="hover:bg-gray-50 transition-colors cursor-pointer" data-row-url="{{ route('client.cases.show', $case) }}">
-                            <td class="px-4 py-3 text-gray-900 font-mono text-xs">{{ $case->case_number }}</td>
-                            <td class="px-4 py-3 text-gray-900 max-w-xs truncate">{{ $case->title }}</td>
-                            <td class="px-4 py-3 text-gray-400 max-w-[200px] truncate text-xs">{{ $case->court }}</td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    @if($case->status === 'active') bg-green-100 text-green-700 border border-green-200
-                                    @elseif($case->status === 'pending') bg-yellow-100 text-yellow-700 border border-yellow-200
-                                    @elseif($case->status === 'overdue') bg-red-100 text-red-700 border border-red-200
-                                    @elseif($case->status === 'closed') bg-gray-100 text-gray-500 border border-gray-200
-                                    @elseif($case->status === 'won') bg-blue-100 text-blue-700 border border-blue-200
-                                    @elseif($case->status === 'lost') bg-red-100 text-red-700 border border-red-200
-                                    @elseif($case->status === 'adjudicated') bg-emerald-100 text-emerald-700 border border-emerald-200
-                                    @elseif($case->status === 'fees_pending') bg-red-100 text-red-700 border border-red-200
-                                    @else bg-gray-100 text-gray-500 border border-gray-200 @endif">
-                                    @if($case->status === 'active') {{ __('app.status_active') }}
-                                    @elseif($case->status === 'pending') {{ __('app.status_pending') }}
-                                    @elseif($case->status === 'overdue') {{ __('app.status_overdue') }}
-                                    @elseif($case->status === 'closed') {{ __('app.status_closed') }}
-                                    @elseif($case->status === 'won') {{ __('app.status_won') }}
-                                    @elseif($case->status === 'lost') {{ __('app.status_lost') }}
-                                    @elseif($case->status === 'adjudicated') {{ __('app.status_adjudicated') }}
-                                    @elseif($case->status === 'fees_pending') {{ __('app.status_fees_pending') }}
-                                    @else {{ $case->status }}
-                                    @endif
-                                </span>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    @if($case->priority === 'low') bg-gray-100 text-gray-500 border border-gray-200
-                                    @elseif($case->priority === 'medium') bg-yellow-100 text-yellow-700 border border-yellow-200
-                                    @elseif($case->priority === 'high') bg-orange-100 text-orange-700 border border-orange-200
-                                    @elseif($case->priority === 'urgent') bg-red-100 text-red-700 border border-red-200
-                                    @else bg-gray-100 text-gray-500 border border-gray-200 @endif">
-                                    @if($case->priority === 'low') {{ __('app.priority_low') }}
-                                    @elseif($case->priority === 'medium') {{ __('app.priority_medium') }}
-                                    @elseif($case->priority === 'high') {{ __('app.priority_high') }}
-                                    @elseif($case->priority === 'urgent') {{ __('app.priority_urgent') }}
-                                    @else {{ $case->priority }}
-                                    @endif
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-gray-400 text-xs">{{ $case->lawyer->name ?? '—' }}</td>
-                            <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
-                                @if($case->next_date)
-                                    {{ \Carbon\Carbon::parse($case->next_date)->format('Y/m/d') }}
-                                @else
-                                    —
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-gray-500">
-                                <svg class="w-16 h-16 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                                </svg>
-                                <p class="text-lg">{{ __('app.no_client_cases_msg') }}</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if($cases->hasPages())
-            <div class="px-4 py-3 border-t border-gray-200">
-                {{ $cases->withQueryString()->links() }}
-            </div>
-        @endif
-    </div>
+<div class="p-in" style="margin-bottom:1.2rem">
+    <h1 class="p-h1">{{ __('portal.cases.title') }}</h1>
+    <p class="p-lede">{{ trans_choice('{0}|{1}:count قضية|[2,*]:count قضايا', $cases->total(), ['count' => $cases->total()]) }}</p>
 </div>
+
+@if ($cases->count())
+    <div class="cs-grid">
+        @foreach ($cases as $i => $case)
+            @php $next = $case->next_date ? \Illuminate\Support\Carbon::parse($case->next_date) : null; @endphp
+            <a href="{{ route('client.portal.case', $case->id) }}"
+               class="p-card cs-card p-in" style="animation-delay:{{ min($i * 0.05, 0.3) }}s">
+                <div class="cs-head">
+                    <h2 class="cs-title">{{ $case->title }}</h2>
+                    @include('client-portal.partials.status', ['status' => $case->status])
+                </div>
+
+                <dl class="cs-meta">
+                    @if ($case->case_number)
+                        <div><dt>{{ __('portal.cases.number') }}</dt><dd dir="ltr" style="text-align:start">{{ $case->case_number }}</dd></div>
+                    @endif
+                    @if ($case->court)
+                        <div><dt>{{ __('portal.cases.court') }}</dt><dd>{{ $case->court }}</dd></div>
+                    @endif
+                    @if ($case->case_type ?? $case->type)
+                        <div><dt>{{ __('portal.cases.type') }}</dt><dd>{{ $case->case_type ?? $case->type }}</dd></div>
+                    @endif
+                    @if ($next && \App\Support\ClientPortal::showsSessions())
+                        <div><dt>{{ __('portal.cases.next_session') }}</dt><dd>{{ $next->format('Y-m-d') }}</dd></div>
+                    @endif
+                </dl>
+
+                <div class="cs-foot">
+                    <span class="cs-updated">{{ __('portal.cases.last_update') }} {{ $case->updated_at?->diffForHumans() }}</span>
+                    <span class="cs-go">{{ __('portal.cases.view') }} ←</span>
+                </div>
+            </a>
+        @endforeach
+    </div>
+
+    <div style="margin-top:1.4rem">{{ $cases->links() }}</div>
+@else
+    <div class="p-card p-in">
+        <div class="p-empty">
+            <span class="p-empty-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1zM9 12h6M9 16h6"/></svg>
+            </span>
+            <p>{{ __('portal.empty.cases') }}</p>
+            <small>{{ __('portal.empty.cases_hint') }}</small>
+        </div>
+    </div>
+@endif
+
+@include('client-portal.partials.contact')
 @endsection

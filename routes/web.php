@@ -70,10 +70,33 @@ Route::post('/session/keepalive', function (Illuminate\Http\Request $request) {
 Route::get('/', fn () => redirect()->route('dashboard'));
 
 // Public client portal - no auth required
-Route::get('/client-access', [App\Http\Controllers\PublicClientController::class, 'showLookupForm'])->name('client.access');
-Route::post('/client-access', [App\Http\Controllers\PublicClientController::class, 'lookup'])->name('client.access.lookup');
-Route::get('/client-access/cases/{case}', [App\Http\Controllers\PublicClientController::class, 'showCase'])->name('client.access.case');
-Route::post('/client-access/logout', [App\Http\Controllers\PublicClientController::class, 'logout'])->name('client.access.logout');
+/*
+|--------------------------------------------------------------------------
+| بوابة العملاء
+|--------------------------------------------------------------------------
+| ‏/client-access يبقى مدخل البوابة كما كان — الروابط القديمة لا تُكسر.
+| الدخول بخطوتين: رقم الهوية، ثم آخر ٣ أرقام من الهاتف المسجَّل.
+| كل صفحة داخل البوابة خلف حارس يتحقّق من الجلسة ومن تفعيل المكتب لها.
+*/
+Route::get('/client-access', [App\Http\Controllers\ClientAccessController::class, 'showLogin'])->name('client.access');
+Route::post('/client-access', [App\Http\Controllers\ClientAccessController::class, 'lookup'])
+    ->middleware('throttle:20,10')->name('client.access.lookup');
+Route::post('/client-access/verify', [App\Http\Controllers\ClientAccessController::class, 'verify'])
+    ->middleware('throttle:20,10')->name('client.access.verify');
+Route::post('/client-access/logout', [App\Http\Controllers\ClientAccessController::class, 'logout'])->name('client.access.logout');
+
+Route::middleware('client.portal')->prefix('client-access')->group(function () {
+    Route::get('/home', [App\Http\Controllers\ClientAccessController::class, 'home'])->name('client.portal.home');
+    Route::get('/cases', [App\Http\Controllers\ClientAccessController::class, 'cases'])->name('client.portal.cases');
+    Route::get('/cases/{case}', [App\Http\Controllers\ClientAccessController::class, 'showCase'])->name('client.portal.case');
+    Route::get('/documents/{document}', [App\Http\Controllers\ClientAccessController::class, 'document'])->name('client.portal.document');
+    Route::get('/account', [App\Http\Controllers\ClientAccessController::class, 'account'])->name('client.portal.account');
+});
+
+// توافق: الرابط القديم لصفحة القضية يوجّه إلى مقابله الجديد
+Route::get('/client-access/case/{case}', function (string $case) {
+    return redirect()->route('client.portal.case', $case);
+})->name('client.access.case');
 
 // Subscription expired page (reachable while authenticated, not gated)
 Route::middleware('auth')->get('/subscription-expired', function () {
@@ -255,6 +278,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
         Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
         Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+        Route::post('/documents/{document}/client-visibility', [DocumentController::class, 'toggleClientVisibility'])->name('documents.clientVisibility');
         Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
         Route::get('/documents/{document}/preview', [DocumentController::class, 'preview'])->name('documents.preview');
     });
