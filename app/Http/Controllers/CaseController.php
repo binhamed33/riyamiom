@@ -707,6 +707,7 @@ class CaseController extends Controller
             'client'       => $case->client?->name,
             'lawyer'       => $case->lawyer?->name,
             'opened_at'    => $case->opened_at?->format('Y-m-d'),
+            'next_date'    => $case->next_date?->format('Y-m-d'),
             'sessions_count' => $case->sessions->count(),
             'sessions'     => $case->sessions->count(),
             'tasks'        => $case->tasks->count(),
@@ -717,15 +718,34 @@ class CaseController extends Controller
     public function autoDetectOverdue(): RedirectResponse
     {
         $updated = 0;
-        LegalCase::where('status', 'active')->chunk(100, function ($cases) use (&$updated) {
-            foreach ($cases as $case) {
-                $latestSession = $case->sessions()->where('status', 'upcoming')->orderBy('date', 'desc')->first();
-                if ($latestSession && $latestSession->date < now()) {
-                    $case->update(['status' => 'overdue']);
-                    $updated++;
+        $startOfToday = now()->startOfDay();
+
+        // قضية متأخّرة بأحد أمرين، لا بواحد فقط:
+        //   • جلسة قادمة مرّ موعدها ولم يُحدَّث حالها.
+        //   • تاريخ الجلسة القادمة المسجَّل في القضية نفسها قد مضى.
+        // كان الكشف يقرأ الأول وحده، فقضية لها تاريخ قادم فات ولا جلسة
+        // مسجَّلة تبقى «نشطة» إلى أن ينتبه أحد.
+        //
+        // «اليوم» ليس تأخّراً: الجلسة التي موعدها اليوم لم يفُت موعدها.
+        LegalCase::where('status', 'active')
+            ->with(['sessions' => fn ($q) => $q->where('status', 'upcoming')->orderByDesc('date')])
+            ->chunk(100, function ($cases) use (&$updated, $startOfToday) {
+                foreach ($cases as $case) {
+                    $latestSession = $case->sessions->first();
+
+                    $sessionPassed = $latestSession
+                        && $latestSession->date
+                        && \Illuminate\Support\Carbon::parse($latestSession->date)->lt($startOfToday);
+
+                    $nextDatePassed = $case->next_date
+                        && \Illuminate\Support\Carbon::parse($case->next_date)->lt($startOfToday);
+
+                    if ($sessionPassed || $nextDatePassed) {
+                        $case->update(['status' => 'overdue']);
+                        $updated++;
+                    }
                 }
-            }
-        });
+            });
 
         return redirect()->back()
             ->with('success', $updated > 0 ? __('app.overdue_marked', ['count' => $updated]) : __('app.overdue_none'));

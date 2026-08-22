@@ -187,13 +187,13 @@ class DocumentController extends Controller
         $user = auth()->user();
 
         if ($document->access_level === 'private' && $document->uploaded_by !== $user->id) {
-            abort(403, 'Access denied.');
+            abort(403, __('app.unauthorized_access'));
         }
 
         if ($document->access_level === 'team') {
             $isTeam = $user->isAdmin() || $user->isLawyer() || $user->isStaff();
             if (!$isTeam && $document->uploaded_by !== $user->id) {
-                abort(403, 'Access denied.');
+                abort(403, __('app.unauthorized_access'));
             }
         }
 
@@ -219,13 +219,13 @@ class DocumentController extends Controller
         $user = auth()->user();
 
         if ($document->access_level === 'private' && $document->uploaded_by !== $user->id) {
-            abort(403, 'Access denied.');
+            abort(403, __('app.unauthorized_access'));
         }
 
         if ($document->access_level === 'team') {
             $isTeam = $user->isAdmin() || $user->isLawyer() || $user->isStaff();
             if (!$isTeam && $document->uploaded_by !== $user->id) {
-                abort(403, 'Access denied.');
+                abort(403, __('app.unauthorized_access'));
             }
         }
 
@@ -253,13 +253,13 @@ class DocumentController extends Controller
         $user = auth()->user();
 
         if ($document->access_level === 'private' && $document->uploaded_by !== $user->id) {
-            abort(403, 'Access denied.');
+            abort(403, __('app.unauthorized_access'));
         }
 
         if ($document->access_level === 'team') {
             $isTeam = $user->isAdmin() || $user->isLawyer() || $user->isStaff();
             if (!$isTeam && $document->uploaded_by !== $user->id) {
-                abort(403, 'Access denied.');
+                abort(403, __('app.unauthorized_access'));
             }
         }
 

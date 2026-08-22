@@ -10,22 +10,17 @@ use App\Models\Session;
 use App\Models\Task;
 use App\Models\User;
 use App\Services\LawyerEvaluationService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+/**
+ * كان هذا الملف يوجّه نفسه إلى قاعدة تطوير حيّة على MySQL، فيسقط في كل
+ * بيئة لا تملكها — ولا يفحص شيئاً حين يسقط. صار يعمل على قاعدة الاختبار
+ * مثل بقيّة الملفات، فيفحص فعلاً.
+ */
 class EvaluationTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-        config([
-            'database.default' => 'mysql',
-            'database.connections.mysql.host' => '127.0.0.1',
-            'database.connections.mysql.port' => '3306',
-            'database.connections.mysql.database' => 'mudawala',
-            'database.connections.mysql.username' => 'mudawala',
-            'database.connections.mysql.password' => env('DB_PASSWORD', ''),
-        ]);
-    }
+    use RefreshDatabase;
 
     public function test_service_scores_lawyer_from_cases_activity_and_quality(): void
     {
@@ -105,7 +100,7 @@ class EvaluationTest extends TestCase
 
     public function test_evaluations_page_renders(): void
     {
-        $developer = User::where('role', 'developer')->firstOrFail();
+        $developer = User::factory()->create(['role' => 'developer', 'is_active' => true]);
 
         $response = $this->actingAs($developer)->get('/evaluations');
 

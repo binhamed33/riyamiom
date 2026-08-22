@@ -226,15 +226,15 @@ class CaseTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_case_validation_case_number_auto_generated()
+    /** رقم القضية مطلوب: هو مفتاحها لدى المحكمة ولا يُخترع نيابةً عن المكتب. */
+    public function test_a_case_cannot_be_opened_without_a_number()
     {
         $developer = $this->developer();
         $data = $this->caseData(['case_number' => '']);
 
         $response = $this->actingAs($developer)->post('/cases', $data);
 
-        $response->assertRedirect();
-        $this->assertDatabaseHas('cases', ['case_number' => LegalCase::latest()->first()->case_number]);
+        $response->assertSessionHasErrors('case_number');
     }
 
     public function test_case_validation_case_number_unique()
@@ -248,14 +248,23 @@ class CaseTest extends TestCase
         $response->assertSessionHasErrors('case_number');
     }
 
-    public function test_case_validation_title_required()
+    /**
+     * العنوان اختياري بتصميم النظام: مكتب يفتح قضية على عجل يعرف رقمها
+     * ولا يملك عنواناً بعد. حين يُترك، يصير الرقم عنواناً بدل أن يُمنع
+     * المستخدم من المتابعة.
+     */
+    public function test_a_case_without_a_title_takes_its_number_as_one()
     {
         $developer = $this->developer();
         $data = $this->caseData(['title' => '']);
 
         $response = $this->actingAs($developer)->post('/cases', $data);
 
-        $response->assertSessionHasErrors('title');
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('cases', [
+            'case_number' => $data['case_number'],
+            'title' => $data['case_number'],
+        ]);
     }
 
     public function test_case_validation_description_required()
@@ -268,14 +277,16 @@ class CaseTest extends TestCase
         $response->assertSessionHasErrors('description');
     }
 
-    public function test_case_validation_type_required()
+    /** نوع القضية اختياري — يُملأ لاحقاً من صفحة القضية. */
+    public function test_a_case_can_be_opened_before_its_type_is_known()
     {
         $developer = $this->developer();
-        $data = $this->caseData(['type' => '']);
+        $data = $this->caseData(['type' => '', 'case_type' => '']);
 
         $response = $this->actingAs($developer)->post('/cases', $data);
 
-        $response->assertSessionHasErrors('type');
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('cases', ['case_number' => $data['case_number']]);
     }
 
     public function test_case_validation_court_required()
@@ -308,14 +319,18 @@ class CaseTest extends TestCase
         $response->assertSessionHasErrors('priority');
     }
 
-    public function test_case_validation_opened_at_required()
+    /** تاريخ الفتح يُملأ باليوم حين لا يُذكر — لا يُمنع فتح القضية لأجله. */
+    public function test_a_case_without_an_opening_date_opens_today()
     {
         $developer = $this->developer();
         $data = $this->caseData(['opened_at' => '']);
 
         $response = $this->actingAs($developer)->post('/cases', $data);
 
-        $response->assertSessionHasErrors('opened_at');
+        $response->assertSessionHasNoErrors();
+
+        $case = LegalCase::where('case_number', $data['case_number'])->firstOrFail();
+        $this->assertSame(now()->toDateString(), $case->opened_at->toDateString());
     }
 
     public function test_case_validation_client_id_required()
@@ -338,17 +353,21 @@ class CaseTest extends TestCase
         $response->assertSessionHasErrors('client_id');
     }
 
-    public function test_case_validation_next_date_after_or_equal_opened_at()
+    /**
+     * تاريخ الجلسة القادمة ليس حقلاً يُكتب في نموذج القضية — يُشتقّ من
+     * الجلسات المسجَّلة. فلا يُقبل من جسم الطلب ولو أُرسل.
+     */
+    public function test_the_next_hearing_date_is_not_taken_from_the_case_form()
     {
         $developer = $this->developer();
-        $data = $this->caseData([
-            'opened_at' => '2024-06-15',
-            'next_date' => '2024-01-15',
-        ]);
+        $data = $this->caseData(['next_date' => '2024-01-15']);
 
         $response = $this->actingAs($developer)->post('/cases', $data);
 
-        $response->assertSessionHasErrors('next_date');
+        $response->assertSessionHasNoErrors();
+
+        $case = LegalCase::where('case_number', $data['case_number'])->firstOrFail();
+        $this->assertNull($case->next_date);
     }
 
     public function test_can_search_cases_by_case_number()
@@ -449,7 +468,10 @@ class CaseTest extends TestCase
 
         $response = $this->actingAs($clientUser)->get('/cases');
 
-        $response->assertStatus(403);
+        // المنع يردّ إلى لوحة المتابعة برسالة «غير مصرح لك بالوصول»،
+        // لا برمز 403 عارٍ. نفحص المنع نفسه لا رمزه.
+        $response->assertRedirect(route('dashboard'));
+        $response->assertSessionHas('error');
     }
 
     public function test_can_filter_cases_by_status()

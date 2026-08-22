@@ -315,7 +315,10 @@ class TaskTest extends TestCase
 
         $response = $this->actingAs($clientUser)->get('/tasks');
 
-        $response->assertStatus(403);
+        // المنع يردّ إلى لوحة المتابعة برسالة «غير مصرح لك بالوصول»،
+        // لا برمز 403 عارٍ. نفحص المنع نفسه لا رمزه.
+        $response->assertRedirect(route('dashboard'));
+        $response->assertSessionHas('error');
     }
 
     public function test_can_filter_tasks_by_status()

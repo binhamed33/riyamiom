@@ -17,7 +17,9 @@ class DashboardTest extends TestCase
         $response = $this->actingAs($developer)->get('/dashboard');
 
         $response->assertStatus(200);
-        $response->assertSee('لوحة التحكم');
+        // العنوان يأتي من ملف اللغة — الاختبارات تعمل بالإنجليزية،
+        // فمقارنته بنصّ عربي مكتوب حرفياً تسقط بلا سبب حقيقي.
+        $response->assertSee(__('app.page_dashboard'));
     }
 
     public function test_dashboard_renders_for_client_role()

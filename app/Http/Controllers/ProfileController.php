@@ -27,8 +27,8 @@ class ProfileController extends Controller
             'email'             => 'required|email|unique:users,email,' . $user->id,
             'phone'             => 'nullable|string|max:255',
             'current_password'  => 'required_with:password|current_password',
-            'password'          => ['nullable', 'string', 'confirmed', 'min:6'],
-        ]);
+            'password'          => ['nullable', 'string', 'confirmed', \App\Support\PasswordPolicy::rules()],
+        ], \App\Support\PasswordPolicy::messages());
 
         $oldValues = $user->toArray();
 

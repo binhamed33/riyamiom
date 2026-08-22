@@ -62,6 +62,12 @@ class LegalCase extends Model
     protected function casts(): array
     {
         return [
+            // العمودان من نوع date في قاعدة البيانات، وستّة مواضع في الشيفرة
+            // تناديهما بـ ?->format() — أي أنها كانت تنهار على نصّ. ملف
+            // القضية PDF وتصدير القضايا وملخّص القضية كلّها كانت تسقط لأن
+            // هذا المصفوف فارغ.
+            'opened_at' => \App\Casts\TolerantDate::class,
+            'next_date' => \App\Casts\TolerantDate::class,
         ];
     }
 

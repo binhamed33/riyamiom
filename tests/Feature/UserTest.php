@@ -164,7 +164,8 @@ class UserTest extends TestCase
 
         $response = $this->actingAs($lawyer)->get('/users');
 
-        $response->assertStatus(403);
+        $response->assertRedirect(route('dashboard'));
+        $response->assertSessionHas('error');
     }
 
     public function test_user_validation_name_required()
@@ -411,17 +412,29 @@ class UserTest extends TestCase
         $this->assertModelMissing($admin1);
     }
 
-    public function test_can_delete_developer_when_multiple_developers_exist()
+    public function test_a_developer_can_delete_another_developer_when_more_than_one_exists()
     {
-        $admin = $this->admin();
-        $dev1 = $this->developer();
-        $dev2 = User::factory()->create(['role' => 'developer', 'is_active' => true]);
+        $actor = $this->developer();
+        $target = User::factory()->create(['role' => 'developer', 'is_active' => true]);
 
-        $response = $this->actingAs($admin)->delete("/users/{$dev1->id}");
+        $response = $this->actingAs($actor)->delete("/users/{$target->id}");
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
-        $this->assertModelMissing($dev1);
+        $this->assertModelMissing($target);
+    }
+
+    /** القاعدة القائمة: المطوّر وحده يحذف مطوّراً — المدير لا يملك ذلك. */
+    public function test_an_admin_cannot_delete_a_developer()
+    {
+        $admin = $this->admin();
+        $developer = $this->developer();
+        User::factory()->create(['role' => 'developer', 'is_active' => true]);
+
+        $response = $this->actingAs($admin)->delete("/users/{$developer->id}");
+
+        $response->assertSessionMissing('success');
+        $this->assertModelExists($developer);
     }
 
     public function test_user_password_is_hashed_when_created()

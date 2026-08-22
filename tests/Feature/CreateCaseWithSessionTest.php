@@ -5,28 +5,22 @@ namespace Tests\Feature;
 use App\Models\Client;
 use App\Models\LegalCase;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+/**
+ * كان هذا الملف يوجّه نفسه إلى قاعدة تطوير حيّة على MySQL فلا يعمل إلا
+ * على جهاز واحد. صار يبني ما يحتاجه بنفسه على قاعدة الاختبار.
+ */
 class CreateCaseWithSessionTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-        config([
-            'database.default' => 'mysql',
-            'database.connections.mysql.host' => '127.0.0.1',
-            'database.connections.mysql.port' => '3306',
-            'database.connections.mysql.database' => 'mudawala',
-            'database.connections.mysql.username' => 'mudawala',
-            'database.connections.mysql.password' => env('DB_PASSWORD', ''),
-        ]);
-    }
+    use RefreshDatabase;
 
     public function test_store_creates_case_with_sessions(): void
     {
-        $user = User::where('role', 'developer')->firstOrFail();
-        $client = Client::firstOrFail();
-        $number = 'TEST-' . time();
+        $user = User::factory()->create(['role' => 'developer', 'is_active' => true]);
+        $client = Client::factory()->create();
+        $number = 'TEST-CASE-1';
 
         $response = $this->actingAs($user)->post('/cases', [
             'case_number' => $number,

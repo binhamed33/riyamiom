@@ -221,7 +221,10 @@ class DocumentTest extends TestCase
 
         $response = $this->actingAs($otherUser)->delete("/documents/{$document->id}");
 
-        $response->assertStatus(403);
+        // المنع يردّ إلى لوحة المتابعة برسالة. ما يهمّ: المستند والملف باقيان.
+        $response->assertRedirect(route('dashboard'));
+        $response->assertSessionHas('error');
+        $this->assertDatabaseHas('documents', ['id' => $document->id]);
         Storage::disk('private')->assertExists($path);
     }
 
@@ -286,7 +289,11 @@ class DocumentTest extends TestCase
 
         $response = $this->actingAs($otherUser)->get("/documents/{$document->id}/download");
 
-        $response->assertStatus(403);
+        // المهم أن الملف لم يُسلَّم، لا رمز الحالة: المنع يردّ إلى لوحة
+        // المتابعة برسالة، والمستند السرّي يبقى حيث هو.
+        $response->assertRedirect(route('dashboard'));
+        $response->assertSessionHas('error');
+        $this->assertNotEquals(200, $response->status());
     }
 
     public function test_private_document_download_allowed_for_owner()
@@ -325,6 +332,9 @@ class DocumentTest extends TestCase
 
         $response = $this->actingAs($clientUser)->get('/documents');
 
-        $response->assertStatus(403);
+        // المنع يردّ إلى لوحة المتابعة برسالة «غير مصرح لك بالوصول»،
+        // لا برمز 403 عارٍ. نفحص المنع نفسه لا رمزه.
+        $response->assertRedirect(route('dashboard'));
+        $response->assertSessionHas('error');
     }
 }

@@ -45,13 +45,13 @@ class UserController extends Controller
         $validated = $request->validate([
             'name'       => 'required|string|max:255',
             'email'      => 'required|email|unique:users,email',
-            'password'   => ['required', 'string', 'confirmed', 'min:6'],
+            'password'   => ['required', 'string', 'confirmed', \App\Support\PasswordPolicy::rules()],
             'role'       => 'required|in:developer,admin,lawyer,staff,client',
             'phone'      => 'nullable|string|max:255',
             'is_active'  => 'boolean',
             'permissions' => 'nullable|array',
             'permissions.*' => 'string',
-        ]);
+        ], \App\Support\PasswordPolicy::messages());
 
         if ($validated['role'] === 'developer' && !auth()->user()->isDeveloper()) {
             return redirect()->back()->withInput()->withErrors([
@@ -103,13 +103,13 @@ class UserController extends Controller
         $validated = $request->validate([
             'name'       => 'required|string|max:255',
             'email'      => 'required|email|unique:users,email,' . $user->id,
-            'password'   => ['nullable', 'string', 'confirmed', 'min:6'],
+            'password'   => ['nullable', 'string', 'confirmed', \App\Support\PasswordPolicy::rules()],
             'role'       => 'required|in:developer,admin,lawyer,staff,client',
             'phone'      => 'nullable|string|max:255',
             'is_active'  => 'boolean',
             'permissions' => 'nullable|array',
             'permissions.*' => 'string',
-        ]);
+        ], \App\Support\PasswordPolicy::messages());
 
         if ($validated['role'] === 'developer' && !auth()->user()->isDeveloper()) {
             return redirect()->back()->withInput()->withErrors([

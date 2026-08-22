@@ -60,11 +60,40 @@ class CourtSessionController extends Controller
 
         $sessions = $query->orderBy('date', 'asc')->orderBy('id', 'asc')->paginate(15)->withQueryString();
 
-        $filterCases = LegalCase::orderBy('office_case_number')->get(['id', 'office_case_number', 'title']);
-        $filterLawyers = User::where('role', '!=', 'client')->orderBy('name')->get(['id', 'name']);
-        $filterCourts = LegalCase::whereNotNull('court')->where('court', '!=', '')->distinct()->orderBy('court')->pluck('court');
+        return view('sessions.index', ['sessions' => $sessions] + $this->filterLists());
+    }
 
-        return view('sessions.index', compact('sessions', 'filterCases', 'filterLawyers', 'filterCourts'));
+    /**
+     * قوائم التصفية التي تحتاجها صفحة الجلسات.
+     *
+     * موضعان يعرضان الصفحة نفسها: القائمة و«جلسات اليوم». كانت الثانية
+     * تعرضها بلا هذه القوائم، فتسقط الصفحة على متغيّر غير معرّف ويُرمى
+     * المستخدم إلى لوحة المتابعة برسالة عامة. القوائم هنا فلا يفترق موضع
+     * عن آخر.
+     *
+     * والنطاق نفسه نطاق القائمة: المحامي الذي لا تظهر له جلسات قضية لا
+     * يُعرض له رقمها وعنوانها في المِصفاة.
+     */
+    private function filterLists(): array
+    {
+        $mine = fn ($q) => auth()->user()?->isLawyer()
+            ? $q->where('lawyer_id', auth()->id())
+            : $q;
+
+        return [
+            'filterCases' => $mine(LegalCase::query())
+                ->orderBy('office_case_number')
+                ->get(['id', 'office_case_number', 'title']),
+
+            'filterLawyers' => User::where('role', '!=', 'client')
+                ->orderBy('name')
+                ->get(['id', 'name']),
+
+            'filterCourts' => $mine(LegalCase::whereNotNull('court')->where('court', '!=', ''))
+                ->distinct()
+                ->orderBy('court')
+                ->pluck('court'),
+        ];
     }
 
     public function create(Request $request): View
@@ -259,7 +288,7 @@ class CourtSessionController extends Controller
 
         $sessions = $query->paginate(15);
 
-        return view('sessions.index', compact('sessions'));
+        return view('sessions.index', ['sessions' => $sessions] + $this->filterLists());
     }
 
 }
