@@ -15,7 +15,10 @@ class SecurityHeaders
 
         $response = $next($request);
 
-        $response->headers->set('X-Frame-Options', 'DENY');
+        // SAMEORIGIN لا DENY: عارض المستندات يعرض PDF داخل إطار من
+        // الموقع نفسه. DENY كانت تحجب الموقع عن نفسه فتظهر المعاينة
+        // صندوقاً فارغاً — والحماية من مواقع خارجية تبقى كاملة.
+        $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-XSS-Protection', '1; mode=block');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -30,7 +33,7 @@ class SecurityHeaders
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.tailwindcss.com",
             "img-src 'self' data: blob: https://static.cloudflareinsights.com",
             "connect-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com",
-            "frame-ancestors 'none'",
+            "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",
         ];
