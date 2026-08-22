@@ -91,6 +91,17 @@ class AutoBackup extends Command
 
         if ($exitCode === 0 && file_exists($sqlFile) && filesize($sqlFile) > 0) {
             $zip->addFile($sqlFile, 'database/backup.sql');
+        } else {
+            // فشل التفريغ = لا نسخة. أرشيف من ملفات التخزين وحدها يوهم
+            // أن هناك نسخة وليس فيها القاعدة — أخطر من لا شيء.
+            $zip->close();
+            @unlink($filepath);
+            @unlink($sqlFile);
+            @unlink($configFile);
+
+            $this->error('تعذّر تفريغ قاعدة البيانات — لم تُنشأ نسخة تلقائية. النسخ القديمة لم تُمسّ.');
+
+            return 1;
         }
 
         $storagePath = storage_path('app/private');
@@ -104,8 +115,19 @@ class AutoBackup extends Command
         @unlink($configFile);
         chmod($filepath, 0600);
 
+        // نسخة لم تُفحص ليست نسخة
+        $verify = \App\Support\BackupVerifier::verify($filepath);
+
+        if (!$verify['ok']) {
+            $this->error('النسخة التلقائية فشلت في الفحص: ' . $verify['reason'] . ' — حُذفت، والقديمة لم تُمسّ.');
+            @unlink($filepath);
+
+            return 1;
+        }
+
         $size = round(filesize($filepath) / 1024 / 1024, 2);
         $this->info("Auto backup created: {$filename} ({$size} MB)");
+        $this->info('الفحص: ' . $verify['tables'] . ' جدولاً، ' . $verify['files'] . ' ملفاً.');
 
         \App\Models\AuditLog::create([
             'user_id' => null,
@@ -118,7 +140,11 @@ class AutoBackup extends Command
             'user_agent' => 'System',
         ]);
 
-        $this->keepOnlyNewest($backupDir, $filepath);
+        // النصف-ساعية تحذف النصف-ساعية وحدها — كانت تلتهم اليومية أيضاً،
+        // فتُعدم نسخة ما قبل التحديث خلال نصف ساعة من أخذها.
+        foreach (\App\Support\BackupVerifier::prune($backupDir, 'auto-*.zip', keep: 6) as $removed) {
+            $this->info('Old backup removed: ' . $removed);
+        }
 
         return 0;
     }
@@ -135,15 +161,4 @@ class AutoBackup extends Command
         }
     }
 
-    private function keepOnlyNewest(string $backupDir, string $newFile): void
-    {
-        $files = glob($backupDir . '/*.zip');
-        foreach ($files as $file) {
-            if (realpath($file) === realpath($newFile)) {
-                continue;
-            }
-            @unlink($file);
-            $this->info("Old backup removed: " . basename($file));
-        }
-    }
 }

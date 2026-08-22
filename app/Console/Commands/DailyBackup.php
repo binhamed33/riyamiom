@@ -57,8 +57,32 @@ class DailyBackup extends Command
         } else {
             $this->warn('MySQL dump failed, trying fallback...');
             $dbPath = database_path('database.sqlite');
+
             if (file_exists($dbPath)) {
                 $zip->addFile($dbPath, 'database/database.sqlite');
+            } else {
+                // لا تفريغ ولا بديل: أرشيف بلا قاعدة بيانات ليس نسخة
+                // احتياطية بل وهمُ نسخة — نفشل بصوت عالٍ ولا ننشئه أصلاً.
+                $zip->close();
+                @unlink($filepath);
+                @unlink($sqlFile);
+                @unlink($configFile);
+
+                $this->error('تعذّر تفريغ قاعدة البيانات ولا يوجد بديل — لم تُنشأ نسخة.');
+                $this->error('النسخ القديمة لم تُمسّ.');
+
+                \App\Models\AuditLog::create([
+                    'user_id' => null,
+                    'action' => 'backup_failed',
+                    'model_type' => 'System',
+                    'model_id' => null,
+                    'old_values' => null,
+                    'new_values' => json_encode(['reason' => 'mysqldump failed, no fallback db'], JSON_UNESCAPED_UNICODE),
+                    'ip_address' => '127.0.0.1',
+                    'user_agent' => 'System',
+                ]);
+
+                return 1;
             }
         }
 
@@ -73,8 +97,33 @@ class DailyBackup extends Command
         @unlink($configFile);
         chmod($filepath, 0600);
 
+        // نسخة لم تُفحص ليست نسخة: نتحقق أن الأرشيف يُفتح وأن قاعدة
+        // البيانات داخله فعلاً وفيها جداول — قبل أن نتفاخر بأنها أُنشئت،
+        // وقبل أن نحذف أي نسخة قديمة سليمة.
+        $verify = \App\Support\BackupVerifier::verify($filepath);
+
+        if (!$verify['ok']) {
+            $this->error('النسخة الاحتياطية فشلت في الفحص: ' . $verify['reason']);
+            $this->error('النسخ القديمة لم تُمسّ. لا تعتمد على هذا الملف.');
+            @unlink($filepath);
+
+            \App\Models\AuditLog::create([
+                'user_id' => null,
+                'action' => 'backup_failed',
+                'model_type' => 'System',
+                'model_id' => null,
+                'old_values' => null,
+                'new_values' => json_encode(['filename' => $filename, 'reason' => $verify['reason']], JSON_UNESCAPED_UNICODE),
+                'ip_address' => '127.0.0.1',
+                'user_agent' => 'System',
+            ]);
+
+            return 1;
+        }
+
         $size = round(filesize($filepath) / 1024 / 1024, 2);
         $this->info("Backup created: {$filename} ({$size} MB)");
+        $this->info('الفحص: قاعدة البيانات داخل الأرشيف، ' . $verify['tables'] . ' جدولاً، ' . $verify['files'] . ' ملفاً.');
 
         \App\Models\AuditLog::create([
             'user_id' => null,
@@ -82,37 +131,24 @@ class DailyBackup extends Command
             'model_type' => 'System',
             'model_id' => null,
             'old_values' => null,
-            'new_values' => json_encode(['filename' => $filename, 'size_mb' => $size]),
+            'new_values' => json_encode([
+                'filename' => $filename,
+                'size_mb' => $size,
+                'tables' => $verify['tables'],
+                'files' => $verify['files'],
+                'verified' => true,
+            ]),
             'ip_address' => '127.0.0.1',
             'user_agent' => 'System',
         ]);
 
-        $this->keepOnlyNewest($backupDir, $filepath);
+        // الاحتفاظ بسبع نسخ لا واحدة: نسخة الليلة قد تكون معطوبة بعطل
+        // لم يكشفه الفحص، وسبع ليالٍ تاريخ يُرجَع إليه.
+        foreach (\App\Support\BackupVerifier::prune($backupDir, 'backup-*.zip', keep: 7) as $removed) {
+            $this->info('Old backup removed: ' . $removed);
+        }
 
         return 0;
     }
 
-    private function addDirectoryToZip(ZipArchive $zip, string $directory, string $zipDir): void
-    {
-        $files = glob($directory . '/*');
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                $zip->addFile($file, $zipDir . '/' . basename($file));
-            } elseif (is_dir($file)) {
-                $this->addDirectoryToZip($zip, $file, $zipDir . '/' . basename($file));
-            }
-        }
-    }
-
-    private function keepOnlyNewest(string $backupDir, string $newFile): void
-    {
-        $files = glob($backupDir . '/*.zip');
-        foreach ($files as $file) {
-            if (realpath($file) === realpath($newFile)) {
-                continue;
-            }
-            @unlink($file);
-            $this->info("Old backup removed: " . basename($file));
-        }
-    }
 }
