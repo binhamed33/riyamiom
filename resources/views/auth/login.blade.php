@@ -377,32 +377,135 @@
         .auth-overlay.fade-black { animation: fadeBlack 0.5s ease forwards; }
         @keyframes fadeBlack { to { background: rgba(5,6,8,0.98); backdrop-filter: blur(0px); } }
 
-        .judge-scene { position: relative; opacity: 0; transform: scale(0.95); filter: blur(4px);
-            transition: opacity 0.65s ease, transform 0.65s cubic-bezier(0.16,1,0.3,1), filter 0.65s ease; }
+        /* ============ مشهد النجاح: ميزان العدل يستوي ============
+           لحظة واحدة تُروى بالحركة: العمود يقوم، والكفّتان تتأرجحان،
+           ثم تستويان — فيُختم الحكم. كلّها CSS: لا مكتبة ولا نصّ برمجي
+           إضافي، فسياسة الأمان الصارمة لا تحجب شيئاً منها. */
+        .judge-scene { position: relative; opacity: 0; transform: scale(0.93); filter: blur(7px);
+            transition: opacity 0.75s ease, transform 1s cubic-bezier(0.16,1,0.3,1), filter 0.75s ease; }
         .judge-scene.show { opacity: 1; transform: scale(1); filter: blur(0); }
-        .judge-scene.strike { animation: camShake 0.13s linear; }
-        @keyframes camShake {
-            0%,100% { transform: translate(0,0); }
-            25% { transform: translate(-3px,2px); }
-            50% { transform: translate(3px,-1px); }
-            75% { transform: translate(-2px,-2px); }
+        /* لحظة الاستواء: تقدُّم محسوس للكاميرا لا اهتزاز — الحكم يستقرّ ولا يرتجّ */
+        .judge-scene.strike { animation: verdictPush 0.7s cubic-bezier(0.2,1,0.3,1); }
+        @keyframes verdictPush {
+            0% { transform: scale(1); } 32% { transform: scale(1.035); } 100% { transform: scale(1); }
         }
 
-        .judge-scene .gavel { transform: rotate(-34deg); transform-box: view-box; transform-origin: 329px 240px; }
-        .judge-scene.strike .gavel { animation: gavelHit 0.26s cubic-bezier(0.3,1.3,0.4,1) forwards; }
-        @keyframes gavelHit {
-            0% { transform: rotate(-34deg); }
-            70% { transform: rotate(4deg) translateY(6px); }
-            100% { transform: rotate(2deg) translateY(10px); }
+        /* أشعّة خلفية — عمق لا زخرفة */
+        .j-rays { opacity: 0; transform-box: view-box; transform-origin: 210px 40px; }
+        .judge-scene.show .j-rays { animation: jFadeIn 1.8s ease 0.15s forwards; }
+        @keyframes jFadeIn { to { opacity: 1; } }
+
+        /* الخاتم المحفور: يهبط مائلاً ثم يستوي ويثبت */
+        .j-seal { opacity: 0; transform-box: view-box; transform-origin: 210px 176px;
+            transform: rotate(-15deg) scale(0.84); }
+        .judge-scene.show .j-seal { animation: jSealLock 2s cubic-bezier(0.16,1,0.3,1) 0.1s forwards; }
+        @keyframes jSealLock { to { opacity: 1; transform: rotate(0deg) scale(1); } }
+        .j-seal-dots { transform-box: view-box; transform-origin: 210px 176px; }
+        .judge-scene.show .j-seal-dots { animation: jSealTurn 46s linear 1.6s infinite; }
+        @keyframes jSealTurn { to { transform: rotate(360deg); } }
+
+        /* القاعدة ثم العمود: البناء من الأرض إلى الأعلى */
+        .j-base { opacity: 0; }
+        .judge-scene.show .j-base { animation: jFadeIn 0.7s ease 0.2s forwards; }
+        .j-column { transform-box: view-box; transform-origin: 210px 292px; transform: scaleY(0); }
+        .judge-scene.show .j-column { animation: jColumnRise 0.9s cubic-bezier(0.16,1,0.3,1) 0.3s forwards; }
+        @keyframes jColumnRise { to { transform: scaleY(1); } }
+        .j-finial { opacity: 0; transform-box: view-box; transform-origin: 210px 100px; transform: scale(0.2); }
+        .judge-scene.show .j-finial { animation: jFinial 0.6s cubic-bezier(0.34,1.5,0.5,1) 1.05s forwards; }
+        @keyframes jFinial { to { opacity: 1; transform: scale(1); } }
+
+        /* العارضة تتأرجح وتستوي — والكفّتان تُعاكسان الميل فتبقيان أفقيتين */
+        .j-beam-fade { opacity: 0; }
+        .judge-scene.show .j-beam-fade { animation: jFadeIn 0.5s ease 1s forwards; }
+        .j-beam { transform-box: view-box; transform-origin: 210px 108px; transform: rotate(-13deg); }
+        .judge-scene.show .j-beam { animation: jBeamSettle 1.6s cubic-bezier(0.33,0.9,0.3,1) 1.05s forwards; }
+        @keyframes jBeamSettle {
+            0%   { transform: rotate(-13deg); }
+            21%  { transform: rotate(8.6deg); }
+            42%  { transform: rotate(-5.1deg); }
+            62%  { transform: rotate(2.7deg); }
+            80%  { transform: rotate(-1.2deg); }
+            92%  { transform: rotate(0.4deg); }
+            100% { transform: rotate(0deg); }
+        }
+        .j-pan-l { transform-box: view-box; transform-origin: 112px 108px; transform: rotate(13deg); }
+        .j-pan-r { transform-box: view-box; transform-origin: 308px 108px; transform: rotate(13deg); }
+        .judge-scene.show .j-pan-l,
+        .judge-scene.show .j-pan-r { animation: jPanLevel 1.6s cubic-bezier(0.33,0.9,0.3,1) 1.05s forwards; }
+        @keyframes jPanLevel {
+            0%   { transform: rotate(13deg); }
+            21%  { transform: rotate(-8.6deg); }
+            42%  { transform: rotate(5.1deg); }
+            62%  { transform: rotate(-2.7deg); }
+            80%  { transform: rotate(1.2deg); }
+            92%  { transform: rotate(-0.4deg); }
+            100% { transform: rotate(0deg); }
         }
 
-        .judge-scene .strike-flash { opacity: 0; transform: scale(0.4); transform-box: view-box; transform-origin: 334px 242px; }
-        .judge-scene.strike .strike-flash { animation: flashBurst 0.45s ease-out forwards; }
-        @keyframes flashBurst { 0% { opacity: 1; transform: scale(0.4); } 100% { opacity: 0; transform: scale(2.6); } }
+        /* ---- لحظة الاستواء ---- */
+        /* خطّ الأفق: يُرسم من المحور إلى الطرفين فيُعلن التوازن */
+        .j-level { opacity: 0; transform-box: view-box; transform-origin: 210px 108px; transform: scaleX(0.08); }
+        .judge-scene.strike .j-level { animation: jLevelLock 0.9s cubic-bezier(0.16,1,0.3,1) forwards; }
+        @keyframes jLevelLock {
+            0%   { opacity: 0; transform: scaleX(0.08); }
+            40%  { opacity: 0.95; }
+            100% { opacity: 0.3; transform: scaleX(1); }
+        }
+        .j-flash { opacity: 0; transform-box: view-box; transform-origin: 210px 108px; transform: scale(0.3); }
+        .judge-scene.strike .j-flash { animation: jFlash 0.55s ease-out forwards; }
+        @keyframes jFlash { 0% { opacity: 1; transform: scale(0.3); } 100% { opacity: 0; transform: scale(2.4); } }
+        .j-ring { opacity: 0; transform-box: view-box; transform-origin: 210px 108px; transform: scale(0.25); }
+        .judge-scene.strike .j-ring-1 { animation: jRipple 1s ease-out forwards; }
+        .judge-scene.strike .j-ring-2 { animation: jRipple 1.25s ease-out 0.2s forwards; }
+        @keyframes jRipple { 0% { opacity: 0.85; transform: scale(0.25); } 100% { opacity: 0; transform: scale(3); } }
+        /* الخاتم يشتعل عند الحكم */
+        .judge-scene.strike .j-seal-ring { animation: jSealGlow 1.2s ease-out forwards; }
+        @keyframes jSealGlow { 0% { stroke-opacity: 0.26; } 22% { stroke-opacity: 0.95; } 100% { stroke-opacity: 0.45; } }
+        /* بريق يمرّ على المعدن بعد أن يستقرّ */
+        .j-sheen { opacity: 0; transform-box: view-box; transform: translateX(-280px); }
+        .judge-scene.strike .j-sheen { animation: jSheen 1.15s cubic-bezier(0.4,0,0.25,1) 0.15s forwards; }
+        @keyframes jSheen {
+            0% { opacity: 0; transform: translateX(-280px); }
+            16% { opacity: 0.9; } 80% { opacity: 0.9; }
+            100% { opacity: 0; transform: translateX(320px); }
+        }
+        /* عمود ضوء ينزل على الميزان لحظة الحكم */
+        .j-shaft { opacity: 0; }
+        .judge-scene.strike .j-shaft { animation: jShaft 1.5s ease-out forwards; }
+        @keyframes jShaft { 0% { opacity: 0; } 16% { opacity: 0.9; } 100% { opacity: 0.22; } }
+        /* توهّج يتمدّد من المحور */
+        .j-bloom { opacity: 0; transform-box: view-box; transform-origin: 210px 150px; transform: scale(0.4); }
+        .judge-scene.strike .j-bloom { animation: jBloom 1.4s ease-out forwards; }
+        @keyframes jBloom {
+            0% { opacity: 0; transform: scale(0.4); }
+            28% { opacity: 1; }
+            100% { opacity: 0; transform: scale(2.1); }
+        }
+        /* بعد الاستقرار: طفوٌ بطيء — المشهد حيّ لا جامد */
+        .j-float { transform-box: view-box; transform-origin: 210px 292px; }
+        .judge-scene.show .j-float { animation: jFloat 7.5s ease-in-out 3.4s infinite; }
+        @keyframes jFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
-        .judge-scene .strike-ripple { opacity: 0; transform: scale(0.3); transform-box: view-box; transform-origin: 334px 242px; }
-        .judge-scene.strike .strike-ripple { animation: rippleOut 0.75s ease-out forwards; }
-        @keyframes rippleOut { 0% { opacity: 0.9; transform: scale(0.3); } 100% { opacity: 0; transform: scale(2.9); } }
+        /* غبار ذهبي يصعد من القاعدة */
+        .j-mote { opacity: 0; transform-box: view-box; }
+        .judge-scene.strike .j-mote { animation: jMote 2s ease-out forwards; }
+        @keyframes jMote {
+            0%   { opacity: 0; transform: translateY(8px) scale(0.4); }
+            15%  { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-132px) scale(1.25); }
+        }
+        .judge-scene.strike .j-mote:nth-of-type(1) { animation-delay: 0.02s; }
+        .judge-scene.strike .j-mote:nth-of-type(2) { animation-delay: 0.16s; }
+        .judge-scene.strike .j-mote:nth-of-type(3) { animation-delay: 0.09s; }
+        .judge-scene.strike .j-mote:nth-of-type(4) { animation-delay: 0.28s; }
+        .judge-scene.strike .j-mote:nth-of-type(5) { animation-delay: 0.21s; }
+        .judge-scene.strike .j-mote:nth-of-type(6) { animation-delay: 0.36s; }
+        .judge-scene.strike .j-mote:nth-of-type(7) { animation-delay: 0.13s; }
+        .judge-scene.strike .j-mote:nth-of-type(8) { animation-delay: 0.44s; }
+        .judge-scene.strike .j-mote:nth-of-type(9)  { animation-delay: 0.06s; }
+        .judge-scene.strike .j-mote:nth-of-type(10) { animation-delay: 0.32s; }
+        .judge-scene.strike .j-mote:nth-of-type(11) { animation-delay: 0.19s; }
+        .judge-scene.strike .j-mote:nth-of-type(12) { animation-delay: 0.5s; }
 
         .success-msg { opacity: 0; text-align: center; padding: 0 1.5rem; }
         .success-msg.show { opacity: 1; transition: opacity 0.5s ease; }
@@ -444,7 +547,12 @@
             }
             .reveal, .reveal-bg, .scales-wrap, .visual-frame, .watermark-word,
             .verses-box .verse-ring, .brand-mark,
-            .hairline-gold, .seal-rotor, #cursorGlow, .dust { opacity: 1; animation: none !important; }
+            .hairline-gold, .seal-rotor, #cursorGlow, .dust,
+            .j-rays, .j-seal, .j-base, .j-beam-fade, .j-finial { opacity: 1; animation: none !important; }
+            /* الميزان يظهر مستوياً بلا تأرجح لمن طلب تقليل الحركة */
+            .j-column { transform: scaleY(1) !important; }
+            .j-beam, .j-pan-l, .j-pan-r, .j-finial { transform: none !important; }
+            .j-seal { transform: none !important; }
             #cursorGlow { display: none; }
         }
     @keyframes orbFloat { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-28px, 22px); } }
@@ -730,59 +838,164 @@
         </aside>
       </div>
 
-    {{-- ===== SUCCESS CINEMATIC OVERLAY (Judge / Hammer Strike) ===== --}}
+    {{-- ===== SUCCESS CINEMATIC OVERLAY (ميزان العدل يستوي) ===== --}}
     <div id="successOverlay" class="auth-overlay" role="status" aria-live="polite" aria-hidden="true">
         <div class="judge-scene" id="judgeScene">
-            <svg class="w-[min(400px,80vw)] h-auto relative" viewBox="0 0 420 320" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <svg class="w-[min(430px,84vw)] h-auto relative" viewBox="0 0 420 340" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <defs>
-                    <radialGradient id="judgeHalo" cx="0.5" cy="0.35" r="0.8">
-                        <stop offset="0" stop-color="rgba(200,169,107,0.16)"/>
-                        <stop offset="0.6" stop-color="rgba(200,169,107,0.05)"/>
+                    <radialGradient id="jHalo" cx="0.5" cy="0.42" r="0.72">
+                        <stop offset="0" stop-color="rgba(200,169,107,0.22)"/>
+                        <stop offset="0.5" stop-color="rgba(200,169,107,0.07)"/>
                         <stop offset="1" stop-color="rgba(200,169,107,0)"/>
                     </radialGradient>
-                    <linearGradient id="judgeGold" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" stop-color="#F0D98A"/>
-                        <stop offset="1" stop-color="#A98218"/>
+                    {{-- ذهب مصقول: ضوء في الأعلى وظلّ في الأسفل، لا لون مسطّح --}}
+                    <linearGradient id="jGold" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#FFF4D2"/>
+                        <stop offset="0.34" stop-color="#EBD08A"/>
+                        <stop offset="0.63" stop-color="#B8912E"/>
+                        <stop offset="1" stop-color="#7E6013"/>
                     </linearGradient>
-                    <filter id="judgeSoft" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="4" result="b"/>
+                    <linearGradient id="jGoldH" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0" stop-color="#8A6A14"/>
+                        <stop offset="0.24" stop-color="#F4E3AC"/>
+                        <stop offset="0.5" stop-color="#C8A96B"/>
+                        <stop offset="0.76" stop-color="#F4E3AC"/>
+                        <stop offset="1" stop-color="#8A6A14"/>
+                    </linearGradient>
+                    <linearGradient id="jSheenGrad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0" stop-color="rgba(255,255,255,0)"/>
+                        <stop offset="0.5" stop-color="rgba(255,252,238,0.9)"/>
+                        <stop offset="1" stop-color="rgba(255,255,255,0)"/>
+                    </linearGradient>
+                    <linearGradient id="jShaftGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="rgba(255,246,214,0.55)"/>
+                        <stop offset="0.55" stop-color="rgba(240,217,138,0.18)"/>
+                        <stop offset="1" stop-color="rgba(240,217,138,0)"/>
+                    </linearGradient>
+                    <linearGradient id="jRayGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="rgba(240,217,138,0.22)"/>
+                        <stop offset="1" stop-color="rgba(240,217,138,0)"/>
+                    </linearGradient>
+                    <filter id="jSoft" x="-60%" y="-60%" width="220%" height="220%">
+                        <feGaussianBlur stdDeviation="7" result="b"/>
                         <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
                     </filter>
+                    {{-- يُقصّ البريق على المعدن وحده وهو مستوٍ، فلا يسيل خارجه --}}
+                    <clipPath id="jMetal">
+                        <rect x="204" y="100" width="12" height="196" rx="3"/>
+                        <rect x="150" y="288" width="120" height="9" rx="3"/>
+                        <rect x="136" y="297" width="148" height="10" rx="3"/>
+                        <rect x="120" y="307" width="180" height="11" rx="4"/>
+                        <rect x="108" y="104" width="204" height="8" rx="4"/>
+                        <path d="M74 150 Q112 186 150 150 Z"/>
+                        <path d="M270 150 Q308 186 346 150 Z"/>
+                    </clipPath>
                 </defs>
 
-                {{-- halo --}}
-                <circle cx="210" cy="150" r="170" fill="url(#judgeHalo)"/>
-
-                {{-- bench (منصة القضاء) --}}
-                <rect x="74" y="224" width="272" height="9" rx="4" fill="url(#judgeGold)" opacity="0.65"/>
-                <rect x="66" y="233" width="288" height="16" rx="3" fill="#121826"/>
-                <rect x="66" y="249" width="288" height="10" rx="3" fill="#0D111B"/>
-                <line x1="74" y1="228" x2="346" y2="228" stroke="rgba(224,201,138,0.5)" stroke-width="1"/>
-                <circle cx="210" cy="248" r="4.5" fill="rgba(224,201,138,0.45)"/>
-                <circle cx="210" cy="248" r="10.5" fill="none" stroke="rgba(200,169,107,0.25)"/>
-
-                {{-- judge silhouette: shoulder + head --}}
-                <path d="M150 176 Q150 150 178 146 Q196 144 210 144 Q224 144 242 146 Q270 150 270 176 L272 220 L148 220 Z" fill="#080B12"/>
-                <path d="M146 176 L274 176 L272 222 L148 222 Z" fill="#182033"/>
-                <path d="M196 146 Q205 152 210 152 Q215 152 224 146" stroke="rgba(224,201,138,0.35)" stroke-width="2" fill="none"/>
-                <ellipse cx="210" cy="132" rx="27" ry="29" fill="#080B12"/>
-                <ellipse cx="210" cy="132" rx="27" ry="29" fill="none" stroke="rgba(224,201,138,0.18)" stroke-width="1"/>
-                <path d="M196 128 Q210 136 224 128" stroke="rgba(224,201,138,0.25)" stroke-width="1.5" fill="none"/>
-                <rect x="204" y="152" width="12" height="10" fill="#080B12"/>
-
-                {{-- hammer (raised) --}}
-                <g class="gavel">
-                    <rect x="326.5" y="172" width="5.5" height="62" rx="2.7" fill="url(#judgeGold)"/>
-                    <rect x="307" y="164" width="46" height="12" rx="3" fill="url(#judgeGold)"/>
-                    <rect x="307" y="164" width="46" height="4" rx="2" fill="rgba(255,248,228,0.5)"/>
+                {{-- هالة وأشعّة: عمق خلف المشهد --}}
+                <circle cx="210" cy="168" r="176" fill="url(#jHalo)"/>
+                <g class="j-rays">
+                    <path d="M210 24 L172 250 L248 250 Z" fill="url(#jRayGrad)" opacity="0.55"/>
+                    <path d="M210 24 L128 258 L166 258 Z" fill="url(#jRayGrad)" opacity="0.3"/>
+                    <path d="M210 24 L254 258 L292 258 Z" fill="url(#jRayGrad)" opacity="0.3"/>
                 </g>
 
-                {{-- impact point --}}
-                <circle class="strike-flash" cx="334" cy="242" r="6" fill="none" stroke="#F0D98A" stroke-width="3"/>
-                <circle class="strike-ripple" cx="334" cy="242" r="6" fill="none" stroke="rgba(224,201,138,0.8)" stroke-width="2"/>
+                {{-- عمود الضوء --}}
+                <path class="j-shaft" d="M196 0 L224 0 L262 300 L158 300 Z" fill="url(#jShaftGrad)" filter="url(#jSoft)"/>
 
-                {{-- base glow under bench --}}
-                <ellipse cx="210" cy="272" rx="150" ry="10" fill="rgba(200,169,107,0.10)" filter="url(#judgeSoft)"/>
+                {{-- الخاتم المحفور --}}
+                <g class="j-seal">
+                    <circle class="j-seal-ring" cx="210" cy="176" r="150" fill="none"
+                            stroke="#C8A96B" stroke-opacity="0.26" stroke-width="1"/>
+                    <circle class="j-seal-ring" cx="210" cy="176" r="132" fill="none"
+                            stroke="#C8A96B" stroke-opacity="0.16" stroke-width="0.75"/>
+                    <circle class="j-seal-dots" cx="210" cy="176" r="141" fill="none"
+                            stroke="#E0C98A" stroke-opacity="0.32" stroke-width="2.5"
+                            stroke-linecap="round" stroke-dasharray="0.5 17"/>
+                </g>
+
+                {{-- توهّج الحكم --}}
+                <circle class="j-bloom" cx="210" cy="150" r="130" fill="url(#jHalo)"/>
+
+                {{-- القاعدة: ثلاث درجات تنزل عرضاً كلّما هبطت --}}
+                <g class="j-base">
+                    <rect x="120" y="307" width="180" height="11" rx="4" fill="url(#jGoldH)"/>
+                    <rect x="136" y="297" width="148" height="10" rx="3" fill="url(#jGold)"/>
+                    <rect x="150" y="288" width="120" height="9" rx="3" fill="url(#jGoldH)" opacity="0.9"/>
+                    <ellipse cx="210" cy="326" rx="152" ry="9" fill="rgba(200,169,107,0.12)" filter="url(#jSoft)"/>
+                </g>
+
+                <g class="j-float">
+                {{-- العمود --}}
+                <g class="j-column">
+                    <rect x="204" y="100" width="12" height="192" rx="3" fill="url(#jGoldH)"/>
+                    <rect x="207" y="100" width="2.5" height="192" fill="rgba(255,248,228,0.45)"/>
+                </g>
+
+                {{-- الميزان --}}
+                <g class="j-beam-fade">
+                    <g class="j-beam">
+                        <rect x="108" y="104" width="204" height="8" rx="4" fill="url(#jGoldH)"/>
+                        <rect x="108" y="105.5" width="204" height="2" rx="1" fill="rgba(255,248,228,0.5)"/>
+                        <circle cx="112" cy="108" r="5" fill="url(#jGold)"/>
+                        <circle cx="308" cy="108" r="5" fill="url(#jGold)"/>
+
+                        {{-- الكفّة اليسرى --}}
+                        <g class="j-pan-l">
+                            <path d="M112 110 L80 150 M112 110 L144 150 M112 110 L112 150"
+                                  stroke="#C8A96B" stroke-opacity="0.75" stroke-width="1.2"/>
+                            <path d="M74 150 Q112 186 150 150 Z" fill="url(#jGold)" opacity="0.95"/>
+                            <path d="M74 150 L150 150" stroke="#FFF4D2" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M74 150 Q112 186 150 150" fill="none" stroke="#7E6013" stroke-opacity="0.5" stroke-width="1"/>
+                        </g>
+
+                        {{-- الكفّة اليمنى --}}
+                        <g class="j-pan-r">
+                            <path d="M308 110 L276 150 M308 110 L340 150 M308 110 L308 150"
+                                  stroke="#C8A96B" stroke-opacity="0.75" stroke-width="1.2"/>
+                            <path d="M270 150 Q308 186 346 150 Z" fill="url(#jGold)" opacity="0.95"/>
+                            <path d="M270 150 L346 150" stroke="#FFF4D2" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M270 150 Q308 186 346 150" fill="none" stroke="#7E6013" stroke-opacity="0.5" stroke-width="1"/>
+                        </g>
+                    </g>
+                </g>
+
+                {{-- تاج المحور --}}
+                <g class="j-finial">
+                    <circle cx="210" cy="100" r="9" fill="url(#jGold)"/>
+                    <circle cx="210" cy="97" r="3" fill="rgba(255,248,228,0.75)"/>
+                </g>
+
+                </g>
+
+                {{-- خطّ الاستواء: يُرسم من المحور فيُعلن التوازن --}}
+                <rect class="j-level" x="66" y="107.2" width="288" height="1.6" rx="0.8" fill="#F0D98A"/>
+
+                {{-- وميض المحور وحلقتاه --}}
+                <circle class="j-flash" cx="210" cy="108" r="14" fill="none" stroke="#FFF8E4" stroke-width="4"/>
+                <circle class="j-ring j-ring-1" cx="210" cy="108" r="18" fill="none" stroke="rgba(240,217,138,0.85)" stroke-width="2"/>
+                <circle class="j-ring j-ring-2" cx="210" cy="108" r="26" fill="none" stroke="rgba(200,169,107,0.55)" stroke-width="1.2"/>
+
+                {{-- بريق يمرّ على المعدن المستقرّ --}}
+                <g clip-path="url(#jMetal)">
+                    <rect class="j-sheen" x="-70" y="80" width="70" height="250" fill="url(#jSheenGrad)" transform="skewX(-18)"/>
+                </g>
+
+                {{-- غبار ذهبي يصعد من القاعدة --}}
+                <g class="j-motes">
+                    <circle class="j-mote" cx="146" cy="300" r="2.4" fill="#F0D98A"/>
+                    <circle class="j-mote" cx="176" cy="308" r="1.7" fill="#E0C98A"/>
+                    <circle class="j-mote" cx="204" cy="296" r="2.6" fill="#FFF4D2"/>
+                    <circle class="j-mote" cx="232" cy="310" r="1.8" fill="#E0C98A"/>
+                    <circle class="j-mote" cx="262" cy="299" r="2.2" fill="#F0D98A"/>
+                    <circle class="j-mote" cx="128" cy="312" r="1.5" fill="#C8A96B"/>
+                    <circle class="j-mote" cx="288" cy="305" r="2" fill="#F0D98A"/>
+                    <circle class="j-mote" cx="210" cy="314" r="1.6" fill="#FFF4D2"/>
+                    <circle class="j-mote" cx="160" cy="292" r="1.9" fill="#FFF4D2"/>
+                    <circle class="j-mote" cx="248" cy="292" r="1.4" fill="#C8A96B"/>
+                    <circle class="j-mote" cx="112" cy="302" r="1.7" fill="#E0C98A"/>
+                    <circle class="j-mote" cx="302" cy="313" r="1.5" fill="#F0D98A"/>
+                </g>
             </svg>
         </div>
 
@@ -944,13 +1157,13 @@
                 successOverlay.classList.add('show');
                 goldWipe.classList.remove('go');
                 successMsg.classList.remove('show');
-                setTimeout(function () { judgeScene.classList.add('show'); }, 150);
-                setTimeout(function () {
-                    judgeScene.classList.add('strike');
-                }, 1100);
-                setTimeout(function () { successMsg.classList.add('show'); }, 1550);
-                setTimeout(function () { goldWipe.classList.add('go'); }, 2150);
-                setTimeout(function () { navigateTo(); }, 2750);
+                // التوقيت يتبع الحركة: العمود يقوم، ثم تتأرجح الكفّتان
+                // وتستويان عند 2.6ث — وعندها وحدها يقع الحكم.
+                setTimeout(function () { judgeScene.classList.add('show'); }, 120);
+                setTimeout(function () { judgeScene.classList.add('strike'); }, 2620);
+                setTimeout(function () { successMsg.classList.add('show'); }, 2980);
+                setTimeout(function () { goldWipe.classList.add('go'); }, 3760);
+                setTimeout(function () { navigateTo(); }, 4300);
             }
 
             /* ---------- error presentation ---------- */
