@@ -21,10 +21,6 @@ class RoleMiddleware
 
         $user = auth()->user();
 
-        if ($user->isDeveloper() || $user->isAdmin()) {
-            return $next($request);
-        }
-
         $roles = [];
         $permission = null;
 
@@ -34,6 +30,18 @@ class RoleMiddleware
             } else {
                 $roles[] = $p;
             }
+        }
+
+        // المطوّر يمرّ دائماً — هو مالك المنصة لا مستخدماً في المكتب
+        if ($user->isDeveloper()) {
+            return $next($request);
+        }
+
+        // مدير المكتب يمرّ على المسارات العامة، لكن ليس على مسار يستثنيه
+        // صراحةً (مثل مسارات المطوّر وحده). كان يمرّ عليها جميعاً فيصل
+        // إلى لوحة المطوّر وإعدادات الاشتراك وأدوات الصيانة.
+        if ($user->isAdmin() && ($roles === [] || in_array('admin', $roles, true))) {
+            return $next($request);
         }
 
         if (!empty($roles) && in_array($user->role, $roles)) {

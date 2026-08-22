@@ -43,6 +43,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 || $e instanceof \Illuminate\Validation\ValidationException) {
                 return;
             }
+            // رفض صلاحية: رسالة تقول السبب بدل «حدث خطأ أثناء تنفيذ العملية»
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+                && $e->getStatusCode() === 403) {
+                $message = $e->getMessage() ?: 'ليس لديك صلاحية للوصول إلى هذه الصفحة.';
+
+                return auth()->check()
+                    ? redirect()->route('dashboard')->with('error', $message)
+                    : redirect()->route('login')->with('login_error', $message);
+            }
+
             // تجاوز حد المحاولات لزائر غير مسجّل: يعود لصفحة الدخول برسالة واضحة
             // بدل إرساله إلى لوحة التحكم حيث لا يرى التنبيه أصلاً
             if ($e instanceof \Illuminate\Http\Exceptions\ThrottleRequestsException && !auth()->check()) {
