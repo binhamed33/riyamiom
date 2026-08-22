@@ -70,7 +70,7 @@
                                         </button>
                                     </form>
                                     <form method="POST" action="{{ route('case-templates.destroy', $t) }}"
-                                          onsubmit="return confirm('{{ $t->usage_count > 0 ? 'هذا القالب مستخدم — سيُعطَّل بدلاً من حذفه. متابعة؟' : 'حذف القالب نهائياً؟' }}')">
+                                          data-confirm="{{ $t->usage_count > 0 ? 'هذا القالب مستخدم — سيُعطَّل بدلاً من حذفه. متابعة؟' : 'حذف القالب نهائياً؟' }}">
                                         @csrf @method('DELETE')
                                         <button class="text-[11px] font-bold px-2 py-1 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 transition">حذف</button>
                                     </form>

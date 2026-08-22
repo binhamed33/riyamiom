@@ -65,7 +65,7 @@
                                 {{ $case->deleted_at->format('Y/m/d H:i') }}
                             </td>
                             <td class="px-4 py-3">
-                                <form action="{{ route('cases.restore', $case->id) }}" method="POST" class="contents" onsubmit="return confirm('{{ __('app.restore_case_confirm') }}')">
+                                <form action="{{ route('cases.restore', $case->id) }}" method="POST" class="contents" data-confirm="{{ __('app.restore_case_confirm') }}">
                                     @csrf
                                     <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors" title="{{ __('app.restore') }}">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

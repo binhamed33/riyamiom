@@ -50,7 +50,7 @@
                                 {{ $client->deleted_at->format('Y/m/d H:i') }}
                             </td>
                             <td class="px-6 py-4">
-                                <form method="POST" action="{{ route('clients.restore', $client->id) }}" class="contents" onsubmit="return confirm('{{ __("app.restore_client_confirm") }}')">
+                                <form method="POST" action="{{ route('clients.restore', $client->id) }}" class="contents" data-confirm="{{ __("app.restore_client_confirm") }}">
                                     @csrf
                                     <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -52,7 +52,7 @@
                 </p>
             </div>
             <form method="POST" action="{{ route('automations.engine') }}"
-                  onsubmit="return confirm('{{ $engineEnabled ? 'إيقاف محرك الأتمتة بالكامل؟ القواعد تبقى محفوظة.' : 'تفعيل محرك الأتمتة؟' }}')">
+                  data-confirm="{{ $engineEnabled ? 'إيقاف محرك الأتمتة بالكامل؟ القواعد تبقى محفوظة.' : 'تفعيل محرك الأتمتة؟' }}">
                 @csrf
                 <button type="submit" class="text-xs font-bold px-3 py-1.5 rounded-lg border transition {{ $engineEnabled ? 'text-red-700 border-red-200 hover:bg-red-50' : 'text-green-700 border-green-300 hover:bg-green-50' }}">
                     {{ $engineEnabled ? 'إيقاف' : 'تفعيل' }}
@@ -114,7 +114,7 @@
                             {{ $rule->is_active ? 'تعطيل' : 'تفعيل' }}
                         </button>
                     </form>
-                    <form method="POST" action="{{ route('automations.destroy', $rule) }}" onsubmit="return confirm('حذف القاعدة «{{ $rule->name }}» نهائياً؟ سجل تنفيذها التاريخي يبقى محفوظاً.')">
+                    <form method="POST" action="{{ route('automations.destroy', $rule) }}" data-confirm="حذف القاعدة «{{ $rule->name }}» نهائياً؟ سجل تنفيذها التاريخي يبقى محفوظاً.">
                         @csrf @method('DELETE')
                         <button class="text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 transition">حذف</button>
                     </form>

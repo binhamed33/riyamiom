@@ -3,7 +3,7 @@
 @section('title', $case->title)
 
 @section('header-actions')
-    <button onclick="history.back()" class="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-xl bg-gold/10 text-gold-dark hover:bg-gold/15 transition-colors border border-gold/15">
+    <button type="button" data-history-back class="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-xl bg-gold/10 text-gold-dark hover:bg-gold/15 transition-colors border border-gold/15">
         <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>

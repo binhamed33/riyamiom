@@ -25,7 +25,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @forelse($cases as $case)
-                        <tr class="hover:bg-gray-50 transition-colors cursor-pointer" onclick="window.location='{{ route('client.cases.show', $case) }}'">
+                        <tr class="hover:bg-gray-50 transition-colors cursor-pointer" data-row-url="{{ route('client.cases.show', $case) }}">
                             <td class="px-4 py-3 text-gray-900 font-mono text-xs">{{ $case->case_number }}</td>
                             <td class="px-4 py-3 text-gray-900 max-w-xs truncate">{{ $case->title }}</td>
                             <td class="px-4 py-3 text-gray-400 max-w-[200px] truncate text-xs">{{ $case->court }}</td>

@@ -1306,21 +1306,21 @@
         @csrf
     </form>
 
-    <div id="autoLogoutOverlay" style="display:none;" class="fixed inset-0 z-[9999] flex items-center justify-center" onclick="if(event.target===this)autoLogoutDismiss()">
+    <div id="autoLogoutOverlay" style="display:none;" class="fixed inset-0 z-[9999] flex items-center justify-center" data-autologout-backdrop role="alertdialog" aria-modal="true" aria-labelledby="autoLogoutTitle">
         <div class="bg-white border border-gray-200 rounded-2xl p-8 max-w-sm mx-4 text-center shadow-2xl card-premium">
             <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/10 flex items-center justify-center">
                 <svg class="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
                 </svg>
             </div>
-            <h3 class="text-gray-900 font-bold text-lg mb-2" style="font-family: 'Cairo', sans-serif;">{{ __('app.session_warning_title') }}</h3>
+            <h3 id="autoLogoutTitle" class="text-gray-900 font-bold text-lg mb-2" style="font-family: 'Cairo', sans-serif;">{{ __('app.session_warning_title') }}</h3>
             <p class="text-gray-500 text-sm mb-4">{{ __('app.session_warning_message') }} <span class="text-amber-400 font-bold" id="autoLogoutCountdown">60</span></p>
             <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
                 <div id="autoLogoutBar" class="bg-amber-400 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
             </div>
             <div class="flex gap-3">
-                <button onclick="autoLogoutDismiss()" class="flex-1 btn-gold py-3 rounded-xl font-bold text-sm">{{ __('app.continue') }}</button>
-                <button onclick="document.getElementById('autoLogoutForm').submit()" class="flex-1 btn-ghost py-3 rounded-xl font-medium text-sm">{{ __('app.logout') }}</button>
+                <button type="button" data-autologout-continue class="flex-1 btn-gold py-3 rounded-xl font-bold text-sm">{{ __('app.continue') }}</button>
+                <button type="button" data-autologout-logout class="flex-1 btn-ghost py-3 rounded-xl font-medium text-sm">{{ __('app.logout') }}</button>
             </div>
         </div>
     </div>
@@ -1349,8 +1349,15 @@
                 },
                 body: '{}'
             })
-            .then(function(res) { if (onDone) onDone(res.status); })
-            .catch(function() { if (onDone) onDone(0); });
+            .then(function (res) {
+                var dead = res.status === 401 || res.status === 419;
+                try {
+                    // المسار محميّ بـ auth: الجلسة المنتهية تُحوَّل إلى صفحة الدخول
+                    if (res.redirected && new URL(res.url).pathname.indexOf('/login') === 0) dead = true;
+                } catch (e) {}
+                if (onDone) onDone(dead ? 401 : res.status);
+            })
+            .catch(function () { if (onDone) onDone(0); });
         }
 
         function resetTimer() {
@@ -1370,9 +1377,7 @@
                 countdownVal--;
                 updateDisplay();
                 if (countdownVal <= 0) {
-                    clearInterval(countdownTimer);
-                    clearInterval(keepAliveTimer);
-                    document.getElementById('autoLogoutForm').submit();
+                    doLogout();
                 }
             }, 1000);
             // كل 10 ثوانٍ أثناء التنبيه نجدد الجلسة عند السيرفر حتى يُسجَّل
@@ -1388,14 +1393,41 @@
             if (bar) bar.style.width = (countdownVal / WARNING * 100) + '%';
         }
 
-        window.autoLogoutDismiss = function() {
+        function dismiss() {
             var overlay = document.getElementById('autoLogoutOverlay');
             if (overlay) overlay.style.display = 'none';
             clearInterval(countdownTimer);
             clearInterval(keepAliveTimer);
-            sendKeepAlive();
-            resetTimer();
-        };
+            // نجدّد الجلسة عند الخادم أولاً، ثم نعيد ضبط المؤقّت بعد نجاحها
+            sendKeepAlive(function (status) {
+                if (status === 401 || status === 419) {
+                    // الجلسة انتهت فعلاً عند الخادم — الخروج هو التصرّف الصحيح
+                    doLogout();
+                    return;
+                }
+                resetTimer();
+            });
+        }
+
+        function doLogout() {
+            clearTimeout(timer);
+            clearInterval(countdownTimer);
+            clearInterval(keepAliveTimer);
+            var form = document.getElementById('autoLogoutForm');
+            if (form) { form.submit(); } else { window.location.href = '{{ route('login') }}'; }
+        }
+
+        // معالجات حقيقية بدل onclick المضمّن — سياسة CSP تمنع المضمّن فلا يعمل
+        var contBtn = document.querySelector('[data-autologout-continue]');
+        var outBtn = document.querySelector('[data-autologout-logout]');
+        var backdrop = document.querySelector('[data-autologout-backdrop]');
+        if (contBtn) contBtn.addEventListener('click', dismiss);
+        if (outBtn) outBtn.addEventListener('click', doLogout);
+        if (backdrop) backdrop.addEventListener('click', function (e) { if (e.target === backdrop) dismiss(); });
+        document.addEventListener('keydown', function (e) {
+            var overlay = document.getElementById('autoLogoutOverlay');
+            if (e.key === 'Escape' && overlay && overlay.style.display !== 'none') dismiss();
+        });
 
         document.addEventListener('mousemove', resetTimer);
         document.addEventListener('keydown', resetTimer);
@@ -1473,6 +1505,53 @@
     })();
     </script>
     @endauth
+
+    {{-- تأكيد الإجراءات الحسّاسة: معالج مفوَّض يقرأ data-confirm.
+         كانت التأكيدات مكتوبة onsubmit مضمَّناً، وسياسة CSP تمنع المضمَّن،
+         فكانت عمليات الحذف تنفّذ بلا أي سؤال. --}}
+    <script nonce="{{ $cspNonce }}">
+        (function () {
+            'use strict';
+            document.addEventListener('submit', function (e) {
+                var form = e.target;
+                if (!(form instanceof HTMLFormElement)) return;
+                var msg = form.getAttribute('data-confirm');
+                if (!msg || form.dataset.confirmed === '1') return;
+                if (window.confirm(msg)) {
+                    form.dataset.confirmed = '1';
+                    return;
+                }
+                e.preventDefault();
+                e.stopImmediatePropagation();
+            }, true);
+
+            // بدائل onclick التي كانت معطّلة بسياسة CSP
+            document.addEventListener('click', function (e) {
+                var printBtn = e.target.closest('[data-print-url]');
+                if (printBtn) {
+                    var w = window.open(printBtn.getAttribute('data-print-url'), '_blank', 'width=800,height=600');
+                    if (w) { w.addEventListener('load', function () { w.print(); }); }
+                    return;
+                }
+                var back = e.target.closest('[data-history-back]');
+                if (back) { history.back(); return; }
+                var printSelf = e.target.closest('[data-window-print]');
+                if (printSelf) { window.print(); return; }
+                var row = e.target.closest('[data-row-url]');
+                if (row && !e.target.closest('a,button')) { window.location = row.getAttribute('data-row-url'); }
+            });
+
+            // روابط تحمل data-confirm أيضاً (حذف عبر رابط)
+            document.addEventListener('click', function (e) {
+                var a = e.target.closest('a[data-confirm]');
+                if (!a) return;
+                if (!window.confirm(a.getAttribute('data-confirm'))) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                }
+            }, true);
+        })();
+    </script>
 
     {{-- حالة التحميل: شريط علوي عند التنقّل والإرسال، وحارس ضدّ الإرسال المزدوج --}}
     <div id="mdProgress" aria-hidden="true"></div>

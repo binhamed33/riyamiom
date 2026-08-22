@@ -145,7 +145,7 @@
 
                 @if($officeLogoUrl)
                     <form method="POST" action="{{ route('settings.logo.destroy') }}" class="mt-3"
-                          onsubmit="return confirm('حذف شعار المكتب؟ سيعود النظام لهوية مُداوَلة الافتراضية.')">
+                          data-confirm="حذف شعار المكتب؟ سيعود النظام لهوية مُداوَلة الافتراضية.">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg transition">
@@ -287,7 +287,7 @@
 
         @if($aiMasked && !$aiFromEnv)
             <form method="POST" action="{{ route('settings.ai.destroy') }}" class="mt-4 pt-4 border-t border-gray-100"
-                  onsubmit="return confirm('حذف مفتاح الذكاء الاصطناعي؟ ستتوقف ميزات الذكاء الاصطناعي في مكتبك حتى تضبط مفتاحاً جديداً.')">
+                  data-confirm="حذف مفتاح الذكاء الاصطناعي؟ ستتوقف ميزات الذكاء الاصطناعي في مكتبك حتى تضبط مفتاحاً جديداً.">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg transition">

@@ -47,7 +47,7 @@
     </style>
 </head>
 <body>
-    <button class="print-btn" onclick="window.print()">طباعة / Print</button>
+    <button type="button" class="print-btn" data-window-print>طباعة / Print</button>
 
     <div class="header">
         @php $officeLogoData = \App\Support\OfficeBrand::logoDataUri(); @endphp
@@ -109,5 +109,10 @@
         <p>تمت الطباعة في {{ now()->format('Y-m-d H:i') }}</p>
         <p>{{ \App\Models\Setting::get('office_name', 'مُداوَلة') }} &mdash; جميع الحقوق محفوظة</p>
     </div>
+<script>
+    document.querySelectorAll('[data-window-print]').forEach(function (b) {
+        b.addEventListener('click', function () { window.print(); });
+    });
+</script>
 </body>
 </html>
