@@ -18,29 +18,30 @@ use Illuminate\Console\Command;
  */
 class ClientPortalReadiness extends Command
 {
-    protected $signature = 'portal:readiness {--list : عرض أسماء من لا يستطيعون الدخول}';
+    protected $signature = 'portal:readiness {--list : عرض أسماء من لا يستطيعون الدخول} {--json : مخرَج آلي تقرؤه لوحة مُداوَلة}';
 
     protected $description = 'فحص جاهزية بوابة العملاء: من يستطيع الدخول ومن لا يستطيع ولماذا';
 
     public function handle(): int
     {
-        $this->newLine();
-        $this->line('<options=bold>بوابة العملاء — الجاهزية</>');
-        $this->line(str_repeat('─', 46));
+        $stats = $this->gather();
 
-        $this->line('الحالة: ' . (ClientPortal::enabled() ? '<fg=green>مفعّلة</>' : '<fg=yellow>معطَّلة</>'));
+        if ($this->option('json')) {
+            // سطر واحد تقرؤه اللوحة — لا زخرفة ولا أسماء عملاء
+            $this->line(json_encode($stats['summary'], JSON_UNESCAPED_UNICODE));
 
-        foreach ([
-            'الجلسات' => ClientPortal::showsSessions(),
-            'مسار القضية' => ClientPortal::showsTimeline(),
-            'المستندات' => ClientPortal::showsDocuments(),
-        ] as $label => $on) {
-            $this->line("  {$label}: " . ($on ? '<fg=green>معروضة</>' : '<fg=gray>مخفية</>'));
+            return self::SUCCESS;
         }
 
-        $this->newLine();
+        return $this->render($stats);
+    }
 
-        $total = Client::count();
+    /**
+     * الأرقام وحدها. لا يخرج منها اسم عميل ولا رقم هوية — اللوحة لا
+     * تحتاجهما، وما لا يُرسَل لا يُسرَّب.
+     */
+    private function gather(): array
+    {
         $noId = 0;
         $noPhone = 0;
         $blocked = [];
@@ -63,15 +64,56 @@ class ClientPortalReadiness extends Command
             }
         });
 
-        $able = $total - count($blocked);
+        $total = Client::count();
 
-        $this->line("العملاء: <options=bold>{$total}</>");
-        $this->line("  يستطيعون الدخول: <fg=green>{$able}</>");
+        return [
+            'blocked' => $blocked,
+            'summary' => [
+                'enabled' => ClientPortal::enabled(),
+                'shows_sessions' => ClientPortal::showsSessions(),
+                'shows_timeline' => ClientPortal::showsTimeline(),
+                'shows_documents' => ClientPortal::showsDocuments(),
+                'clients_total' => $total,
+                'clients_ready' => $total - count($blocked),
+                'clients_blocked' => count($blocked),
+                'missing_national_id' => $noId,
+                'missing_phone' => $noPhone,
+                'documents_shared' => ClientPortal::showsDocuments()
+                    ? Document::where('client_visible', true)->count()
+                    : 0,
+                'checked_at' => now()->toDateTimeString(),
+            ],
+        ];
+    }
+
+    private function render(array $stats): int
+    {
+        $s = $stats['summary'];
+        $blocked = $stats['blocked'];
+
+        $this->newLine();
+        $this->line('<options=bold>بوابة العملاء — الجاهزية</>');
+        $this->line(str_repeat('─', 46));
+
+        $this->line('الحالة: ' . ($s['enabled'] ? '<fg=green>مفعّلة</>' : '<fg=yellow>معطَّلة</>'));
+
+        foreach ([
+            'الجلسات' => $s['shows_sessions'],
+            'مسار القضية' => $s['shows_timeline'],
+            'المستندات' => $s['shows_documents'],
+        ] as $label => $on) {
+            $this->line("  {$label}: " . ($on ? '<fg=green>معروضة</>' : '<fg=gray>مخفية</>'));
+        }
+
+        $this->newLine();
+
+        $this->line("العملاء: <options=bold>{$s['clients_total']}</>");
+        $this->line("  يستطيعون الدخول: <fg=green>{$s['clients_ready']}</>");
 
         if ($blocked) {
-            $this->line('  لا يستطيعون: <fg=yellow>' . count($blocked) . '</>');
-            $this->line("    بلا رقم هوية: {$noId}");
-            $this->line("    بلا رقم هاتف: {$noPhone}");
+            $this->line('  لا يستطيعون: <fg=yellow>' . $s['clients_blocked'] . '</>');
+            $this->line("    بلا رقم هوية: {$s['missing_national_id']}");
+            $this->line("    بلا رقم هاتف: {$s['missing_phone']}");
             $this->newLine();
             $this->warn('هؤلاء لن يدخلوا حتى يُستكمل لهم رقم الهوية والهاتف من صفحة العملاء.');
 
@@ -83,8 +125,8 @@ class ClientPortalReadiness extends Command
             }
         }
 
-        if (ClientPortal::showsDocuments()) {
-            $shared = Document::where('client_visible', true)->count();
+        if ($s['shows_documents']) {
+            $shared = $s['documents_shared'];
             $this->newLine();
             $this->line("المستندات المعلَّمة للعرض: <options=bold>{$shared}</>");
 
