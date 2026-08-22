@@ -832,7 +832,7 @@ class CaseController extends Controller
 
         if (!$service->isConfigured()) {
             return response()->json([
-                'error' => 'لم يتم إعداد مفتاح Gemini في ملف الإعدادات، يرجى التواصل مع المطور',
+                'error' => \App\Support\AiSettings::notConfiguredMessage(),
             ], 400);
         }
 
@@ -923,7 +923,7 @@ PROMPT;
 
         if (!$service->isConfigured()) {
             return response()->json([
-                'error' => 'لم يتم إعداد مفتاح Gemini في ملف الإعدادات، يرجى التواصل مع المطور',
+                'error' => \App\Support\AiSettings::notConfiguredMessage(),
             ], 400);
         }
 

@@ -104,6 +104,12 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::get('/guide/system', function () {
         return view('guide.index');
     })->name('guide');
+
+    // صندوق الاقتراحات — لفريق المكتب وحده، والقيد معلن هنا لا مستنتَجاً من طبقة أعلى
+    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+        Route::get('/suggestions', [App\Http\Controllers\SuggestionController::class, 'index'])->name('suggestions.index');
+        Route::post('/suggestions', [App\Http\Controllers\SuggestionController::class, 'store'])->middleware('throttle:5,10')->name('suggestions.store');
+    });
     
     // Global Search API
     Route::get('/search', function (\Illuminate\Http\Request $request) {
@@ -299,6 +305,11 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::post('/settings/logo', [App\Http\Controllers\OfficeBrandController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.logo.update');
     Route::delete('/settings/logo', [App\Http\Controllers\OfficeBrandController::class, 'destroy'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.logo.destroy');
 
+    // إعدادات الذكاء الاصطناعي — خاصة بهذا المكتب، ومقصورة على من يدير الإعدادات
+    Route::post('/settings/ai', [App\Http\Controllers\AiSettingsController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.ai.update');
+    Route::delete('/settings/ai', [App\Http\Controllers\AiSettingsController::class, 'destroy'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.ai.destroy');
+    Route::post('/settings/ai/test', [App\Http\Controllers\AiSettingsController::class, 'test'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.ai.test');
+
     // طلبات التسجيل من الموقع التعريفي
     Route::get('/register-requests', [MarketingPageController::class, 'requests'])->middleware(['role:developer,admin'])->name('marketing.requests');
     Route::post('/register-requests/{registration_request}/status', [MarketingPageController::class, 'updateStatus'])->middleware(['role:developer,admin'])->name('marketing.requests.status');
@@ -370,6 +381,12 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     // Developer Panel - developer only
     Route::prefix('developer')->middleware('role:developer')->group(function () {
         Route::get('/', [App\Http\Controllers\DeveloperController::class, 'index'])->name('developer.index');
+
+        // الرد على الاقتراحات وإدارتها — للمطوّر وحده
+        Route::post('/suggestions/{suggestion}/reply', [App\Http\Controllers\SuggestionController::class, 'reply'])->name('suggestions.reply');
+        Route::post('/suggestions/{suggestion}/status', [App\Http\Controllers\SuggestionController::class, 'setStatus'])->name('suggestions.status');
+        Route::put('/suggestions/{suggestion}', [App\Http\Controllers\SuggestionController::class, 'update'])->name('suggestions.update');
+        Route::delete('/suggestions/{suggestion}', [App\Http\Controllers\SuggestionController::class, 'destroy'])->name('suggestions.destroy');
         Route::post('/cache-clear', [App\Http\Controllers\DeveloperController::class, 'clearCache'])->name('developer.cache-clear');
         Route::post('/cache-all', [App\Http\Controllers\DeveloperController::class, 'cacheAll'])->name('developer.cache-all');
         Route::post('/optimize', [App\Http\Controllers\DeveloperController::class, 'optimize'])->name('developer.optimize');

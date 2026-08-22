@@ -116,4 +116,48 @@ class DiscordNotifier
             default => '—',
         };
     }
+
+    public static function sendSuggestion($user, string $content): bool
+    {
+        $webhook = self::webhookUrl();
+        if (!$webhook || !$user) {
+            return false;
+        }
+
+        $text = trim($content);
+        $description = mb_strlen($text) > 3500
+            ? mb_substr($text, 0, 3500) . '…'
+            : $text;
+
+        $payload = [
+            'username' => 'نظام المكتب — مُداوَلة',
+            'embeds' => [[
+                'title' => 'اقتراح',
+                'color' => 0x2563EB,
+                'description' => $description,
+                'fields' => [
+                    ['name' => 'الاسم الكامل', 'value' => $user->name, 'inline' => true],
+                    ['name' => 'الدور', 'value' => self::roleLabel($user->role), 'inline' => true],
+                ],
+                'footer' => ['text' => 'نظام المكتب • صندوق الاقتراحات'],
+                'timestamp' => now()->toIso8601String(),
+            ]],
+        ];
+
+        try {
+            $response = Http::timeout(30)->asMultipart()->post($webhook . '?wait=true', [
+                'payload_json' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            ]);
+
+            if ($response->successful()) {
+                return true;
+            }
+
+            Log::error('Discord suggestion send failed: ' . $response->body());
+        } catch (\Throwable $e) {
+            Log::error('Discord suggestion send exception: ' . $e->getMessage());
+        }
+
+        return false;
+    }
 }

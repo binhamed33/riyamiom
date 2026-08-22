@@ -162,6 +162,141 @@
         </div>
     </div>
 
+
+    {{-- ===== الذكاء الاصطناعي: مفتاح ونموذج خاصان بهذا المكتب ===== --}}
+    @php
+        $aiProviders = \App\Support\AiSettings::availableProviders();
+        $aiProvider = \App\Support\AiSettings::provider();
+        $aiModel = \App\Support\AiSettings::model();
+        $aiMasked = \App\Support\AiSettings::maskedKey();
+        $aiFromEnv = \App\Support\AiSettings::usingEnvFallback();
+        $aiUpdated = \App\Support\AiSettings::updatedAt();
+        $aiKeyUrl = config("ai.providers.$aiProvider.key_url");
+        $aiModels = (array) config("ai.providers.$aiProvider.models", []);
+    @endphp
+    <div class="bg-white rounded-xl border border-gray-200 p-5"
+         x-data="{ testing: false, result: null, ok: false,
+            async test() {
+                this.testing = true; this.result = null;
+                try {
+                    const r = await fetch('{{ route('settings.ai.test') }}', {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
+                        credentials: 'same-origin'
+                    });
+                    const d = await r.json();
+                    this.ok = !!d.ok; this.result = d.message || (d.ok ? 'الاتصال ناجح' : 'فشل الاتصال');
+                } catch (e) {
+                    this.ok = false; this.result = 'تعذّر تنفيذ الفحص. تحقق من اتصال الخادم.';
+                }
+                this.testing = false;
+            } }">
+        <div class="flex items-center gap-3 mb-1">
+            <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h2 class="text-base font-bold text-gray-800">الذكاء الاصطناعي</h2>
+                <p class="text-xs text-gray-500 mt-0.5">مفتاح ونموذج خاصان بمكتبك وحده — لا يشاركه أي مكتب آخر.</p>
+            </div>
+            @if($aiMasked)
+                <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">مُعدّ ✓</span>
+            @else
+                <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 border border-gray-200 whitespace-nowrap">غير مُعدّ</span>
+            @endif
+        </div>
+
+        @if($aiFromEnv)
+            <div class="mt-4 flex items-start gap-2 text-[12px] leading-relaxed bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2.5">
+                <span class="font-bold">⚠</span>
+                <span>يعمل مكتبك حالياً على مفتاح موروث من إعداد الخادم. اضبط مفتاحك الخاص من هنا ليصبح استهلاكك وحصتك مستقلَّين تماماً.</span>
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('settings.ai.update') }}" class="mt-5 space-y-4">
+            @csrf
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="ai_provider" class="block text-sm font-medium text-gray-700 mb-2">المزوّد</label>
+                    <select id="ai_provider" name="ai_provider" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-gold/40 focus:border-gold outline-none">
+                        @foreach($aiProviders as $key => $cfg)
+                            <option value="{{ $key }}" @selected($aiProvider === $key)>{{ $cfg['label'] }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-[11px] text-gray-400 mt-1.5">تُعرض هنا المزوّدات المدعومة فعلياً فقط.</p>
+                    @error('ai_provider')<p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <div>
+                    <label for="ai_model" class="block text-sm font-medium text-gray-700 mb-2">النموذج</label>
+                    <select id="ai_model" name="ai_model" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-gold/40 focus:border-gold outline-none">
+                        @foreach($aiModels as $m)
+                            <option value="{{ $m }}" @selected($aiModel === $m)>{{ $m }}</option>
+                        @endforeach
+                    </select>
+                    @error('ai_model')<p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>@enderror
+                </div>
+            </div>
+
+            <div>
+                <label for="ai_api_key" class="block text-sm font-medium text-gray-700 mb-2">مفتاح الـ API</label>
+                @if($aiMasked)
+                    <div class="flex items-center gap-2 mb-2">
+                        <code class="text-sm font-mono tracking-wider text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2" dir="ltr">{{ $aiMasked }}</code>
+                        @if($aiUpdated)
+                            <span class="text-[11px] text-gray-400">حُدّث في {{ $aiUpdated }}</span>
+                        @endif
+                    </div>
+                @endif
+                <input type="password" id="ai_api_key" name="ai_api_key" dir="ltr" autocomplete="off"
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-gold/40 focus:border-gold outline-none"
+                       placeholder="{{ $aiMasked ? 'اتركه فارغاً للإبقاء على المفتاح الحالي، أو ألصق مفتاحاً جديداً لاستبداله' : (config("ai.providers.$aiProvider.key_prefix_hint") ?? 'ألصق المفتاح هنا') }}">
+                <p class="text-[11px] text-gray-400 mt-1.5">
+                    يُخزَّن مشفَّراً في قاعدة بيانات مكتبك ولا يُعرض بعد الحفظ.
+                    @if($aiKeyUrl)
+                        <a href="{{ $aiKeyUrl }}" target="_blank" rel="noopener" class="text-gold-dark font-semibold hover:underline">أنشئ مفتاحاً</a>
+                    @endif
+                </p>
+                @error('ai_api_key')<p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>@enderror
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+                    حفظ الإعدادات
+                </button>
+
+                <button type="button" x-on:click="test()" :disabled="testing"
+                        class="inline-flex items-center gap-2 border border-gray-300 text-gray-700 hover:border-gold hover:text-gold-dark px-4 py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-60 disabled:cursor-not-allowed">
+                    <svg x-show="testing" x-cloak class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" opacity="0.25"/>
+                        <path d="M21 12a9 9 0 00-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                    <span x-text="testing ? 'جارٍ الفحص…' : 'اختبار الاتصال'"></span>
+                </button>
+            </div>
+
+            <div x-show="result" x-cloak x-transition
+                 class="text-sm font-semibold rounded-lg px-3.5 py-2.5 border"
+                 :class="ok ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'">
+                <span x-text="ok ? '✓ ' : '✕ '"></span><span x-text="result"></span>
+            </div>
+        </form>
+
+        @if($aiMasked && !$aiFromEnv)
+            <form method="POST" action="{{ route('settings.ai.destroy') }}" class="mt-4 pt-4 border-t border-gray-100"
+                  onsubmit="return confirm('حذف مفتاح الذكاء الاصطناعي؟ ستتوقف ميزات الذكاء الاصطناعي في مكتبك حتى تضبط مفتاحاً جديداً.')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg transition">
+                    حذف المفتاح
+                </button>
+            </form>
+        @endif
+    </div>
+
     <form method="POST" action="{{ route('settings.update') }}" class="space-y-6">
         @csrf
         @method('PUT')

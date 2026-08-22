@@ -145,6 +145,97 @@
         </div>
     </div>
 
+    {{-- Suggestions --}}
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-gold-dark font-bold text-sm uppercase tracking-wider">💡 اقتراحات الموظفين</h2>
+            <span class="text-xs text-gray-400">{{ $suggestions->count() }} اقتراح</span>
+        </div>
+
+        @forelse($suggestions as $suggestion)
+            <div class="border border-gray-100 rounded-xl p-4 mb-4" x-data="{ editing: false }">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0 text-white text-sm font-bold">
+                        {{ mb_substr($suggestion->user->name, 0, 1) }}
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold text-gray-900">{{ $suggestion->user->name }}</p>
+                        <p class="text-[11px] text-gray-400">{{ $suggestion->user->role }} • {{ $suggestion->created_at->diffForHumans() }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <form method="POST" action="{{ route('suggestions.status', $suggestion) }}" class="inline">
+                            @csrf
+                            <input type="hidden" name="status" value="implemented">
+                            <button type="submit" class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border transition {{ $suggestion->status === 'implemented' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-green-700 border-green-300 hover:bg-green-50' }}" title="تم التنفيذ">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                منفّذ
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ route('suggestions.status', $suggestion) }}" class="inline">
+                            @csrf
+                            <input type="hidden" name="status" value="pending">
+                            <button type="submit" class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border transition {{ $suggestion->status === 'pending' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gold-dark border-gold/25 hover:bg-gold/10' }}" title="قيد الدراسة أو التنفيذ">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                قيد الدراسة
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <p x-show="!editing" class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap bg-gray-50 border border-gray-100 rounded-xl p-3">{{ $suggestion->content }}</p>
+
+                <form x-show="editing" x-cloak method="POST" action="{{ route('suggestions.update', $suggestion) }}" class="mt-1">
+                    @csrf
+                    @method('PUT')
+                    <textarea name="content" rows="3" minlength="20" maxlength="2000" class="w-full bg-gray-50 border border-gold/25 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none transition resize-y">{{ $suggestion->content }}</textarea>
+                    <div class="flex gap-2 mt-2">
+                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-1.5 rounded-lg text-xs transition">حفظ التعديل</button>
+                        <button type="button" @click="editing = false" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-1.5 rounded-lg text-xs transition">إلغاء</button>
+                    </div>
+                </form>
+
+                <div class="flex items-center justify-between mt-2">
+                    <p class="text-[11px] text-gray-400">
+                        @if($suggestion->replied_at)
+                            آخر رد: {{ $suggestion->replied_at->diffForHumans() }}
+                        @else
+                            لم يُرد بعد
+                        @endif
+                    </p>
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="editing = !editing" class="text-[11px] text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-lg transition font-medium">تعديل</button>
+                        <form method="POST" action="{{ route('suggestions.destroy', $suggestion) }}" @submit.prevent="if (confirm('حذف هذا الاقتراح نهائياً؟')) $el.submit()">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-[11px] text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-lg transition font-medium">حذف</button>
+                        </form>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ route('suggestions.reply', $suggestion) }}" class="mt-3">
+                    @csrf
+                    <textarea name="reply" rows="2" placeholder="اكتب ردّك لصاحب الاقتراح..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/25 focus:bg-gold/10 transition resize-y">{{ old('reply', $suggestion->developer_reply) }}</textarea>
+                    <div class="flex justify-end mt-2">
+                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+                            إرسال الرد
+                        </button>
+                    </div>
+                </form>
+            </div>
+        @empty
+            <div class="rounded-xl border border-dashed border-gray-200 p-10 text-center">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-gold/10 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gold-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                </div>
+                <p class="text-sm font-bold text-gray-700">لا توجد اقتراحات بعد</p>
+                <p class="text-xs text-gray-400 mt-1.5">اقتراحات فريق المكتب ستظهر هنا فور إرسالها.</p>
+            </div>
+        @endforelse
+    </div>
+
     {{-- Announcement of the Day --}}
     <div class="bg-white rounded-xl border border-gray-200 p-5">
         <div class="flex items-center justify-between mb-4">

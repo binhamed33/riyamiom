@@ -60,3 +60,6 @@ coverage/
 
 # Embedded git repos
 /riyamiom
+# قاعدة تطوير قديمة كانت مرفوعة بالخطأ — لا تعد
+/lexpro
+*.sqlite
