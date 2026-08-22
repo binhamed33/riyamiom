@@ -56,6 +56,48 @@ class Appearance
         ],
     ];
 
+    /** ثلاثية RGB لكل درجة — تُحقن كمتغيّرات CSS فتتبدّل الألوان بلا إعادة تحميل. */
+    public static function rgbVars(string $key): array
+    {
+        $t = self::THEMES[$key] ?? self::THEMES[self::DEFAULT_THEME];
+
+        return [
+            '--accent-rgb' => self::toRgb($t['DEFAULT']),
+            '--accent-light-rgb' => self::toRgb($t['light']),
+            '--accent-hover-rgb' => self::toRgb($t['hover']),
+            '--accent-dark-rgb' => self::toRgb($t['dark']),
+            '--accent-deep-rgb' => self::toRgb($t['deep']),
+        ];
+    }
+
+    /** كتلة CSS تحمل كل السمات، فالتبديل مجرد تغيير سمة data-palette. */
+    public static function paletteCss(): string
+    {
+        $out = [];
+
+        foreach (array_keys(self::THEMES) as $key) {
+            $vars = [];
+            foreach (self::rgbVars($key) as $name => $value) {
+                $vars[] = $name . ':' . $value;
+            }
+            // الجذر يحمل السمة الافتراضية حتى قبل وصول أي تفضيل
+            $selector = $key === self::DEFAULT_THEME
+                ? ':root, [data-palette="' . $key . '"]'
+                : '[data-palette="' . $key . '"]';
+            $out[] = $selector . '{' . implode(';', $vars) . '}';
+        }
+
+        return implode("\n", $out);
+    }
+
+    private static function toRgb(string $hex): string
+    {
+        $hex = ltrim($hex, '#');
+        [$r, $g, $b] = [hexdec(substr($hex, 0, 2)), hexdec(substr($hex, 2, 2)), hexdec(substr($hex, 4, 2))];
+
+        return $r . ' ' . $g . ' ' . $b;
+    }
+
     public static function themeKey(?User $user = null): string
     {
         $user ??= auth()->user();

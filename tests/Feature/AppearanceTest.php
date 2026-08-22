@@ -100,14 +100,19 @@ class AppearanceTest extends TestCase
             $user->theme = $key;
             $user->save();
 
-            $palette = Appearance::THEMES[$key];
             $html = $this->actingAs($user->fresh())->get('/dashboard')->assertOk()->getContent();
 
-            // التدرّج يصل إلى إعداد Tailwind (الأزرار والحدود والبطاقات)
-            // وإلى متغيّرات CSS (القائمة والحقول ومؤشرات التركيز)
-            $this->assertStringContainsString("gold: { DEFAULT: '{$palette['DEFAULT']}'", $html, "سمة {$key} لم تصل إلى Tailwind");
-            $this->assertStringContainsString("--accent: {$palette['DEFAULT']}", $html, "سمة {$key} لم تصل إلى متغيّرات CSS");
-            $this->assertStringContainsString('data-palette="' . $key . '"', $html);
+            // كل السمات تُرسل كمتغيّرات CSS، والمختارة تُحدَّد بسمة data-palette —
+            // فالتبديل لاحقاً لا يحتاج جولة إلى الخادم ولا إعادة تحميل
+            foreach (array_keys(Appearance::THEMES) as $other) {
+                $vars = Appearance::rgbVars($other);
+                $this->assertStringContainsString('--accent-rgb:' . $vars['--accent-rgb'], $html,
+                    "سمة {$other} غير متاحة للتبديل الفوري");
+            }
+
+            $this->assertStringContainsString('data-palette="' . $key . '"', $html, "سمة {$key} غير مفعّلة");
+            // ألوان Tailwind مشتقّة من المتغيّرات لا من قيم ثابتة
+            $this->assertStringContainsString("mdAccent('--accent-rgb')", $html);
         }
     }
 
@@ -120,7 +125,8 @@ class AppearanceTest extends TestCase
         $html = $this->actingAs($user->fresh())->get('/dashboard')->assertOk()->getContent();
 
         // primary هو ما يحمل نصاً أبيض، فيؤخذ من الدرجة الداكنة لا الأساسية
-        $this->assertStringContainsString("primary: { DEFAULT: '" . Appearance::THEMES['emerald']['dark'] . "'", $html);
+        $this->assertStringContainsString("primary: { DEFAULT: mdAccent('--accent-dark-rgb')", $html);
+        $this->assertStringContainsString('--accent-dark-rgb:' . Appearance::rgbVars('emerald')['--accent-dark-rgb'], $html);
     }
 
     public function test_no_hardcoded_brand_gold_is_left_in_the_stylesheet(): void

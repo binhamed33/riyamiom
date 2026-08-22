@@ -455,6 +455,7 @@ return [
     'records_section' => 'Reports & records',
     'developer_section' => 'Developer tools',
     'help_section' => 'Help & contact',
+    'appearance' => 'Appearance',
     'empty_filtered_title' => 'No matching results',
     'empty_filtered_hint' => 'No record matched the filters applied. Widen them, or clear them to see the full list.',
     'no_sessions_hint' => 'Upcoming sessions appear here as soon as you add them to a case.',

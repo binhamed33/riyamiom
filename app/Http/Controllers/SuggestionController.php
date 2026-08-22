@@ -35,19 +35,24 @@ class SuggestionController extends Controller
         $this->denyClients();
 
         $validated = $request->validate([
+            'title' => ['nullable', 'string', 'max:160'],
             'content' => ['required', 'string', 'min:20', 'max:2000'],
         ], [
             'content.required' => 'اكتب اقتراحك أولاً',
             'content.min' => 'يجب وصف الاقتراح بوصف جيد — 20 حرفاً على الأقل',
             'content.max' => 'الاقتراح أطول من المسموح (2000 حرف كحد أقصى)',
+            'title.max' => 'العنوان أطول من المسموح (160 حرفاً)',
         ]);
 
         $suggestion = Suggestion::create([
             'user_id' => auth()->id(),
+            'title' => $validated['title'] ?? null,
             'content' => $validated['content'],
+            // لقطة السياق تُحفظ الآن، فلا تتغيّر لو تبدّل دور الموظف لاحقاً
+            'context' => \App\Support\SuggestionContext::capture($request, auth()->user()),
         ]);
 
-        $sent = DiscordNotifier::sendSuggestion(auth()->user(), $suggestion->content);
+        $sent = DiscordNotifier::sendSuggestion(auth()->user(), $suggestion);
 
         return back()->with('success', $sent
             ? 'تم إرسال اقتراحك بنجاح — شكراً لمساهمتك'

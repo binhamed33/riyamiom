@@ -101,6 +101,88 @@ class SuggestionsTest extends TestCase
         $this->assertSame('شكراً، نُفّذ الاقتراح.', $suggestion->fresh()->developer_reply);
     }
 
+    public function test_a_suggestion_captures_who_sent_it_and_from_where(): void
+    {
+        \App\Models\Setting::set('office_name', 'مكتب البيان للمحاماة');
+
+        $user = User::factory()->create([
+            'role' => 'lawyer', 'is_active' => true,
+            'name' => 'سالم البلوشي', 'email' => 'salem@bayan.om',
+        ]);
+
+        $this->actingAs($user)
+            ->withHeaders([
+                'referer' => 'http://localhost/cases?search=secret-query',
+                'user-agent' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) AppleWebKit/605.1 Safari/604.1',
+            ])
+            ->post(route('suggestions.store'), [
+                'title' => 'تنبيه قبل الجلسة',
+                'content' => 'أقترح إضافة تنبيه قبل موعد الجلسة بيوم كامل لتفادي نسيان التحضير.',
+            ])->assertSessionHas('success');
+
+        $context = \App\Models\Suggestion::firstOrFail()->context;
+
+        $this->assertSame($user->id, $context['user']['id']);
+        $this->assertSame('سالم البلوشي', $context['user']['name']);
+        $this->assertSame('salem@bayan.om', $context['user']['email']);
+        $this->assertSame('محامٍ', $context['user']['role_label']);
+        $this->assertSame('مكتب البيان للمحاماة', $context['office']['name']);
+        $this->assertSame('/cases', $context['origin']['page'], 'المسار فقط — بلا معاملات البحث');
+        $this->assertSame('هاتف', $context['device']['type']);
+        $this->assertSame('iOS', $context['device']['platform']);
+    }
+
+    public function test_the_snapshot_survives_a_later_role_change(): void
+    {
+        $user = User::factory()->create(['role' => 'staff', 'is_active' => true]);
+
+        $this->actingAs($user)->post(route('suggestions.store'), [
+            'content' => 'اقتراح كُتب بينما كان صاحبه موظفاً لا محامياً في هذا الوقت.',
+        ]);
+
+        $user->role = 'lawyer';
+        $user->save();
+
+        $context = \App\Models\Suggestion::firstOrFail()->fresh()->context;
+        $this->assertSame('staff', $context['user']['role'], 'اللقطة تغيّرت بتغيّر الدور');
+    }
+
+    public function test_context_never_stores_credentials_or_a_raw_user_agent(): void
+    {
+        $user = User::factory()->create(['role' => 'staff', 'is_active' => true]);
+
+        $this->actingAs($user)
+            ->withHeaders(['user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64) Chrome/120.0.0.0'])
+            ->post(route('suggestions.store'), [
+                'content' => 'اقتراح عادي للتأكد من أن السياق لا يحمل أسراراً إطلاقاً.',
+            ]);
+
+        $raw = json_encode(\App\Models\Suggestion::firstOrFail()->context, JSON_UNESCAPED_UNICODE);
+
+        $this->assertStringNotContainsString('password', $raw);
+        $this->assertStringNotContainsString('token', $raw);
+        $this->assertStringNotContainsString('Mozilla/5.0', $raw, 'سلسلة المتصفح الخام مخزَّنة');
+    }
+
+    public function test_only_the_developer_panel_shows_the_context(): void
+    {
+        $author = User::factory()->create(['role' => 'staff', 'is_active' => true, 'email' => 'author@office.om']);
+        $this->actingAs($author)->post(route('suggestions.store'), [
+            'content' => 'اقتراح يحمل سياقاً لا يجوز أن يراه غير من يدير الاقتراحات.',
+        ]);
+
+        // صاحب الاقتراح يرى اقتراحه، لكن صفحته لا تعرض بيانات السياق
+        $this->actingAs($author)->get('/suggestions')
+            ->assertOk()
+            ->assertDontSee('رقم الاقتراح', false);
+
+        $dev = User::factory()->create(['role' => 'developer', 'is_active' => true]);
+        $this->actingAs($dev)->get('/developer')
+            ->assertOk()
+            ->assertSee('author@office.om', false)
+            ->assertSee('رقم الاقتراح', false);
+    }
+
     public function test_link_sits_in_the_help_section_not_among_daily_work(): void
     {
         $user = User::factory()->create(['role' => 'lawyer', 'is_active' => true]);

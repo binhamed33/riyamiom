@@ -158,9 +158,16 @@
                     <div class="w-9 h-9 rounded-full bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0 text-white text-sm font-bold">
                         {{ mb_substr($suggestion->user->name, 0, 1) }}
                     </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-bold text-gray-900">{{ $suggestion->user->name }}</p>
-                        <p class="text-[11px] text-gray-400">{{ $suggestion->user->role }} • {{ $suggestion->created_at->diffForHumans() }}</p>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-gray-900">
+                            {{ $suggestion->user->name }}
+                            <span class="text-[11px] font-mono text-gray-400">#{{ $suggestion->user_id }}</span>
+                        </p>
+                        <p class="text-[11px] text-gray-400">
+                            {{ \App\Support\SuggestionContext::roleLabel($suggestion->context['user']['role'] ?? $suggestion->user->role) }}
+                            • {{ $suggestion->created_at->format('Y-m-d H:i') }}
+                            • {{ $suggestion->created_at->diffForHumans() }}
+                        </p>
                     </div>
                     <div class="flex items-center gap-2">
                         <form method="POST" action="{{ route('suggestions.status', $suggestion) }}" class="inline">
@@ -182,7 +189,44 @@
                     </div>
                 </div>
 
+                @if($suggestion->title)
+                    <p class="text-sm font-bold text-gold-dark mb-2">{{ $suggestion->title }}</p>
+                @endif
+
                 <p x-show="!editing" class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap bg-gray-50 border border-gray-100 rounded-xl p-3">{{ $suggestion->content }}</p>
+
+                {{-- سياق الإرسال: يُقرأ من اللقطة المحفوظة لا من الحالة الراهنة --}}
+                @php $ctx = $suggestion->context ?? []; @endphp
+                @if($ctx)
+                    <dl class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 text-[11px] bg-gold/5 border border-gold/15 rounded-xl p-3">
+                        <div class="min-w-0">
+                            <dt class="text-gray-400">المكتب</dt>
+                            <dd class="font-semibold text-gray-700 truncate">{{ $ctx['office']['name'] ?? '—' }}</dd>
+                        </div>
+                        <div class="min-w-0">
+                            <dt class="text-gray-400">النطاق</dt>
+                            <dd class="font-mono text-gray-700 truncate" dir="ltr">{{ $ctx['office']['domain'] ?? '—' }}</dd>
+                        </div>
+                        <div class="min-w-0">
+                            <dt class="text-gray-400">البريد</dt>
+                            <dd class="text-gray-700 truncate" dir="ltr">{{ $ctx['user']['email'] ?? $suggestion->user->email }}</dd>
+                        </div>
+                        <div class="min-w-0">
+                            <dt class="text-gray-400">الصفحة</dt>
+                            <dd class="font-mono text-gray-700 truncate" dir="ltr">{{ $ctx['origin']['page'] ?? '—' }}</dd>
+                        </div>
+                        @if(!empty($ctx['device']))
+                            <div class="min-w-0 col-span-2">
+                                <dt class="text-gray-400">الجهاز</dt>
+                                <dd class="text-gray-700 truncate">{{ implode(' · ', array_filter([$ctx['device']['type'] ?? null, $ctx['device']['platform'] ?? null, $ctx['device']['browser'] ?? null])) }}</dd>
+                            </div>
+                        @endif
+                        <div class="min-w-0">
+                            <dt class="text-gray-400">رقم الاقتراح</dt>
+                            <dd class="font-mono text-gray-700">#{{ $suggestion->id }}</dd>
+                        </div>
+                    </dl>
+                @endif
 
                 <form x-show="editing" x-cloak method="POST" action="{{ route('suggestions.update', $suggestion) }}" class="mt-1">
                     @csrf

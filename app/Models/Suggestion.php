@@ -10,13 +10,14 @@ class Suggestion extends Model
     const STATUS_PENDING = 'pending';
     const STATUS_IMPLEMENTED = 'implemented';
 
-    protected $fillable = ['user_id', 'content', 'status', 'developer_reply', 'replied_at', 'reply_read'];
+    protected $fillable = ['user_id', 'title', 'content', 'context', 'status', 'developer_reply', 'replied_at', 'reply_read'];
 
     protected function casts(): array
     {
         return [
             'replied_at' => 'datetime',
             'reply_read' => 'boolean',
+            'context' => 'array',
         ];
     }
 

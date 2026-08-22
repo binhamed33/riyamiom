@@ -117,29 +117,55 @@ class DiscordNotifier
         };
     }
 
-    public static function sendSuggestion($user, string $content): bool
+    public static function sendSuggestion($user, $suggestion): bool
     {
         $webhook = self::webhookUrl();
         if (!$webhook || !$user) {
             return false;
         }
 
+        // نقبل نصاً أو نموذج اقتراح — حفاظاً على التوافق مع أي استدعاء قديم
+        $content = is_string($suggestion) ? $suggestion : (string) $suggestion->content;
+        $title = is_string($suggestion) ? null : $suggestion->title;
+        $context = is_string($suggestion) ? [] : (array) ($suggestion->context ?? []);
+
         $text = trim($content);
-        $description = mb_strlen($text) > 3500
-            ? mb_substr($text, 0, 3500) . '…'
-            : $text;
+        $description = mb_strlen($text) > 3500 ? mb_substr($text, 0, 3500) . '…' : $text;
+
+        $office = $context['office'] ?? [];
+        $origin = $context['origin'] ?? [];
+        $device = $context['device'] ?? [];
+
+        $fields = [
+            ['name' => 'المكتب', 'value' => ($office['name'] ?? '—') . "\n`" . ($office['domain'] ?? '—') . '`', 'inline' => true],
+            ['name' => 'المُرسِل', 'value' => $user->name . "\n" . self::roleLabel($user->role), 'inline' => true],
+            ['name' => 'المعرّف والبريد', 'value' => '#' . $user->id . "\n" . $user->email, 'inline' => true],
+        ];
+
+        if (!empty($origin['page'])) {
+            $fields[] = ['name' => 'الصفحة', 'value' => '`' . $origin['page'] . '`', 'inline' => true];
+        }
+
+        if ($device !== []) {
+            $fields[] = [
+                'name' => 'الجهاز',
+                'value' => implode(' · ', array_filter([$device['type'] ?? null, $device['platform'] ?? null, $device['browser'] ?? null])),
+                'inline' => true,
+            ];
+        }
+
+        if (!is_string($suggestion) && $suggestion->id) {
+            $fields[] = ['name' => 'رقم الاقتراح', 'value' => '#' . $suggestion->id, 'inline' => true];
+        }
 
         $payload = [
             'username' => 'نظام المكتب — مُداوَلة',
             'embeds' => [[
-                'title' => 'اقتراح',
+                'title' => $title ? ('اقتراح: ' . mb_substr($title, 0, 200)) : 'اقتراح',
                 'color' => 0x2563EB,
                 'description' => $description,
-                'fields' => [
-                    ['name' => 'الاسم الكامل', 'value' => $user->name, 'inline' => true],
-                    ['name' => 'الدور', 'value' => self::roleLabel($user->role), 'inline' => true],
-                ],
-                'footer' => ['text' => 'نظام المكتب • صندوق الاقتراحات'],
+                'fields' => $fields,
+                'footer' => ['text' => 'مُداوَلة • صندوق الاقتراحات'],
                 'timestamp' => now()->toIso8601String(),
             ]],
         ];

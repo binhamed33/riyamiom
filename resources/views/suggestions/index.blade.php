@@ -18,6 +18,12 @@
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
         <form method="POST" action="{{ route('suggestions.store') }}" x-data="{ len: 0, content: '' }">
             @csrf
+            <label for="title" class="block text-sm font-semibold text-gray-700 mb-2">عنوان مختصر <span class="text-gray-400 font-normal">(اختياري)</span></label>
+            <input type="text" id="title" name="title" maxlength="160" value="{{ old('title') }}"
+                   class="w-full mb-4 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/25 focus:bg-gold/10 transition @error('title') border-red-300 @enderror"
+                   placeholder="مثال: تنبيه قبل موعد الجلسة بيوم">
+            @error('title')<p class="text-xs text-red-600 font-medium -mt-3 mb-3">{{ $message }}</p>@enderror
+
             <label for="content" class="block text-sm font-semibold text-gray-700 mb-2">اقتراحك <span class="text-red-500">*</span></label>
             <textarea
                 id="content" name="content" rows="5" required minlength="20" maxlength="2000"
@@ -38,6 +44,11 @@
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 إرسال الاقتراح
             </button>
+
+            <p class="mt-3 text-[11px] text-gray-400 leading-relaxed">
+                يُرسَل مع اقتراحك: اسمك ودورك وبريدك واسم مكتبك والصفحة التي أرسلت منها ونوع جهازك —
+                لمساعدة المطوّرين على فهم السياق. لا تُرسَل أي بيانات قضايا أو موكّلين.
+            </p>
         </form>
     </div>
 

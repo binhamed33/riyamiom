@@ -54,14 +54,22 @@
     <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script nonce="{{ $cspNonce }}">
+        // كل لون سمة يُقرأ من متغيّر CSS مع دعم درجة الشفافية،
+        // فتغيير السمة يصبح تغيير سمة data-palette بلا إعادة تحميل
+        function mdAccent(v) {
+            return function (opts) {
+                var a = opts && opts.opacityValue;
+                return a === undefined ? 'rgb(var(' + v + '))' : 'rgb(var(' + v + ') / ' + a + ')';
+            };
+        }
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
 
-                        gold: { DEFAULT: '{{ $palette['DEFAULT'] }}', light: '{{ $palette['light'] }}', dark: '{{ $palette['dark'] }}', deep: '{{ $palette['deep'] }}', hover: '{{ $palette['hover'] }}' },
+                        gold: { DEFAULT: mdAccent('--accent-rgb'), light: mdAccent('--accent-light-rgb'), dark: mdAccent('--accent-dark-rgb'), deep: mdAccent('--accent-deep-rgb'), hover: mdAccent('--accent-hover-rgb') },
 
-                        primary: { DEFAULT: '{{ $primary['DEFAULT'] }}', hover: '{{ $primary['hover'] }}', dark: '{{ $primary['dark'] }}', light: '{{ $primary['light'] }}' },
+                        primary: { DEFAULT: mdAccent('--accent-dark-rgb'), hover: mdAccent('--accent-rgb'), dark: mdAccent('--accent-deep-rgb'), light: mdAccent('--accent-light-rgb') },
 
                         background: '#F7F8FA',
 
@@ -253,26 +261,88 @@
 
     <style>
         /* رموز السمة — مصدرها تفضيل المستخدم المحفوظ، ويُعاد رسمها من الخادم */
+{!! \App\Support\Appearance::paletteCss() !!}
+
         :root {
-            --accent: {{ $palette['DEFAULT'] }};
-            --accent-light: {{ $palette['light'] }};
-            --accent-hover: {{ $palette['hover'] }};
-            --accent-dark: {{ $palette['dark'] }};
-            --accent-deep: {{ $palette['deep'] }};
-            --accent-a06: {{ $palette['DEFAULT'] }}0F;
-            --accent-a08: {{ $palette['DEFAULT'] }}14;
-            --accent-a10: {{ $palette['DEFAULT'] }}1A;
-            --accent-a12: {{ $palette['DEFAULT'] }}1F;
-            --accent-a15: {{ $palette['DEFAULT'] }}26;
-            --accent-a20: {{ $palette['DEFAULT'] }}33;
-            --accent-a30: {{ $palette['DEFAULT'] }}4D;
-            --accent-a40: {{ $palette['DEFAULT'] }}66;
+            /* كل الرموز مشتقّة من ثلاثيات RGB أعلاه، فتتبدّل مع السمة فوراً */
+            --accent: rgb(var(--accent-rgb));
+            --accent-light: rgb(var(--accent-light-rgb));
+            --accent-hover: rgb(var(--accent-hover-rgb));
+            --accent-dark: rgb(var(--accent-dark-rgb));
+            --accent-deep: rgb(var(--accent-deep-rgb));
+            --accent-a06: rgb(var(--accent-rgb) / 0.06);
+            --accent-a08: rgb(var(--accent-rgb) / 0.08);
+            --accent-a10: rgb(var(--accent-rgb) / 0.10);
+            --accent-a12: rgb(var(--accent-rgb) / 0.12);
+            --accent-a15: rgb(var(--accent-rgb) / 0.15);
+            --accent-a20: rgb(var(--accent-rgb) / 0.20);
+            --accent-a30: rgb(var(--accent-rgb) / 0.30);
+            --accent-a40: rgb(var(--accent-rgb) / 0.40);
         }
     </style>
     <style>
         [x-cloak] { display: none !important; }
         /* الرسوم البيانية لا تتجاوز عرض حاويتها على أي مقاس */
         canvas { max-width: 100%; }
+
+        /* ===== لوحة المظهر ===== */
+        .md-appearance { position: fixed; top: 4.25rem; z-index: 50; width: 22rem;
+            background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 1rem;
+            box-shadow: 0 24px 60px rgba(17,24,39,0.16); padding: 1.25rem; }
+        /* أدوات الترويسة على اليسار في RTL وعلى اليمين في LTR، فاللوحة
+           تنفتح في الاتجاه الذي تتّسع فيه الشاشة — بخصائص فيزيائية لأن
+           المنطقية كانت تثبّتها على الجهة الخاطئة فتُقصّ خارج الشاشة. */
+        .md-appearance { max-width: calc(100vw - 1.5rem); }
+        @media (min-width: 768px) {
+            /* أدوات الترويسة على اليسار في RTL وعلى اليمين في LTR */
+            [dir="rtl"] .md-appearance { left: 1rem; right: auto; }
+            [dir="ltr"] .md-appearance { right: 1rem; left: auto; }
+        }
+        [data-theme="dark"] .md-appearance { background: #121826; border-color: #252D3D; }
+
+        @media (max-width: 767px) {
+            /* على الهاتف: ورقة سفلية بعرض الشاشة بدل قائمة صغيرة */
+            .md-appearance { left: 0; right: 0; bottom: 0; top: auto; width: auto;
+                max-width: none; margin: 0; border-radius: 22px 22px 0 0; max-height: 88vh; overflow-y: auto;
+                box-shadow: 0 -18px 50px rgba(0,0,0,0.22); }
+        }
+        .md-appearance-grab { width: 42px; height: 4px; border-radius: 999px; background: #D8DCE3; margin: -0.4rem auto 0.9rem; }
+        [data-theme="dark"] .md-appearance-grab { background: #333C4E; }
+
+        .md-mode-btn { display: flex; align-items: center; justify-content: center; gap: 0.55rem;
+            padding: 0.7rem 0.5rem; border-radius: 0.85rem; border: 1.5px solid #E2E6EC;
+            font-size: 0.82rem; font-weight: 700; color: #6B7280; background: transparent;
+            transition: border-color 0.2s, color 0.2s, background 0.2s; min-height: 44px; }
+        .md-mode-btn:hover { border-color: #C9CDD6; }
+        .md-mode-btn.is-on { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-a08); }
+        [data-theme="dark"] .md-mode-btn { border-color: #252D3D; color: #94A3B8; }
+        [data-theme="dark"] .md-mode-btn.is-on { color: var(--accent-light); }
+        .md-mode-swatch { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.12); flex: none; }
+        .md-mode-light { background: linear-gradient(135deg, #FFFFFF 50%, #F1F3F7 50%); }
+        .md-mode-dark { background: linear-gradient(135deg, #1B2231 50%, #080B12 50%); border-color: rgba(255,255,255,0.18); }
+
+        /* بطاقة السمة: معاينة مصغّرة بألوانها هي، لا مجرد نقطة لون */
+        .md-theme-card { padding: 0.5rem; border-radius: 0.85rem; border: 1.5px solid #E2E6EC;
+            background: transparent; transition: border-color 0.2s, transform 0.15s; text-align: start; }
+        .md-theme-card:hover { border-color: #C9CDD6; transform: translateY(-1px); }
+        .md-theme-card.is-on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-a12); }
+        [data-theme="dark"] .md-theme-card { border-color: #252D3D; }
+
+        .md-preview { display: flex; height: 52px; border-radius: 0.55rem; overflow: hidden;
+            border: 1px solid rgba(17,24,39,0.08); background: #F7F8FA; }
+        [data-theme="dark"] .md-preview { background: #0D111B; border-color: rgba(255,255,255,0.08); }
+        .md-preview-side { width: 26%; background: rgb(var(--accent-dark-rgb)); }
+        .md-preview-main { flex: 1; padding: 5px; display: flex; flex-direction: column; gap: 4px; }
+        .md-preview-bar { height: 6px; border-radius: 3px; background: rgb(var(--accent-rgb)); width: 70%; }
+        .md-preview-row { height: 5px; border-radius: 3px; background: rgba(17,24,39,0.12); width: 90%; }
+        [data-theme="dark"] .md-preview-row { background: rgba(255,255,255,0.14); }
+        .md-preview-btn { height: 9px; border-radius: 4px; background: rgb(var(--accent-light-rgb)); width: 45%; margin-top: auto; }
+
+        .md-theme-name { display: flex; align-items: center; justify-content: space-between; gap: 0.35rem;
+            margin-top: 0.5rem; font-size: 0.75rem; font-weight: 700; color: #4B5563; }
+        [data-theme="dark"] .md-theme-name { color: #CBD5E1; }
+        .md-theme-card.is-on .md-theme-name { color: var(--accent-dark); }
+        [data-theme="dark"] .md-theme-card.is-on .md-theme-name { color: var(--accent-light); }
 
         /* شريط التقدّم العلوي */
         #mdProgress { position: fixed; top: 0; inset-inline-start: 0; height: 3px; width: 0;
@@ -982,16 +1052,17 @@
                         </button>
                     </div>
 
-                    {{-- المظهر: الوضع + السمة اللونية، محفوظان لهذا المستخدم وحده --}}
+                    {{-- المظهر: الوضع + السمة — يُطبَّقان فوراً بلا إعادة تحميل ويُحفظان لهذا المستخدم وحده --}}
                     <div class="relative" x-data="{
                             open: false,
                             theme: '{{ $themeKey }}',
                             mode: '{{ $appearanceMode }}',
-                            apply(mode, theme) {
-                                this.mode = mode; this.theme = theme;
-                                document.documentElement.setAttribute('data-theme', mode);
-                                document.documentElement.setAttribute('data-palette', theme);
-                                try { localStorage.setItem('theme', mode); } catch (e) {}
+                            saving: false,
+                            apply() {
+                                document.documentElement.setAttribute('data-theme', this.mode);
+                                document.documentElement.setAttribute('data-palette', this.theme);
+                                try { localStorage.setItem('theme', this.mode); } catch (e) {}
+                                this.saving = true;
                                 fetch('{{ route('appearance.update') }}', {
                                     method: 'POST',
                                     headers: {
@@ -1000,19 +1071,15 @@
                                         'Accept': 'application/json'
                                     },
                                     credentials: 'same-origin',
-                                    body: JSON.stringify({ appearance: mode, theme: theme })
-                                }).then(function () {
-                                    // ألوان Tailwind تُولَّد وقت التحميل، فنعيد الرسم مرة واحدة عند تغيير السمة
-                                    if (window.__mdPendingReload) { window.location.reload(); }
-                                }).catch(function () {});
+                                    body: JSON.stringify({ appearance: this.mode, theme: this.theme })
+                                }).finally(() => { this.saving = false; });
                             },
-                            setMode(m) { window.__mdPendingReload = false; this.apply(m, this.theme); },
-                            setTheme(t) { window.__mdPendingReload = true; this.apply(this.mode, t); }
+                            setMode(m) { this.mode = m; this.apply(); },
+                            setTheme(t) { this.theme = t; this.apply(); }
                         }">
                         <button @click="open = !open" :aria-expanded="open ? 'true' : 'false'"
                                 class="p-2 rounded-xl transition text-gray-400 hover:text-gold-dark"
-                                title="{{ app()->getLocale() === 'ar' ? 'المظهر' : 'Appearance' }}"
-                                aria-label="{{ app()->getLocale() === 'ar' ? 'المظهر' : 'Appearance' }}">
+                                title="{{ __('app.appearance') }}" aria-label="{{ __('app.appearance') }}">
                             <svg x-show="mode === 'light'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
                             </svg>
@@ -1021,50 +1088,69 @@
                             </svg>
                         </button>
 
+                        {{-- خلفية معتمة للورقة السفلية على الهاتف --}}
+                        <template x-teleport="body">
+                            <div x-show="open" x-cloak x-transition.opacity @click="open = false"
+                                 class="fixed inset-0 z-40 bg-black/35 md:hidden"></div>
+                        </template>
+
+                        <template x-teleport="body">
                         <div x-show="open" x-cloak @click.outside="open = false"
                              x-transition:enter="transition ease-out duration-150"
-                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-start="opacity-0 translate-y-3 md:-translate-y-1"
                              x-transition:enter-end="opacity-100 translate-y-0"
-                             class="absolute {{ $isRtl ? 'start-0' : 'end-0' }} mt-2 w-64 bg-white rounded-2xl border border-gray-200 shadow-xl p-4 z-50">
+                             class="md-appearance">
+
+                            <div class="md-appearance-grab md:hidden" aria-hidden="true"></div>
+
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-gray-800">{{ __('app.appearance') }}</h3>
+                                <span x-show="saving" x-cloak class="text-[11px] text-gray-400">{{ __('app.saving') }}</span>
+                            </div>
 
                             <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">{{ __('app.appearance_mode') }}</p>
-                            <div class="grid grid-cols-2 gap-2 mb-4">
-                                <button type="button" @click="setMode('light')"
-                                        class="flex items-center justify-center gap-2 py-2 rounded-xl border text-sm font-semibold transition"
-                                        :class="mode === 'light' ? 'border-gold bg-gold/12 text-gold-dark' : 'border-gray-200 text-gray-500 hover:border-gray-300'">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-                                    {{ __('app.light_theme') }}
+                            <div class="grid grid-cols-2 gap-2.5 mb-5">
+                                <button type="button" @click="setMode('light')" class="md-mode-btn" :class="mode === 'light' ? 'is-on' : ''">
+                                    <span class="md-mode-swatch md-mode-light" aria-hidden="true"></span>
+                                    <span>{{ __('app.light_theme') }}</span>
                                 </button>
-                                <button type="button" @click="setMode('dark')"
-                                        class="flex items-center justify-center gap-2 py-2 rounded-xl border text-sm font-semibold transition"
-                                        :class="mode === 'dark' ? 'border-gold bg-gold/12 text-gold-dark' : 'border-gray-200 text-gray-500 hover:border-gray-300'">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
-                                    {{ __('app.dark_theme') }}
+                                <button type="button" @click="setMode('dark')" class="md-mode-btn" :class="mode === 'dark' ? 'is-on' : ''">
+                                    <span class="md-mode-swatch md-mode-dark" aria-hidden="true"></span>
+                                    <span>{{ __('app.dark_theme') }}</span>
                                 </button>
                             </div>
 
                             <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">{{ __('app.color_theme') }}</p>
-                            <div class="space-y-1">
+                            <div class="grid grid-cols-2 gap-2.5">
                                 @foreach(\App\Support\Appearance::options() as $opt)
                                     <button type="button" @click="setTheme('{{ $opt['key'] }}')"
-                                            class="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl border text-sm font-semibold transition"
-                                            :class="theme === '{{ $opt['key'] }}' ? 'border-gold bg-gold/12 text-gold-dark' : 'border-transparent text-gray-600 hover:bg-gray-50'">
-                                        <span class="flex items-center gap-1" aria-hidden="true">
-                                            <span class="w-4 h-4 rounded-full ring-1 ring-black/10" style="background: {{ $opt['swatch'] }}"></span>
-                                            <span class="w-2.5 h-4 rounded-sm ring-1 ring-black/10" style="background: {{ $opt['dark'] }}"></span>
-                                            <span class="w-2.5 h-4 rounded-sm ring-1 ring-black/10" style="background: {{ $opt['light'] }}"></span>
+                                            class="md-theme-card" data-palette="{{ $opt['key'] }}"
+                                            :class="theme === '{{ $opt['key'] }}' ? 'is-on' : ''"
+                                            :aria-pressed="theme === '{{ $opt['key'] }}' ? 'true' : 'false'">
+                                        {{-- معاينة مصغّرة لواجهة النظام بألوان هذه السمة --}}
+                                        <span class="md-preview" aria-hidden="true">
+                                            <span class="md-preview-side"></span>
+                                            <span class="md-preview-main">
+                                                <span class="md-preview-bar"></span>
+                                                <span class="md-preview-row"></span>
+                                                <span class="md-preview-btn"></span>
+                                            </span>
                                         </span>
-                                        <span class="flex-1 text-start">{{ $opt['label'] }}</span>
-                                        <svg x-show="theme === '{{ $opt['key'] }}'" x-cloak class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                        </svg>
+                                        <span class="md-theme-name">
+                                            <span>{{ $opt['label'] }}</span>
+                                            <svg x-show="theme === '{{ $opt['key'] }}'" x-cloak class="w-3.5 h-3.5 text-gold-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                        </span>
                                     </button>
                                 @endforeach
                             </div>
 
-                            <p class="text-[11px] text-gray-400 mt-3 leading-relaxed">{{ __('app.appearance_hint') }}</p>
+                            <p class="text-[11px] text-gray-400 mt-4 leading-relaxed">{{ __('app.appearance_hint') }}</p>
                         </div>
+                        </template>
                     </div>
+
                     @php
                         $unreadCount = \App\Models\Notification::where('user_id', auth()->id())->where('is_read', false)->count();
                         $recentNotifications = \App\Models\Notification::where('user_id', auth()->id())->latest()->limit(10)->get();
