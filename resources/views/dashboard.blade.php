@@ -72,7 +72,7 @@
                 @endforelse
             </div>
         </template>
-        <button x-on:click="briefOpen = !briefOpen" class="md-touch-pad w-full justify-center gap-1 py-2.5 text-[11px] font-bold text-gray-400 hover:text-gold-dark transition">
+        <button x-on:click="briefOpen = !briefOpen" :aria-expanded="briefOpen ? 'true' : 'false'" aria-label="{{ __('app.a11y_toggle_brief') }}" class="md-touch-pad w-full justify-center gap-1 py-2.5 text-[11px] font-bold text-gray-400 hover:text-gold-dark transition">
             <span x-text="briefOpen ? 'إخفاء القائمة' : 'إظهار اليوم باختصار'"></span>
             <svg class="w-3 h-3" :class="briefOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/></svg>
         </button>

@@ -926,7 +926,7 @@ document.addEventListener('alpine:init', () => {
             x-transition:enter-end="opacity-100 scale-100">
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                 <h3 class="text-lg font-bold text-gold-dark">{{ __('app.session_decision') }}</h3>
-                <button @click="reportModal = false" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
+                <button @click="reportModal = false" aria-label="{{ __('app.close') }}" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -938,7 +938,7 @@ document.addEventListener('alpine:init', () => {
                     placeholder="{{ __('app.session_decision_placeholder') }}"></textarea>
             </div>
             <div class="px-6 py-3 border-t border-gray-200 flex justify-end gap-3">
-                <button @click="reportModal = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">
+                <button @click="reportModal = false" aria-label="{{ __('app.close') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">
                     {{ __('app.cancel') }}
                 </button>
                 <button @click="saveReport()" :disabled="reportSaving"
@@ -963,7 +963,7 @@ document.addEventListener('alpine:init', () => {
             {{-- Header --}}
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                 <h3 class="text-lg font-bold text-gold-dark">{{ __('app.case_summary') }}</h3>
-                <button @click="showSummary = false" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
+                <button @click="showSummary = false" aria-label="{{ __('app.close') }}" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -1124,7 +1124,7 @@ document.addEventListener('alpine:init', () => {
             </div>
             <div class="flex items-center gap-2">
                 <span class="text-[10px] text-white bg-white/20 px-2 py-0.5 rounded-full">Gemini</span>
-                <button @click="chatOpen = false" class="p-1 rounded-lg hover:bg-white/20 text-white transition-colors">
+                <button @click="chatOpen = false" aria-label="{{ __('app.close') }}" class="p-1 rounded-lg hover:bg-white/20 text-white transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -1204,7 +1204,7 @@ document.addEventListener('alpine:init', () => {
         x-transition:enter-end="opacity-100 scale-100">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gold-dark">إجراءات سريعة</h3>
-            <button @click="quickOpen = false" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
+            <button @click="quickOpen = false" aria-label="{{ __('app.close') }}" class="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>

@@ -7,7 +7,7 @@
 
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
-            <a href="{{ route('client.cases') }}" class="p-2 rounded-lg bg-gray-100 text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors">
+            <a href="{{ route('client.cases') }}" aria-label="{{ __('app.back') }}" class="p-2 rounded-lg bg-gray-100 text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>

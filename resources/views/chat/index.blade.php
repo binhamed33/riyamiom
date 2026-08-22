@@ -138,7 +138,7 @@ function roleAvatar($user, $size = 9) {
                         <p class="text-[11px] text-gold-dark/60"><span id="replyUserName"></span></p>
                         <p class="text-xs text-gray-500 truncate" id="replyMessageText"></p>
                     </div>
-                    <button type="button" id="cancelReply" class="text-red-700/50 hover:text-red-700 transition flex-shrink-0">
+                    <button type="button" id="cancelReply" aria-label="{{ __('app.a11y_cancel_reply') }}" class="text-red-700/50 hover:text-red-700 transition flex-shrink-0">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
@@ -147,23 +147,23 @@ function roleAvatar($user, $size = 9) {
                         @csrf
                         <input type="hidden" id="replyToId" name="reply_to_id" value="">
                         <div class="flex gap-2">
-                            <label class="flex-shrink-0 w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gold/12 hover:border-gold/25 transition">
+                            <label aria-label="{{ __('app.a11y_attach_file') }}" class="flex-shrink-0 w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gold/12 hover:border-gold/25 transition">
                                 <input type="file" id="fileInput" name="attachment" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden">
                                 <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
                                 </svg>
                             </label>
                             <div class="flex-1 relative">
-                                <input type="text" id="messageInput" placeholder="اكتب رسالة..." autocomplete="off"
+                                <input type="text" id="messageInput" placeholder="اكتب رسالة..." autocomplete="off" aria-label="{{ __('app.a11y_message_text') }}"
                                     class="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/25 focus:bg-gold/10 transition">
                                 <div id="filePreview" class="hidden absolute bottom-full mb-2 right-0 left-0 bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
                                     <span id="fileName" class="text-xs text-gray-700 flex-1 truncate"></span>
-                                    <button type="button" id="clearFile" class="text-red-700 hover:text-red-600 transition">
+                                    <button type="button" id="clearFile" aria-label="{{ __('app.a11y_remove_attachment') }}" class="text-red-700 hover:text-red-600 transition">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                     </button>
                                 </div>
                             </div>
-                            <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2">
+                            <button type="submit" aria-label="{{ __('app.a11y_send_message') }}" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
                             </button>
                         </div>

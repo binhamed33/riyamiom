@@ -764,4 +764,15 @@ return [
     'closed' => 'منتهية',
     'subject' => 'الموضوع',
     'last_session_date' => 'تاريخ آخر جلسة',
+
+    // أسماء يقرؤها قارئ الشاشة لأزرار لا نصّ ظاهر فيها
+    'a11y_send_message' => 'إرسال الرسالة',
+    'a11y_attach_file' => 'إرفاق ملف',
+    'a11y_cancel_reply' => 'إلغاء الرد',
+    'a11y_remove_attachment' => 'إزالة المرفق',
+    'a11y_message_text' => 'نص الرسالة',
+    'a11y_toggle_brief' => 'إظهار الملخّص أو إخفاؤه',
+    'a11y_test_connection' => 'اختبار الاتصال',
+    'a11y_toggle_menu' => 'إظهار القائمة أو إخفاؤها',
+    'a11y_toggle_sidebar' => 'طيّ القائمة الجانبية أو بسطها',
 ];

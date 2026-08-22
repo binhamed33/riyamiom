@@ -764,4 +764,15 @@ return [
     'closed' => 'Closed',
     'subject' => 'Subject',
     'last_session_date' => 'Last Session Date',
+
+    // أسماء يقرؤها قارئ الشاشة لأزرار لا نصّ ظاهر فيها
+    'a11y_send_message' => 'Send message',
+    'a11y_attach_file' => 'Attach a file',
+    'a11y_cancel_reply' => 'Cancel reply',
+    'a11y_remove_attachment' => 'Remove attachment',
+    'a11y_message_text' => 'Message text',
+    'a11y_toggle_brief' => 'Show or hide the brief',
+    'a11y_test_connection' => 'Test the connection',
+    'a11y_toggle_menu' => 'Show or hide the menu',
+    'a11y_toggle_sidebar' => 'Collapse or expand the sidebar',
 ];

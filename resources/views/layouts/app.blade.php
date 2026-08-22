@@ -694,6 +694,59 @@
         [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option.selected { color: var(--accent) !important; }
         [data-theme="dark"] .text-gold-dark { color: var(--accent-light) !important; }
         [data-theme="dark"] .hover\:text-gold-dark:hover { color: var(--accent-light) !important; }
+        /* ====== إتمام الوضع الداكن ======
+           الوضع الداكن هنا يعيد تعريف أصناف Tailwind الفاتحة بدل أن تحمل
+           كل صفحة بديلاً لها. ما دون هذا السطر كان ناقصاً: لوحات ملوّنة
+           فاتحة (bg-red-50) تبقى بيضاء بينما نصّها يُقلب فاتحاً، فلا يُقرأ.
+           المصدر: جرد فعلي لأصناف القوالب لا تخميناً. */
+        [data-theme="dark"] .bg-gray-200, [data-theme="dark"] .bg-gray-300 { background-color: #252D3D !important; }
+        [data-theme="dark"] .border-gray-300, [data-theme="dark"] .border-gray-50,
+        [data-theme="dark"] .divide-gray-50 { border-color: #252D3D !important; }
+        [data-theme="dark"] .to-gray-100 { --tw-gradient-to: #0D111B !important; }
+
+        [data-theme="dark"] .bg-red-50 { background-color: rgba(220,38,38,0.10) !important; }
+        [data-theme="dark"] .bg-red-200 { background-color: rgba(220,38,38,0.22) !important; }
+        [data-theme="dark"] .border-red-200 { border-color: rgba(220,38,38,0.35) !important; }
+        [data-theme="dark"] .border-red-300 { border-color: rgba(220,38,38,0.45) !important; }
+        [data-theme="dark"] .text-red-600, [data-theme="dark"] .text-red-800 { color: #F87171 !important; }
+
+        [data-theme="dark"] .bg-green-50, [data-theme="dark"] .bg-emerald-50 { background-color: rgba(22,163,74,0.10) !important; }
+        [data-theme="dark"] .bg-green-200 { background-color: rgba(22,163,74,0.22) !important; }
+        [data-theme="dark"] .border-green-200, [data-theme="dark"] .border-emerald-200,
+        [data-theme="dark"] .border-green-100 { border-color: rgba(22,163,74,0.35) !important; }
+        [data-theme="dark"] .border-green-300 { border-color: rgba(22,163,74,0.45) !important; }
+        [data-theme="dark"] .text-green-600, [data-theme="dark"] .text-green-800,
+        [data-theme="dark"] .text-emerald-600 { color: #4ADE80 !important; }
+
+        [data-theme="dark"] .bg-blue-50 { background-color: rgba(37,99,235,0.10) !important; }
+        [data-theme="dark"] .bg-blue-200 { background-color: rgba(37,99,235,0.22) !important; }
+        [data-theme="dark"] .border-blue-200 { border-color: rgba(37,99,235,0.35) !important; }
+        [data-theme="dark"] .text-blue-800 { color: #60A5FA !important; }
+
+        [data-theme="dark"] .bg-amber-50, [data-theme="dark"] .bg-yellow-50 { background-color: rgba(217,119,6,0.10) !important; }
+        [data-theme="dark"] .border-yellow-200 { border-color: rgba(217,119,6,0.35) !important; }
+        [data-theme="dark"] .text-amber-600, [data-theme="dark"] .text-amber-700,
+        [data-theme="dark"] .text-amber-800 { color: #F59E0B !important; }
+
+        [data-theme="dark"] .bg-orange-50 { background-color: rgba(249,115,22,0.10) !important; }
+        [data-theme="dark"] .border-orange-200 { border-color: rgba(249,115,22,0.35) !important; }
+
+        [data-theme="dark"] .bg-purple-200 { background-color: rgba(124,58,237,0.22) !important; }
+        [data-theme="dark"] .border-purple-200 { border-color: rgba(124,58,237,0.35) !important; }
+
+        [data-theme="dark"] .bg-indigo-50 { background-color: rgba(79,70,229,0.10) !important; }
+        [data-theme="dark"] .border-indigo-200 { border-color: rgba(79,70,229,0.35) !important; }
+        [data-theme="dark"] .text-indigo-700 { color: #818CF8 !important; }
+        [data-theme="dark"] .bg-purple-50 { background-color: rgba(124,58,237,0.10) !important; }
+        [data-theme="dark"] .bg-emerald-200 { background-color: rgba(22,163,74,0.22) !important; }
+        [data-theme="dark"] .border-emerald-300 { border-color: rgba(22,163,74,0.45) !important; }
+        [data-theme="dark"] .border-blue-100 { border-color: rgba(37,99,235,0.30) !important; }
+        [data-theme="dark"] .border-blue-300 { border-color: rgba(37,99,235,0.45) !important; }
+        [data-theme="dark"] .border-purple-300 { border-color: rgba(124,58,237,0.45) !important; }
+        [data-theme="dark"] .bg-indigo-100 { background-color: rgba(79,70,229,0.15) !important; }
+        [data-theme="dark"] .bg-indigo-200 { background-color: rgba(79,70,229,0.22) !important; }
+        [data-theme="dark"] .bg-teal-100 { background-color: rgba(13,148,136,0.15) !important; }
+        [data-theme="dark"] .text-teal-700 { color: #2DD4BF !important; }
 </style>
     @stack('styles')
 </head>
@@ -1019,10 +1072,10 @@
             <div class="flex items-center justify-between h-16 px-4 sm:px-6">
                 {{-- Right Side: Hamburger + Breadcrumb --}}
                 <div class="flex items-center gap-3">
-                    <button @click="mobileOpen = !mobileOpen" class="md:hidden p-2 rounded-xl text-gray-400 hover:text-gray-800 transition">
+                    <button @click="mobileOpen = !mobileOpen" :aria-expanded="mobileOpen ? 'true' : 'false'" aria-label="{{ __('app.a11y_toggle_menu') }}" class="md:hidden p-2 rounded-xl text-gray-400 hover:text-gray-800 transition">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     </button>
-                    <button @click="sidebarOpen = !sidebarOpen" class="hidden md:inline-flex p-2 rounded-xl text-gray-400 hover:text-gray-800 transition">
+                    <button @click="sidebarOpen = !sidebarOpen" :aria-expanded="sidebarOpen ? 'true' : 'false'" aria-label="{{ __('app.a11y_toggle_sidebar') }}" class="hidden md:inline-flex p-2 rounded-xl text-gray-400 hover:text-gray-800 transition">
                         <svg x-show="sidebarOpen" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="{{ $isRtl ? 'M13 5l7 7-7 7M5 5l7 7-7 7' : 'M11 19l-7-7 7-7m8 14l-7-7 7-7' }}"/>
                         </svg>
@@ -1880,7 +1933,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>
                     </button>
-                    <button @click="open = false" class="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors">
+                    <button @click="open = false" aria-label="{{ __('app.close') }}" class="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
