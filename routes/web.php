@@ -100,6 +100,9 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         return view('about.index');
     })->name('about');
 
+    // تفضيل المظهر — يخص المستخدم الحالي فقط
+    Route::post('/appearance', [App\Http\Controllers\AppearanceController::class, 'update'])->name('appearance.update');
+
     // User Guide (داخل النظام)
     Route::get('/guide/system', function () {
         return view('guide.index');

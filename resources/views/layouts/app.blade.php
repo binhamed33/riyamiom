@@ -4,13 +4,18 @@
     $isRtl = app()->getLocale() === 'ar';
     $officeLogo = \App\Support\OfficeBrand::logoUrl();
     $officeLogoType = \App\Support\OfficeBrand::logoMime();
+    // المظهر محفوظ للمستخدم نفسه ويُرسم من الخادم — فلا وميض ولا تأثير على زميله
+    $themeKey = \App\Support\Appearance::themeKey();
+    $palette = \App\Support\Appearance::palette();
+    $primary = \App\Support\Appearance::primary();
+    $appearanceMode = \App\Support\Appearance::mode();
     // تنبيهات الاشتراك إدارية: تظهر لمدير المكتب فقط — لا للمحامين والموظفين
     $subscriptionInfo = auth()->check() && auth()->user()->isAdmin()
         ? app(\App\Services\SubscriptionService::class)->info()
         : null;
 @endphp
 <!DOCTYPE html>
-<html dir="{{ $isRtl ? 'rtl' : 'ltr' }}" lang="{{ app()->getLocale() }}">
+<html dir="{{ $isRtl ? 'rtl' : 'ltr' }}" lang="{{ app()->getLocale() }}" data-theme="{{ $appearanceMode }}" data-palette="{{ $themeKey }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,9 +27,8 @@
     <script nonce="{{ $cspNonce }}">
         (function () {
             try {
-                if (localStorage.getItem('theme') === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                }
+                // الخادم رسم الوضع المحفوظ للمستخدم؛ نُبقي النسخة المحلية متطابقة
+                localStorage.setItem('theme', '{{ $appearanceMode }}');
                 var fs = parseInt(localStorage.getItem('fontSize') || '100', 10);
                 if (fs !== 100 && [100, 110, 125].indexOf(fs) !== -1) {
                     document.documentElement.style.fontSize = (16 * fs / 100) + 'px';
@@ -55,9 +59,9 @@
                 extend: {
                     colors: {
 
-                        gold: { DEFAULT: '#D4AF37', light: '#F0D98A', dark: '#A98218', deep: '#8C6A12', hover: '#E5C158' },
+                        gold: { DEFAULT: '{{ $palette['DEFAULT'] }}', light: '{{ $palette['light'] }}', dark: '{{ $palette['dark'] }}', deep: '{{ $palette['deep'] }}', hover: '{{ $palette['hover'] }}' },
 
-                        primary: { DEFAULT: '#D4AF37', hover: '#E5C158', dark: '#A98218', light: '#F0D98A' },
+                        primary: { DEFAULT: '{{ $primary['DEFAULT'] }}', hover: '{{ $primary['hover'] }}', dark: '{{ $primary['dark'] }}', light: '{{ $primary['light'] }}' },
 
                         background: '#F7F8FA',
 
@@ -248,6 +252,24 @@
     </script>
 
     <style>
+        /* رموز السمة — مصدرها تفضيل المستخدم المحفوظ، ويُعاد رسمها من الخادم */
+        :root {
+            --accent: {{ $palette['DEFAULT'] }};
+            --accent-light: {{ $palette['light'] }};
+            --accent-hover: {{ $palette['hover'] }};
+            --accent-dark: {{ $palette['dark'] }};
+            --accent-deep: {{ $palette['deep'] }};
+            --accent-a06: {{ $palette['DEFAULT'] }}0F;
+            --accent-a08: {{ $palette['DEFAULT'] }}14;
+            --accent-a10: {{ $palette['DEFAULT'] }}1A;
+            --accent-a12: {{ $palette['DEFAULT'] }}1F;
+            --accent-a15: {{ $palette['DEFAULT'] }}26;
+            --accent-a20: {{ $palette['DEFAULT'] }}33;
+            --accent-a30: {{ $palette['DEFAULT'] }}4D;
+            --accent-a40: {{ $palette['DEFAULT'] }}66;
+        }
+    </style>
+    <style>
         [x-cloak] { display: none !important; }
 
         /* Warm ivory surfaces (light mode) */
@@ -258,17 +280,17 @@
 
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #F2F4F7; }
-        ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #E5C158; }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-hover); }
 
         .sidebar-link { transition: all 0.15s ease; position: relative; }
         .sidebar-link:hover {
-            background: rgba(212, 175, 55, 0.08);
-            color: #D4AF37;
+            background: var(--accent-a08);
+            color: var(--accent);
         }
         .sidebar-link.active {
-            background: rgba(212, 175, 55, 0.1);
-            color: #D4AF37;
+            background: var(--accent-a10);
+            color: var(--accent);
         }
         .sidebar-link.active::before {
             content: '';
@@ -277,7 +299,7 @@
             transform: translateY(-50%);
             width: 3px;
             height: 24px;
-            background: #D4AF37;
+            background: var(--accent);
             border-radius: 3px;
         }
         [dir="rtl"] .sidebar-link.active::before { right: -2px; }
@@ -328,7 +350,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(105deg, transparent 35%, rgba(212, 175, 55, 0.22) 50%, transparent 65%);
+            background: linear-gradient(105deg, transparent 35%, var(--accent-a20) 50%, transparent 65%);
             animation: goldSweep 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
@@ -359,12 +381,12 @@
         }
         .badge-pulse { animation: pulse 2s infinite; }
 
-        .glass-border { border: 1px solid rgba(212,175,55,0.08); }
+        .glass-border { border: 1px solid var(--accent-a08); }
         .glass-card {
             background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(212,175,55,0.08);
+            border: 1px solid var(--accent-a08);
         }
 
         .dropdown-dark {
@@ -380,20 +402,20 @@
             100% { background-position: 200% 0; }
         }
         .gold-shimmer {
-            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.08), transparent);
+            background: linear-gradient(90deg, transparent, var(--accent-a08), transparent);
             background-size: 200% 100%;
             animation: shimmer 3s infinite;
         }
 
 .btn-gold {
-            background: linear-gradient(135deg, #E5C158, #D4AF37 45%, #A98218);
+            background: linear-gradient(135deg, var(--accent-hover), var(--accent) 45%, var(--accent-dark));
             color: #111827;
             transition: all 0.15s ease;
         }
         .btn-gold:hover {
-            background: linear-gradient(135deg, #E5C158, #D4AF37);
+            background: linear-gradient(135deg, var(--accent-hover), var(--accent));
             transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(212,175,55,0.3);
+            box-shadow: 0 4px 15px var(--accent-a30);
         }
         .btn-gold:active {
             transform: translateY(0);
@@ -418,13 +440,13 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, rgba(212,175,55,0.03), transparent);
-            border: 1px solid rgba(212,175,55,0.08);
+            background: linear-gradient(135deg, var(--accent-a20), transparent);
+            border: 1px solid var(--accent-a08);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .stat-card:hover {
-            background: linear-gradient(135deg, rgba(212,175,55,0.06), rgba(212,175,55,0.02));
-            border-color: rgba(212,175,55,0.15);
+            background: linear-gradient(135deg, var(--accent-a06), var(--accent-a20));
+            border-color: var(--accent-a15);
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
@@ -435,8 +457,8 @@
             border: 1px solid rgba(0,0,0,0.12);
         }
         .form-input:focus {
-            border-color: #D4AF37;
-            box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-a15);
         }
 
         /* Table refinements */
@@ -472,12 +494,12 @@
         /* Card refinements */
         .card-premium {
             background: #fff;
-            border: 1px solid rgba(212,175,55,0.15);
+            border: 1px solid var(--accent-a15);
             border-radius: 16px;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .card-premium:hover {
-            border-color: rgba(212,175,55,0.3);
+            border-color: var(--accent-a30);
             box-shadow: 0 4px 20px rgba(0,0,0,0.06);
         }
 
@@ -493,7 +515,7 @@
             left: 0;
             right: 0;
             height: 2px;
-            background: #D4AF37;
+            background: var(--accent);
             transform: scaleX(0);
             transition: transform 0.2s ease;
         }
@@ -504,23 +526,23 @@
 
 ::-webkit-scrollbar-track { background: #F2F4F7; }
         ::-webkit-scrollbar-thumb { background: #C9CDD6; border-radius: 8px; }
-        input[type=checkbox] { accent-color: #A98218 !important; }
+        input[type=checkbox] { accent-color: var(--accent-dark) !important; }
         .ts-wrapper .ts-control { background: #FFFFFF !important; border: 1px solid #E2E6EC !important; color: #111827 !important; }
         .ts-wrapper .ts-control input { color: #111827 !important; }
         .ts-wrapper .ts-control:hover { border-color: #C9CDD6 !important; }
-        .ts-wrapper.focus .ts-control { border-color: #A98218 !important; box-shadow: 0 0 0 2px rgba(212,175,55,0.3) !important; }
+        .ts-wrapper.focus .ts-control { border-color: var(--accent-dark) !important; box-shadow: 0 0 0 2px var(--accent-a30) !important; }
         .ts-wrapper .ts-dropdown { background: #FFFFFF !important; border: 1px solid #E2E6EC !important; color: #111827 !important; }
         .ts-wrapper .ts-dropdown .option { color: #4B5563 !important; }
-        .ts-wrapper .ts-dropdown .option.active { background: rgba(212,175,55,0.12) !important; color: #A98218 !important; }
-        .ts-wrapper .ts-dropdown .option:hover { background: rgba(212,175,55,0.06) !important; }
-        .ts-wrapper .ts-dropdown .option.highlight { background: rgba(212,175,55,0.05) !important; }
-        .ts-wrapper .ts-dropdown .create { color: #A98218 !important; }
+        .ts-wrapper .ts-dropdown .option.active { background: var(--accent-a12) !important; color: var(--accent-dark) !important; }
+        .ts-wrapper .ts-dropdown .option:hover { background: var(--accent-a06) !important; }
+        .ts-wrapper .ts-dropdown .option.highlight { background: var(--accent-a06) !important; }
+        .ts-wrapper .ts-dropdown .create { color: var(--accent-dark) !important; }
         .ts-wrapper .ts-dropdown .no-results { color: #6B7280 !important; }
         .ts-wrapper .ts-control .item { color: #111827 !important; }
-        .ts-wrapper.multi .ts-control .item { background: rgba(212,175,55,0.12) !important; border: 1px solid rgba(212,175,55,0.3) !important; color: #A98218 !important; }
+        .ts-wrapper.multi .ts-control .item { background: var(--accent-a12) !important; border: 1px solid var(--accent-a30) !important; color: var(--accent-dark) !important; }
 
         /* Dark mode */
-        [data-theme="dark"] { --bg: #080B12; --card: #121826; --text: #FFFFFF; --text-muted: #94A3B8; --border: rgba(212,175,55,0.15); }
+        [data-theme="dark"] { --bg: #080B12; --card: #121826; --text: #FFFFFF; --text-muted: #94A3B8; --border: var(--accent-a15); }
         [data-theme="dark"] body { background-color: #080B12 !important; color: #FFFFFF !important; }
         [data-theme="dark"] .bg-white { background-color: #121826 !important; }
         [data-theme="dark"] .bg-gray-50 { background-color: #0D111B !important; }
@@ -533,13 +555,13 @@
         [data-theme="dark"] .border-amber-200, [data-theme="dark"] .border-amber-300 { border-color: rgba(217,119,6,0.4) !important; }
         [data-theme="dark"] .hover\:bg-gray-50:hover { background-color: #0D111B !important; }
         [data-theme="dark"] .hover\:bg-gray-100:hover { background-color: #182033 !important; }
-        [data-theme="dark"] .hover\:text-gold-dark:hover, [data-theme="dark"] .hover\:text-gold-dark:hover { color: #F0D98A !important; }
+        [data-theme="dark"] .hover\:text-gold-dark:hover, [data-theme="dark"] .hover\:text-gold-dark:hover { color: var(--accent-light) !important; }
         [data-theme="dark"] .sidebar-link { color: #94A3B8 !important; }
-        [data-theme="dark"] .sidebar-link:hover { background: rgba(212,175,55,0.1) !important; color: #E5C158 !important; }
-        [data-theme="dark"] .sidebar-link.active { background: rgba(212,175,55,0.12) !important; color: #D4AF37 !important; }
+        [data-theme="dark"] .sidebar-link:hover { background: var(--accent-a10) !important; color: var(--accent-hover) !important; }
+        [data-theme="dark"] .sidebar-link.active { background: var(--accent-a12) !important; color: var(--accent) !important; }
         [data-theme="dark"] header[style*="background"] { background: rgba(8,11,18,0.95) !important; }
-        [data-theme="dark"] .bg-gold/12 { background-color: rgba(212,175,55,0.15) !important; }
-        [data-theme="dark"] .text-gold-dark, [data-theme="dark"] .text-gold-dark { color: #D4AF37 !important; }
+        [data-theme="dark"] .bg-gold/12 { background-color: var(--accent-a15) !important; }
+        [data-theme="dark"] .text-gold-dark, [data-theme="dark"] .text-gold-dark { color: var(--accent) !important; }
         [data-theme="dark"] .bg-green-100 { background-color: rgba(22,163,74,0.15) !important; }
         [data-theme="dark"] .text-green-700 { color: #4ADE80 !important; }
         [data-theme="dark"] .bg-red-100 { background-color: rgba(220,38,38,0.15) !important; }
@@ -555,32 +577,32 @@
         [data-theme="dark"] .bg-orange-100 { background-color: rgba(249,115,22,0.15) !important; }
         [data-theme="dark"] .text-orange-700 { color: #FB923C !important; }
         [data-theme="dark"] aside[style*="background"] { background: #0D111B !important; }
-        [data-theme="dark"] aside div[style*="border-bottom"] { border-color: rgba(212,175,55,0.1) !important; }
-        [data-theme="dark"] .dropdown-dark { background: rgba(8,11,18,0.98) !important; border-color: rgba(212,175,55,0.15) !important; }
+        [data-theme="dark"] aside div[style*="border-bottom"] { border-color: var(--accent-a10) !important; }
+        [data-theme="dark"] .dropdown-dark { background: rgba(8,11,18,0.98) !important; border-color: var(--accent-a15) !important; }
         [data-theme="dark"] footer[style*="background"] { background: rgba(8,11,18,0.5) !important; }
-        [data-theme="dark"] .btn-gold { background: linear-gradient(135deg, #D4AF37, #A98218) !important; color: #080B12 !important; }
-        [data-theme="dark"] .card-premium { background: #121826 !important; border-color: rgba(212,175,55,0.15) !important; }
+        [data-theme="dark"] .btn-gold { background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important; color: #080B12 !important; }
+        [data-theme="dark"] .card-premium { background: #121826 !important; border-color: var(--accent-a15) !important; }
         [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background-color: #0B1019 !important; border-color: #252D3D !important; color: #FFFFFF !important; }
-        [data-theme="dark"] table thead { border-bottom-color: rgba(212,175,55,0.1) !important; }
-        [data-theme="dark"] .ts-wrapper .ts-control { background: #0B1019 !important; border-color: rgba(212,175,55,0.15) !important; color: #FFFFFF !important; }
+        [data-theme="dark"] table thead { border-bottom-color: var(--accent-a10) !important; }
+        [data-theme="dark"] .ts-wrapper .ts-control { background: #0B1019 !important; border-color: var(--accent-a15) !important; color: #FFFFFF !important; }
         [data-theme="dark"] .ts-wrapper .ts-dropdown { background: #121826 !important; border-color: #252D3D !important; color: #FFFFFF !important; }
         [data-theme="dark"] .guide-card { background-color: #121826 !important; background-image: linear-gradient(135deg, #121826, #0D111B) !important; }
         [data-theme="dark"] .guide-glass { background-color: rgba(18, 24, 38, 0.6) !important; }
-        .font-pill { background-color: rgba(255, 255, 255, 0.78); border-color: rgba(212, 175, 55, 0.35); }
-        [data-theme="dark"] .font-pill { background-color: rgba(8, 11, 18, 0.72); border-color: rgba(212, 175, 55, 0.28); }
+        .font-pill { background-color: rgba(255, 255, 255, 0.78); border-color: var(--accent-a20); }
+        [data-theme="dark"] .font-pill { background-color: rgba(8, 11, 18, 0.72); border-color: var(--accent-a20); }
         [data-theme="dark"] .ts-wrapper .ts-control input { color: #FFFFFF !important; }
         [data-theme="dark"] .ts-wrapper .ts-control input::placeholder { color: #94A3B8 !important; }
         [data-theme="dark"] .ts-wrapper .ts-control .item { color: #FFFFFF !important; }
         [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option { color: #CBD5E1 !important; }
         [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option:hover,
-        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option.active { background-color: rgba(212, 175, 55, 0.18) !important; color: #E5C158 !important; }
-        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option.selected { color: #D4AF37 !important; }
-        [data-theme="dark"] .text-gold-dark { color: #F0D98A !important; }
-        [data-theme="dark"] .hover\:text-gold-dark:hover { color: #F0D98A !important; }
+        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option.active { background-color: var(--accent-a20) !important; color: var(--accent-hover) !important; }
+        [data-theme="dark"] .ts-wrapper .ts-dropdown .ts-option.selected { color: var(--accent) !important; }
+        [data-theme="dark"] .text-gold-dark { color: var(--accent-light) !important; }
+        [data-theme="dark"] .hover\:text-gold-dark:hover { color: var(--accent-light) !important; }
 </style>
     @stack('styles')
 </head>
-<body class="font-body min-h-screen" style="background-color: #F7F8FA; color: #111827;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: localStorage.getItem('theme') || 'light', fontSize: parseInt(localStorage.getItem('fontSize') || '100', 10) || 100, fontStep(step) { const levels = [100, 110, 125]; let i = levels.indexOf(this.fontSize); if (i === -1) i = 0; const ni = Math.max(0, Math.min(levels.length - 1, i + step)); this.fontSize = levels[ni]; localStorage.setItem('fontSize', this.fontSize); document.documentElement.style.fontSize = (16 * this.fontSize / 100) + 'px'; } }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
+<body class="font-body min-h-screen" style="background-color: #F7F8FA; color: #111827;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: '{{ $appearanceMode }}', fontSize: parseInt(localStorage.getItem('fontSize') || '100', 10) || 100, fontStep(step) { const levels = [100, 110, 125]; let i = levels.indexOf(this.fontSize); if (i === -1) i = 0; const ni = Math.max(0, Math.min(levels.length - 1, i + step)); this.fontSize = levels[ni]; localStorage.setItem('fontSize', this.fontSize); document.documentElement.style.fontSize = (16 * this.fontSize / 100) + 'px'; } }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
 
     {{-- Mobile Overlay --}}
     <div
@@ -935,16 +957,89 @@
                         </button>
                     </div>
 
-                    {{-- Theme Toggle --}}
-                    <button @click="theme = theme === 'dark' ? 'light' : 'dark'; $el.closest('html').setAttribute('data-theme', theme); localStorage.setItem('theme', theme)"
-                        class="p-2 rounded-xl transition" :class="theme === 'dark' ? 'text-gold-light hover:text-gold-light' : 'text-gray-400 hover:text-gold-dark'" title="{{ app()->getLocale() === 'ar' ? 'تغيير السمة' : 'Toggle Theme' }}">
-                        <svg x-show="theme === 'light'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
-                        </svg>
-                        <svg x-show="theme === 'dark'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/>
-                        </svg>
-                    </button>
+                    {{-- المظهر: الوضع + السمة اللونية، محفوظان لهذا المستخدم وحده --}}
+                    <div class="relative" x-data="{
+                            open: false,
+                            theme: '{{ $themeKey }}',
+                            mode: '{{ $appearanceMode }}',
+                            apply(mode, theme) {
+                                this.mode = mode; this.theme = theme;
+                                document.documentElement.setAttribute('data-theme', mode);
+                                document.documentElement.setAttribute('data-palette', theme);
+                                try { localStorage.setItem('theme', mode); } catch (e) {}
+                                fetch('{{ route('appearance.update') }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                        'Accept': 'application/json'
+                                    },
+                                    credentials: 'same-origin',
+                                    body: JSON.stringify({ appearance: mode, theme: theme })
+                                }).then(function () {
+                                    // ألوان Tailwind تُولَّد وقت التحميل، فنعيد الرسم مرة واحدة عند تغيير السمة
+                                    if (window.__mdPendingReload) { window.location.reload(); }
+                                }).catch(function () {});
+                            },
+                            setMode(m) { window.__mdPendingReload = false; this.apply(m, this.theme); },
+                            setTheme(t) { window.__mdPendingReload = true; this.apply(this.mode, t); }
+                        }">
+                        <button @click="open = !open" :aria-expanded="open ? 'true' : 'false'"
+                                class="p-2 rounded-xl transition text-gray-400 hover:text-gold-dark"
+                                title="{{ app()->getLocale() === 'ar' ? 'المظهر' : 'Appearance' }}"
+                                aria-label="{{ app()->getLocale() === 'ar' ? 'المظهر' : 'Appearance' }}">
+                            <svg x-show="mode === 'light'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+                            </svg>
+                            <svg x-show="mode === 'dark'" x-cloak class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/>
+                            </svg>
+                        </button>
+
+                        <div x-show="open" x-cloak @click.outside="open = false"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             class="absolute {{ $isRtl ? 'start-0' : 'end-0' }} mt-2 w-64 bg-white rounded-2xl border border-gray-200 shadow-xl p-4 z-50">
+
+                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">{{ __('app.appearance_mode') }}</p>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                <button type="button" @click="setMode('light')"
+                                        class="flex items-center justify-center gap-2 py-2 rounded-xl border text-sm font-semibold transition"
+                                        :class="mode === 'light' ? 'border-gold bg-gold/12 text-gold-dark' : 'border-gray-200 text-gray-500 hover:border-gray-300'">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                                    {{ __('app.light_theme') }}
+                                </button>
+                                <button type="button" @click="setMode('dark')"
+                                        class="flex items-center justify-center gap-2 py-2 rounded-xl border text-sm font-semibold transition"
+                                        :class="mode === 'dark' ? 'border-gold bg-gold/12 text-gold-dark' : 'border-gray-200 text-gray-500 hover:border-gray-300'">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+                                    {{ __('app.dark_theme') }}
+                                </button>
+                            </div>
+
+                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">{{ __('app.color_theme') }}</p>
+                            <div class="space-y-1">
+                                @foreach(\App\Support\Appearance::options() as $opt)
+                                    <button type="button" @click="setTheme('{{ $opt['key'] }}')"
+                                            class="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl border text-sm font-semibold transition"
+                                            :class="theme === '{{ $opt['key'] }}' ? 'border-gold bg-gold/12 text-gold-dark' : 'border-transparent text-gray-600 hover:bg-gray-50'">
+                                        <span class="flex items-center gap-1" aria-hidden="true">
+                                            <span class="w-4 h-4 rounded-full ring-1 ring-black/10" style="background: {{ $opt['swatch'] }}"></span>
+                                            <span class="w-2.5 h-4 rounded-sm ring-1 ring-black/10" style="background: {{ $opt['dark'] }}"></span>
+                                            <span class="w-2.5 h-4 rounded-sm ring-1 ring-black/10" style="background: {{ $opt['light'] }}"></span>
+                                        </span>
+                                        <span class="flex-1 text-start">{{ $opt['label'] }}</span>
+                                        <svg x-show="theme === '{{ $opt['key'] }}'" x-cloak class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                    </button>
+                                @endforeach
+                            </div>
+
+                            <p class="text-[11px] text-gray-400 mt-3 leading-relaxed">{{ __('app.appearance_hint') }}</p>
+                        </div>
+                    </div>
                     @php
                         $unreadCount = \App\Models\Notification::where('user_id', auth()->id())->where('is_read', false)->count();
                         $recentNotifications = \App\Models\Notification::where('user_id', auth()->id())->latest()->limit(10)->get();
