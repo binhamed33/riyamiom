@@ -16,9 +16,9 @@ class CreateCaseWithSessionTest extends TestCase
             'database.default' => 'mysql',
             'database.connections.mysql.host' => '127.0.0.1',
             'database.connections.mysql.port' => '3306',
-            'database.connections.mysql.database' => 'lexpro',
-            'database.connections.mysql.username' => 'lexpro',
-            'database.connections.mysql.password' => 'LexPro@2026!',
+            'database.connections.mysql.database' => 'mudawala',
+            'database.connections.mysql.username' => 'mudawala',
+            'database.connections.mysql.password' => env('DB_PASSWORD', ''),
         ]);
     }
 

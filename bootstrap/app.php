@@ -43,6 +43,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 || $e instanceof \Illuminate\Validation\ValidationException) {
                 return;
             }
+            // تجاوز حد المحاولات لزائر غير مسجّل: يعود لصفحة الدخول برسالة واضحة
+            // بدل إرساله إلى لوحة التحكم حيث لا يرى التنبيه أصلاً
+            if ($e instanceof \Illuminate\Http\Exceptions\ThrottleRequestsException && !auth()->check()) {
+                return redirect()->route('login')
+                    ->with('login_error', 'محاولات كثيرة خلال وقت قصير. انتظر دقيقة ثم أعد المحاولة.');
+            }
+
             $route = $request->route();
             if ($route && $route->getName() === 'dashboard') {
                 logger()->error('Dashboard render failed, returning 500 to avoid redirect loop: ' . $e->getMessage(), ['exception' => $e]);

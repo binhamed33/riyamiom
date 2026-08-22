@@ -80,6 +80,88 @@
         </div>
     @endif
 
+    {{-- ===== هوية المكتب: شعار خاص بهذا المكتب وحده ===== --}}
+    @php
+        $officeLogoUrl = \App\Support\OfficeBrand::logoUrl();
+        $officeBrandName = \App\Support\OfficeBrand::name();
+    @endphp
+    <div class="bg-white rounded-xl border border-gray-200 p-5" x-data="{ picked: null }">
+        <div class="flex items-center gap-3 mb-1">
+            <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h2 class="text-base font-bold text-gray-800">هوية المكتب</h2>
+                <p class="text-xs text-gray-500 mt-0.5">شعار مكتبك يظهر في القائمة الجانبية وشاشة الدخول والمستندات المطبوعة — وهو خاص بمكتبك وحده.</p>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-start gap-5 mt-5">
+            {{-- المعاينة --}}
+            <div class="flex flex-col items-center gap-2 shrink-0">
+                <div class="w-28 h-28 rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
+                    <template x-if="picked">
+                        <img :src="picked" alt="معاينة الشعار" class="w-full h-full object-contain">
+                    </template>
+                    <template x-if="!picked">
+                        <div class="w-full h-full flex items-center justify-center">
+                            @if($officeLogoUrl)
+                                <img src="{{ $officeLogoUrl }}" alt="{{ $officeBrandName }}" class="w-full h-full object-contain">
+                            @else
+                                <span class="text-3xl font-heading font-bold text-gold-dark">م</span>
+                            @endif
+                        </div>
+                    </template>
+                </div>
+                <span class="text-[11px] text-gray-400">{{ $officeLogoUrl ? 'الشعار الحالي' : 'لا يوجد شعار' }}</span>
+            </div>
+
+            {{-- الرفع --}}
+            <div class="flex-1 w-full">
+                <form method="POST" action="{{ route('settings.logo.update') }}" enctype="multipart/form-data" class="space-y-3">
+                    @csrf
+                    <label class="block">
+                        <span class="block text-sm font-medium text-gray-700 mb-2">اختر ملف الشعار</span>
+                        <input type="file" name="logo" accept=".png,.jpg,.jpeg,.webp,.svg" required
+                               x-on:change="picked = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null"
+                               class="block w-full text-sm text-gray-600 file:mr-4 file:rtl:ml-4 file:rtl:mr-0 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-gold/12 file:text-gold-dark hover:file:bg-gold/20 cursor-pointer">
+                    </label>
+                    <p class="text-[11px] text-gray-400">PNG أو JPG أو WEBP أو SVG — بحد أقصى ١ ميجابايت. يُفضّل شعار مربّع بخلفية شفافة.</p>
+
+                    @error('logo')
+                        <p class="text-xs text-red-600 font-semibold">{{ $message }}</p>
+                    @enderror
+
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+                            حفظ الشعار
+                        </button>
+                        <button type="button" x-show="picked" x-cloak x-on:click="picked = null; $el.closest('form').reset()"
+                                class="text-sm text-gray-500 hover:text-gray-800 px-3 py-2.5">إلغاء الاختيار</button>
+                    </div>
+                </form>
+
+                @if($officeLogoUrl)
+                    <form method="POST" action="{{ route('settings.logo.destroy') }}" class="mt-3"
+                          onsubmit="return confirm('حذف شعار المكتب؟ سيعود النظام لهوية مُداوَلة الافتراضية.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg transition">
+                            حذف الشعار
+                        </button>
+                    </form>
+                @endif
+            </div>
+        </div>
+
+        <div class="mt-5 pt-4 border-t border-gray-100 flex items-start gap-2 text-[11px] text-gray-500">
+            <span class="text-gold-dark">ⓘ</span>
+            <span>هوية المنتج <b class="text-gold-dark">مُداوَلة</b> تبقى كما هي في النظام؛ شعارك يمثّل مكتبك أنت. ولا يمكن لأي مكتب آخر الوصول إلى شعارك.</span>
+        </div>
+    </div>
+
     <form method="POST" action="{{ route('settings.update') }}" class="space-y-6">
         @csrf
         @method('PUT')

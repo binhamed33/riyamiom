@@ -36,7 +36,7 @@ class LoginController extends Controller
         $attemptsKey = 'login_attempts_' . md5($email);
         $attempts = (int) Cache::get($attemptsKey, 0);
 
-        if (!auth()->attempt($request->only('email', 'password'))) {
+        if (!auth()->attempt($request->only('email', 'password'), $request->boolean('remember'))) {
             $attempts++;
 
             if ($attempts >= 5) {
@@ -68,7 +68,7 @@ class LoginController extends Controller
 
         if (!auth()->user()->is_active) {
             auth()->logout();
-            return redirect()->route('login')->with('error', 'تم تعطيل حسابك');
+            return redirect()->route('login')->with('login_error', 'تم تعطيل حسابك. تواصل مع مدير المكتب.');
         }
 
         $request->session()->regenerate();

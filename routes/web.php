@@ -31,6 +31,9 @@ use App\Http\Controllers\LawyerEvaluationController;
 use App\Http\Controllers\HrController;
 use App\Http\Controllers\FinanceController;
 
+// شعار المكتب (عام: يظهر في شاشة الدخول والفاتورة قبل المصادقة)
+Route::get('/office/logo', [App\Http\Controllers\OfficeBrandController::class, 'show'])->name('office.logo');
+
 // Language switch (public)
 Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
 
@@ -292,6 +295,9 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::get('/audit-log', [AuditLogController::class, 'index'])->middleware(['role:developer,admin,permission:audit_log.view', 'feature:audit_log'])->name('audit-log.index');
     Route::get('/settings', [SettingController::class, 'index'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.update');
+    // هوية المكتب — نفس صلاحية الإعدادات تماماً
+    Route::post('/settings/logo', [App\Http\Controllers\OfficeBrandController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.logo.update');
+    Route::delete('/settings/logo', [App\Http\Controllers\OfficeBrandController::class, 'destroy'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.logo.destroy');
 
     // طلبات التسجيل من الموقع التعريفي
     Route::get('/register-requests', [MarketingPageController::class, 'requests'])->middleware(['role:developer,admin'])->name('marketing.requests');

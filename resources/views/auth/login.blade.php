@@ -1,6 +1,7 @@
 @php
-    $officeName = \App\Models\Setting::get('office_name', 'مُداوَلة');
+    $officeName = \App\Support\OfficeBrand::name();
     $isRtl = app()->getLocale() === 'ar';
+    $loginLogo = \App\Support\OfficeBrand::logoUrl();
 @endphp
 <!DOCTYPE html>
 <html dir="{{ $isRtl ? 'rtl' : 'ltr' }}" lang="{{ app()->getLocale() }}">
@@ -11,7 +12,28 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __('app.login_title') }} — مُداوَلة</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="{{ __('app.login_title') }} — {{ $officeName }} على منصة مُداوَلة لإدارة مكاتب المحاماة.">
+    <meta name="color-scheme" content="light dark">
+    <title>{{ __('app.login_title') }} — {{ $officeName }} · مُداوَلة</title>
+
+    {{-- الأيقونة: هوية مُداوَلة، ويعلوها شعار المكتب إن رفعه --}}
+    <link rel="icon" href="/favicon.ico">
+    @if($loginLogo)
+        <link rel="icon" type="{{ \App\Support\OfficeBrand::logoMime() }}" href="{{ $loginLogo }}">
+    @endif
+
+    {{-- السمة المحفوظة تُطبَّق قبل الرسم حتى لا يومض اللون --}}
+    <script nonce="{{ $cspNonce }}">
+        (function () {
+            try {
+                var t = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,47 +51,129 @@
     </script>
 
     <style>
+        /* ============================================================
+           رموز الهوية — مُداوَلة
+           الوضع الافتراضي فاتح (مطابق للنظام)، والداكن يُفعَّل بـ data-theme="dark"
+           ============================================================ */
         :root {
             --obsidian: #080B12;
             --navy: #0D111B;
             --charcoal: #121826;
+
+            /* ذهب زخرفي — ثابت في الوضعين */
+            --gold: #C9A227;
+            --gold-soft: #E3C463;
+            --gold-dim: #A98218;
+            /* ذهب النص والروابط — يتباين مع الخلفية */
+            --gold-ink: #8C6A12;
+
+            --bg: #F6F3EC;
+            --ink: #141922;
+            --muted: #5C6675;
+            --label: #3A4353;
+            --ivory: var(--ink);
+
+            --scene:
+                radial-gradient(120% 90% at 78% 12%, rgba(201,162,39,0.10) 0%, transparent 45%),
+                radial-gradient(90% 70% at 15% 85%, rgba(214,205,186,0.55) 0%, transparent 60%),
+                linear-gradient(165deg, #FBF9F4 0%, #F4F0E7 55%, #EFEADF 100%);
+            --noise-op: 0.020;
+            --grid-op: 0.055;
+
+            --panel-bg: linear-gradient(158deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.80) 55%, rgba(248,243,231,0.86) 100%);
+            --panel-shadow: 0 30px 70px rgba(46,38,18,0.13), inset 0 1px 0 rgba(255,255,255,0.9);
+            --panel-edge: linear-gradient(150deg, rgba(201,162,39,0.55), rgba(201,162,39,0.10) 32%, rgba(20,25,34,0.06) 58%, rgba(201,162,39,0.40));
+            --top-hair: linear-gradient(90deg, transparent, rgba(201,162,39,0.75), transparent);
+
+            --field-bg: rgba(255,255,255,0.82);
+            --field-bg-focus: #FFFFFF;
+            --field-bd: rgba(20,25,34,0.16);
+            --field-bd-hover: rgba(20,25,34,0.30);
+            --field-bd-focus: rgba(169,130,24,0.65);
+            --field-ring: 0 0 0 3px rgba(201,162,39,0.14), 0 0 20px rgba(201,162,39,0.10);
+            --placeholder: rgba(20,25,34,0.42);
+            --icon: rgba(20,25,34,0.40);
+            --autofill: #FFFFFF;
+
+            --hair: rgba(20,25,34,0.12);
+            --stroke-faint: rgba(169,130,24,0.22);
+            --watermark: rgba(169,130,24,0.16);
+
+            --err-bg: rgba(190,40,40,0.06);
+            --err-bd: rgba(170,45,45,0.32);
+            --err-ink: #A32222;
+        }
+
+        [data-theme="dark"] {
             --gold: #E5C158;
             --gold-soft: #F0D98A;
             --gold-dim: #A98218;
-            --ivory: #FFFFFF;
+            --gold-ink: #E5C158;
+
+            --bg: #080B12;
+            --ink: #FFFFFF;
             --muted: #94A3B8;
+            --label: rgba(244,240,232,0.78);
+
+            --scene:
+                radial-gradient(120% 90% at 78% 12%, rgba(200,169,107,0.07) 0%, transparent 45%),
+                radial-gradient(90% 70% at 15% 85%, rgba(11,18,32,0.9) 0%, transparent 60%),
+                linear-gradient(165deg, #0D111B 0%, #080B12 55%, #080B12 100%);
+            --noise-op: 0.035;
+            --grid-op: 0.05;
+
+            --panel-bg: linear-gradient(158deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.022) 55%, rgba(224,201,138,0.025) 100%);
+            --panel-shadow: 0 40px 90px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07);
+            --panel-edge: linear-gradient(150deg, rgba(224,201,138,0.32), rgba(224,201,138,0.05) 32%, rgba(255,255,255,0.05) 58%, rgba(200,169,107,0.22));
+            --top-hair: linear-gradient(90deg, transparent, rgba(224,201,138,0.55), transparent);
+
+            --field-bg: rgba(8,9,11,0.42);
+            --field-bg-focus: rgba(10,12,16,0.55);
+            --field-bd: rgba(146,153,165,0.20);
+            --field-bd-hover: rgba(146,153,165,0.38);
+            --field-bd-focus: rgba(224,201,138,0.55);
+            --field-ring: 0 0 0 3px rgba(200,169,107,0.08), 0 0 26px rgba(200,169,107,0.07);
+            --placeholder: rgba(255,255,255,0.42);
+            --icon: rgba(146,153,165,0.65);
+            --autofill: #080B12;
+
+            --hair: rgba(146,153,165,0.14);
+            --stroke-faint: rgba(200,169,107,0.10);
+            --watermark: rgba(200,169,107,0.10);
+
+            --err-bg: rgba(200,60,60,0.08);
+            --err-bd: rgba(200,90,90,0.28);
+            --err-ink: #F87979;
         }
 
+        html { background: var(--bg); }
+
         body {
-            background: var(--obsidian);
-            color: var(--ivory);
+            background: var(--bg);
+            color: var(--ink);
             font-family: 'IBM Plex Sans Arabic', sans-serif;
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
 
         h1, h2, h3, .font-verse, .font-editorial { font-family: 'Amiri', serif; }
 
-        ::selection { background: rgba(200,169,107,0.25); color: var(--ivory); }
+        ::selection { background: rgba(201,162,39,0.25); color: var(--ink); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(200,169,107,0.22); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(201,162,39,0.30); border-radius: 3px; }
 
         /* ============ CINEMATIC BASE ============ */
-        .scene { position: fixed; inset: 0; overflow: hidden; background:
-            radial-gradient(120% 90% at 78% 12%, rgba(200,169,107,0.07) 0%, transparent 45%),
-            radial-gradient(90% 70% at 15% 85%, rgba(11,18,32,0.9) 0%, transparent 60%),
-            linear-gradient(165deg, #0D111B 0%, #080B12 55%, #080B12 100%);
-            z-index: 0;
-        }
+        .scene { position: fixed; inset: 0; overflow: hidden; background: var(--scene); z-index: 0; }
 
-        .noise-layer { position: absolute; inset: 0; opacity: 0.035; pointer-events: none;
+        .noise-layer { position: absolute; inset: 0; opacity: var(--noise-op); pointer-events: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
         }
 
-        .grid-faint { position: absolute; inset: 0; opacity: 0.05;
-            background-image: linear-gradient(rgba(200,169,107,0.25) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(200,169,107,0.25) 1px, transparent 1px);
+        .grid-faint { position: absolute; inset: 0; opacity: var(--grid-op);
+            background-image: linear-gradient(rgba(169,130,24,0.30) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(169,130,24,0.30) 1px, transparent 1px);
             background-size: 72px 72px;
             mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, black 20%, transparent 75%);
             -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, black 20%, transparent 75%);
@@ -123,7 +227,7 @@
 
         /* ============ VISUAL SIDE ============ */
         .visual-frame { position: absolute; inset: 22px; pointer-events: none;
-            border: 1px solid rgba(200,169,107,0.10); opacity: 0;
+            border: 1px solid var(--stroke-faint); opacity: 0;
             animation: frameIn 2s ease 0.8s forwards; }
         @keyframes frameIn { to { opacity: 1; } }
         .visual-frame::before, .visual-frame::after {
@@ -135,8 +239,8 @@
 
         .watermark-word { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
             font-family: 'Amiri', serif; font-size: clamp(11rem, 26vw, 24rem); line-height: 1;
-            color: transparent; -webkit-text-stroke: 1px rgba(200,169,107,0.10);
-            text-stroke: 1px rgba(200,169,107,0.10); user-select: none; pointer-events: none;
+            color: transparent; -webkit-text-stroke: 1px var(--watermark);
+            text-stroke: 1px var(--watermark); user-select: none; pointer-events: none;
             opacity: 0; animation: fadeIn 3s ease 1.6s forwards; }
 
         .seal-rotor { position: absolute; top: 8%; inset-inline-start: 7%; width: 150px; height: 150px;
@@ -149,41 +253,41 @@
 
         .verses-box { position: relative; }
         .verse-ring { position: absolute; inset: -22px; border-radius: 50%;
-            border: 1px solid rgba(200,169,107,0.10); opacity: 0; animation: fadeIn 2.5s ease 1.3s forwards; }
+            border: 1px solid var(--stroke-faint); opacity: 0; animation: fadeIn 2.5s ease 1.3s forwards; }
 
         /* ============ LOGIN PANEL ============ */
         .panel-glass { position: relative;
-            background: linear-gradient(158deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.022) 55%, rgba(224,201,138,0.025) 100%);
+            background: var(--panel-bg);
             backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             border-radius: 26px;
-            box-shadow: 0 40px 90px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07);
+            box-shadow: var(--panel-shadow);
             background-clip: padding-box; }
         .panel-glass::before { content: ''; position: absolute; inset: 0; border-radius: 26px; padding: 1px;
-            background: linear-gradient(150deg, rgba(224,201,138,0.32), rgba(224,201,138,0.05) 32%, rgba(255,255,255,0.05) 58%, rgba(200,169,107,0.22));
+            background: var(--panel-edge);
             -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
             -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
         .panel-glass .top-hair { position: absolute; top: 0; inset-inline: 12%; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(224,201,138,0.55), transparent); }
+            background: var(--top-hair); }
 
         .field-wrap { position: relative; }
         .field { width: 100%;
-            background: rgba(8,9,11,0.42);
-            border: 1px solid rgba(146,153,165,0.20);
+            background: var(--field-bg);
+            border: 1px solid var(--field-bd);
             border-radius: 14px;
-            color: var(--ivory);
+            color: var(--ink);
             padding: 0.95rem 2.9rem 0.95rem 2.9rem;
             font-size: 0.95rem;
             transition: border-color 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s cubic-bezier(0.16,1,0.3,1), background 0.45s;
             outline: none; }
-        .field::placeholder { color: rgba(255,255,255,0.75); }
-        .field:hover { border-color: rgba(146,153,165,0.38); }
+        .field::placeholder { color: var(--placeholder); }
+        .field:hover { border-color: var(--field-bd-hover); }
         .field:focus, .field-wrap:focus-within .field {
-            border-color: rgba(224,201,138,0.55);
-            box-shadow: 0 0 0 3px rgba(200,169,107,0.08), 0 0 26px rgba(200,169,107,0.07);
-            background: rgba(10,12,16,0.55); }
+            border-color: var(--field-bd-focus);
+            box-shadow: var(--field-ring);
+            background: var(--field-bg-focus); }
         .field:-webkit-autofill, .field:-webkit-autofill:hover, .field:-webkit-autofill:focus {
-            -webkit-box-shadow: 0 0 0 60px #080B12 inset !important;
-            -webkit-text-fill-color: var(--ivory) !important; caret-color: var(--ivory); }
+            -webkit-box-shadow: 0 0 0 60px var(--autofill) inset !important;
+            -webkit-text-fill-color: var(--ink) !important; caret-color: var(--ink); }
 
         .field-underline { position: absolute; bottom: -1px; inset-inline: 14px; height: 1.5px;
             background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
@@ -192,18 +296,18 @@
         .field-wrap:focus-within .field-underline { transform: scaleX(1); }
 
         .field-icon { position: absolute; top: 50%; transform: translateY(-50%); inset-inline-start: 1.05rem;
-            color: rgba(146,153,165,0.65); pointer-events: none; transition: color 0.4s; }
-        .field-wrap:focus-within .field-icon, .field-wrap:hover .field-icon { color: var(--gold-soft); }
+            color: var(--icon); pointer-events: none; transition: color 0.4s; }
+        .field-wrap:focus-within .field-icon, .field-wrap:hover .field-icon { color: var(--gold-ink); }
 
         .field-eye { position: absolute; top: 50%; transform: translateY(-50%); inset-inline-end: 0.85rem;
-            color: rgba(146,153,165,0.65); cursor: pointer; padding: 0.35rem; border-radius: 8px;
+            color: var(--icon); cursor: pointer; padding: 0.35rem; border-radius: 8px;
             transition: color 0.3s; background: none; border: none; }
-        .field-eye:hover { color: var(--gold-soft); }
+        .field-eye:hover { color: var(--gold-ink); }
         .field-eye:focus-visible { outline: 2px solid rgba(224,201,138,0.5); outline-offset: 2px; }
 
         .btn-enter { position: relative; width: 100%; overflow: hidden;
-            background: linear-gradient(120deg, var(--gold-soft) 0%, var(--gold) 50%, #D4AF37 100%);
-            background-size: 200% 200%; color: #0D111B;
+            background: linear-gradient(120deg, var(--gold-soft) 0%, var(--gold) 50%, var(--gold-dim) 100%);
+            background-size: 200% 200%; color: #12100A;
             border-radius: 14px; padding: 1rem; font-weight: 700; font-size: 1rem;
             transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s, background-position 1.2s ease;
             animation: btnBreath 5s ease-in-out infinite; border: none; cursor: pointer; }
@@ -222,20 +326,29 @@
         @keyframes spinAnim { to { transform: rotate(360deg); } }
 
         .check-custom { appearance: none; width: 18px; height: 18px; border-radius: 5px;
-            border: 1px solid rgba(146,153,165,0.4); background: rgba(8,9,11,0.4); cursor: pointer;
+            border: 1px solid var(--field-bd-hover); background: var(--field-bg); cursor: pointer;
             display: inline-flex; align-items: center; justify-content: center;
             transition: all 0.3s; position: relative; }
-        .check-custom:checked { background: var(--gold); border-color: var(--gold); }
+        .check-custom:checked { background: var(--gold); border-color: var(--gold-dim); }
         .check-custom:checked::after { content: ''; width: 9px; height: 5px;
-            border-inline-start: 2px solid #0D111B; border-bottom: 2px solid #0D111B;
+            border-left: 2px solid #16130A; border-bottom: 2px solid #16130A;
             transform: rotate(-45deg) translate(0.5px, -1px); }
         .check-custom:focus-visible { outline: 2px solid rgba(224,201,138,0.6); outline-offset: 2px; }
 
-        .alert-error { background: rgba(200,60,60,0.08); border: 1px solid rgba(200,90,90,0.28);
-            backdrop-filter: blur(8px); color: #F87979; border-radius: 14px; }
+        .alert-error { background: var(--err-bg); border: 1px solid var(--err-bd);
+            backdrop-filter: blur(8px); color: var(--err-ink); border-radius: 14px; }
 
-        .link-soft { color: var(--gold); transition: color 0.3s; }
-        .link-soft:hover { color: var(--gold-soft); }
+        .link-soft { color: var(--gold-ink); transition: color 0.3s; }
+        .link-soft:hover { color: var(--gold-dim); text-decoration: underline; text-underline-offset: 3px; }
+        .link-soft:focus-visible { outline: 2px solid var(--gold-dim); outline-offset: 3px; border-radius: 4px; }
+
+        /* مبدّل السمة واللغة في التذييل */
+        .foot-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.65rem;
+            border-radius: 999px; border: 1px solid var(--hair); color: var(--muted);
+            background: transparent; cursor: pointer; font-size: 0.72rem; font-weight: 600;
+            transition: color 0.3s, border-color 0.3s, background 0.3s; }
+        .foot-btn:hover { color: var(--gold-ink); border-color: var(--gold-dim); }
+        .foot-btn:focus-visible { outline: 2px solid var(--gold-dim); outline-offset: 2px; }
 
         /* ============ LOADING STATE ============ */
         .btn-loading .btn-label { display: none; }
@@ -255,8 +368,11 @@
         /* ---- success overlay ---- */
         .auth-overlay { position: fixed; inset: 0; z-index: 9000; display: none; flex-direction: column;
             align-items: center; justify-content: center; gap: 1.75rem;
-            background: rgba(5,6,8,0.62); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+            background: rgba(5,6,8,0.72); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
             opacity: 0; transition: opacity 0.4s ease; }
+        /* لحظة سينمائية واحدة في الوضعين — ألوانها ثابتة ولا ترث رموز السمة */
+        .auth-overlay .msg-gold { color: #F0D98A; }
+        .auth-overlay .msg-ivory { color: #FFFFFF; }
         .auth-overlay.show { display: flex; opacity: 1; }
         .auth-overlay.fade-black { animation: fadeBlack 0.5s ease forwards; }
         @keyframes fadeBlack { to { background: rgba(5,6,8,0.98); backdrop-filter: blur(0px); } }
@@ -327,7 +443,7 @@
                 transition-duration: 0.01ms !important;
             }
             .reveal, .reveal-bg, .scales-wrap, .visual-frame, .watermark-word,
-            .verses-box .verse-ring,
+            .verses-box .verse-ring, .brand-mark,
             .hairline-gold, .seal-rotor, #cursorGlow, .dust { opacity: 1; animation: none !important; }
             #cursorGlow { display: none; }
         }
@@ -348,48 +464,46 @@
     <div id="cursorGlow" aria-hidden="true"></div>
     <div id="authLoadGlow" aria-hidden="true" style="position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity 0.7s ease;background:radial-gradient(circle at 50% 42%, rgba(200,169,107,0.10), transparent 60%);"></div>
 
-    <div class="relative z-10 min-h-screen flex flex-col-reverse lg:flex-row">
+    <div class="relative z-10 min-h-screen flex flex-col">
+      <div class="flex-1 flex flex-col lg:flex-row">
 
         {{-- ===== LOGIN SIDE (right in RTL, left in LTR) ===== --}}
-        <main class="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 sm:px-12 py-14 pb-28 lg:py-10 relative">
+        <main class="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 sm:px-12 py-12 lg:py-10 relative">
             <div class="w-full max-w-md mx-auto">
 
                 {{-- brand --}}
                 <div class="text-center mb-10 reveal" style="animation-delay:0.5s;">
                     <div class="relative inline-block mb-5">
                         <div class="absolute inset-0 rounded-full bg-gold/15 blur-2xl" style="animation:glowPulse 5s ease-in-out infinite;"></div>
-                        <div class="relative w-16 h-16 mx-auto rounded-full border border-gold/40 bg-gradient-to-br from-charcoal to-navy flex items-center justify-center shadow-[0_0_40px_rgba(200,169,107,0.12)]">
-                            @php
-                                $loginLogo = null;
-                                foreach (['svg', 'png', 'jpg', 'jpeg'] as $ext) {
-                                    if (is_file(public_path("img/office-logo.{$ext}"))) {
-                                        $loginLogo = asset("img/office-logo.{$ext}") . '?v=' . @filemtime(public_path("img/office-logo.{$ext}"));
-                                        break;
-                                    }
-                                }
-                            @endphp
+                        <div class="brand-mark relative w-16 h-16 mx-auto rounded-full border flex items-center justify-center overflow-hidden"
+                             style="border-color:var(--stroke-faint);background:var(--panel-bg);box-shadow:0 0 40px rgba(201,162,39,0.14);">
                             @if($loginLogo)
-                                <img src="{{ $loginLogo }}" alt="{{ $officeName }}" class="w-full h-full object-cover rounded-full">
+                                {{-- شعار المكتب: يُقدَّم من نسخة هذا المكتب وحده — لا يمكن لمكتب آخر بلوغه --}}
+                                <img src="{{ $loginLogo }}" alt="{{ __('app.office_logo_alt', ['office' => $officeName]) }}" class="w-full h-full object-cover">
                             @else
                                 <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                    <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2.6L9.4 8.7 5 9.4l3.2 3.1L7.6 17 12 14.7 16.4 17l-.6-4.5L19 9.4l-4.4-.7L12 4.6z" fill="url(#lgGold)"/>
-                                    <defs><linearGradient id="lgGold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F0D98A"/><stop offset="1" stop-color="#A98218"/></linearGradient></defs>
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2.6L9.4 8.7 5 9.4l3.2 3.1L7.6 17 12 14.7 16.4 17l-.6-4.5L19 9.4l-4.4-.7L12 4.6z" fill="url(#mdMarkGold)"/>
+                                    <defs><linearGradient id="mdMarkGold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#E3C463"/><stop offset="1" stop-color="#A98218"/></linearGradient></defs>
                                 </svg>
                             @endif
                         </div>
                     </div>
-                    <h1 class="font-editorial text-4xl sm:text-[2.6rem] font-bold leading-snug mb-2" style="color:var(--ivory);" dir="rtl">{{ $officeName }}</h1>
-                    <p class="text-muted text-sm tracking-wide" style="color:var(--muted);">{{ __('app.login_title') }} · مُداوَلة ⚖</p>
+                    <h1 class="font-editorial text-4xl sm:text-[2.6rem] font-bold leading-snug mb-2" style="color:var(--ink);" dir="rtl">{{ $officeName }}</h1>
+                    {{-- مُداوَلة = هوية المنتج؛ النقر عليها يفتح موقع المنصة --}}
+                    <p class="text-sm tracking-wide" style="color:var(--muted);">
+                        {{ __('app.login_title') }} ·
+                        <a href="https://dev.riyami.om/" target="_blank" rel="noopener" class="link-soft font-semibold">مُداوَلة</a> ⚖
+                    </p>
                 </div>
 
                 <div class="reveal" style="animation-delay:0.85s;">
                     <div class="panel-glass px-6 sm:px-9 py-9 relative overflow-hidden">
                         <div class="top-hair"></div>
 
-                        <h2 class="font-editorial text-2xl sm:text-[1.7rem] font-bold leading-relaxed mb-2" style="color:var(--ivory);">مرحبًا بك في منظومتك القانونية</h2>
-                        <p class="text-sm leading-relaxed mb-8" style="color:var(--muted);">سجّل الدخول للوصول الآمن إلى قضاياك ومستنداتك ومعلوماتك القانونية.</p>
+                        <h2 class="font-editorial text-2xl sm:text-[1.7rem] font-bold leading-relaxed mb-2" style="color:var(--ink);">{{ __('app.login_welcome') }}</h2>
+                        <p class="text-sm leading-relaxed mb-8" style="color:var(--muted);">{{ __('app.login_lead') }}</p>
 
-                        @php $loginError = session('login_error'); @endphp
+                        @php $loginError = session('login_error') ?: session('error'); @endphp
                         @if($errors->any() || $loginError)
                             <div class="alert-error mb-6 p-4 flex items-start gap-3" role="alert">
                                 <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -420,7 +534,7 @@
 
                             {{-- email --}}
                             <div class="reveal" style="animation-delay:1.0s;">
-                                <label for="email" class="block text-sm font-medium mb-2" style="color:rgba(244,240,232,0.75);">{{ __('app.email') }}</label>
+                                <label for="email" class="block text-sm font-medium mb-2" style="color:var(--label);">{{ __('app.email') }}</label>
                                 <div class="field-wrap">
                                     <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="email"
                                         class="field" placeholder="name@example.com" aria-label="{{ __('app.email') }}">
@@ -433,7 +547,7 @@
 
                             {{-- password --}}
                             <div class="reveal" style="animation-delay:1.12s;">
-                                <label for="password" class="block text-sm font-medium mb-2" style="color:rgba(244,240,232,0.75);">{{ __('app.password') }}</label>
+                                <label for="password" class="block text-sm font-medium mb-2" style="color:var(--label);">{{ __('app.password') }}</label>
                                 <div class="field-wrap">
                                     <input type="password" id="password" name="password" required autocomplete="current-password"
                                         class="field" placeholder="{{ __('app.password') }}"
@@ -462,14 +576,22 @@
                                 </label>
                                 @if(Route::has('password.request'))
                                     <a href="{{ route('password.request') }}" class="link-soft text-sm">{{ __('app.forgot_password') }}</a>
+                                @else
+                                    {{-- لا توجد استعادة ذاتية في هذا النظام: نوجّه المستخدم لمدير المكتب بدل رابط معطّل --}}
+                                    <button type="button" class="link-soft text-sm" data-forgot-hint aria-expanded="false" aria-controls="forgotHint">{{ __('app.forgot_password') }}</button>
                                 @endif
                             </div>
+
+                            <p id="forgotHint" class="hidden text-xs leading-relaxed rounded-xl px-3.5 py-3"
+                               style="color:var(--muted);background:var(--field-bg);border:1px solid var(--hair);">
+                                {{ __('app.forgot_password_hint') }}
+                            </p>
 
                             {{-- submit --}}
                             <div class="pt-2 reveal" style="animation-delay:1.38s;">
                                 <button type="submit" id="loginBtn" class="btn-enter flex items-center justify-center gap-2.5">
                                     <span class="btn-label">{{ __('app.login_button') }}</span>
-                                    <span class="btn-loader hidden items-center gap-2.5"><span class="spinner-min"></span><span>جارٍ التحقق من بيانات الدخول...</span></span>
+                                    <span class="btn-loader hidden items-center gap-2.5"><span class="spinner-min"></span><span>{{ __('app.login_verifying') }}</span></span>
                                     <svg class="btn-arrow w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="{{ $isRtl ? '' : 'transform:rotate(180deg);' }}">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l-7 7 7 7"/>
                                     </svg>
@@ -478,7 +600,7 @@
                         </form>
 
                         <div class="mt-5 pt-5 border-t text-center" style="border-color:rgba(146,153,165,0.14);">
-                            <p class="text-xs" style="color:rgba(146,153,165,0.6);">{{ $officeName }} — <a href="https://dev.riyami.om/" target="_blank" class="link-soft" rel="noopener">مُداوَلة</a> · منظومة قانونية متكاملة</p>
+                            <p class="text-xs" style="color:rgba(146,153,165,0.6);">{{ $officeName }} — <a href="https://dev.riyami.om/" target="_blank" class="link-soft" rel="noopener">مُداوَلة</a> · {{ __('app.login_tagline') }}</p>
                         </div>
                     </div>
                 </div>
@@ -486,7 +608,7 @@
         </main>
 
         {{-- ===== VISUAL SIDE (left in RTL) ===== --}}
-        <aside class="w-full lg:w-1/2 relative flex flex-col items-center justify-center min-h-[38vh] lg:min-h-screen px-6 py-14 lg:py-0 overflow-hidden" aria-hidden="true">
+        <aside class="w-full lg:w-1/2 relative flex flex-col items-center justify-center min-h-[38vh] lg:min-h-0 px-6 py-14 lg:py-0 overflow-hidden" aria-hidden="true">
 
             <div class="visual-frame"></div>
             <div class="watermark-word">عدل</div>
@@ -520,75 +642,75 @@
                         <div class="absolute inset-0 -m-16 rounded-full opacity-40" style="background:radial-gradient(circle, rgba(200,169,107,0.10), transparent 65%);"></div>
                         <svg class="w-[230px] sm:w-[270px] lg:w-[330px] h-auto relative" viewBox="0 0 320 300" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ $isRtl ? 'ميزان العدالة' : 'Scales of Justice' }}">
                             <defs>
-                                <linearGradient id="lexGold" x1="0" y1="0" x2="1" y2="1">
+                                <linearGradient id="mdGold" x1="0" y1="0" x2="1" y2="1">
                                     <stop offset="0" stop-color="#F0D98A"/>
                                     <stop offset="0.5" stop-color="#E5C158"/>
                                     <stop offset="1" stop-color="#A98218"/>
                                 </linearGradient>
-                                <linearGradient id="lexGoldV" x1="0" y1="0" x2="0" y2="1">
+                                <linearGradient id="mdGoldV" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0" stop-color="#F0D98A"/>
                                     <stop offset="1" stop-color="#A98218"/>
                                 </linearGradient>
-                                <linearGradient id="lexPan" x1="0" y1="0" x2="0" y2="1">
+                                <linearGradient id="mdPan" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0" stop-color="#F0D98A" stop-opacity="0.55"/>
                                     <stop offset="0.55" stop-color="#E5C158" stop-opacity="0.22"/>
                                     <stop offset="1" stop-color="#A98218" stop-opacity="0.45"/>
                                 </linearGradient>
-                                <filter id="lexGlow" x="-40%" y="-40%" width="180%" height="180%">
+                                <filter id="mdGlow" x="-40%" y="-40%" width="180%" height="180%">
                                     <feGaussianBlur stdDeviation="5" result="b"/>
                                     <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
                                 </filter>
                             </defs>
 
                             {{-- ground glow --}}
-                            <ellipse cx="160" cy="268" rx="116" ry="13" fill="rgba(200,169,107,0.16)" filter="url(#lexGlow)"/>
+                            <ellipse cx="160" cy="268" rx="116" ry="13" fill="rgba(200,169,107,0.16)" filter="url(#mdGlow)"/>
                             <ellipse cx="160" cy="268" rx="62" ry="7" fill="rgba(240,217,138,0.18)"/>
 
                             {{-- finial --}}
-                            <rect x="157" y="86" width="6" height="18" rx="3" fill="url(#lexGoldV)"/>
-                            <circle cx="160" cy="80" r="8" fill="url(#lexGold)"/>
+                            <rect x="157" y="86" width="6" height="18" rx="3" fill="url(#mdGoldV)"/>
+                            <circle cx="160" cy="80" r="8" fill="url(#mdGold)"/>
                             <circle cx="157.5" cy="77.5" r="3" fill="rgba(240,217,138,0.75)"/>
 
                             {{-- beam --}}
-                            <line x1="40" y1="104" x2="280" y2="104" stroke="url(#lexGold)" stroke-width="8" stroke-linecap="round"/>
+                            <line x1="40" y1="104" x2="280" y2="104" stroke="url(#mdGold)" stroke-width="8" stroke-linecap="round"/>
                             <line x1="40" y1="101" x2="280" y2="101" stroke="rgba(240,217,138,0.5)" stroke-width="1.5" stroke-linecap="round"/>
-                            <circle cx="40" cy="104" r="6.5" fill="url(#lexGoldV)"/>
-                            <circle cx="280" cy="104" r="6.5" fill="url(#lexGoldV)"/>
+                            <circle cx="40" cy="104" r="6.5" fill="url(#mdGoldV)"/>
+                            <circle cx="280" cy="104" r="6.5" fill="url(#mdGoldV)"/>
                             <circle cx="38.5" cy="102" r="2" fill="rgba(240,217,138,0.8)"/>
                             <circle cx="278.5" cy="102" r="2" fill="rgba(240,217,138,0.8)"/>
-                            <circle cx="160" cy="104" r="7.5" fill="url(#lexGold)"/>
+                            <circle cx="160" cy="104" r="7.5" fill="url(#mdGold)"/>
                             <circle cx="158" cy="101.5" r="2.8" fill="rgba(240,217,138,0.7)"/>
 
                             {{-- pillar --}}
-                            <rect x="149" y="104" width="22" height="118" rx="4" fill="url(#lexGoldV)"/>
+                            <rect x="149" y="104" width="22" height="118" rx="4" fill="url(#mdGoldV)"/>
                             <rect x="153" y="112" width="4" height="102" rx="2" fill="rgba(240,217,138,0.30)"/>
                             <rect x="143" y="124" width="34" height="6" rx="3" fill="rgba(232,213,164,0.5)"/>
                             <rect x="145" y="160" width="30" height="5" rx="2.5" fill="rgba(232,213,164,0.4)"/>
                             <rect x="145" y="194" width="30" height="5" rx="2.5" fill="rgba(232,213,164,0.4)"/>
 
                             {{-- base --}}
-                            <path d="M134 222 L186 222 L198 240 L122 240 Z" fill="url(#lexGoldV)"/>
+                            <path d="M134 222 L186 222 L198 240 L122 240 Z" fill="url(#mdGoldV)"/>
                             <rect x="138" y="226" width="44" height="2" rx="1" fill="rgba(240,217,138,0.4)"/>
-                            <rect x="106" y="240" width="108" height="10" rx="5" fill="url(#lexGold)"/>
-                            <rect x="90" y="252" width="140" height="11" rx="5.5" fill="url(#lexGold)"/>
+                            <rect x="106" y="240" width="108" height="10" rx="5" fill="url(#mdGold)"/>
+                            <rect x="90" y="252" width="140" height="11" rx="5.5" fill="url(#mdGold)"/>
                             <rect x="90" y="254" width="140" height="3" rx="1.5" fill="rgba(240,217,138,0.45)"/>
 
                             {{-- left shackle + chains + pan --}}
-                            <line x1="64" y1="106" x2="64" y2="122" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
-                            <circle cx="64" cy="122" r="3.5" fill="url(#lexGold)"/>
-                            <path d="M64 122 L24 152 M64 122 L104 152 M64 122 L64 142" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
+                            <line x1="64" y1="106" x2="64" y2="122" stroke="url(#mdGold)" stroke-width="2.2" stroke-linecap="round"/>
+                            <circle cx="64" cy="122" r="3.5" fill="url(#mdGold)"/>
+                            <path d="M64 122 L24 152 M64 122 L104 152 M64 122 L64 142" stroke="url(#mdGold)" stroke-width="2.2" stroke-linecap="round"/>
                             <path d="M24 152 A40 9.5 0 0 1 104 152" stroke="rgba(232,213,164,0.65)" stroke-width="1.6" fill="none"/>
-                            <path d="M24 152 C28 176 40 188 64 188 C88 188 100 176 104 152 Z" fill="url(#lexPan)" stroke="url(#lexGold)" stroke-width="2.2"/>
-                            <path d="M24 152 A40 9.5 0 0 0 104 152" stroke="url(#lexGold)" stroke-width="2.4" fill="none"/>
+                            <path d="M24 152 C28 176 40 188 64 188 C88 188 100 176 104 152 Z" fill="url(#mdPan)" stroke="url(#mdGold)" stroke-width="2.2"/>
+                            <path d="M24 152 A40 9.5 0 0 0 104 152" stroke="url(#mdGold)" stroke-width="2.4" fill="none"/>
                             <path d="M31 158 Q64 174 97 158" stroke="rgba(240,217,138,0.35)" stroke-width="1" fill="none"/>
 
                             {{-- right shackle + chains + pan --}}
-                            <line x1="256" y1="106" x2="256" y2="122" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
-                            <circle cx="256" cy="122" r="3.5" fill="url(#lexGold)"/>
-                            <path d="M256 122 L216 152 M256 122 L296 152 M256 122 L256 142" stroke="url(#lexGold)" stroke-width="2.2" stroke-linecap="round"/>
+                            <line x1="256" y1="106" x2="256" y2="122" stroke="url(#mdGold)" stroke-width="2.2" stroke-linecap="round"/>
+                            <circle cx="256" cy="122" r="3.5" fill="url(#mdGold)"/>
+                            <path d="M256 122 L216 152 M256 122 L296 152 M256 122 L256 142" stroke="url(#mdGold)" stroke-width="2.2" stroke-linecap="round"/>
                             <path d="M216 152 A40 9.5 0 0 1 296 152" stroke="rgba(232,213,164,0.65)" stroke-width="1.6" fill="none"/>
-                            <path d="M216 152 C220 176 232 188 256 188 C280 188 292 176 296 152 Z" fill="url(#lexPan)" stroke="url(#lexGold)" stroke-width="2.2"/>
-                            <path d="M216 152 A40 9.5 0 0 0 296 152" stroke="url(#lexGold)" stroke-width="2.4" fill="none"/>
+                            <path d="M216 152 C220 176 232 188 256 188 C280 188 292 176 296 152 Z" fill="url(#mdPan)" stroke="url(#mdGold)" stroke-width="2.2"/>
+                            <path d="M216 152 A40 9.5 0 0 0 296 152" stroke="url(#mdGold)" stroke-width="2.4" fill="none"/>
                             <path d="M223 158 Q256 174 289 158" stroke="rgba(240,217,138,0.35)" stroke-width="1" fill="none"/>
 
                             {{-- specks --}}
@@ -606,7 +728,7 @@
                 <div class="mt-6 mx-auto h-px w-24" style="background:linear-gradient(90deg, transparent, rgba(200,169,107,0.4), transparent);"></div>
             </div>
         </aside>
-    </div>
+      </div>
 
     {{-- ===== SUCCESS CINEMATIC OVERLAY (Judge / Hammer Strike) ===== --}}
     <div id="successOverlay" class="auth-overlay" role="status" aria-live="polite" aria-hidden="true">
@@ -665,24 +787,43 @@
         </div>
 
         <div class="success-msg" id="successMsg">
-            <p class="msg1 font-verse text-2xl sm:text-[1.8rem] font-bold" style="color:var(--gold-soft);">تم التحقق بنجاح</p>
-            <p class="msg2 font-editorial text-lg sm:text-xl mt-3" style="color:var(--ivory);">مرحبًا بك في منظومتك القانونية</p>
+            <p class="msg1 msg-gold font-verse text-2xl sm:text-[1.8rem] font-bold">تم التحقق بنجاح</p>
+            <p class="msg2 msg-ivory font-editorial text-lg sm:text-xl mt-3">مرحبًا بك في منظومتك القانونية</p>
         </div>
 
         <div class="gold-wipe" id="goldWipe" aria-hidden="true"></div>
     </div>
 
     {{-- ===== FOOTER ===== --}}
-    <footer class="absolute bottom-0 inset-x-0 z-20 py-5 px-6">
-        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 text-xs" style="color:rgba(146,153,165,0.65);">
-            <p class="flex items-center gap-2"><span style="color:var(--gold);">◆</span> {{ $officeName }} — © 2026 جميع الحقوق محفوظة</p>
-            <div class="flex items-center gap-5">
-                <a href="{{ route('language.switch', $isRtl ? 'en' : 'ar') }}" class="link-soft font-medium" aria-label="{{ $isRtl ? 'Switch to English' : 'التبديل إلى العربية' }}">
+    <footer class="relative z-20 py-5 px-6">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 text-xs" style="color:var(--muted);">
+            <p class="flex items-center gap-2 flex-wrap justify-center">
+                <span style="color:var(--gold);">◆</span>
+                <span>{{ $officeName }} — © {{ date('Y') }}</span>
+                <span aria-hidden="true">·</span>
+                <a href="https://dev.riyami.om/" target="_blank" rel="noopener" class="link-soft font-semibold">مُداوَلة</a>
+            </p>
+            <div class="flex items-center gap-3">
+                <button type="button" class="foot-btn" data-theme-toggle aria-pressed="false"
+                        aria-label="{{ $isRtl ? 'تبديل الوضع الليلي' : 'Toggle dark mode' }}">
+                    <svg data-theme-sun class="w-3.5 h-3.5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+                    </svg>
+                    <svg data-theme-moon class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>
+                    </svg>
+                    <span data-theme-label>{{ $isRtl ? 'ليلي' : 'Dark' }}</span>
+                </button>
+                <a href="{{ route('language.switch', $isRtl ? 'en' : 'ar') }}" class="foot-btn" aria-label="{{ $isRtl ? 'Switch to English' : 'التبديل إلى العربية' }}">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                    </svg>
                     {{ $isRtl ? 'English' : 'العربية' }}
                 </a>
             </div>
         </div>
     </footer>
+    </div>
 
     <script nonce="{{ $cspNonce }}">
         (function () {
@@ -727,6 +868,41 @@
                 });
             } else if (glow) { glow.style.display = 'none'; }
 
+            /* ---------- theme (نفس مفتاح التخزين المستخدم داخل النظام) ---------- */
+            const themeBtn = document.querySelector('[data-theme-toggle]');
+            if (themeBtn) {
+                const sun = themeBtn.querySelector('[data-theme-sun]');
+                const moon = themeBtn.querySelector('[data-theme-moon]');
+                const label = themeBtn.querySelector('[data-theme-label]');
+                const isAr = document.documentElement.getAttribute('lang') === 'ar';
+                const paint = function (t) {
+                    const dark = t === 'dark';
+                    document.documentElement.setAttribute('data-theme', t);
+                    themeBtn.setAttribute('aria-pressed', String(dark));
+                    if (sun) sun.classList.toggle('hidden', !dark);
+                    if (moon) moon.classList.toggle('hidden', dark);
+                    if (label) label.textContent = dark ? (isAr ? 'نهاري' : 'Light') : (isAr ? 'ليلي' : 'Dark');
+                };
+                let current = 'light';
+                try { current = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'; } catch (e) {}
+                paint(current);
+                themeBtn.addEventListener('click', function () {
+                    current = current === 'dark' ? 'light' : 'dark';
+                    paint(current);
+                    try { localStorage.setItem('theme', current); } catch (e) {}
+                });
+            }
+
+            /* ---------- تلميح استعادة كلمة المرور (لا استعادة ذاتية في النظام) ---------- */
+            const forgotBtn = document.querySelector('[data-forgot-hint]');
+            const forgotHint = document.getElementById('forgotHint');
+            if (forgotBtn && forgotHint) {
+                forgotBtn.addEventListener('click', function () {
+                    const open = forgotHint.classList.toggle('hidden') === false;
+                    forgotBtn.setAttribute('aria-expanded', String(open));
+                });
+            }
+
             /* ---------- password visibility ---------- */
             const pwd = document.querySelector('[data-password-toggle]');
             const eyeBtn = document.querySelector('[data-eye-btn]');
@@ -745,7 +921,7 @@
             /* ---------- remember me (localStorage, unchanged logic) ---------- */
             const emailInput = document.getElementById('email');
             const rememberCheck = document.getElementById('remember');
-            const saved = localStorage.getItem('lexpro_remembered_email');
+            const saved = localStorage.getItem('mudawala_remembered_email') || localStorage.getItem('lexpro_remembered_email');
             if (saved && emailInput) {
                 emailInput.value = saved;
                 if (rememberCheck) rememberCheck.checked = true;
@@ -810,8 +986,10 @@
                 jsErrorBox.style.opacity = '0';
 
                 if (rememberCheck && rememberCheck.checked && emailInput) {
-                    localStorage.setItem('lexpro_remembered_email', emailInput.value);
+                    localStorage.setItem('mudawala_remembered_email', emailInput.value);
+                    localStorage.removeItem('lexpro_remembered_email'); // ترحيل المفتاح القديم
                 } else {
+                    localStorage.removeItem('mudawala_remembered_email');
                     localStorage.removeItem('lexpro_remembered_email');
                 }
 
@@ -824,7 +1002,10 @@
                     redirect: 'follow'
                 }).then(function (res) {
                     const finalUrl = res.url || window.location.href;
-                    if (res.redirected && finalUrl.indexOf('/dashboard') !== -1) {
+                    /* نجاح = الخادم أعاد التوجيه بعيداً عن صفحة الدخول (تُحترم intended) */
+                    var landedOnLogin = true;
+                    try { landedOnLogin = new URL(finalUrl, window.location.origin).pathname.replace(/\/+$/, '') === '/login'; } catch (e) {}
+                    if (res.redirected && !landedOnLogin) {
                         playSuccess(function () { window.location.href = finalUrl; });
                         return;
                     }

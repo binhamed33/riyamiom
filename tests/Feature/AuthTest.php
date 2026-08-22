@@ -49,7 +49,8 @@ class AuthTest extends TestCase
             'password' => 'wrong-password',
         ]);
 
-        $response->assertSessionHasErrors('email');
+        $response->assertRedirect('/login');
+        $response->assertSessionHas('login_error');
         $this->assertGuest();
     }
 
@@ -165,7 +166,9 @@ class AuthTest extends TestCase
             'password' => 'wrong-password',
         ]);
 
-        $response->assertSessionHasErrors('email');
+        $response->assertRedirect('/login');
+        $response->assertSessionHas('login_error');
+        $this->assertGuest();
     }
 
     public function test_root_redirects_to_dashboard_when_authenticated()

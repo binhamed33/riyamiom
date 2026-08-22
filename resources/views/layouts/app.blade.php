@@ -1,14 +1,9 @@
 @php
-    $officeName = \App\Models\Setting::get('office_name', 'مُداوَلة');
+    // هوية المكتب من مصدر واحد (شعار المكتب ملك المكتب وحده)
+    $officeName = \App\Support\OfficeBrand::name();
     $isRtl = app()->getLocale() === 'ar';
-    $officeLogo = null;
-    foreach (['svg', 'png', 'jpg', 'jpeg'] as $ext) {
-        if (is_file(public_path("img/office-logo.{$ext}"))) {
-            $officeLogo = asset("img/office-logo.{$ext}") . '?v=' . @filemtime(public_path("img/office-logo.{$ext}"));
-            $officeLogoType = $ext === 'svg' ? 'image/svg+xml' : "image/{$ext}";
-            break;
-        }
-    }
+    $officeLogo = \App\Support\OfficeBrand::logoUrl();
+    $officeLogoType = \App\Support\OfficeBrand::logoMime();
     // تنبيهات الاشتراك إدارية: تظهر لمدير المكتب فقط — لا للمحامين والموظفين
     $subscriptionInfo = auth()->check() && auth()->user()->isAdmin()
         ? app(\App\Services\SubscriptionService::class)->info()

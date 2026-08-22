@@ -450,6 +450,12 @@ return [
     'email' => 'Email',
     'remember_me' => 'Remember me',
     'forgot_password' => 'Forgot password?',
+    'login_welcome' => 'Welcome to your legal workspace',
+    'login_lead' => 'Sign in for secure access to your cases, documents and legal records.',
+    'login_tagline' => 'An integrated legal workspace',
+    'login_verifying' => 'Verifying your credentials…',
+    'forgot_password_hint' => 'For security, password resets are handled by your office administrator — ask them to reset it for you from the Employees page.',
+    'office_logo_alt' => ':office logo',
 
     // Layout / UI
     'switch_to_en' => 'English',

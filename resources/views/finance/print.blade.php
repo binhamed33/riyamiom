@@ -50,6 +50,10 @@
     <button class="print-btn" onclick="window.print()">طباعة / Print</button>
 
     <div class="header">
+        @php $officeLogoData = \App\Support\OfficeBrand::logoDataUri(); @endphp
+        @if($officeLogoData)
+            <img src="{{ $officeLogoData }}" alt="" style="max-height:56px;max-width:180px;margin:0 auto 8px;display:block;">
+        @endif
         <h1>{{ \App\Models\Setting::get('office_name', 'مُداوَلة') }}</h1>
         <p>{{ \App\Models\Setting::get('office_address', '') }}</p>
     </div>

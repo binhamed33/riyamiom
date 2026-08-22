@@ -6,6 +6,10 @@
         <table class="pdf-header-table">
             <tr>
                 <td style="text-align: right;">
+                    @php $officeLogoData = \App\Support\OfficeBrand::logoDataUri(); @endphp
+                    @if($officeLogoData)
+                        <img src="{{ $officeLogoData }}" alt="" style="max-height:46px;max-width:150px;margin-bottom:4px;">
+                    @endif
                     <div class="office-name">{{ \App\Models\Setting::get('office_name', 'مكتب حمد الريامي للمحاماة') }}</div>
                     <div class="office-sub">هاتف: {{ \App\Models\Setting::get('phone', '99331700') }} | بريد: {{ \App\Models\Setting::get('email', 'info@riyami.om') }}</div>
                 </td>
