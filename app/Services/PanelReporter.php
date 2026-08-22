@@ -90,6 +90,47 @@ class PanelReporter
         }
     }
 
+    /**
+     * سحب مصير الاقتراحات من اللوحة: الحالة وردّ المطوّر.
+     *
+     * سحب لا استقبال: المكتب هو من يبدأ الاتصال، فلا يحتاج منفذاً
+     * مفتوحاً ولا مساراً بلا جلسة يستقبل من الخارج. وإن كانت اللوحة
+     * بعيدة أو الرمز خاطئاً فالنتيجة مصفوفة فارغة — لا شيء يتغيّر عند
+     * الموظف.
+     *
+     * @param  array<int, int>  $remoteIds
+     * @return array<int, array<string, mixed>>
+     */
+    public static function fetchReplies(array $remoteIds = []): array
+    {
+        if (!self::configured()) {
+            return [];
+        }
+
+        try {
+            $response = Http::timeout((int) config('panel.ingest_timeout', 8))
+                ->withHeaders(['X-Mudawala-Token' => config('panel.ingest_token')])
+                ->acceptJson()
+                ->post(rtrim((string) config('panel.ingest_url'), '/') . '/ingest/replies', [
+                    'remote_ids' => array_values(array_slice(array_map('intval', $remoteIds), 0, 500)),
+                ]);
+
+            if (!$response->successful()) {
+                Log::warning('PanelReporter: replies rejected', ['status' => $response->status()]);
+
+                return [];
+            }
+
+            $replies = $response->json('replies');
+
+            return is_array($replies) ? $replies : [];
+        } catch (\Throwable $e) {
+            Log::warning('PanelReporter: replies unreachable — ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
     private static function aiEnabled(): bool
     {
         try {

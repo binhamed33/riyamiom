@@ -57,15 +57,27 @@
         @forelse($suggestions as $suggestion)
             <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-3">
                 <div class="flex items-center gap-2 mb-2">
-                    @if($suggestion->status === 'implemented')
+                    {{-- الحالة كما قرّرها فريق التطوير، لا كما تُخمَّن محلياً --}}
+                    @php $state = $suggestion->statusDisplay(); @endphp
+                    @if($state['tone'] === 'done')
                         <span class="inline-flex items-center gap-1 text-[11px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                            تم التنفيذ
+                            {{ $state['label'] }}
+                        </span>
+                    @elseif($state['tone'] === 'planned')
+                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 11h18M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>
+                            {{ $state['label'] }}
+                        </span>
+                    @elseif($state['tone'] === 'declined')
+                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                            {{ $state['label'] }}
                         </span>
                     @else
                         <span class="inline-flex items-center gap-1 text-[11px] font-bold text-gold-dark bg-gold/12 px-2 py-0.5 rounded-full">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            قيد الدراسة أو التنفيذ
+                            {{ $state['label'] }}
                         </span>
                     @endif
 

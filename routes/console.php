@@ -26,3 +26,8 @@ Schedule::command('panel:heartbeat')->hourly();
 // شبكة أمان الاقتراحات: ما لم يصل اللوحة يُعاد إرساله — خامد إن لم
 // يكن المكتب مربوطاً.
 Schedule::command('suggestions:retry-delivery')->hourly()->withoutOverlapping();
+
+// قناة العودة: حالة الاقتراح وردّ المطوّر تُجلب من اللوحة إلى المكتب،
+// فيرى الموظّف مصير اقتراحه ويصله إشعار بلغته — خامدة إن لم يكن
+// المكتب مربوطاً.
+Schedule::command('suggestions:sync-replies')->everyFifteenMinutes()->withoutOverlapping();

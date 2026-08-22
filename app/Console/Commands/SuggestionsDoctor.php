@@ -118,7 +118,26 @@ class SuggestionsDoctor extends Command
             }
         }
 
-        // ٥) العلاج
+        // ٥) قناة العودة — هل يصل ردّ المطوّر إلى الموظّف؟
+        $this->line('');
+        $this->line('<options=bold>قناة العودة (ردّ المطوّر إلى الموظّف)</>');
+
+        $withReply = Suggestion::whereNotNull('developer_reply')->count();
+        $unread = Suggestion::whereNotNull('developer_reply')->where('reply_read', false)->count();
+
+        $this->line('      ردود وصلت المكتب : ' . $withReply . ' (غير مقروء: ' . $unread . ')');
+
+        if (\App\Services\PanelReporter::configured()) {
+            $this->line('  <fg=green>✓</> تُجلب من اللوحة كل ربع ساعة (suggestions:sync-replies)');
+
+            if ($this->option('fix')) {
+                $this->call('suggestions:sync-replies');
+            }
+        } else {
+            $this->line('  <fg=yellow>!</> المكتب غير مربوط — لا ردّ يُجلب');
+        }
+
+        // ٦) العلاج
         $stuck = Suggestion::whereIn('delivery_state', ['pending', 'failed', 'skipped'])->count();
 
         if ($stuck > 0) {
