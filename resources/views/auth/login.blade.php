@@ -478,7 +478,7 @@
                         </form>
 
                         <div class="mt-5 pt-5 border-t text-center" style="border-color:rgba(146,153,165,0.14);">
-                            <p class="text-xs" style="color:rgba(146,153,165,0.6);">{{ $officeName }} — <a href="{{ url('/portfolio') }}" target="_blank" class="link-soft" rel="noopener">مُداوَلة</a> · منظومة قانونية متكاملة</p>
+                            <p class="text-xs" style="color:rgba(146,153,165,0.6);">{{ $officeName }} — <a href="https://dev.riyami.om/" target="_blank" class="link-soft" rel="noopener">مُداوَلة</a> · منظومة قانونية متكاملة</p>
                         </div>
                     </div>
                 </div>

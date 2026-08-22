@@ -37,6 +37,6 @@ return [
     /*
     | رابط موقع البورتفوليو
     */
-    'portfolio_url' => 'https://office.riyami.om/portfolio/',
+    'portfolio_url' => 'https://dev.riyami.om/',
 
 ];

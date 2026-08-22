@@ -63,27 +63,6 @@ Route::post('/session/keepalive', function (Illuminate\Http\Request $request) {
     return response()->json(['ok' => true]);
 })->name('session.keepalive')->middleware('auth');
 
-// Portfolio site
-Route::get('/portfolio/{path?}', function ($path = null) {
-    $base = realpath(public_path('portfolio'));
-    if (!$base || !str_starts_with($base, realpath(public_path()))) {
-        abort(404);
-    }
-    $file = $path ? realpath($base . '/' . $path) : $base . '/index.html';
-    if (!$file || !str_starts_with($file, $base)) {
-        abort(404);
-    }
-    if (is_dir($file)) {
-        $file = rtrim($file, '/\\') . '/index.html';
-    }
-    if (file_exists($file)) {
-        $exts = ['css' => 'text/css', 'js' => 'application/javascript', 'html' => 'text/html', 'png' => 'image/png', 'jpg' => 'image/jpeg', 'svg' => 'image/svg+xml', 'json' => 'application/json', 'ico' => 'image/x-icon'];
-        $ext = pathinfo($file, PATHINFO_EXTENSION);
-        return response(file_get_contents($file), 200, ['Content-Type' => $exts[$ext] ?? 'application/octet-stream']);
-    }
-    abort(404);
-})->where('path', '.*');
-
 // Redirect root to dashboard or login
 Route::get('/', fn () => redirect()->route('dashboard'));
 
@@ -114,9 +93,9 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::post('/ai-assistant/clear', [App\Http\Controllers\AssistantController::class, 'clear'])->name('assistant.clear');
 
     // صفحة تعريف مُداوَلة الداخلية
-    Route::get('/lexpro', function () {
-        return view('lexpro.index');
-    })->name('lexpro');
+    Route::get('/about', function () {
+        return view('about.index');
+    })->name('about');
 
     // User Guide (داخل النظام)
     Route::get('/guide/system', function () {
