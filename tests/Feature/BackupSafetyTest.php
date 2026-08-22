@@ -135,6 +135,51 @@ class BackupSafetyTest extends TestCase
         $this->assertStringContainsString("BackupVerifier::prune", $src);
     }
 
+    // -------------------------------------------------- تشغيل حقيقي
+
+    /**
+     * يشغّل backup:daily من أوله لآخره لا يفحص شيفرته: فحص النص لم
+     * يلتقط حذف دالة بالخطأ، فوصل العطل إلى الخادم وأنتج نسخة بلا
+     * ملفات التخزين. التشغيل الفعلي يلتقطه.
+     */
+    public function test_the_daily_backup_actually_runs_and_includes_storage_files(): void
+    {
+        $backupDir = storage_path('app/backups');
+        $before = glob($backupDir . '/backup-*.zip') ?: [];
+
+        // ملف تخزين حقيقي يجب أن يظهر داخل الأرشيف
+        $probe = storage_path('app/private/backup-probe.txt');
+        @mkdir(dirname($probe), 0700, true);
+        file_put_contents($probe, 'محتوى تجريبي للفحص');
+
+        try {
+            $this->artisan('backup:daily')->assertSuccessful();
+
+            $after = glob($backupDir . '/backup-*.zip') ?: [];
+            $new = array_values(array_diff($after, $before));
+            $this->assertCount(1, $new, 'لم تُنشأ نسخة جديدة');
+
+            $verify = BackupVerifier::verify($new[0]);
+            $this->assertTrue($verify['ok'], 'النسخة لا تجتاز الفحص: ' . $verify['reason']);
+
+            // قاعدة البيانات وملفات التخزين معاً — لا قاعدة وحدها
+            $zip = new \ZipArchive();
+            $zip->open($new[0]);
+            $names = [];
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $names[] = $zip->getNameIndex($i);
+            }
+            $zip->close();
+
+            $this->assertContains('storage/private/backup-probe.txt', $names,
+                'ملفات التخزين غائبة عن الأرشيف — نسخة ناقصة');
+
+            @unlink($new[0]);
+        } finally {
+            @unlink($probe);
+        }
+    }
+
     // ------------------------------------------------- الأوامر المدمّرة
 
     public function test_db_wipe_is_refused_when_the_guard_is_armed(): void

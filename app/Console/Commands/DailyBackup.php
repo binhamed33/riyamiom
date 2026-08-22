@@ -37,7 +37,7 @@ class DailyBackup extends Command
 
         $mysqldump = PHP_OS_FAMILY === 'Windows'
             ? '"C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqldump.exe"'
-            : 'mysqldump';
+            : (trim((string) shell_exec('command -v mariadb-dump')) ?: 'mysqldump');
 
         // Use temp config file for mysqldump to avoid shell escaping issues
         $configFile = tempnam(sys_get_temp_dir(), 'my') . '.cnf';
@@ -151,4 +151,17 @@ class DailyBackup extends Command
         return 0;
     }
 
+
+    private function addDirectoryToZip(ZipArchive $zip, string $directory, string $zipDir): void
+    {
+        $files = glob($directory . '/*');
+
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                $zip->addFile($file, $zipDir . '/' . basename($file));
+            } elseif (is_dir($file)) {
+                $this->addDirectoryToZip($zip, $file, $zipDir . '/' . basename($file));
+            }
+        }
+    }
 }

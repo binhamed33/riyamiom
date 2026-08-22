@@ -75,7 +75,7 @@ class AutoBackup extends Command
 
         $mysqldump = PHP_OS_FAMILY === 'Windows'
             ? '"C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqldump.exe"'
-            : 'mysqldump';
+            : (trim((string) shell_exec('command -v mariadb-dump')) ?: 'mysqldump');
 
         $configFile = tempnam(sys_get_temp_dir(), 'my') . '.cnf';
         file_put_contents($configFile, "[client]\nhost={$host}\nport={$port}\nuser={$user}\npassword={$pass}\n");
