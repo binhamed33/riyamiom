@@ -19,6 +19,31 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
+    /**
+     * سبب الرفض يقوله الخادم صراحةً.
+     *
+     * كانت الصفحة تخمّن السبب بالبحث عن عبارة في نصّ الصفحة العائدة —
+     * ونصّ الصفحة يشمل نصّ الـ script نفسه، والـ script يحمل تلك العبارة
+     * في سطر الفحص. فكان كل فشل يظهر «قفل الحساب» ولو كان أول محاولة
+     * بكلمة مرور خاطئة.
+     *
+     * الآن الطلب من الصفحة يُردّ عليه بسبب مُسمّى، والإرسال العادي بلا
+     * جافاسكربت يبقى كما كان بالضبط.
+     */
+    private function reject(Request $request, string $code, string $title, string $detail, string $flash)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'ok' => false,
+                'code' => $code,
+                'title' => $title,
+                'detail' => $detail,
+            ], 401);
+        }
+
+        return redirect()->route('login')->with('login_error', $flash);
+    }
+
     public function login(Request $request)
     {
         $request->validate([
@@ -30,7 +55,10 @@ class LoginController extends Controller
         $lockKey = 'login_lock_' . md5($email);
 
         if (Cache::has($lockKey)) {
-            return redirect()->route('login')->with('login_error', 'تم قفل الحساب مؤقتاً بسبب محاولات دخول كثيرة. حاول مرة أخرى بعد 15 دقيقة.');
+            return $this->reject($request, 'locked',
+                'تم تعليق تسجيل الدخول مؤقتًا',
+                'محاولات كثيرة خاطئة. حاول بعد ١٥ دقيقة، أو تواصل مع مدير المكتب.',
+                'تم قفل الحساب مؤقتاً بسبب محاولات دخول كثيرة. حاول مرة أخرى بعد 15 دقيقة.');
         }
 
         $attemptsKey = 'login_attempts_' . md5($email);
@@ -56,19 +84,35 @@ class LoginController extends Controller
 
                 $this->sendLockAlert($email, $request->ip(), $request->userAgent());
 
-                return redirect()->route('login')->with('login_error', 'تم قفل الحساب مؤقتاً بسبب محاولات دخول كثيرة. حاول مرة أخرى بعد 15 دقيقة.');
+                return $this->reject($request, 'locked',
+                    'تم تعليق تسجيل الدخول مؤقتًا',
+                    'محاولات كثيرة خاطئة. حاول بعد ١٥ دقيقة، أو تواصل مع مدير المكتب.',
+                    'تم قفل الحساب مؤقتاً بسبب محاولات دخول كثيرة. حاول مرة أخرى بعد 15 دقيقة.');
             }
 
             Cache::put($attemptsKey, $attempts, now()->addMinutes(15));
 
-            return redirect()->route('login')->with('login_error', 'البريد الإلكتروني أو كلمة المرور غير صحيحة.');
+            // آخر محاولتين: نقول كم بقي حتى لا يُفاجأ بالقفل
+            $left = 5 - $attempts;
+            $detail = $left <= 2
+                ? 'تحقّق من البريد وكلمة المرور. بقيت لك ' . $left . ' ' . ($left === 1 ? 'محاولة' : 'محاولتان') . ' قبل التعليق المؤقّت.'
+                : 'تحقّق من البريد الإلكتروني وكلمة المرور ثم حاول مرة أخرى.';
+
+            return $this->reject($request, 'invalid_credentials',
+                'كلمة المرور أو البريد غير صحيح',
+                $detail,
+                'البريد الإلكتروني أو كلمة المرور غير صحيحة.');
         }
 
         Cache::forget($attemptsKey);
 
         if (!auth()->user()->is_active) {
             auth()->logout();
-            return redirect()->route('login')->with('login_error', 'تم تعطيل حسابك. تواصل مع مدير المكتب.');
+
+            return $this->reject($request, 'disabled',
+                'حسابك معطَّل',
+                'تواصل مع مدير المكتب لإعادة تفعيله.',
+                'تم تعطيل حسابك. تواصل مع مدير المكتب.');
         }
 
         $request->session()->regenerate();

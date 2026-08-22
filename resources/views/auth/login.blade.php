@@ -222,6 +222,32 @@
         .scales-sway { transform-origin: 50% 30%; animation: swaySettle 1.6s cubic-bezier(0.34,1.2,0.4,1) 1.1s forwards; }
         @keyframes swaySettle { 0% { transform: rotate(-2.4deg); } 50% { transform: rotate(1.3deg); } 100% { transform: rotate(0deg); } }
 
+        /* ميزان الجانب: حياة هادئة لا حركة صاخبة — بريق يمرّ ببطء،
+           ونقوش الخاتم تدور دورة كاملة في دقيقة، وذرّات تطفو. */
+        .md-sheen { transform-box: view-box; opacity: 0; animation: mdSheen 9s cubic-bezier(0.45,0,0.3,1) 3.5s infinite; }
+        @keyframes mdSheen {
+            0%   { opacity: 0; transform: translateX(-60px); }
+            8%   { opacity: 0.5; }
+            26%  { opacity: 0.5; }
+            34%  { opacity: 0; transform: translateX(360px); }
+            100% { opacity: 0; transform: translateX(360px); }
+        }
+        .md-ticks { transform-box: view-box; transform-origin: 160px 152px; animation: mdTicks 60s linear infinite; }
+        @keyframes mdTicks { to { transform: rotate(360deg); } }
+        .md-dust circle { transform-box: view-box; opacity: 0; animation: mdDust 9s ease-in-out infinite; }
+        @keyframes mdDust {
+            0%   { opacity: 0; transform: translateY(10px); }
+            25%  { opacity: 0.75; }
+            70%  { opacity: 0.35; }
+            100% { opacity: 0; transform: translateY(-64px); }
+        }
+        .md-dust circle:nth-child(1) { animation-delay: 0s; }
+        .md-dust circle:nth-child(2) { animation-delay: 1.6s; }
+        .md-dust circle:nth-child(3) { animation-delay: 3.1s; }
+        .md-dust circle:nth-child(4) { animation-delay: 4.4s; }
+        .md-dust circle:nth-child(5) { animation-delay: 5.9s; }
+        .md-dust circle:nth-child(6) { animation-delay: 7.2s; }
+
         .scales-float { animation: scalaFloat 10s ease-in-out 4.5s infinite; }
         @keyframes scalaFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 
@@ -547,7 +573,7 @@
             }
             .reveal, .reveal-bg, .scales-wrap, .visual-frame, .watermark-word,
             .verses-box .verse-ring, .brand-mark,
-            .hairline-gold, .seal-rotor, #cursorGlow, .dust,
+            .hairline-gold, .seal-rotor, #cursorGlow, .dust, .md-dust circle, .md-sheen, .md-ticks,
             .j-rays, .j-seal, .j-base, .j-beam-fade, .j-finial { opacity: 1; animation: none !important; }
             /* الميزان يظهر مستوياً بلا تأرجح لمن طلب تقليل الحركة */
             .j-column { transform: scaleY(1) !important; }
@@ -748,81 +774,124 @@
                     <div class="scales-float">
                         {{-- halo --}}
                         <div class="absolute inset-0 -m-16 rounded-full opacity-40" style="background:radial-gradient(circle, rgba(200,169,107,0.10), transparent 65%);"></div>
-                        <svg class="w-[230px] sm:w-[270px] lg:w-[330px] h-auto relative" viewBox="0 0 320 300" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ $isRtl ? 'ميزان العدالة' : 'Scales of Justice' }}">
+                        <svg class="md-scales w-[240px] sm:w-[280px] lg:w-[340px] h-auto relative" viewBox="0 0 320 330" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ $isRtl ? 'ميزان العدالة' : 'Scales of Justice' }}">
                             <defs>
-                                <linearGradient id="mdGold" x1="0" y1="0" x2="1" y2="1">
-                                    <stop offset="0" stop-color="#F0D98A"/>
-                                    <stop offset="0.5" stop-color="#E5C158"/>
-                                    <stop offset="1" stop-color="#A98218"/>
+                                {{-- ذهب مصقول: ضوء في الأعلى وظلّ في الأسفل — لا لون مسطّح --}}
+                                <linearGradient id="mdGold" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0" stop-color="#FFF4D2"/>
+                                    <stop offset="0.34" stop-color="#EBD08A"/>
+                                    <stop offset="0.63" stop-color="#B8912E"/>
+                                    <stop offset="1" stop-color="#7E6013"/>
                                 </linearGradient>
-                                <linearGradient id="mdGoldV" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0" stop-color="#F0D98A"/>
-                                    <stop offset="1" stop-color="#A98218"/>
+                                {{-- معدن أفقي: حافّتان داكنتان ولمعة في الوسط، فيبدو أسطوانياً --}}
+                                <linearGradient id="mdGoldH" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0" stop-color="#8A6A14"/>
+                                    <stop offset="0.24" stop-color="#F4E3AC"/>
+                                    <stop offset="0.5" stop-color="#C8A96B"/>
+                                    <stop offset="0.76" stop-color="#F4E3AC"/>
+                                    <stop offset="1" stop-color="#8A6A14"/>
                                 </linearGradient>
                                 <linearGradient id="mdPan" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0" stop-color="#F0D98A" stop-opacity="0.55"/>
-                                    <stop offset="0.55" stop-color="#E5C158" stop-opacity="0.22"/>
-                                    <stop offset="1" stop-color="#A98218" stop-opacity="0.45"/>
+                                    <stop offset="0" stop-color="#F4E3AC" stop-opacity="0.5"/>
+                                    <stop offset="0.5" stop-color="#C8A96B" stop-opacity="0.2"/>
+                                    <stop offset="1" stop-color="#7E6013" stop-opacity="0.5"/>
                                 </linearGradient>
-                                <filter id="mdGlow" x="-40%" y="-40%" width="180%" height="180%">
-                                    <feGaussianBlur stdDeviation="5" result="b"/>
+                                <linearGradient id="mdSheen" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0" stop-color="rgba(255,255,255,0)"/>
+                                    <stop offset="0.5" stop-color="rgba(255,252,238,0.7)"/>
+                                    <stop offset="1" stop-color="rgba(255,255,255,0)"/>
+                                </linearGradient>
+                                <radialGradient id="mdFloor" cx="0.5" cy="0.5" r="0.5">
+                                    <stop offset="0" stop-color="rgba(200,169,107,0.28)"/>
+                                    <stop offset="1" stop-color="rgba(200,169,107,0)"/>
+                                </radialGradient>
+                                <filter id="mdGlow" x="-45%" y="-45%" width="190%" height="190%">
+                                    <feGaussianBlur stdDeviation="6" result="b"/>
                                     <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
                                 </filter>
+                                {{-- البريق يُقصّ على المعدن وحده فلا يسيل خارجه --}}
+                                <clipPath id="mdMetal">
+                                    <rect x="154" y="84" width="12" height="170" rx="3"/>
+                                    <rect x="52" y="85.5" width="216" height="6" rx="3"/>
+                                    <path d="M126 254 L194 254 L206 274 L114 274 Z"/>
+                                    <rect x="104" y="274" width="112" height="10" rx="4"/>
+                                    <rect x="86" y="284" width="148" height="11" rx="5"/>
+                                    <path d="M10 134 L94 134 C90 162 76 176 52 176 C28 176 14 162 10 134 Z"/>
+                                    <path d="M226 134 L310 134 C306 162 292 176 268 176 C244 176 230 162 226 134 Z"/>
+                                </clipPath>
                             </defs>
 
-                            {{-- ground glow --}}
-                            <ellipse cx="160" cy="268" rx="116" ry="13" fill="rgba(200,169,107,0.16)" filter="url(#mdGlow)"/>
-                            <ellipse cx="160" cy="268" rx="62" ry="7" fill="rgba(240,217,138,0.18)"/>
+                            {{-- الخاتم المحفور: اللغة نفسها التي يُختم بها الدخول --}}
+                            <g opacity="0.5">
+                                <circle cx="160" cy="152" r="126" fill="none" stroke="#C8A96B" stroke-opacity="0.22" stroke-width="0.9"/>
+                                <circle cx="160" cy="152" r="108" fill="none" stroke="#C8A96B" stroke-opacity="0.13" stroke-width="0.7"/>
+                                <circle class="md-ticks" cx="160" cy="152" r="117" fill="none" stroke="#E0C98A" stroke-opacity="0.3"
+                                        stroke-width="2.2" stroke-linecap="round" stroke-dasharray="0.5 15"/>
+                            </g>
 
-                            {{-- finial --}}
-                            <rect x="157" y="86" width="6" height="18" rx="3" fill="url(#mdGoldV)"/>
-                            <circle cx="160" cy="80" r="8" fill="url(#mdGold)"/>
-                            <circle cx="157.5" cy="77.5" r="3" fill="rgba(240,217,138,0.75)"/>
+                            {{-- ظلّ الأرض --}}
+                            <ellipse cx="160" cy="300" rx="130" ry="16" fill="url(#mdFloor)" filter="url(#mdGlow)"/>
+                            <ellipse cx="160" cy="298" rx="58" ry="6" fill="rgba(240,217,138,0.16)"/>
 
-                            {{-- beam --}}
-                            <line x1="40" y1="104" x2="280" y2="104" stroke="url(#mdGold)" stroke-width="8" stroke-linecap="round"/>
-                            <line x1="40" y1="101" x2="280" y2="101" stroke="rgba(240,217,138,0.5)" stroke-width="1.5" stroke-linecap="round"/>
-                            <circle cx="40" cy="104" r="6.5" fill="url(#mdGoldV)"/>
-                            <circle cx="280" cy="104" r="6.5" fill="url(#mdGoldV)"/>
-                            <circle cx="38.5" cy="102" r="2" fill="rgba(240,217,138,0.8)"/>
-                            <circle cx="278.5" cy="102" r="2" fill="rgba(240,217,138,0.8)"/>
-                            <circle cx="160" cy="104" r="7.5" fill="url(#mdGold)"/>
-                            <circle cx="158" cy="101.5" r="2.8" fill="rgba(240,217,138,0.7)"/>
+                            {{-- التاج --}}
+                            <circle cx="160" cy="62" r="7.5" fill="url(#mdGold)"/>
+                            <circle cx="160" cy="59.5" r="2.6" fill="rgba(255,248,228,0.8)"/>
+                            <rect x="157" y="68" width="6" height="16" rx="3" fill="url(#mdGoldH)"/>
 
-                            {{-- pillar --}}
-                            <rect x="149" y="104" width="22" height="118" rx="4" fill="url(#mdGoldV)"/>
-                            <rect x="153" y="112" width="4" height="102" rx="2" fill="rgba(240,217,138,0.30)"/>
-                            <rect x="143" y="124" width="34" height="6" rx="3" fill="rgba(232,213,164,0.5)"/>
-                            <rect x="145" y="160" width="30" height="5" rx="2.5" fill="rgba(232,213,164,0.4)"/>
-                            <rect x="145" y="194" width="30" height="5" rx="2.5" fill="rgba(232,213,164,0.4)"/>
+                            {{-- العارضة --}}
+                            <rect x="52" y="85.5" width="216" height="6" rx="3" fill="url(#mdGoldH)"/>
+                            <rect x="52" y="86.5" width="216" height="1.6" rx="0.8" fill="rgba(255,248,228,0.55)"/>
+                            <circle cx="52" cy="88.5" r="4.6" fill="url(#mdGold)"/>
+                            <circle cx="268" cy="88.5" r="4.6" fill="url(#mdGold)"/>
+                            <circle cx="160" cy="88.5" r="7" fill="url(#mdGold)"/>
+                            <circle cx="158.5" cy="86" r="2.4" fill="rgba(255,248,228,0.75)"/>
 
-                            {{-- base --}}
-                            <path d="M134 222 L186 222 L198 240 L122 240 Z" fill="url(#mdGoldV)"/>
-                            <rect x="138" y="226" width="44" height="2" rx="1" fill="rgba(240,217,138,0.4)"/>
-                            <rect x="106" y="240" width="108" height="10" rx="5" fill="url(#mdGold)"/>
-                            <rect x="90" y="252" width="140" height="11" rx="5.5" fill="url(#mdGold)"/>
-                            <rect x="90" y="254" width="140" height="3" rx="1.5" fill="rgba(240,217,138,0.45)"/>
+                            {{-- العمود وأطواقه --}}
+                            <rect x="154" y="84" width="12" height="170" rx="3" fill="url(#mdGoldH)"/>
+                            <rect x="157" y="88" width="2.4" height="162" rx="1.2" fill="rgba(255,248,228,0.4)"/>
+                            <rect x="147" y="126" width="26" height="4.5" rx="2.2" fill="url(#mdGoldH)"/>
+                            <rect x="149" y="172" width="22" height="4" rx="2" fill="url(#mdGoldH)" opacity="0.85"/>
+                            <rect x="149" y="216" width="22" height="4" rx="2" fill="url(#mdGoldH)" opacity="0.85"/>
 
-                            {{-- left shackle + chains + pan --}}
-                            <line x1="64" y1="106" x2="64" y2="122" stroke="url(#mdGold)" stroke-width="2.2" stroke-linecap="round"/>
-                            <circle cx="64" cy="122" r="3.5" fill="url(#mdGold)"/>
-                            <path d="M64 122 L24 152 M64 122 L104 152 M64 122 L64 142" stroke="url(#mdGold)" stroke-width="2.2" stroke-linecap="round"/>
-                            <path d="M24 152 A40 9.5 0 0 1 104 152" stroke="rgba(232,213,164,0.65)" stroke-width="1.6" fill="none"/>
-                            <path d="M24 152 C28 176 40 188 64 188 C88 188 100 176 104 152 Z" fill="url(#mdPan)" stroke="url(#mdGold)" stroke-width="2.2"/>
-                            <path d="M24 152 A40 9.5 0 0 0 104 152" stroke="url(#mdGold)" stroke-width="2.4" fill="none"/>
-                            <path d="M31 158 Q64 174 97 158" stroke="rgba(240,217,138,0.35)" stroke-width="1" fill="none"/>
+                            {{-- القاعدة: ثلاث درجات تتّسع كلّما نزلت --}}
+                            <path d="M126 254 L194 254 L206 274 L114 274 Z" fill="url(#mdGold)"/>
+                            <path d="M126 254 L194 254" stroke="rgba(255,248,228,0.45)" stroke-width="1.6"/>
+                            <rect x="104" y="274" width="112" height="10" rx="4" fill="url(#mdGoldH)"/>
+                            <rect x="86" y="284" width="148" height="11" rx="5" fill="url(#mdGoldH)"/>
+                            <rect x="86" y="285.5" width="148" height="2.4" rx="1.2" fill="rgba(255,248,228,0.4)"/>
 
-                            {{-- right shackle + chains + pan --}}
-                            <line x1="256" y1="106" x2="256" y2="122" stroke="url(#mdGold)" stroke-width="2.2" stroke-linecap="round"/>
-                            <circle cx="256" cy="122" r="3.5" fill="url(#mdGold)"/>
-                            <path d="M256 122 L216 152 M256 122 L296 152 M256 122 L256 142" stroke="url(#mdGold)" stroke-width="2.2" stroke-linecap="round"/>
-                            <path d="M216 152 A40 9.5 0 0 1 296 152" stroke="rgba(232,213,164,0.65)" stroke-width="1.6" fill="none"/>
-                            <path d="M216 152 C220 176 232 188 256 188 C280 188 292 176 296 152 Z" fill="url(#mdPan)" stroke="url(#mdGold)" stroke-width="2.2"/>
-                            <path d="M216 152 A40 9.5 0 0 0 296 152" stroke="url(#mdGold)" stroke-width="2.4" fill="none"/>
-                            <path d="M223 158 Q256 174 289 158" stroke="rgba(240,217,138,0.35)" stroke-width="1" fill="none"/>
+                            {{-- الكفّة اليسرى --}}
+                            <circle cx="52" cy="96" r="3" fill="url(#mdGold)"/>
+                            <path d="M52 96 L12 132 M52 96 L92 132 M52 96 L52 132"
+                                  stroke="#C8A96B" stroke-opacity="0.8" stroke-width="1.1"/>
+                            <path d="M10 134 L94 134 C90 162 76 176 52 176 C28 176 14 162 10 134 Z"
+                                  fill="url(#mdPan)" stroke="url(#mdGoldH)" stroke-width="1.8"/>
+                            <ellipse cx="52" cy="134" rx="42" ry="7.5" fill="rgba(10,12,18,0.55)" stroke="url(#mdGoldH)" stroke-width="1.8"/>
+                            <path d="M14 131 Q52 141 90 131" stroke="rgba(255,244,210,0.4)" stroke-width="1.1" fill="none"/>
 
-                            {{-- specks --}}
-                            <circle cx="160" cy="192" r="2" fill="rgba(224,201,138,0.5)"/>
+                            {{-- الكفّة اليمنى --}}
+                            <circle cx="268" cy="96" r="3" fill="url(#mdGold)"/>
+                            <path d="M268 96 L228 132 M268 96 L308 132 M268 96 L268 132"
+                                  stroke="#C8A96B" stroke-opacity="0.8" stroke-width="1.1"/>
+                            <path d="M226 134 L310 134 C306 162 292 176 268 176 C244 176 230 162 226 134 Z"
+                                  fill="url(#mdPan)" stroke="url(#mdGoldH)" stroke-width="1.8"/>
+                            <ellipse cx="268" cy="134" rx="42" ry="7.5" fill="rgba(10,12,18,0.55)" stroke="url(#mdGoldH)" stroke-width="1.8"/>
+                            <path d="M230 131 Q268 141 306 131" stroke="rgba(255,244,210,0.4)" stroke-width="1.1" fill="none"/>
+
+                            {{-- بريق بطيء يمرّ على المعدن --}}
+                            <g clip-path="url(#mdMetal)">
+                                <rect class="md-sheen" x="-60" y="40" width="58" height="270" fill="url(#mdSheen)" transform="skewX(-16)"/>
+                            </g>
+
+                            {{-- ذرّات ذهب تطفو --}}
+                            <g class="md-dust">
+                                <circle cx="96" cy="228" r="1.5" fill="#F0D98A"/>
+                                <circle cx="224" cy="212" r="1.2" fill="#E0C98A"/>
+                                <circle cx="130" cy="252" r="1" fill="#FFF4D2"/>
+                                <circle cx="200" cy="244" r="1.4" fill="#F0D98A"/>
+                                <circle cx="72" cy="200" r="1.1" fill="#C8A96B"/>
+                                <circle cx="248" cy="256" r="1.2" fill="#FFF4D2"/>
+                            </g>
                         </svg>
                     </div>
                 </div>
@@ -1222,16 +1291,19 @@
                         playSuccess(function () { window.location.href = finalUrl; });
                         return;
                     }
-                    /* authentication failed — server bounced back to /login */
-                    return res.text().then(function (html) {
-                        const doc = new DOMParser().parseFromString(html, 'text/html');
-                        let title = 'بيانات الدخول غير صحيحة';
-                        let detail = 'يرجى التحقق من البريد الإلكتروني وكلمة المرور والمحاولة مرة أخرى.';
-                        const msg = doc.body.textContent || '';
-                        if (msg.indexOf('قفل الحساب') !== -1 || msg.indexOf('تعطيل حسابك') !== -1) {
-                            title = 'تم تعليق تسجيل الدخول مؤقتًا';
-                            detail = 'لأسباب أمنية، يرجى المحاولة لاحقًا أو التواصل مع إدارة النظام.';
+                    /* فشل الدخول: السبب يقوله الخادم صراحةً.
+                       كنّا نبحث عن عبارة في نصّ الصفحة العائدة — ونصّها
+                       يشمل نصّ هذا السكربت نفسه، وفيه العبارة. فكان كل
+                       فشل يظهر «قفل الحساب» ولو كان أول خطأ في كلمة المرور. */
+                    return res.json().catch(function () { return null; }).then(function (data) {
+                        var title = 'كلمة المرور أو البريد غير صحيح';
+                        var detail = 'تحقّق من البريد الإلكتروني وكلمة المرور ثم حاول مرة أخرى.';
+
+                        if (data && data.title) {
+                            title = data.title;
+                            detail = data.detail || detail;
                         }
+
                         showAuthError(title, detail);
                         loginBtn.removeAttribute('disabled');
                         loginBtn.classList.remove('btn-loading');
