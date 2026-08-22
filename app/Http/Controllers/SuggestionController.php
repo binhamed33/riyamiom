@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Notification;
 use App\Models\Suggestion;
 use App\Services\DiscordNotifier;
+use App\Services\PanelReporter;
 use Illuminate\Http\Request;
 
 class SuggestionController extends Controller
@@ -54,9 +55,12 @@ class SuggestionController extends Controller
 
         $sent = DiscordNotifier::sendSuggestion(auth()->user(), $suggestion);
 
-        return back()->with('success', $sent
+        // وإلى لوحة مُداوَلة إن كان هذا المكتب مربوطاً بها — خامد وإلا
+        $reached = PanelReporter::sendSuggestion($suggestion);
+
+        return back()->with('success', ($sent || $reached)
             ? 'تم إرسال اقتراحك بنجاح — شكراً لمساهمتك'
-            : 'تم حفظ اقتراحك، لكن تعذر إرساله إلى ديسكورد حالياً — سنراجعه لاحقاً');
+            : 'تم حفظ اقتراحك وسنراجعه — تعذّر إبلاغ فريق التطوير فوراً');
     }
 
     public function reply(Request $request, Suggestion $suggestion)

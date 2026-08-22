@@ -19,3 +19,6 @@ Schedule::command('subscription:notices')->dailyAt('4:00');
 
 // محرك الأتمتة — يعمل كل ساعة، ويخرج فوراً ما لم يُفعَّل من لوحة المطور
 Schedule::command('mudawala:automation')->hourly();
+
+// نبضة إلى لوحة مُداوَلة — خامدة ما لم يُضبط الربط
+Schedule::command('panel:heartbeat')->hourly();
