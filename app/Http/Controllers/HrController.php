@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HrAttendance;
 use App\Models\HrBonus;
 use App\Models\HrLeave;
 use App\Models\HrPenalty;
@@ -17,14 +18,17 @@ class HrController extends Controller
 {
     protected function isAdmin(): bool
     {
-        return in_array(auth()->user()->role, ['developer', 'admin', 'lawyer', 'staff']);
+        // كانت تعدّ المحامي والموظّف «إدارة» — فيوافق الموظف على إجازة
+        // نفسه ويمنح نفسه مكافأة ويرى سجلات زملائه كلّها. الإدارة هنا
+        // هي إدارة المكتب لا كلّ من ليس موكّلاً.
+        return in_array(auth()->user()->role, ['developer', 'admin']);
     }
 
     public function index(Request $request): View
     {
-        $tab = $request->get('tab', 'employees');
         $user = auth()->user();
         $isAdmin = $this->isAdmin();
+        $tab = $request->get('tab', $isAdmin ? 'employees' : 'attendance');
 
         if ($isAdmin) {
             $employees = User::whereIn('role', ['admin', 'lawyer', 'staff'])->get();
@@ -74,7 +78,55 @@ class HrController extends Controller
             }
         }
 
-        return view('hr.index', compact('tab', 'employees', 'performances', 'bonuses', 'penalties', 'leaves', 'stats', 'chartData', 'ratingDistribution'));
+        // الحضور: سجلّ اليوم لصاحب الشاشة، وشهرُه؛ وللإدارة حضور الفريق اليوم
+        $attendanceToday = HrAttendance::todayFor($user->id);
+        $attendanceMonth = HrAttendance::where('user_id', $user->id)
+            ->whereDate('work_date', '>=', now('Asia/Muscat')->startOfMonth()->toDateString())
+            ->orderByDesc('work_date')->get();
+        $teamAttendance = $isAdmin
+            ? HrAttendance::with('user')->whereDate('work_date', HrAttendance::today())->orderBy('check_in_at')->get()
+            : collect();
+
+        return view('hr.index', compact('tab', 'employees', 'performances', 'bonuses', 'penalties', 'leaves', 'stats', 'chartData', 'ratingDistribution', 'attendanceToday', 'attendanceMonth', 'teamAttendance'));
+    }
+
+    /** تسجيل الحضور — النقر المزدوج والطلبان المتزامنان يثمران سجلاً واحداً. */
+    public function checkIn()
+    {
+        $user = auth()->user();
+
+        try {
+            HrAttendance::create([
+                'user_id' => $user->id,
+                'work_date' => HrAttendance::today(),
+                'check_in_at' => now(),
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            // سجّل حضوره من جهاز آخر في نفس اللحظة — الموجود يكفي
+        }
+
+        return redirect()->route('hr.index', ['tab' => 'attendance'])
+            ->with('success', 'سُجّل حضورك. يوماً موفقاً.');
+    }
+
+    public function checkOut()
+    {
+        $record = HrAttendance::todayFor(auth()->id());
+
+        if (!$record) {
+            return redirect()->route('hr.index', ['tab' => 'attendance'])
+                ->withErrors(['attendance' => 'لم تسجّل حضوراً اليوم بعد.']);
+        }
+
+        if ($record->check_out_at === null) {
+            $record->update([
+                'check_out_at' => now(),
+                'minutes' => (int) $record->check_in_at->diffInMinutes(now()),
+            ]);
+        }
+
+        return redirect()->route('hr.index', ['tab' => 'attendance'])
+            ->with('success', 'سُجّل انصرافك.');
     }
 
     public function storePerformance(Request $request)

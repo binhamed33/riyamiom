@@ -328,7 +328,14 @@ class DashboardController extends Controller
             $greeting = 'مرحباً؛';
         }
 
+        // بوابة الموظّف: حالة حضور اليوم وإجازاتي المعلّقة — للترحيب لا للرقابة
+        $attendanceToday = \App\Models\HrAttendance::todayFor(auth()->id());
+        $myPendingLeaves = \App\Models\HrLeave::where('employee_id', auth()->id())
+            ->where('status', 'pending')->count();
+
         return view('dashboard', compact(
+            'attendanceToday',
+            'myPendingLeaves',
             'totalCases',
             'activeCases',
             'overdueCases',

@@ -41,6 +41,7 @@
         @if($isAdmin)
         <a href="{{ route('hr.index', ['tab' => 'employees']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'employees' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">الموظفون</a>
         @endif
+        <a href="{{ route('hr.index', ['tab' => 'attendance']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'attendance' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">الحضور</a>
         <a href="{{ route('hr.index', ['tab' => 'performance']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'performance' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">التقييمات</a>
         <a href="{{ route('hr.index', ['tab' => 'bonuses']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'bonuses' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">المكافآت</a>
         <a href="{{ route('hr.index', ['tab' => 'penalties']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'penalties' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">الجزاءات</a>
@@ -48,6 +49,86 @@
     </div>
 
     {{-- Tab Content --}}
+    @if($tab === 'attendance')
+    <div class="space-y-6">
+        {{-- بطاقة اليوم: زرّ واحد يقول الحقيقة عن حالتك الآن --}}
+        <div class="bg-white rounded-xl border border-gold/15 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+                <p class="text-sm text-gray-400 mb-1">{{ now('Asia/Muscat')->translatedFormat('l j F Y') }}</p>
+                @if(!$attendanceToday)
+                    <p class="text-lg font-bold text-gray-700">لم تسجّل حضورك اليوم بعد</p>
+                @elseif($attendanceToday->check_out_at === null)
+                    <p class="text-lg font-bold text-green-700">حاضر منذ {{ $attendanceToday->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</p>
+                @else
+                    <p class="text-lg font-bold text-gray-700">
+                        يوم مكتمل: {{ $attendanceToday->check_in_at->timezone('Asia/Muscat')->format('H:i') }}
+                        — {{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->format('H:i') }}
+                        <span class="text-sm text-gray-400">({{ intdiv((int) $attendanceToday->minutes, 60) }}س {{ ((int) $attendanceToday->minutes) % 60 }}د)</span>
+                    </p>
+                @endif
+                @error('attendance')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                @if(!$attendanceToday)
+                    <form method="POST" action="{{ route('hr.attendance.checkin') }}">@csrf
+                        <button class="px-6 py-3 rounded-xl bg-gold-dark text-white font-bold hover:opacity-90 transition md-touch">تسجيل الحضور</button>
+                    </form>
+                @elseif($attendanceToday->check_out_at === null)
+                    <form method="POST" action="{{ route('hr.attendance.checkout') }}">@csrf
+                        <button class="px-6 py-3 rounded-xl bg-gray-700 text-white font-bold hover:opacity-90 transition md-touch">تسجيل الانصراف</button>
+                    </form>
+                @endif
+            </div>
+        </div>
+
+        @if($isAdmin)
+        {{-- حضور الفريق اليوم — للإدارة وحدها --}}
+        <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
+            <p class="px-4 pt-4 pb-2 font-bold text-gold-dark text-sm">حضور الفريق اليوم</p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
+                    <tbody>
+                        @forelse($teamAttendance as $rec)
+                        <tr class="border-b border-gray-100">
+                            <td class="px-4 py-3 font-medium">{{ $rec->user->name ?? '—' }}</td>
+                            <td class="px-4 py-3">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
+                            <td class="px-4 py-3">{{ $rec->check_out_at?->timezone('Asia/Muscat')->format('H:i') ?? 'ما زال حاضراً' }}</td>
+                            <td class="px-4 py-3">{{ $rec->minutes !== null ? intdiv((int) $rec->minutes, 60) . 'س ' . ((int) $rec->minutes) % 60 . 'د' : '—' }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">لم يسجّل أحد حضوره اليوم بعد</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
+        {{-- سجلّي هذا الشهر --}}
+        <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
+            <p class="px-4 pt-4 pb-2 font-bold text-gold-dark text-sm">سجلّي هذا الشهر</p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">اليوم</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
+                    <tbody>
+                        @forelse($attendanceMonth as $rec)
+                        <tr class="border-b border-gray-100">
+                            <td class="px-4 py-3">{{ $rec->work_date->translatedFormat('D j M') }}</td>
+                            <td class="px-4 py-3">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
+                            <td class="px-4 py-3">{{ $rec->check_out_at?->timezone('Asia/Muscat')->format('H:i') ?? '—' }}</td>
+                            <td class="px-4 py-3">{{ $rec->minutes !== null ? intdiv((int) $rec->minutes, 60) . 'س ' . ((int) $rec->minutes) % 60 . 'د' : '—' }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">لا سجلات هذا الشهر</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    @endif
+
     @if($tab === 'employees' && $isAdmin)
         <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
             @if(count($chartData) > 0)

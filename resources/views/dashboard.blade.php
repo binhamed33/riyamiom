@@ -40,6 +40,25 @@
             <h1 class="text-xl font-heading font-bold text-gray-900">{{ $greeting }}، {{ auth()->user()->name }}</h1>
             <p class="text-xs text-gray-400 mt-0.5">إليك ما يحتاج انتباهك اليوم — {{ now()->format('l d F Y') }}</p>
         </div>
+        {{-- الحضور من هنا مباشرة: نقرة واحدة صباحاً وواحدة مساءً --}}
+        @if (\App\Models\Setting::get('feature_hr', '0') !== '1')
+        <div class="flex items-center gap-2 flex-shrink-0">
+            @if(!$attendanceToday)
+                <form method="POST" action="{{ route('hr.attendance.checkin') }}">@csrf
+                    <button class="md-touch-pad text-xs font-bold text-white bg-gold-dark rounded-xl px-3.5 py-2.5 hover:opacity-90 transition">تسجيل الحضور</button>
+                </form>
+            @elseif($attendanceToday->check_out_at === null)
+                <form method="POST" action="{{ route('hr.attendance.checkout') }}">@csrf
+                    <button class="md-touch-pad text-xs font-bold text-gray-700 bg-gray-100 border border-gray-200 rounded-xl px-3.5 py-2.5 hover:bg-gray-200 transition">تسجيل الانصراف</button>
+                </form>
+            @else
+                <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">يومك مكتمل ✓</span>
+            @endif
+            @if($myPendingLeaves > 0)
+                <a href="{{ route('hr.index', ['tab' => 'leaves']) }}" class="text-xs font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-xl px-3.5 py-2.5 hover:bg-yellow-100 transition">إجازة معلّقة ({{ $myPendingLeaves }})</a>
+            @endif
+        </div>
+        @endif
         <a href="{{ route('attention.index') }}" class="md-touch-pad flex-shrink-0 text-xs font-bold text-gold-dark hover:text-gold-dark transition inline-flex items-center gap-1 bg-gold/10 border border-gold/15 rounded-xl px-3.5 py-2.5">
             عرض كل شيء
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ app()->getLocale() === 'ar' ? 'M15 12h4m0 0l-2-2m2 2l-2 2M5 12h10m-6-4l4 4-4 4' : 'M9 12h4m0 0l-2-2m2 2l-2 2m10 0a7 7 0 11-14 0 7 7 0 0114 0z' }}"/></svg>
