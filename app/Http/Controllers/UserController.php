@@ -43,11 +43,11 @@ class UserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'       => 'required|string|max:255',
+            'name'       => \App\Support\PersonName::rule(),
             'email'      => 'required|email|unique:users,email',
             'password'   => ['required', 'string', 'confirmed', \App\Support\PasswordPolicy::rules()],
             'role'       => 'required|in:developer,admin,lawyer,staff,client',
-            'phone'      => 'nullable|string|max:255',
+            'phone'      => \App\Support\GulfPhone::rule(),
             'is_active'  => 'boolean',
             'permissions' => 'nullable|array',
             'permissions.*' => 'string',
@@ -101,11 +101,11 @@ class UserController extends Controller
         }
 
         $validated = $request->validate([
-            'name'       => 'required|string|max:255',
+            'name'       => \App\Support\PersonName::rule(),
             'email'      => 'required|email|unique:users,email,' . $user->id,
             'password'   => ['nullable', 'string', 'confirmed', \App\Support\PasswordPolicy::rules()],
             'role'       => 'required|in:developer,admin,lawyer,staff,client',
-            'phone'      => 'nullable|string|max:255',
+            'phone'      => \App\Support\GulfPhone::rule(),
             'is_active'  => 'boolean',
             'permissions' => 'nullable|array',
             'permissions.*' => 'string',

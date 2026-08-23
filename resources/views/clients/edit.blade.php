@@ -49,12 +49,12 @@
             <div>
                 <label for="phone" class="block text-sm font-medium text-gold-dark mb-2">{{ __('app.client_phone') }}</label>
                 <input
-                    type="text"
+                    type="tel"
                     name="phone"
                     id="phone"
                     value="{{ old('phone', $client->phone) }}"
                     class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
-                    dir="ltr"
+                    dir="ltr" data-phone inputmode="tel" autocomplete="tel" maxlength="20" placeholder="9123 4567 أو +968 9123 4567"
                 >
                 @error('phone')
                     <p class="mt-1 text-sm text-red-700">{{ $message }}</p>

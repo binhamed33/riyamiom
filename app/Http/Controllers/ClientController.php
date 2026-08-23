@@ -73,9 +73,9 @@ class ClientController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'          => 'required|string|max:255',
+            'name'          => \App\Support\PersonName::rule(),
             'type'          => 'required|in:individual,company',
-            'phone'         => 'nullable|string|max:255',
+            'phone'         => \App\Support\GulfPhone::rule(),
             'email'         => 'nullable|email|max:255',
             'address'       => 'nullable|string',
             'national_id'   => 'nullable|string|max:255',
@@ -103,8 +103,8 @@ class ClientController extends Controller
     public function storeAjax(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'phone'       => 'nullable|string|max:255',
+            'name'        => \App\Support\PersonName::rule(),
+            'phone'       => \App\Support\GulfPhone::rule(),
             'email'       => 'nullable|email|max:255',
             'national_id' => 'nullable|string|max:255',
             'address'     => 'nullable|string|max:500',
@@ -148,9 +148,9 @@ class ClientController extends Controller
     {
         $this->authorizeClientAccess($client);
         $validated = $request->validate([
-            'name'          => 'required|string|max:255',
+            'name'          => \App\Support\PersonName::rule(),
             'type'          => 'required|in:individual,company',
-            'phone'         => 'nullable|string|max:255',
+            'phone'         => \App\Support\GulfPhone::rule(),
             'email'         => 'nullable|email|max:255',
             'address'       => 'nullable|string',
             'national_id'   => 'nullable|string|max:255',

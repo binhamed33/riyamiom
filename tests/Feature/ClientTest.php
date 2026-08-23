@@ -255,7 +255,8 @@ class ClientTest extends TestCase
 
         $response = $this->actingAs($developer)->post('/clients/ajax', [
             'name' => 'AJAX Client',
-            'phone' => '555-0100',
+            // رقم خليجي حقيقي: «0100-555» صار مرفوضاً بعد تضييق الخانة
+            'phone' => '9123 4567',
             'email' => 'ajax@example.com',
         ]);
 

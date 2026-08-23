@@ -52,7 +52,7 @@
 
                 <div>
                     <label for="phone" class="mb-2 block text-sm font-semibold">رقم التواصل (واتساب) *</label>
-                    <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required dir="ltr" placeholder="+968 9XXX XXXX"
+                    <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required dir="ltr" data-phone inputmode="tel" autocomplete="tel" maxlength="20" placeholder="9123 4567 أو +968 9123 4567"
                         class="w-full rounded-xl border border-ivory/15 bg-ink-2/70 px-4 py-3 text-left text-sm text-ivory placeholder:text-muted/50 focus:border-gold/50 focus:outline-none focus:ring-2 focus:ring-gold/20">
                     @error('phone') <p class="mt-1.5 text-xs text-red-400">{{ $message }}</p> @enderror
                 </div>

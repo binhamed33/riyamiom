@@ -15,9 +15,9 @@ class MarketingPageController extends Controller
     public function storeRegister(Request $request)
     {
         $validated = $request->validate([
-            'office_name' => ['required', 'string', 'max:190'],
-            'contact_name' => ['required', 'string', 'max:190'],
-            'phone' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-()\s.]+$/'],
+            'office_name' => \App\Support\PersonName::rule(true, 190),
+            'contact_name' => \App\Support\PersonName::rule(true, 190),
+            'phone' => \App\Support\GulfPhone::rule(true),
             'email' => ['required', 'email', 'max:190'],
             'lawyers_count' => ['nullable', 'integer', 'in:1,2,3,4'],
             'city' => ['nullable', 'string', 'max:100'],
