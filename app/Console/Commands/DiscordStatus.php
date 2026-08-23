@@ -15,9 +15,19 @@ class DiscordStatus extends Command
     {
         $hookUrl = config('services.discord.monitor_webhook');
 
+        // غياب إعداد اختياري ليس فشلاً.
+        //
+        // هذا الأمر مجدول كل خمس دقائق على كل مكتب، وDiscord مراقبةٌ
+        // داخلية عند مُداوَلة لا عند العميل. فمكتبٌ بلا رابط كان يسجّل
+        // خطأً كل خمس دقائق — ٢٨٨ في اليوم — حتى انتفخ السجل وانطمرت
+        // الأخطاء الحقيقية تحته. فحص الصحة رأى ٣٧٣ خطأً في يوم واحد،
+        // كلّها هذا، فلم يعد يميّز الجدّ من الضجيج.
+        //
+        // فيخمد الأمر صامتاً كما تخمد نبضة اللوحة بلا ربط.
         if (!$hookUrl) {
-            $this->error('DISCORD_MONITOR_WEBHOOK not set in .env');
-            return Command::FAILURE;
+            $this->info('Discord monitoring not configured — skipping.');
+
+            return Command::SUCCESS;
         }
 
         $data = $monitor->gather();
