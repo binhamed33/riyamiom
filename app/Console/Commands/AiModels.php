@@ -20,7 +20,8 @@ use Illuminate\Support\Facades\Http;
  */
 class AiModels extends Command
 {
-    protected $signature = 'ai:models {--all : اعرض كل النماذج لا التي تصلح للمحادثة فقط}';
+    protected $signature = 'ai:models {--all : اعرض كل النماذج لا التي تصلح للمحادثة فقط}
+                            {--try : جرّب محادثة حقيقية بالنموذج المضبوط واعرض الردّ الخام}';
 
     protected $description = 'اسأل مزوّد الذكاء الاصطناعي عن النماذج التي يقبلها مفتاح هذا المكتب';
 
@@ -84,10 +85,65 @@ class AiModels extends Command
             ];
         }
 
+        if ($this->option('try')) {
+            return $this->attempt($key, AiSettings::model());
+        }
+
         $this->table(['النموذج', 'يصلح للمحادثة', 'الاسم المعروض'], $rows);
         $this->newLine();
         $this->line('ضع أحد الأسماء التي أمامها «نعم» في: الإعدادات ← الذكاء الاصطناعي ← النموذج.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * محاولة محادثة حقيقية — بالطلب نفسه الذي يرسله النظام.
+     *
+     * سجلّ الإنتاج قال: 404 على gemini-2.5-flash. ثم أظهرت قائمة
+     * النماذج أن هذا النموذج متاحٌ لهذا المفتاح ويقبل generateContent.
+     * أي أن الخطأ ليس في اسم النموذج — وردّ المزوّد نفسه هو الذي يقول
+     * أين هو. فيُطبع خامّاً هنا بلا تلطيف ولا اختصار.
+     */
+    private function attempt(string $key, string $model): int
+    {
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent';
+
+        $this->line('العنوان : ' . $url);
+        $this->line('الطول   : ' . strlen($model) . ' حرفاً في اسم النموذج');
+
+        if ($model !== trim($model)) {
+            $this->warn('⚠ اسم النموذج المخزَّن فيه فراغ في طرفه — وهذا وحده يُنتج 404.');
+        }
+
+        $this->newLine();
+
+        try {
+            $response = Http::timeout(60)
+                ->withHeaders(['Content-Type' => 'application/json', 'X-goog-api-key' => $key])
+                ->post($url, [
+                    'contents' => [['role' => 'user', 'parts' => [['text' => 'اهلا']]]],
+                    'generationConfig' => ['temperature' => 0.4, 'maxOutputTokens' => 256],
+                ]);
+        } catch (\Throwable $e) {
+            $this->error('لم يصل الطلب أصلاً: ' . $e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        $this->line('رمز الحالة: ' . $response->status());
+        $this->newLine();
+
+        if ($response->successful()) {
+            $text = $response->json('candidates.0.content.parts.0.text');
+            $this->info('✓ المزوّد ردّ:');
+            $this->line($text ?: '(ردّ بلا نصّ — وهذه حالة أخرى)');
+
+            return self::SUCCESS;
+        }
+
+        $this->error('الردّ الخام كما ورد — لا يُلطَّف ولا يُختصر:');
+        $this->line($response->body());
+
+        return self::FAILURE;
     }
 }
