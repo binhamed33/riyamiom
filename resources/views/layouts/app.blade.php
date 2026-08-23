@@ -282,6 +282,10 @@
     </style>
     <style>
         [x-cloak] { display: none !important; }
+        @media (max-width: 767px) {
+            [dir="rtl"] aside[data-mobile-cloak] { transform: translateX(100%) !important; transition: none !important; }
+            [dir="ltr"] aside[data-mobile-cloak] { transform: translateX(-100%) !important; transition: none !important; }
+        }
         /* الرسوم البيانية لا تتجاوز عرض حاويتها على أي مقاس */
         canvas { max-width: 100%; }
 
@@ -777,7 +781,11 @@
 <body class="font-body min-h-screen" style="background-color: #F3EFE7; color: #111827;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: '{{ $appearanceMode }}', fontSize: parseInt(localStorage.getItem('fontSize') || '100', 10) || 100, fontStep(step) { const levels = [100, 110, 125]; let i = levels.indexOf(this.fontSize); if (i === -1) i = 0; const ni = Math.max(0, Math.min(levels.length - 1, i + step)); this.fontSize = levels[ni]; localStorage.setItem('fontSize', this.fontSize); document.documentElement.style.fontSize = (16 * this.fontSize / 100) + 'px'; } }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
 
     {{-- Mobile Overlay --}}
+    {{-- x-cloak واجب هنا: قبل أن يستيقظ Alpine كانت هذه الطبقة السوداء
+         الثابتة تغطي الشاشة كلها في كل تحميل صفحة على الهاتف، فيبدو
+         كأن لوحة جانبية فُتحت لمجرد الضغط على عنصر في الأسفل --}}
     <div
+        x-cloak
         x-show="mobileOpen"
         x-transition:enter="transition-opacity ease-linear duration-300"
         x-transition:enter-start="opacity-0"
@@ -790,7 +798,12 @@
     ></div>
 
     {{-- Sidebar --}}
+    {{-- data-mobile-cloak: قبل Alpine لا يملك الشريط تحويلاً يخرجه من
+         الشاشة، فكان يومض داخلاً من الجانب مع كل تنقّل على الهاتف.
+         CSS أدناه يبقيه خارجها حتى يتولى Alpine الأمر --}}
     <aside
+        data-mobile-cloak
+        x-init="$el.removeAttribute('data-mobile-cloak')"
         class="fixed top-0 {{ $isRtl ? 'right-0' : 'left-0' }} h-full z-50 flex flex-col transition-all duration-300 ease-in-out"
         :class="[
             sidebarOpen ? 'sb-open' : 'sb-closed',
@@ -1932,7 +1945,7 @@
     {{-- Global AI Legal Assistant Widget --}}
     <div x-data="assistant">
         {{-- Floating Button --}}
-        <button @click="toggle()" class="fixed bottom-6 {{ app()->getLocale() === 'ar' ? 'left-6' : 'right-6' }} z-40 w-14 h-14 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105" title="{{ __('app.ai_chat_title') }}">
+        <button @click="toggle()" class="fixed bottom-24 md:bottom-6 {{ app()->getLocale() === 'ar' ? 'left-6' : 'right-6' }} z-[45] w-14 h-14 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105" title="{{ __('app.ai_chat_title') }}">
             <svg x-show="!open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
             </svg>
@@ -1942,7 +1955,7 @@
         </button>
 
         {{-- Chat Panel --}}
-        <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-4" class="fixed bottom-24 {{ app()->getLocale() === 'ar' ? 'left-6' : 'right-6' }} z-40 w-[380px] max-w-[calc(100vw-2rem)] bg-white border border-emerald-300 rounded-2xl shadow-2xl flex flex-col overflow-hidden" style="height: min(560px, calc(100vh - 140px));">
+        <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-4" class="fixed bottom-[10.5rem] md:bottom-24 {{ app()->getLocale() === 'ar' ? 'left-6' : 'right-6' }} z-[45] w-[380px] max-w-[calc(100vw-2rem)] bg-white border border-emerald-300 rounded-2xl shadow-2xl flex flex-col overflow-hidden" style="height: min(560px, calc(100vh - 220px));">
             {{-- Header --}}
             <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
                 <div class="flex items-center gap-2">
