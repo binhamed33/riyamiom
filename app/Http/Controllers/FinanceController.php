@@ -57,8 +57,23 @@ class FinanceController extends Controller
 
             $incomeByCategory = FinanceTransaction::where('type', 'income')->selectRaw('category, sum(amount) as total')->groupBy('category')->pluck('total', 'category');
             $expenseByCategory = FinanceTransaction::where('type', 'expense')->selectRaw('category, sum(amount) as total')->groupBy('category')->pluck('total', 'category');
-            $monthlyIncome = FinanceTransaction::where('type', 'income')->selectRaw("DATE_FORMAT(date, '%Y-%m') as month, sum(amount) as total")->groupBy('month')->orderBy('month')->pluck('total', 'month');
-            $monthlyExpense = FinanceTransaction::where('type', 'expense')->selectRaw("DATE_FORMAT(date, '%Y-%m') as month, sum(amount) as total")->groupBy('month')->orderBy('month')->pluck('total', 'month');
+            // التجميع الشهري في PHP لا في SQL.
+            //
+            // كان DATE_FORMAT — وهي دالة MySQL وحدها. فصفحة المالية
+            // كلّها تنهار على sqlite، أي أنها غير قابلة للاختبار
+            // إطلاقاً: لا اختبار واحد يمرّ عليها، ولا ثغرة فيها تُكتشف.
+            // وقد اختبأت فيها ثغرة XSS مخزَّنة حتى فُحصت يدوياً.
+            //
+            // معاملات مكتبٍ واحد لا تُثقل الذاكرة، والتجميع هنا يُزيل
+            // اعتماداً على محرّك بعينه ويفتح الصفحة للاختبار.
+            $byMonth = static fn (string $type) => FinanceTransaction::where('type', $type)
+                ->orderBy('date')
+                ->get(['date', 'amount'])
+                ->groupBy(fn ($t) => \Illuminate\Support\Carbon::parse($t->date)->format('Y-m'))
+                ->map(fn ($rows) => (float) $rows->sum('amount'));
+
+            $monthlyIncome = $byMonth('income');
+            $monthlyExpense = $byMonth('expense');
         }
 
         return view('finance.index', compact('tab', 'transactions', 'invoices', 'fees', 'clients', 'cases', 'stats', 'incomeByCategory', 'expenseByCategory', 'monthlyIncome', 'monthlyExpense', 'isFinAdmin'));
