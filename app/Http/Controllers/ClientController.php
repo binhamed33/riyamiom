@@ -91,7 +91,13 @@ class ClientController extends Controller
             'user_id'       => 'nullable|exists:users,id',
         ]);
 
-        $client = Client::create($validated);
+        try {
+            $client = \App\Support\PlanLimits::guard('clients', fn () => Client::create($validated));
+        } catch (\App\Support\LimitReached $e) {
+            return redirect()->back()->withInput()
+                ->with('limit_reached', $e->resource)
+                ->withErrors(['limit' => \App\Support\PlanLimits::message($e->resource)]);
+        }
 
         $this->logAudit(
             AuditLog::ACTION_CREATE,
@@ -131,7 +137,14 @@ class ClientController extends Controller
         $validated['phone'] = $validated['phone'] ?? '';
         $validated['email'] = $validated['email'] ?? '';
 
-        $client = Client::create($validated);
+        try {
+            $client = \App\Support\PlanLimits::guard('clients', fn () => Client::create($validated));
+        } catch (\App\Support\LimitReached $e) {
+            return response()->json([
+                'error' => \App\Support\PlanLimits::message($e->resource),
+                'limit_reached' => $e->resource,
+            ], 422);
+        }
 
         $this->logAudit(
             AuditLog::ACTION_CREATE,

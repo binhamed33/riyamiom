@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\Setting;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * حدود باقة هذا المكتب — تُفرَض من الخادم لا من إخفاء زرّ.
@@ -104,6 +106,73 @@ class PlanLimits
         return $limit !== null && self::used($resource) >= $limit;
     }
 
+    /** كم بقي قبل الحدّ — null تعني «بلا حدّ معروف». */
+    public static function remaining(string $resource): ?int
+    {
+        $limit = self::of($resource);
+
+        return $limit === null ? null : max(0, $limit - self::used($resource));
+    }
+
+    public static function canCreate(string $resource): bool
+    {
+        return !self::reached($resource);
+    }
+
+    /** مجموع أحجام الملفات بالبايت — للحساب الدقيق، لا للعرض. */
+    public static function usedStorageBytes(): int
+    {
+        return (int) \App\Models\Document::query()->sum('file_size');
+    }
+
+    /** هل تتّسع الباقة لملفٍ بهذا الحجم؟ يُحسب بالبايت لا بالجيجا المقرَّبة. */
+    public static function storageAllows(int $incomingBytes): bool
+    {
+        $limitGb = self::of('storage_gb');
+
+        if ($limitGb === null) {
+            return true;
+        }
+
+        return self::usedStorageBytes() + $incomingBytes <= $limitGb * 1073741824;
+    }
+
+    /**
+     * ينفّذ الإنشاء تحت قفلٍ ذرّي بعد إعادة الفحص داخله.
+     *
+     * الفحص المبكر في المتحكّم يعطي رسالةً سريعة، لكن طلبَين متزامنَين
+     * يجتازانه معاً وهما على المقعد الأخير فيصير 5/4. القفل يجعل
+     * «افحص ثم أنشئ» عمليةً واحدة لا يدخلها طلبان.
+     *
+     * @throws LimitReached عند التجاوز — بالمورد الذي امتلأ
+     */
+    public static function guard(string $resource, \Closure $create, int $incomingBytes = 0): mixed
+    {
+        // بلا حدود واصلة لا يلزم قفل — الفشل مفتوح كما هو موثّق أعلاه
+        if (self::of($resource) === null && ($incomingBytes === 0 || self::of('storage_gb') === null)) {
+            return $create();
+        }
+
+        $lock = Cache::lock('plan-limit:' . $resource, 15);
+
+        try {
+            return $lock->block(10, function () use ($resource, $create, $incomingBytes) {
+                if (self::reached($resource)) {
+                    throw new LimitReached($resource);
+                }
+
+                if ($incomingBytes > 0 && !self::storageAllows($incomingBytes)) {
+                    throw new LimitReached('storage_gb');
+                }
+
+                return $create();
+            });
+        } catch (LockTimeoutException) {
+            // مزاحمة غير مألوفة على القفل: الأسلم رفضٌ مؤقّت لا تجاوزُ الحدّ
+            throw new LimitReached($resource);
+        }
+    }
+
     /** رسالة يفهمها الموظّف — لا رقم ولا مصطلح. */
     public static function message(string $resource): string
     {
@@ -113,7 +182,8 @@ class PlanLimits
 
         return 'لقد وصلت إلى الحد المسموح في باقتك'
             . ($plan ? ' (' . $plan . ')' : '')
-            . ': ' . $label . ' ' . self::used($resource) . ' من ' . $limit . '.'
+            . ': ' . $label . ' ' . self::used($resource)
+            . ' من ' . $limit . ($resource === 'storage_gb' ? ' جيجابايت' : '') . '.'
             . ' للمتابعة يمكنك ترقية الباقة أو تقليل الاستخدام.';
     }
 

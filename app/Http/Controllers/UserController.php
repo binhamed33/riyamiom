@@ -70,7 +70,13 @@ class UserController extends Controller
         $validated['password'] = Hash::make($validated['password']);
         $validated['is_active'] = $request->boolean('is_active', true);
 
-        $user = User::create($validated);
+        try {
+            $user = \App\Support\PlanLimits::guard('users', fn () => User::create($validated));
+        } catch (\App\Support\LimitReached $e) {
+            return redirect()->back()->withInput()
+                ->with('limit_reached', $e->resource)
+                ->withErrors(['limit' => \App\Support\PlanLimits::message($e->resource)]);
+        }
 
         if ($request->has('_permissions')) {
             $user->syncPermissions($request->permissions ?? []);

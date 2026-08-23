@@ -124,31 +124,41 @@ class DocumentController extends Controller
             return back()->withErrors(['file' => 'File type not allowed.']);
         }
 
-        $path = $file->store('documents', 'private');
+        // الملف لا يُكتب إلا داخل القفل: العدّ والمساحة يُفحصان معاً
+        // ذرّياً، فلا يمرّ رفعان متزامنان وكلاهما على آخر جيجابايت.
+        try {
+            $document = \App\Support\PlanLimits::guard('documents', function () use ($request, $validated, $folderId, $file, $extension) {
+                $path = $file->store('documents', 'private');
 
-        // Smart Documents: استنتاج نوع المستند وتاريخه من اسم الملف
-        $inferred = \App\Services\DocumentSmartService::inferFromFilename($file->getClientOriginalName());
-        // نوعٌ يكتبه الموظّف بيده يُحفظ في قائمة المكتب فيراه من بعده
-        $docType = $request->filled('doc_type')
-            ? \App\Models\DocumentType::remember($request->input('doc_type'))
-            : $inferred['type'];
-        $docDate = $request->filled('doc_date') ? $request->input('doc_date') : $inferred['date'];
+                // Smart Documents: استنتاج نوع المستند وتاريخه من اسم الملف
+                $inferred = \App\Services\DocumentSmartService::inferFromFilename($file->getClientOriginalName());
+                // نوعٌ يكتبه الموظّف بيده يُحفظ في قائمة المكتب فيراه من بعده
+                $docType = $request->filled('doc_type')
+                    ? \App\Models\DocumentType::remember($request->input('doc_type'))
+                    : $inferred['type'];
+                $docDate = $request->filled('doc_date') ? $request->input('doc_date') : $inferred['date'];
 
-        $document = Document::create([
-            'case_id'      => $validated['case_id'] ?? null,
-            'case_folder_id' => $folderId,
-            'uploaded_by'  => auth()->id(),
-            'title'        => $validated['title'],
-            'doc_type'     => $docType,
-            'doc_date'     => $docDate,
-            'file_path'    => $path,
-            'file_type'    => $extension,
-            'file_size'    => $file->getSize(),
-            'access_level' => $validated['access_level'],
-            // لا يُعرض للعميل إلا بقرار صريح، والخاص لا يُعرض مهما كان
-            'client_visible' => $request->boolean('client_visible')
-                && $validated['access_level'] !== Document::ACCESS_PRIVATE,
-        ]);
+                return Document::create([
+                    'case_id'      => $validated['case_id'] ?? null,
+                    'case_folder_id' => $folderId,
+                    'uploaded_by'  => auth()->id(),
+                    'title'        => $validated['title'],
+                    'doc_type'     => $docType,
+                    'doc_date'     => $docDate,
+                    'file_path'    => $path,
+                    'file_type'    => $extension,
+                    'file_size'    => $file->getSize(),
+                    'access_level' => $validated['access_level'],
+                    // لا يُعرض للعميل إلا بقرار صريح، والخاص لا يُعرض مهما كان
+                    'client_visible' => $request->boolean('client_visible')
+                        && $validated['access_level'] !== Document::ACCESS_PRIVATE,
+                ]);
+            }, (int) $file->getSize());
+        } catch (\App\Support\LimitReached $e) {
+            return redirect()->back()->withInput()
+                ->with('limit_reached', $e->resource)
+                ->withErrors(['limit' => \App\Support\PlanLimits::message($e->resource)]);
+        }
 
         $this->logAudit(
             AuditLog::ACTION_CREATE,

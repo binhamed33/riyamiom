@@ -26,7 +26,9 @@ Schedule::command('subscription:notices')->dailyAt('8:00')->timezone('Asia/Musca
 Schedule::command('mudawala:automation')->hourly();
 
 // نبضة إلى لوحة مُداوَلة — خامدة ما لم يُضبط الربط
-Schedule::command('panel:heartbeat')->hourly();
+// كل ربع ساعة لا كل ساعة: تغييرُ باقةٍ من اللوحة يسري هنا خلال دقائق،
+// والنبضة رخيصة — طلب واحد صغير.
+Schedule::command('panel:heartbeat')->everyFifteenMinutes();
 
 // شبكة أمان الاقتراحات: ما لم يصل اللوحة يُعاد إرساله — خامد إن لم
 // يكن المكتب مربوطاً.

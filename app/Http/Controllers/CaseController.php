@@ -205,11 +205,29 @@ class CaseController extends Controller
             return redirect()->back()->withInput()->with('error', implode('<br>', $sessionErrors));
         }
 
+        // المستند المرفق مع القضية طريقُ رفعٍ ثانٍ — يخضع لنفس الحدود
+        if ($request->hasFile('doc_file')) {
+            $docSize = (int) $request->file('doc_file')->getSize();
+            if (\App\Support\PlanLimits::reached('documents')) {
+                return redirect()->back()->withInput()
+                    ->with('limit_reached', 'documents')
+                    ->withErrors(['limit' => \App\Support\PlanLimits::message('documents')]);
+            }
+            if (!\App\Support\PlanLimits::storageAllows($docSize)) {
+                return redirect()->back()->withInput()
+                    ->with('limit_reached', 'storage_gb')
+                    ->withErrors(['limit' => \App\Support\PlanLimits::message('storage_gb')]);
+            }
+        }
+
         $storedDocPath = null;
 
         DB::beginTransaction();
         try {
-            $legalCase = LegalCase::create(collect($validated)->except('template_id')->all());
+            $legalCase = \App\Support\PlanLimits::guard(
+                'cases',
+                fn () => LegalCase::create(collect($validated)->except('template_id')->all())
+            );
 
             // القالب الذكي: يجهّز القضية تلقائياً (مهام + قائمة تحقق + مجلدات + تذكيرات)
             if (!empty($validated['template_id'])) {
@@ -335,6 +353,12 @@ class CaseController extends Controller
             );
 
             return $this->redirectAfterStore($legalCase);
+        } catch (\App\Support\LimitReached $e) {
+            DB::rollBack();
+
+            return redirect()->back()->withInput()
+                ->with('limit_reached', $e->resource)
+                ->withErrors(['limit' => \App\Support\PlanLimits::message($e->resource)]);
         } catch (\Exception $e) {
             DB::rollBack();
             if ($storedDocPath && Storage::disk('private')->exists($storedDocPath)) {
