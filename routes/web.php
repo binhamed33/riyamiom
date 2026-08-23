@@ -114,14 +114,22 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     // Rate limit all protected routes
     Route::middleware('throttle:120,1')->group(function () {
     
-    // Dashboard - all roles
+    // لوحة المتابعة ومركز الانتباه: يفتحهما كل دور، ومركز الانتباه
+    // يُرشّح بالدور فيخرج فارغاً للموكّل — وله اختبار يُثبته.
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/attention', [AttentionController::class, 'index'])->name('attention.index');
 
-    // Global AI legal assistant - all roles
-    Route::get('/ai-assistant/history', [App\Http\Controllers\AssistantController::class, 'history'])->name('assistant.history');
-    Route::post('/ai-assistant', [App\Http\Controllers\AssistantController::class, 'chat'])->name('assistant.chat');
-    Route::post('/ai-assistant/clear', [App\Http\Controllers\AssistantController::class, 'clear'])->name('assistant.clear');
+    // المساعد القانوني — لفريق المكتب وحده.
+    //
+    // كان مكتوباً بجانبه «all roles» والمقصود «كل أدوار الفريق»، لكن
+    // الوسيط لم يقل ذلك. وتعليمة المساعد تحقن قائمة قضايا المكتب
+    // بأسماء موكّليها ومحاكمها — فحسابٌ دوره «موكّل» كان يبلغه ويسأله
+    // عنها. النيّة كانت صحيحة والتعبير عنها ناقصاً.
+    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+        Route::get('/ai-assistant/history', [App\Http\Controllers\AssistantController::class, 'history'])->name('assistant.history');
+        Route::post('/ai-assistant', [App\Http\Controllers\AssistantController::class, 'chat'])->name('assistant.chat');
+        Route::post('/ai-assistant/clear', [App\Http\Controllers\AssistantController::class, 'clear'])->name('assistant.clear');
+    });
 
     // صفحة تعريف مُداوَلة الداخلية
     Route::get('/about', function () {
