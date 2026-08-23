@@ -126,8 +126,25 @@ class CaseDateOutputsTest extends TestCase
     }
 
 
+
+    /**
+     * هذان الاختباران يكتبان تاريخاً فاسداً عمداً ليُثبتا أنّ الصفحة
+     * تصمد أمامه. وMySQL في وضعها الصارم ترفض الكتابة أصلاً، فلا
+     * يستطيع الاختبار أن يبني حالته.
+     *
+     * الدفاع في الكود يبقى لازماً: قاعدة مكتبٍ قديمة أُنشئت قبل الوضع
+     * الصارم قد تحمل «0000-00-00» فعلاً، وهي تُقرأ ولا تُكتب.
+     */
+    private function skipOnStrictEngine(): void
+    {
+        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() !== 'sqlite') {
+            $this->markTestSkipped('محرّك صارم يرفض كتابة تاريخ فاسد — الحالة لا تُبنى إلا على SQLite');
+        }
+    }
     public function test_a_legacy_zero_date_reads_as_empty_instead_of_crashing(): void
     {
+        $this->skipOnStrictEngine();
+
         $case = $this->caseWithDates();
 
         // قاعدة قديمة بلا وضع صارم قد تحمل هذه القيمة في عمود تاريخ
@@ -148,6 +165,8 @@ class CaseDateOutputsTest extends TestCase
 
     public function test_an_unreadable_date_does_not_break_the_case_page(): void
     {
+        $this->skipOnStrictEngine();
+
         $case = $this->caseWithDates();
 
         \Illuminate\Support\Facades\DB::table('cases')
