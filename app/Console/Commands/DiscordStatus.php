@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Services\DiscordWebhook;
 use App\Services\ServerMonitor;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class DiscordStatus extends Command
 {
@@ -30,12 +31,29 @@ class DiscordStatus extends Command
             return Command::SUCCESS;
         }
 
-        $data = $monitor->gather();
-        $embed = $this->buildEmbed($data);
+        // المراقبة لا يجوز أن تُسقط المُجدوِل.
+        //
+        // الرابط مضبوط على هذه المكاتب فعلاً، والفشل بعده: gather()
+        // تعتمد على shell_exec و/proc، وأيّهما قد يكون محجوباً على
+        // الخادم، فيُرمى الاستثناء ويخرج الأمر بـ1 كل خمس دقائق.
+        // ٤٧٤ خطأً في يوم واحد لكل مكتب طمرت تحتها أخطاء حقيقية —
+        // ومنها خطأ Gemini الذي لم يُلحظ إلا اليوم.
+        //
+        // فحصٌ داخليٌّ عند مُداوَلة لا يستحق أن يُصنَّف ERROR في سجلّ
+        // مكتب العميل: يُسجَّل تحذيراً مرّة، ويُقال سببه لمن يشغّله
+        // بيده، ويخرج بنجاح.
+        try {
+            $data = $monitor->gather();
+            $webhook->sendOrUpdate($hookUrl, $this->buildEmbed($data));
 
-        $webhook->sendOrUpdate($hookUrl, $embed);
+            $this->info('Server status embed updated on Discord.');
+        } catch (\Throwable $e) {
+            Log::warning('discord:status skipped — ' . $e->getMessage());
 
-        $this->info('Server status embed updated on Discord.');
+            $this->warn('تعذّر إرسال حالة الخادم: ' . $e->getMessage());
+            $this->line('هذا فحص داخلي؛ لا يؤثّر على عمل المكتب.');
+        }
+
         return Command::SUCCESS;
     }
 

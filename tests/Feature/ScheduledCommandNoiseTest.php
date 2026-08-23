@@ -47,4 +47,19 @@ class ScheduledCommandNoiseTest extends TestCase
             $this->assertContains($cmd, $known, "أمر مجدول غير موجود: {$cmd}");
         }
     }
+
+    public function test_discord_status_survives_a_configured_webhook_that_fails(): void
+    {
+        // الحالة التي وقعت في الإنتاج فعلاً: الرابط مضبوط، وما بعده
+        // يرمي — gather() تعتمد على shell_exec و/proc. كان يخرج بـ1
+        // كل خمس دقائق فيسجّل المُجدوِل ERROR: ٤٧٤ في اليوم لكل مكتب،
+        // طُمرت تحتها أخطاء حقيقية.
+        config(['services.discord.monitor_webhook' => 'https://discord.test/hook']);
+
+        $this->mock(\App\Services\ServerMonitor::class, function ($mock) {
+            $mock->shouldReceive('gather')->andThrow(new \RuntimeException('shell_exec() has been disabled'));
+        });
+
+        $this->artisan('discord:status')->assertSuccessful();
+    }
 }
