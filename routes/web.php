@@ -127,7 +127,8 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     // عنها. النيّة كانت صحيحة والتعبير عنها ناقصاً.
     Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
         Route::get('/ai-assistant/history', [App\Http\Controllers\AssistantController::class, 'history'])->name('assistant.history');
-        Route::post('/ai-assistant', [App\Http\Controllers\AssistantController::class, 'chat'])->name('assistant.chat');
+        // ‏٢٠ طلباً في الدقيقة تكفي أسرع محامٍ، وتوقف أي إغراق (§90)
+        Route::post('/ai-assistant', [App\Http\Controllers\AssistantController::class, 'chat'])->middleware('throttle:20,1')->name('assistant.chat');
         Route::post('/ai-assistant/clear', [App\Http\Controllers\AssistantController::class, 'clear'])->name('assistant.clear');
     });
 

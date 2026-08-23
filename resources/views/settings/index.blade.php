@@ -173,6 +173,7 @@
         $aiUpdated = \App\Support\AiSettings::updatedAt();
         $aiKeyUrl = config("ai.providers.$aiProvider.key_url");
         $aiModels = (array) config("ai.providers.$aiProvider.models", []);
+        $aiHealth = \App\Support\AiHealth::snapshot();
     @endphp
     <div class="bg-white rounded-xl border border-gray-200 p-5"
          x-data="{ testing: false, result: null, ok: false,
@@ -191,6 +192,30 @@
                 }
                 this.testing = false;
             } }">
+        {{-- §88: صحة المساعد — أرقام حقيقية للإدارة، لا تظهر لغيرها --}}
+        @php
+            $aiTone = ['healthy' => ['نشط', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+                       'warning' => ['متعثر', 'bg-yellow-50 text-yellow-700 border-yellow-200'],
+                       'offline' => ['غير مهيأ', 'bg-gray-100 text-gray-500 border-gray-200']][$aiHealth['status']];
+        @endphp
+        <div class="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+            <span class="px-2.5 py-1 rounded-lg border font-bold {{ $aiTone[1] }}">{{ $aiTone[0] }}</span>
+            <span class="text-gray-500">النموذج: <b class="text-gray-700">{{ $aiHealth['model'] }}</b></span>
+            <span class="text-gray-500">آخر نجاح:
+                <b class="text-gray-700">{{ $aiHealth['last_success_at'] ? \Illuminate\Support\Carbon::parse($aiHealth['last_success_at'])->diffForHumans() : 'لم يُستعمل بعد' }}</b>
+            </span>
+            @if($aiHealth['last_error'])
+                <span class="text-gray-500">آخر خطأ:
+                    <b class="text-red-600">{{ $aiHealth['last_error']['type'] ?? '—' }}</b>
+                    <span class="text-gray-400">({{ ($aiHealth['last_error']['at'] ?? null) ? \Illuminate\Support\Carbon::parse($aiHealth['last_error']['at'])->diffForHumans() : '' }})</span>
+                </span>
+            @endif
+            <span class="text-gray-500">اليوم: <b class="text-gray-700">{{ $aiHealth['counts']['today'] }}</b> طلبًا
+                @if($aiHealth['counts']['today_errors'] > 0)<b class="text-red-600">({{ $aiHealth['counts']['today_errors'] }} خطأ)</b>@endif
+            </span>
+            <span class="text-gray-500">هذا الشهر: <b class="text-gray-700">{{ $aiHealth['counts']['month'] }}</b></span>
+        </div>
+
         <div class="flex items-center gap-3 mb-1">
             <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">

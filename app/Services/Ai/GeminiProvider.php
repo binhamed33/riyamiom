@@ -164,6 +164,8 @@ class GeminiProvider implements AiProvider
         ])));
 
         $tried = [];
+        $startedAt = microtime(true);
+        $elapsed = fn (): int => (int) ((microtime(true) - $startedAt) * 1000);
 
         $lastTransientError = null;
         $maxAttemptsPerModel = 2; // محاولة إضافية عند الازدحام قبل الانتقال للنموذج الاحتياطي
@@ -179,10 +181,15 @@ class GeminiProvider implements AiProvider
 
             for ($attempt = 1; $attempt <= $maxAttemptsPerModel; $attempt++) {
                 try {
-                    return $this->callModel($model, $payload);
+                    $text = $this->callModel($model, $payload);
+                    \App\Support\AiHealth::record('ok', 'gemini', $model, $elapsed(), null);
+
+                    return $text;
                 } catch (\RuntimeException $e) {
                     $retryable = in_array($this->lastStatus, [404, 429, 500, 502, 503], true);
                     if (!$retryable) {
+                        \App\Support\AiHealth::record('error', 'gemini', $model, $elapsed(), 'http_' . ($this->lastStatus ?: 'x'));
+
                         throw $e;
                     }
                     $lastTransientError = $e;
@@ -210,6 +217,7 @@ class GeminiProvider implements AiProvider
         }
 
         $this->lastError = 'خدمة الذكاء الاصطناعي مزدحمة حاليًا، حاول مرة أخرى بعد لحظات.';
+        \App\Support\AiHealth::record('error', 'gemini', $tried !== [] ? end($tried) : $this->model, $elapsed(), 'exhausted_' . ($this->lastStatus ?: 'x'));
 
         throw $lastTransientError
             ?? new \RuntimeException('Gemini API error — tried models: ' . implode(', ', $tried));
