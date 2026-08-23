@@ -130,7 +130,7 @@ class CaseController extends Controller
             'type'                => 'nullable|string|max:255',
             'court'               => 'required|string|max:255',
             'opponent'            => 'required|string',
-            'opponent_phone'      => 'nullable|string|max:255',
+            'opponent_phone'      => \App\Support\GulfPhone::rule(),
             'opponent_address'    => 'nullable|string',
             'opponent_lawyer'     => 'nullable|string|max:255',
             'opponent_civil_number' => 'nullable|string|max:255',
@@ -140,6 +140,7 @@ class CaseController extends Controller
             'lawyer_id'           => 'nullable|exists:users,id',
             'doc_file'            => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:20480',
             'doc_title'           => 'nullable|string|max:255',
+            'doc_type'            => ['nullable', 'string', 'max:80', 'regex:/^[\p{L}\p{M}\p{N}\s\.\-_\(\)\/]+$/u'],
             'doc_access_level'    => 'nullable|in:all,team,private',
             'task_title'          => 'nullable|string|max:255',
             'task_description'    => 'nullable|string|max:2000',
@@ -228,11 +229,17 @@ class CaseController extends Controller
 
                 $inferred = DocumentSmartService::inferFromFilename($file->getClientOriginalName());
 
+                // ما يكتبه الموظّف أولى بالثقة من الاستنتاج من اسم
+                // الملف، ويُحفظ في قائمة أنواع المكتب لمن يرفع بعده.
+                $docType = $request->filled('doc_type')
+                    ? \App\Models\DocumentType::remember($request->input('doc_type'))
+                    : $inferred['type'];
+
                 $document = Document::create([
                     'case_id'      => $legalCase->id,
                     'uploaded_by'  => auth()->id(),
                     'title'        => $request->filled('doc_title') ? $request->input('doc_title') : $file->getClientOriginalName(),
-                    'doc_type'     => $inferred['type'],
+                    'doc_type'     => $docType,
                     'doc_date'     => $inferred['date'],
                     'file_path'    => $storedDocPath,
                     'file_type'    => $extension,
@@ -568,7 +575,7 @@ class CaseController extends Controller
             'type'                => 'nullable|string|max:255',
             'court'               => 'required|string|max:255',
             'opponent'            => 'required|string',
-            'opponent_phone'      => 'nullable|string|max:255',
+            'opponent_phone'      => \App\Support\GulfPhone::rule(),
             'opponent_address'    => 'nullable|string',
             'opponent_lawyer'     => 'nullable|string|max:255',
             'opponent_civil_number' => 'nullable|string|max:255',

@@ -78,22 +78,7 @@
                         @enderror
                     </div>
 
-                    <div>
-                        <label for="doc_type" class="block text-sm font-medium text-gray-700 mb-1">نوع المستند</label>
-                        <select id="doc_type" name="doc_type"
-                                class="w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold focus:border-gold">
-                            <option value="">— يُستنتج من اسم الملف —</option>
-                            @foreach ($documentTypes as $type)
-                                <option value="{{ $type }}" @selected(old('doc_type') === $type)>{{ $type }}</option>
-                            @endforeach
-                        </select>
-                        <p class="mt-1 text-xs text-gray-500">
-                            اتركه فارغاً ليستنتجه النظام من اسم الملف.
-                            @if (in_array(auth()->user()->role, ['developer', 'admin'], true))
-                                <a href="{{ route('document-types.index') }}" class="text-gold-dark font-semibold hover:underline">إدارة الأنواع</a>
-                            @endif
-                        </p>
-                    </div>
+                    <x-doc-type-field :types="$documentTypes" />
 
                     <div>
                         <label for="file" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.document_file') }} <span class="text-red-500">*</span></label>

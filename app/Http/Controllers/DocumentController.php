@@ -93,7 +93,8 @@ class DocumentController extends Controller
             'file'           => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:' . (self::MAX_SIZE / 1024),
             'access_level'   => 'required|in:all,team,private',
             'client_visible' => 'nullable|boolean',
-            'doc_type'       => 'nullable|string|max:80',
+            // اسمُ نوعٍ لا وسمٌ برمجي — الخانة حرّة الكتابة الآن
+            'doc_type'       => ['nullable', 'string', 'max:80', 'regex:/^[\p{L}\p{M}\p{N}\s\.\-_\(\)\/]+$/u'],
         ]);
 
         // المجلد يجب أن يتبع نفس القضية — لا قبول لمجلد من قضية أخرى
@@ -119,7 +120,10 @@ class DocumentController extends Controller
 
         // Smart Documents: استنتاج نوع المستند وتاريخه من اسم الملف
         $inferred = \App\Services\DocumentSmartService::inferFromFilename($file->getClientOriginalName());
-        $docType = $request->filled('doc_type') ? $request->input('doc_type') : $inferred['type'];
+        // نوعٌ يكتبه الموظّف بيده يُحفظ في قائمة المكتب فيراه من بعده
+        $docType = $request->filled('doc_type')
+            ? \App\Models\DocumentType::remember($request->input('doc_type'))
+            : $inferred['type'];
         $docDate = $request->filled('doc_date') ? $request->input('doc_date') : $inferred['date'];
 
         $document = Document::create([

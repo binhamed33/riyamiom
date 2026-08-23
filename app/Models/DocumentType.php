@@ -26,6 +26,46 @@ class DocumentType extends Model
     }
 
     /**
+     * نوعٌ كتبه الموظّف بيده يُضاف إلى القائمة.
+     *
+     * القائمة كانت مغلقة: إمّا نوعٌ منها أو لا نوع. فالمحامي الذي
+     * يرفع «لائحة تظلّم» ولم يُدرجها أحدٌ من قبل يترك الخانة فارغة
+     * ويمضي — ويضيع التصنيف. الآن يكتبها، فتُحفظ مع مستنده وتظهر
+     * لمن بعده.
+     *
+     * يُطبَّع الاسم أولاً: المسافات الزائدة تصنع نوعين متطابقين في
+     * العين مختلفين في القاعدة.
+     */
+    public static function remember(?string $name): ?string
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', (string) $name));
+
+        if ($name === '') {
+            return null;
+        }
+
+        $existing = static::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+
+        if ($existing) {
+            // نوعٌ معطَّل كُتب اسمه من جديد: الكتابة إحياءٌ له
+            if (! $existing->is_active) {
+                $existing->update(['is_active' => true]);
+            }
+
+            return $existing->name;
+        }
+
+        static::create([
+            'name' => $name,
+            'is_active' => true,
+            'is_builtin' => false,
+            'sort' => (int) static::max('sort') + 1,
+        ]);
+
+        return $name;
+    }
+
+    /**
      * الأنواع الأولى التي يبدأ بها كل مكتب. المكتب يزيد عليها ويعطّل
      * ما لا يخصّه — ولا تُحذف المدمجة حتى لا تختفي من تحت مستندات
      * تحملها بالفعل.

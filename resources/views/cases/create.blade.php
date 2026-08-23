@@ -157,6 +157,11 @@
                         <input type="file" name="doc_file" id="doc_file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
                             class="w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-gold/10 file:px-4 file:py-2 file:text-gold-dark file:font-semibold hover:file:bg-gold/12">
                     </div>
+                    {{-- نوع المستند هنا أيضاً: كان يُرفع من صفحة القضية
+                         بلا نوع البتّة، فيُستنتج من اسم الملف أو لا
+                         يُعرف — ولا سبيل للموظّف أن يقوله. --}}
+                    <x-doc-type-field name="doc_type" id="case_doc_type" compact />
+
                     <div>
                         <label for="doc_access_level" class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.access_level') }}</label>
                         <select name="doc_access_level" id="doc_access_level"
@@ -415,7 +420,7 @@
                 </div>
                 <div>
                     <label for="opponent_phone" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.opponent_phone') }}</label>
-                    <input type="text" name="opponent_phone" id="opponent_phone" value="{{ old('opponent_phone') }}"
+                    <input type="tel" name="opponent_phone" id="opponent_phone" value="{{ old('opponent_phone') }}" data-phone inputmode="tel" autocomplete="tel" maxlength="20" placeholder="9123 4567 أو +968 9123 4567"
                         class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('opponent_phone') border-red-500/50 @enderror"
                         placeholder="{{ __('app.opponent_phone_placeholder') }}">
                     @error('opponent_phone')
