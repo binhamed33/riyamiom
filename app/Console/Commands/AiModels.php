@@ -97,53 +97,60 @@ class AiModels extends Command
     }
 
     /**
-     * محاولة محادثة حقيقية — بالطلب نفسه الذي يرسله النظام.
+     * محاولة محادثة حقيقية — بالمسار الذي يسلكه النظام نفسه.
      *
-     * سجلّ الإنتاج قال: 404 على gemini-2.5-flash. ثم أظهرت قائمة
-     * النماذج أن هذا النموذج متاحٌ لهذا المفتاح ويقبل generateContent.
-     * أي أن الخطأ ليس في اسم النموذج — وردّ المزوّد نفسه هو الذي يقول
-     * أين هو. فيُطبع خامّاً هنا بلا تلطيف ولا اختصار.
+     * أول نسخة من هذا الأمر أرسلت طلباً خاماً بنموذج واحد، فأظهرت 404
+     * وأوهمتني أن المساعد معطّل. وهي لم تكن تختبر ما يفعله النظام:
+     * النظام يجرّب سلسلة نماذج. فاختبارٌ لا يسلك مسار الإنتاج يُشخّص
+     * عطلاً غير الواقع.
+     *
+     * الآن يمرّ بـGeminiProvider نفسه: نفس السلسلة، ونفس الاحتياطي،
+     * ونفس اتّباع البديل الذي يسمّيه المزوّد.
      */
     private function attempt(string $key, string $model): int
     {
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent';
-
-        $this->line('العنوان : ' . $url);
-        $this->line('الطول   : ' . strlen($model) . ' حرفاً في اسم النموذج');
+        $this->line('النموذج المضبوط : ' . $model);
 
         if ($model !== trim($model)) {
-            $this->warn('⚠ اسم النموذج المخزَّن فيه فراغ في طرفه — وهذا وحده يُنتج 404.');
+            $this->warn('⚠ فراغ في طرف الاسم المخزَّن — وهذا وحده يُنتج 404.');
         }
 
+        $this->line('المسار          : GeminiProvider — نفس ما يسلكه النظام');
         $this->newLine();
 
+        $provider = new \App\Services\Ai\GeminiProvider();
+
         try {
-            $response = Http::timeout(60)
-                ->withHeaders(['Content-Type' => 'application/json', 'X-goog-api-key' => $key])
-                ->post($url, [
-                    'contents' => [['role' => 'user', 'parts' => [['text' => 'اهلا']]]],
-                    'generationConfig' => ['temperature' => 0.4, 'maxOutputTokens' => 256],
-                ]);
+            $answer = $provider->chat(
+                [['role' => 'user', 'content' => 'اهلا']],
+                'أنت مساعد نظام مُداوَلة. ردّ بجملة قصيرة.'
+            );
         } catch (\Throwable $e) {
-            $this->error('لم يصل الطلب أصلاً: ' . $e->getMessage());
+            $this->error('فشل: ' . $e->getMessage());
+            $this->line('آخر خطأ من المزوّد: ' . ($provider->getLastError() ?? '—'));
 
             return self::FAILURE;
         }
 
-        $this->line('رمز الحالة: ' . $response->status());
-        $this->newLine();
+        if ($answer === null || trim($answer) === '') {
+            $this->error('لم يردّ المزوّد بنصّ.');
+            $this->line('السبب: ' . ($provider->getLastError() ?? '—'));
 
-        if ($response->successful()) {
-            $text = $response->json('candidates.0.content.parts.0.text');
-            $this->info('✓ المزوّد ردّ:');
-            $this->line($text ?: '(ردّ بلا نصّ — وهذه حالة أخرى)');
-
-            return self::SUCCESS;
+            return self::FAILURE;
         }
 
-        $this->error('الردّ الخام كما ورد — لا يُلطَّف ولا يُختصر:');
-        $this->line($response->body());
+        $working = $provider->getWorkingModel();
 
-        return self::FAILURE;
+        $this->info('✓ المساعد ردّ:');
+        $this->line($answer);
+        $this->newLine();
+        $this->line('النموذج الذي ردّ فعلاً: ' . ($working ?? '—'));
+
+        if ($working && $working !== $model) {
+            $this->warn('النموذج المضبوط لم يعد يعمل، وثُبّت البديل تلقائياً: ' . $working);
+            $this->line('لا حاجة إلى تدخّل — الطلب القادم يبدأ منه مباشرة.');
+        }
+
+        return self::SUCCESS;
     }
 }

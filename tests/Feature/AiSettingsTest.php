@@ -60,11 +60,27 @@ class AiSettingsTest extends TestCase
 
         $this->actingAs($this->admin())->post(route('settings.ai.update'), [
             'ai_provider' => 'gemini',
-            'ai_model' => 'gemini-2.5-flash',
+            'ai_model' => 'gemini-3.6-flash',
         ])->assertRedirect();
 
         $this->assertSame('AIzaSyORIGINALKEY1234567', AiSettings::apiKey());
-        $this->assertSame('gemini-2.5-flash', AiSettings::model());
+        $this->assertSame('gemini-3.6-flash', AiSettings::model());
+    }
+
+    public function test_a_retired_model_cannot_be_chosen_from_the_settings(): void
+    {
+        // Google ردّت حرفياً: gemini-2.5-flash «no longer available to
+        // new users». فبقاؤه معروضاً يعني أن يختاره مدير مكتب فيقع في
+        // نفس العطل — 404 على كل سؤال.
+        AiSettings::store('gemini', 'AIzaSyORIGINALKEY1234567', 'gemini-flash-latest');
+
+        $this->actingAs($this->admin())->post(route('settings.ai.update'), [
+            'ai_provider' => 'gemini',
+            'ai_model' => 'gemini-2.5-flash',
+        ]);
+
+        $this->assertNotSame('gemini-2.5-flash', AiSettings::model(),
+            'نموذجٌ متقاعد ما زال يُقبل من الإعدادات');
     }
 
     public function test_removing_the_key_clears_only_the_key(): void

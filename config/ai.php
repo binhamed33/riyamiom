@@ -25,15 +25,22 @@ return [
             'key_url' => 'https://aistudio.google.com/apikey',
             'key_prefix_hint' => 'AIza…',
             'default_model' => env('GEMINI_MODEL', 'gemini-flash-latest'),
+            // gemini-2.5-flash أُزيل من هذه القائمة عمداً: Google ردّت
+            // حرفياً «no longer available to new users» — يظهر في قائمة
+            // النماذج ولا يقبل طلباً من مفتاح جديد. وعرضُه في الواجهة
+            // يعني أن يختاره مدير مكتب فيقع في نفس العطل.
+            //
+            // والاعتماد ليس على هذه القائمة وحدها على كل حال: المزوّد
+            // يسمّي بديله في نصّ خطئه، والنظام يتبعه ويثبّته.
             'models' => [
                 'gemini-flash-latest',
                 'gemini-3.6-flash',
-                'gemini-2.5-flash',
+                'gemini-3.5-flash',
                 'gemini-2.5-pro',
             ],
             'fallback_models' => array_values(array_filter(array_map(
                 'trim',
-                explode(',', (string) env('GEMINI_FALLBACK_MODELS', 'gemini-3.6-flash,gemini-2.5-flash'))
+                explode(',', (string) env('GEMINI_FALLBACK_MODELS', 'gemini-3.6-flash,gemini-flash-latest'))
             ))),
         ],
 

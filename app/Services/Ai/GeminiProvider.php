@@ -12,6 +12,8 @@ class GeminiProvider implements AiProvider
     protected string $model;
     protected ?int $lastStatus = null;
     protected ?string $lastError = null;
+    protected ?string $workingModel = null;
+    protected ?string $suggestedByProvider = null;
 
     public function __construct(?string $apiKey = null, ?string $model = null)
     {
@@ -64,10 +66,26 @@ class GeminiProvider implements AiProvider
             ]);
         }
 
-        return $this->generate([
-            'contents' => $contents,
-            'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
-        ]);
+        // المحادثة لا ترمي إلى الأعلى.
+        //
+        // analyze() كانت تلتقط وchat() لا تلتقط، فمفتاحٌ مرفوض (403)
+        // يصعد استثناءً غير ملتقَط إلى الواجهة فيرى الموظّف «تعذّر
+        // إتمام العملية» على كلمة «اهلا». والسبب الحقيقي — أن المفتاح
+        // مرفوض — لا يصل إلى أحد.
+        //
+        // يُلتقط هنا، ويبقى السبب في getLastError() لمن يعرضه للمسؤول،
+        // ويُسجَّل كاملاً في السجل.
+        try {
+            return $this->generate([
+                'contents' => $contents,
+                'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Gemini chat failed: ' . $e->getMessage());
+            $this->lastError = $e->getMessage();
+
+            return null;
+        }
     }
 
     /**
@@ -97,6 +115,31 @@ class GeminiProvider implements AiProvider
         }
     }
 
+    /** آخر نموذج ردّ فعلاً — للتشخيص وللشفاء الذاتي. */
+    public function getWorkingModel(): ?string
+    {
+        return $this->workingModel;
+    }
+
+    /**
+     * البديل الذي يسمّيه المزوّد في نصّ الخطأ.
+     *
+     * حين يتقاعد نموذج تقول Google حرفياً:
+     *   "This model models/X is no longer available to new users.
+     *    Please update your code to use models/Y"
+     *
+     * وهذا أدقّ من أي قائمة نكتبها نحن: المزوّد يعرف بديله، ونحن
+     * نكتب قائمةً تتقادم. فيُقرأ الاسم من الردّ ويُجرَّب.
+     */
+    protected function suggestedModel(string $body): ?string
+    {
+        if (!preg_match('#use\s+models/([A-Za-z0-9._-]+)#', $body, $m)) {
+            return null;
+        }
+
+        return $m[1];
+    }
+
     /** ترجمة رمز الحالة إلى سبب مفهوم — بلا تسريب المفتاح أو تفاصيل داخلية. */
     protected function humanError(int $status): string
     {
@@ -120,10 +163,20 @@ class GeminiProvider implements AiProvider
             ...config('ai.providers.gemini.fallback_models', []),
         ])));
 
+        $tried = [];
+
         $lastTransientError = null;
         $maxAttemptsPerModel = 2; // محاولة إضافية عند الازدحام قبل الانتقال للنموذج الاحتياطي
 
-        foreach ($models as $model) {
+        // القائمة تُستهلك لا تُدار بـforeach: النموذج الذي يسمّيه المزوّد
+        // بديلاً يُضاف إلى آخرها أثناء التنفيذ، فيُجرَّب في نفس الطلب
+        // بدل أن ينتظر تعديلاً منّا.
+        while (($model = array_shift($models)) !== null) {
+            if (in_array($model, $tried, true)) {
+                continue;
+            }
+            $tried[] = $model;
+
             for ($attempt = 1; $attempt <= $maxAttemptsPerModel; $attempt++) {
                 try {
                     return $this->callModel($model, $payload);
@@ -134,8 +187,17 @@ class GeminiProvider implements AiProvider
                     }
                     $lastTransientError = $e;
 
-                    // 404 = النموذج غير موجود → انتقل مباشرة للنموذج التالي بدون انتظار
+                    // 404 = النموذج غير موجود → انتقل مباشرة للنموذج التالي.
+                    //
+                    // وإن سمّى المزوّد بديلاً في نصّ ردّه — وهو يفعل حين
+                    // يتقاعد نموذج — فذاك أدقّ من قائمتنا: قائمتنا تتقادم
+                    // وهو يعرف بديله. يُقدَّم على ما بقي.
                     if ($this->lastStatus === 404) {
+                        if ($this->suggestedByProvider && !in_array($this->suggestedByProvider, $tried, true)) {
+                            array_unshift($models, $this->suggestedByProvider);
+                            $this->suggestedByProvider = null;
+                        }
+
                         break;
                     }
 
@@ -150,7 +212,7 @@ class GeminiProvider implements AiProvider
         $this->lastError = 'خدمة الذكاء الاصطناعي مزدحمة حاليًا، حاول مرة أخرى بعد لحظات.';
 
         throw $lastTransientError
-            ?? new \RuntimeException('Gemini API error — tried models: ' . implode(', ', $models));
+            ?? new \RuntimeException('Gemini API error — tried models: ' . implode(', ', $tried));
     }
 
     protected function callModel(string $model, array $payload): string
@@ -173,6 +235,10 @@ class GeminiProvider implements AiProvider
             if (!$response->successful()) {
                 $status = $response->status();
                 Log::error('Gemini API error (' . $model . '): ' . $status . ' - ' . $response->body());
+
+                if ($status === 404) {
+                    $this->suggestedByProvider = $this->suggestedModel((string) $response->body());
+                }
                 if ($status === 429) {
                     throw new \RuntimeException('تم تجاوز حصة مفتاح الذكاء الاصطناعي أو أن المفتاح غير صالح. حدّثه من الإعدادات ← الذكاء الاصطناعي.');
                 }
@@ -184,6 +250,15 @@ class GeminiProvider implements AiProvider
 
             $data = $response->json();
             $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+
+            $this->workingModel = $model;
+
+            // شفاءٌ ذاتي: لو ردّ نموذجٌ غير المضبوط، ثُبّت. وإلا بقي
+            // المكتب يبدأ من الميّت في كل طلب — محاولةٌ فاشلة وسطرُ
+            // خطأ في السجل، إلى الأبد.
+            if ($model !== AiSettings::model()) {
+                AiSettings::rememberWorkingModel($model);
+            }
 
             if ($text === null) {
                 throw new \RuntimeException('لم تُرجع الخدمة أي محتوى. حاول مرة أخرى.');

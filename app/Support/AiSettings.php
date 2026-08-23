@@ -124,6 +124,32 @@ class AiSettings
         return is_string($value) && $value !== '' ? $value : null;
     }
 
+    /**
+     * تثبيت النموذج الذي ردّ فعلاً — شفاءٌ ذاتي.
+     *
+     * النماذج تتقاعد عند المزوّد بلا إذن منّا: «gemini-2.5-flash لم يعد
+     * متاحاً للمفاتيح الجديدة» جاءت من Google نفسها. والاحتياطي ينقذ
+     * الطلب الواحد، لكنّ المكتب يبقى يبدأ من الميّت في كل طلب — محاولة
+     * فاشلة وسطرُ خطأ في السجل، إلى الأبد.
+     *
+     * فحين يردّ نموذجٌ غير المضبوط، يُثبَّت. لا يُمسّ المفتاح ولا
+     * المزوّد — النموذج وحده.
+     */
+    public static function rememberWorkingModel(string $model): void
+    {
+        $model = trim($model);
+
+        if ($model === '' || $model === self::model()) {
+            return;
+        }
+
+        Setting::set(self::KEY_MODEL, $model, self::GROUP);
+
+        \Illuminate\Support\Facades\Log::info(
+            'النموذج المضبوط لم يعد يعمل؛ ثُبّت البديل الذي ردّ: ' . $model
+        );
+    }
+
     public static function store(string $provider, ?string $apiKey, ?string $model): void
     {
         if (self::isImplemented($provider)) {
