@@ -78,13 +78,61 @@ class PanelReporter
                 ->acceptJson()
                 ->post(rtrim((string) config('panel.ingest_url'), '/') . '/ingest/heartbeat', [
                     'users_count' => \App\Models\User::query()->where('is_active', true)->count(),
+                    'clients_count' => \App\Models\Client::query()->count(),
+                    'cases_count' => \App\Models\LegalCase::query()->count(),
+                    'documents_count' => \App\Models\Document::query()->count(),
+                    'storage_bytes' => (int) \App\Models\Document::query()->sum('file_size'),
                     'ai_enabled' => self::aiEnabled(),
                     'app_version' => (string) config('app.version', ''),
                 ]);
 
+            // الردّ يحمل الباقة والحدود نزولاً — هذه هي قناة المزامنة.
+            // ترقيةٌ في اللوحة تسري هنا في النبضة التالية بلا لمس المكتب.
+            if ($response->successful()) {
+                $plan = $response->json('plan');
+
+                if (is_array($plan) && is_array($plan['limits'] ?? null)) {
+                    \App\Support\PlanLimits::sync(
+                        $plan['key'] ?? null,
+                        $plan['name'] ?? null,
+                        $plan['limits'],
+                    );
+                }
+            }
+
             return $response->successful();
         } catch (\Throwable $e) {
             Log::warning('PanelReporter: heartbeat unreachable — ' . $e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * طلب ترقية: يُرسل حين يبلغ المكتب حدّه ويضغط مديره «ترقية».
+     *
+     * إن لم يكن الجسر مربوطاً فلا شيء يُرسَل، ويُقال ذلك للمدير بدل
+     * أن يظنّ أنّ طلبه وصل.
+     */
+    public static function requestUpgrade(?string $by = null, ?string $email = null, ?string $reason = null): bool
+    {
+        if (!self::configured()) {
+            return false;
+        }
+
+        try {
+            $response = Http::timeout((int) config('panel.ingest_timeout', 8))
+                ->withHeaders(['X-Mudawala-Token' => config('panel.ingest_token')])
+                ->acceptJson()
+                ->post(rtrim((string) config('panel.ingest_url'), '/') . '/ingest/upgrade-request', [
+                    'requested_by' => $by,
+                    'requested_email' => $email,
+                    'reason' => $reason,
+                ]);
+
+            return $response->successful();
+        } catch (\Throwable $e) {
+            Log::warning('PanelReporter: upgrade request unreachable — ' . $e->getMessage());
 
             return false;
         }

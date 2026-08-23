@@ -72,6 +72,14 @@ class ClientController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // حدّ الباقة يُفرَض هنا في الخادم — إخفاء زرّ ليس منعاً.
+        // ولا يُحذف شيء عند التجاوز: المنع على الإضافة وحدها.
+        if (\App\Support\PlanLimits::reached('clients')) {
+            return redirect()->back()->withInput()
+                ->with('limit_reached', 'clients')
+                ->withErrors(['limit' => \App\Support\PlanLimits::message('clients')]);
+        }
+
         $validated = $request->validate([
             'name'          => \App\Support\PersonName::rule(),
             'type'          => 'required|in:individual,company',
@@ -102,6 +110,15 @@ class ClientController extends Controller
 
     public function storeAjax(Request $request): JsonResponse
     {
+        // نفس الحدّ على المنفذ الآخر: طريقان لإنشاء موكّل، فلا يكفي
+        // حراسة أحدهما — الثاني يصير التفافاً.
+        if (\App\Support\PlanLimits::reached('clients')) {
+            return response()->json([
+                'error' => \App\Support\PlanLimits::message('clients'),
+                'limit_reached' => 'clients',
+            ], 422);
+        }
+
         $validated = $request->validate([
             'name'        => \App\Support\PersonName::rule(),
             'phone'       => \App\Support\GulfPhone::rule(),

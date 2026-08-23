@@ -122,6 +122,14 @@ class CaseController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // حدّ الباقة يُفرَض هنا في الخادم — إخفاء زرّ ليس منعاً.
+        // ولا يُحذف شيء عند التجاوز: المنع على الإضافة وحدها.
+        if (\App\Support\PlanLimits::reached('cases')) {
+            return redirect()->back()->withInput()
+                ->with('limit_reached', 'cases')
+                ->withErrors(['limit' => \App\Support\PlanLimits::message('cases')]);
+        }
+
         $validated = $request->validate([
             'case_number'         => 'required|string|unique:cases,case_number',
             'case_type'           => 'nullable|string|max:255',

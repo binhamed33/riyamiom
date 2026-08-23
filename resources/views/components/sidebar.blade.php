@@ -94,6 +94,16 @@
             </a>
             @endif
 
+            {{-- الباقة: من يدير المكتب يرى أين هو من حدوده قبل أن يصطدم بها --}}
+            @if(in_array(Auth::user()->role, ['admin', 'developer']))
+            <a href="{{ route('plan.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 text-sm {{ request()->routeIs('plan.*') ? 'active' : '' }}">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-6 4h4M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/>
+                </svg>
+                <span>الباقة والاستهلاك</span>
+            </a>
+            @endif
+
             @if(Auth::user()->hasPermission('settings.manage') || in_array(Auth::user()->role, ['admin', 'developer']))
             <a href="{{ route('settings.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 text-sm {{ request()->routeIs('settings.*') ? 'active' : '' }}">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">

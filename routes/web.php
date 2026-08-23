@@ -355,6 +355,12 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     });
     Route::get('/feasibility', [FeasibilityController::class, 'index'])->middleware(['role:developer,admin,permission:feasibility.view', 'feature:feasibility'])->name('feasibility.index');
     Route::get('/audit-log', [AuditLogController::class, 'index'])->middleware(['role:developer,admin,permission:audit_log.view', 'feature:audit_log'])->name('audit-log.index');
+    // باقة المكتب واستهلاكه — يراها من يدير المكتب
+    Route::get('/plan', [\App\Http\Controllers\PlanController::class, 'index'])
+        ->middleware('role:developer,admin')->name('plan.index');
+    Route::post('/plan/upgrade', [\App\Http\Controllers\PlanController::class, 'requestUpgrade'])
+        ->middleware(['role:developer,admin', 'throttle:5,60'])->name('plan.upgrade');
+
     Route::get('/settings', [SettingController::class, 'index'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.update');
     // هوية المكتب — نفس صلاحية الإعدادات تماماً

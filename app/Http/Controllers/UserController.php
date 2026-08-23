@@ -42,6 +42,14 @@ class UserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // حدّ الباقة يُفرَض هنا في الخادم — إخفاء زرّ ليس منعاً.
+        // ولا يُحذف شيء عند التجاوز: المنع على الإضافة وحدها.
+        if (\App\Support\PlanLimits::reached('users')) {
+            return redirect()->back()->withInput()
+                ->with('limit_reached', 'users')
+                ->withErrors(['limit' => \App\Support\PlanLimits::message('users')]);
+        }
+
         $validated = $request->validate([
             'name'       => \App\Support\PersonName::rule(),
             'email'      => 'required|email|unique:users,email',

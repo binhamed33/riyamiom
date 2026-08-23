@@ -86,6 +86,14 @@ class DocumentController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // حدّ الباقة يُفرَض هنا في الخادم — إخفاء زرّ ليس منعاً.
+        // ولا يُحذف شيء عند التجاوز: المنع على الإضافة وحدها.
+        if (\App\Support\PlanLimits::reached('documents')) {
+            return redirect()->back()->withInput()
+                ->with('limit_reached', 'documents')
+                ->withErrors(['limit' => \App\Support\PlanLimits::message('documents')]);
+        }
+
         $validated = $request->validate([
             'case_id'        => 'nullable|exists:cases,id',
             'case_folder_id' => 'nullable|integer|exists:case_folders,id',
