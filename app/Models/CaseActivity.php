@@ -17,6 +17,7 @@ class CaseActivity extends Model
     const TYPE_SESSION = 'session';
     const TYPE_PAYMENT = 'payment';
     const TYPE_APPOINTMENT = 'appointment';
+    const TYPE_STATUS = 'status';
     const TYPE_OTHER = 'other';
 
     protected $fillable = [

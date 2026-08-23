@@ -28,6 +28,13 @@ class AppServiceProvider extends ServiceProvider
             $this->app->isProduction()
         );
 
+        // المسار الزمني للقضية يُكتب من مراقبي النماذج لا من المتحكّمات:
+        // للجلسة والمستند وحالة القضية أكثر من طريق كتابة، وتسجيلٌ في
+        // متحكّم واحد يترك بقية الطرق صامتة. المراقب يمسك الكتابة نفسها.
+        \App\Models\Session::observe(\App\Observers\SessionObserver::class);
+        \App\Models\Document::observe(\App\Observers\DocumentObserver::class);
+        \App\Models\LegalCase::observe(\App\Observers\LegalCaseObserver::class);
+
         config(['app.timezone' => 'Asia/Muscat']);
         date_default_timezone_set('Asia/Muscat');
 

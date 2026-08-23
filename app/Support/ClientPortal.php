@@ -116,6 +116,8 @@ class ClientPortal
         return [
             \App\Models\CaseActivity::TYPE_SESSION,
             \App\Models\CaseActivity::TYPE_APPOINTMENT,
+            // status — تحدُّث حالة القضية: خبرٌ يخصّه ويسأل عنه
+            \App\Models\CaseActivity::TYPE_STATUS,
             \App\Models\CaseActivity::TYPE_DOCUMENT,
         ];
     }

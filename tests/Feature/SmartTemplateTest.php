@@ -77,7 +77,20 @@ class SmartTemplateTest extends TestCase
         $this->assertSame('active', $case->fresh()->status); // الحالة الافتراضية طُبّقت
         $this->assertSame(1, $template->fresh()->usage_count);
         $this->assertDatabaseHas('case_activities', ['case_id' => $case->id]);
-        $this->assertStringContainsString('قالب', $case->activities()->first()->title);
+
+        // «الأول» صار غير ثابت: القالب ينقل الحالة من pending إلى
+        // active، ومراقب القضية يسجّل ذلك التحوّل — وهو سطر مقصود.
+        // فنبحث عن حدث القالب لا عن ترتيبه.
+        $titles = $case->activities()->pluck('title');
+
+        $this->assertTrue(
+            $titles->contains(fn ($t) => str_contains($t, 'قالب')),
+            'تطبيق القالب لم يُسجَّل في المسار الزمني'
+        );
+        $this->assertTrue(
+            $titles->contains('تحدّثت حالة القضية'),
+            'نقل الحالة من pending إلى active لم يُسجَّل'
+        );
     }
 
     public function test_used_template_is_disabled_instead_of_deleted(): void
