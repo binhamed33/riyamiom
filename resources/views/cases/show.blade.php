@@ -572,6 +572,24 @@ document.addEventListener('alpine:init', () => {
                 <p class="text-gray-400 text-xs mb-1">{{ __('app.opponent_civil_number') }}</p>
                 <p class="text-gray-900 text-sm">{{ $case->opponent_civil_number ?? '—' }}</p>
             </div>
+            <div>
+                <p class="text-gray-400 text-xs mb-1">{{ __('app.opponent_email') }}</p>
+                <p class="text-gray-900 text-sm" dir="ltr">{{ $case->opponent_email ?? '—' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-400 text-xs mb-1">{{ __('app.opponent_role') }}</p>
+                <p class="text-gray-900 text-sm">{{ \App\Models\LegalCase::OPPONENT_ROLES[$case->opponent_role] ?? '—' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-400 text-xs mb-1">{{ __('app.opponent_type') }}</p>
+                <p class="text-gray-900 text-sm">{{ \App\Models\LegalCase::OPPONENT_TYPES[$case->opponent_type] ?? '—' }}</p>
+            </div>
+            @if ($case->opponent_notes)
+                <div class="md:col-span-2">
+                    <p class="text-gray-400 text-xs mb-1">{{ __('app.opponent_notes') }}</p>
+                    <p class="text-gray-900 text-sm whitespace-pre-line">{{ $case->opponent_notes }}</p>
+                </div>
+            @endif
         </div>
     </div>
 

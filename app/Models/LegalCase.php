@@ -21,6 +21,8 @@ class LegalCase extends Model
         'opponent_address',
         'opponent_lawyer',
         'opponent_civil_number',
+        'opponent_email',
+        'opponent_notes',
     ];
 
     const STATUS_ACTIVE = 'active';
@@ -31,6 +33,26 @@ class LegalCase extends Model
     const STATUS_LOST = 'lost';
     const STATUS_ADJUDICATED = 'adjudicated';
     const STATUS_FEES_PENDING = 'fees_pending';
+
+    /**
+     * صفة الخصم في الدعوى ونوعه.
+     *
+     * قائمتان مغلقتان لأنّ عليهما يقع الترشيح والإحصاء: نصٌّ حرّ هنا
+     * يعني «شركه» و«شركة» و«Company» ثلاثة أنواع في التقرير الواحد.
+     */
+    public const OPPONENT_ROLES = [
+        'defendant' => 'مدّعى عليه',
+        'plaintiff' => 'مدّعٍ',
+        'intervener' => 'متدخّل',
+        'third_party' => 'طرف ثالث',
+    ];
+
+    public const OPPONENT_TYPES = [
+        'individual' => 'فرد',
+        'company' => 'شركة',
+        'government' => 'جهة حكومية',
+        'institution' => 'مؤسسة',
+    ];
 
     const PRIORITY_LOW = 'low';
     const PRIORITY_MEDIUM = 'medium';
@@ -50,6 +72,10 @@ class LegalCase extends Model
         'opponent_address',
         'opponent_lawyer',
         'opponent_civil_number',
+        'opponent_email',
+        'opponent_role',
+        'opponent_type',
+        'opponent_notes',
         'status',
         'priority',
         'client_id',

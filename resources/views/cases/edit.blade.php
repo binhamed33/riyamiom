@@ -213,6 +213,43 @@
                         <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
                     @enderror
                 </div>
+                <div>
+                    <label for="opponent_email" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.opponent_email') }}</label>
+                    <input type="email" name="opponent_email" id="opponent_email" value="{{ old('opponent_email', $case->opponent_email) }}" dir="ltr"
+                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('opponent_email') border-red-500/50 @enderror"
+                        placeholder="name@example.com">
+                    @error('opponent_email')
+                        <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="opponent_role" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.opponent_role') }}</label>
+                    <select name="opponent_role" id="opponent_role"
+                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
+                        <option value="">—</option>
+                        @foreach (\App\Models\LegalCase::OPPONENT_ROLES as $value => $label)
+                            <option value="{{ $value }}" @selected(old('opponent_role', $case->opponent_role) === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="opponent_type" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.opponent_type') }}</label>
+                    <select name="opponent_type" id="opponent_type"
+                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
+                        <option value="">—</option>
+                        @foreach (\App\Models\LegalCase::OPPONENT_TYPES as $value => $label)
+                            <option value="{{ $value }}" @selected(old('opponent_type', $case->opponent_type) === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="opponent_notes" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.opponent_notes') }}</label>
+                    <textarea name="opponent_notes" id="opponent_notes" rows="3" maxlength="2000"
+                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">{{ old('opponent_notes', $case->opponent_notes) }}</textarea>
+                    @error('opponent_notes')
+                        <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
         </div>
 

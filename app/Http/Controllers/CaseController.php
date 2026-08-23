@@ -142,6 +142,12 @@ class CaseController extends Controller
             'opponent_address'    => 'nullable|string',
             'opponent_lawyer'     => 'nullable|string|max:255',
             'opponent_civil_number' => 'nullable|string|max:255',
+            'opponent_email'      => 'nullable|email|max:190',
+            // القائمتان مغلقتان: الترشيح والإحصاء يقعان عليهما، والنصّ
+            // الحرّ يجعل «شركة» و«شركه» نوعين في التقرير الواحد.
+            'opponent_role'       => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Models\LegalCase::OPPONENT_ROLES))],
+            'opponent_type'       => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Models\LegalCase::OPPONENT_TYPES))],
+            'opponent_notes'      => 'nullable|string|max:2000',
             'status'              => 'required|in:active,pending,overdue,closed,won,lost,adjudicated,fees_pending',
             'priority'            => 'required|in:low,medium,high,urgent',
             'client_id'           => 'required|exists:clients,id',
@@ -587,6 +593,12 @@ class CaseController extends Controller
             'opponent_address'    => 'nullable|string',
             'opponent_lawyer'     => 'nullable|string|max:255',
             'opponent_civil_number' => 'nullable|string|max:255',
+            'opponent_email'      => 'nullable|email|max:190',
+            // القائمتان مغلقتان: الترشيح والإحصاء يقعان عليهما، والنصّ
+            // الحرّ يجعل «شركة» و«شركه» نوعين في التقرير الواحد.
+            'opponent_role'       => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Models\LegalCase::OPPONENT_ROLES))],
+            'opponent_type'       => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Models\LegalCase::OPPONENT_TYPES))],
+            'opponent_notes'      => 'nullable|string|max:2000',
             'status'              => 'required|in:active,pending,overdue,closed,won,lost,adjudicated,fees_pending',
             'priority'            => 'required|in:low,medium,high,urgent',
             'client_id'           => 'required|exists:clients,id',

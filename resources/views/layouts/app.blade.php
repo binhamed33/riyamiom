@@ -1465,7 +1465,7 @@
                 <div class="flex items-center gap-2">
                     <p class="text-xs text-gray-400">{{ $officeName }}</p>
                     <span class="text-gray-300">|</span>
-                    <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" class="text-xs text-gray-400 hover:text-gold-dark transition">{{ __('app.developer_credit') }}</a>
+                    <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" class="text-xs text-gray-400 hover:text-gold-dark transition">{{ __('app.product_credit') }}</a>
                 </div>
             </div>
         </footer>

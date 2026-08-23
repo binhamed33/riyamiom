@@ -101,8 +101,6 @@
                 <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" class="hover:text-gold-dark transition-colors">مُداوَلة &copy; {{ date('Y') }}</a>
                 <span class="hidden sm:inline text-gray-300">|</span>
                 <span>{{ $officeName }}</span>
-                <span class="hidden sm:inline text-gray-300">|</span>
-                <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" class="hover:text-gold-dark transition-colors">المطور عبدالرحمن الريامي</a>
             </div>
         </div>
     </footer>

@@ -418,7 +418,7 @@
 
         {{-- Footer --}}
         <div class="text-center py-10 text-gray-400 text-sm border-t border-gray-100">
-            <p>تم تطويره بواسطة <span class="text-gold-light">عبدالرحمن الريامي</span> — مُداوَلة</p>
+            <p>مُداوَلة — نظام إدارة مكاتب المحاماة</p>
         </div>
     </div>
 
