@@ -1978,15 +1978,45 @@
                             </svg>
                         </div>
                         <p class="text-sm text-gray-600 leading-relaxed max-w-xs mx-auto">{{ __('app.ai_assistant_greeting') }}</p>
+
+                        {{-- شاشة فارغة وحقلُ كتابة لا تقول للموظّف بماذا
+                             يبدأ. هذه ثلاثة أسئلة يُفتح بها الباب. --}}
+                        <div class="mt-4 space-y-2 max-w-xs mx-auto text-start">
+                            <template x-for="q in starters" :key="q">
+                                <button type="button" @click="ask(q)"
+                                    class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 hover:border-emerald-300 hover:bg-emerald-50 transition-colors text-start">
+                                    <span x-text="q"></span>
+                                </button>
+                            </template>
+                        </div>
                     </div>
                 </template>
 
                 <template x-for="m in messages" :key="m.id">
                     <div :class="m.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
-                        <div :class="m.role === 'user'
-                            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl rounded-tr-sm max-w-[85%] px-4 py-2.5 shadow-sm'
-                            : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm max-w-[85%] px-4 py-2.5 shadow-sm'">
-                            <div class="text-sm leading-relaxed" :class="m.role === 'user' ? 'whitespace-pre-wrap' : 'ai-content'" x-html="m.role === 'assistant' ? md(m.content) : m.content"></div>
+                        <div class="max-w-[85%]">
+                            <div :class="m.role === 'user'
+                                ? (m.failed
+                                    ? 'bg-red-50 border border-red-200 text-red-800 rounded-2xl rounded-tr-sm px-4 py-2.5'
+                                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-sm')
+                                : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm'">
+                                <div class="text-sm leading-relaxed" :class="m.role === 'user' ? 'whitespace-pre-wrap' : 'ai-content'" x-html="m.role === 'assistant' ? md(m.content) : m.content"></div>
+                            </div>
+
+                            {{-- تحت كل رسالة: وقتها، ونسخُ الجواب لمن
+                                 يريد لصقه في مذكّرة. --}}
+                            <div class="mt-1 flex items-center gap-2 px-1 text-[10px] text-gray-400"
+                                 :class="m.role === 'user' ? 'justify-end' : 'justify-start'">
+                                <span x-text="when(m.at)"></span>
+                                <template x-if="m.role === 'assistant'">
+                                    <button type="button" @click="copy(m)"
+                                        class="hover:text-emerald-600 transition-colors"
+                                        :title="'{{ __('app.ai_chat_copy') }}'">
+                                        <span x-show="copied !== m.id">{{ __('app.ai_chat_copy') }}</span>
+                                        <span x-show="copied === m.id" x-cloak class="text-emerald-600 font-semibold">{{ __('app.ai_chat_copied') }}</span>
+                                    </button>
+                                </template>
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -2001,16 +2031,28 @@
                     </div>
                 </div>
 
-                <div x-show="error" x-text="error" class="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-3"></div>
+                <div x-show="error" x-cloak class="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p x-text="error"></p>
+                    {{-- السؤال محفوظ في الخادم؛ إعادة المحاولة لا تعني
+                         إعادة الكتابة. --}}
+                    <button type="button" x-show="lastAsked" @click="retry()" :disabled="sending"
+                        class="mt-2 font-semibold text-red-800 underline underline-offset-4 hover:no-underline disabled:opacity-50">
+                        {{ __('app.ai_chat_retry') }}
+                    </button>
+                </div>
             </div>
 
             {{-- Input --}}
             <div class="px-4 py-3 border-t border-gray-200 bg-white">
                 <p class="text-[10px] text-gray-400 mb-2">{{ __('app.ai_assistant_disclaimer') }}</p>
                 <div class="flex items-end gap-2">
-                    <textarea x-model="input" rows="1" :disabled="sending"
+                    {{-- كان سطراً واحداً مهما طال السؤال، فيكتب المحامي
+                         فقرةً لا يرى منها إلا آخرها. ينمو الآن إلى حدّ. --}}
+                    <textarea x-model="input" x-ref="input" rows="1" :disabled="sending"
+                        @input="grow($el)"
                         @keydown.enter.prevent="if (!$event.shiftKey) send()"
-                        class="flex-1 rounded-xl bg-gray-50 border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:opacity-50"
+                        class="flex-1 rounded-xl bg-gray-50 border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:opacity-50 overflow-y-auto"
+                        style="max-height: 140px;"
                         placeholder="{{ __('app.ai_assistant_placeholder') }}"></textarea>
                     <button @click="send()" :disabled="sending || !input.trim()"
                         class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-2.5 rounded-xl font-semibold transition-colors text-sm disabled:opacity-50 flex items-center gap-1">
@@ -2033,6 +2075,46 @@
             input: '',
             sending: false,
             error: null,
+            // آخر سؤال أخفق: يُعاد إرساله بضغطة بدل إعادة كتابته
+            lastAsked: null,
+            copied: null,
+            starters: @js([
+                __('app.ai_starter_1'),
+                __('app.ai_starter_2'),
+                __('app.ai_starter_3'),
+            ]),
+            when(iso) {
+                if (!iso) return '';
+                try {
+                    return new Date(iso).toLocaleTimeString('{{ app()->getLocale() === 'ar' ? 'ar-OM' : 'en-GB' }}',
+                        { hour: '2-digit', minute: '2-digit' });
+                } catch (e) { return ''; }
+            },
+            async copy(m) {
+                try {
+                    await navigator.clipboard.writeText(m.content);
+                    this.copied = m.id;
+                    setTimeout(() => { if (this.copied === m.id) this.copied = null; }, 1600);
+                } catch (e) { /* متصفّح لا يمنح الحافظة */ }
+            },
+            ask(text) {
+                this.input = text;
+                this.send();
+            },
+            retry() {
+                if (!this.lastAsked || this.sending) return;
+                const text = this.lastAsked;
+                // السؤال المخفق يُنزع من الشاشة ثم يُعاد إرساله
+                this.messages = this.messages.filter(m => !(m.role === 'user' && m.content === text && m.failed));
+                this.error = null;
+                this.input = text;
+                this.send();
+            },
+            grow(el) {
+                if (!el) return;
+                el.style.height = 'auto';
+                el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+            },
             md(text) {
                 if (!text) return '';
                 const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -2081,8 +2163,11 @@
             async send() {
                 const text = this.input.trim();
                 if (!text || this.sending) return;
-                this.messages.push({ id: 'user-' + Date.now(), role: 'user', content: text });
+                const local = { id: 'user-' + Date.now(), role: 'user', content: text, at: new Date().toISOString() };
+                this.messages.push(local);
+                this.lastAsked = text;
                 this.input = '';
+                this.$nextTick(() => this.grow(this.$refs.input));
                 this.error = null;
                 this.sending = true;
                 this.$nextTick(() => this.scrollChat());
@@ -2093,20 +2178,27 @@
                         body: JSON.stringify({ message: text })
                     });
                     const data = await res.json().catch(() => null);
+                    // السؤال حُفظ في الخادم، فيأخذ معرّفه لا معرّفاً محلياً
+                    if (data?.question_id) local.id = data.question_id;
                     if (!res.ok) {
+                        local.failed = true;
                         this.error = data?.error || '{{ __("app.save_error") }}';
                     } else {
-                        this.messages.push({ id: 'ai-' + Date.now(), role: 'assistant', content: data.reply });
+                        this.messages.push({ id: data.id ?? ('ai-' + Date.now()), role: 'assistant', content: data.reply, at: data.at });
+                        this.lastAsked = null;
                     }
                 } catch(e) {
+                    local.failed = true;
                     this.error = '{{ __("app.connection_error") }}';
                 }
                 this.sending = false;
                 this.$nextTick(() => this.scrollChat());
             },
             async clearChat() {
+                if (this.messages.length && !confirm('{{ __('app.ai_chat_clear_confirm') }}')) return;
                 this.messages = [];
                 this.error = null;
+                this.lastAsked = null;
                 try {
                     await fetch('{{ route("assistant.clear") }}', {
                         method: 'POST',

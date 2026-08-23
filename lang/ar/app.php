@@ -854,4 +854,11 @@ return [
     'task_completed_on' => 'اكتملت في :date',
     'task_action_in_progress' => 'ابدأ التنفيذ',
     'task_action_completed' => 'أكملها الآن',
+    'ai_chat_copy' => 'نسخ',
+    'ai_chat_copied' => 'نُسخ',
+    'ai_chat_retry' => 'أعِد المحاولة',
+    'ai_chat_clear_confirm' => 'تُحذف المحادثة كلّها ولا تُستعاد. أتريد ذلك؟',
+    'ai_starter_1' => 'ما إجراءات رفع دعوى مطالبة مالية في عُمان؟',
+    'ai_starter_2' => 'ما مدة الطعن بالاستئناف وكيف تُحتسب؟',
+    'ai_starter_3' => 'لخّص لي حالة قضايا المكتب المفتوحة.',
 ];

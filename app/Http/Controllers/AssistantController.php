@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AssistantMessage;
 use App\Models\LegalCase;
 use App\Services\GeminiService;
 use Illuminate\Http\JsonResponse;
@@ -26,12 +27,14 @@ class AssistantController extends Controller
             ], 400);
         }
 
+        $userId = auth()->id();
         $userMessage = trim($request->input('message'));
 
-        $history = session('assistant_history', []);
-        $history[] = ['role' => 'user', 'content' => $userMessage];
-        $history = collect($history)->take(-20)->values()->toArray();
+        // السؤال يُحفظ قبل الطلب لا بعده: إن سقط الاتصال بقي سؤال
+        // الموظّف مكتوباً أمامه بدل أن يضيع ويُعاد كتابته.
+        $asked = AssistantMessage::write($userId, 'user', $userMessage);
 
+        $history = AssistantMessage::contextFor($userId);
         $systemPrompt = $this->buildSystemPrompt();
 
         try {
@@ -39,19 +42,24 @@ class AssistantController extends Controller
 
             if (!$reply) {
                 return response()->json([
+                    'question_id' => $asked->id,
                     'error' => 'تعذر الحصول على رد من الذكاء الاصطناعي، حاول مرة أخرى لاحقاً',
                 ], 500);
             }
 
-            $history[] = ['role' => 'assistant', 'content' => $reply];
-            session(['assistant_history' => collect($history)->take(-20)->values()->toArray()]);
+            $answer = AssistantMessage::write($userId, 'assistant', $reply);
 
             return response()->json([
                 'reply' => $reply,
+                'question_id' => $asked->id,
+                'id' => $answer->id,
+                'at' => $answer->created_at->toIso8601String(),
             ]);
         } catch (\Throwable $e) {
             Log::error('Assistant chat failed: ' . $e->getMessage());
+
             return response()->json([
+                'question_id' => $asked->id,
                 'error' => $service->getLastError() ?: 'المساعد القانوني مزدحم حاليًا، حاول مرة أخرى بعد لحظات.',
             ], 503);
         }
@@ -59,8 +67,16 @@ class AssistantController extends Controller
 
     public function history(): JsonResponse
     {
-        $messages = collect(session('assistant_history', []))
-            ->map(fn($m) => ['id' => uniqid(), 'role' => $m['role'], 'content' => $m['content']])
+        // معرّفٌ ثابت من القاعدة، لا uniqid() يتغيّر مع كل قراءة —
+        // فيُعيد المتصفّح رسمَ الرسائل كلّها كأنّها جديدة.
+        $messages = AssistantMessage::of(auth()->id())
+            ->get()
+            ->map(fn (AssistantMessage $m) => [
+                'id' => $m->id,
+                'role' => $m->role,
+                'content' => $m->content,
+                'at' => $m->created_at?->toIso8601String(),
+            ])
             ->values()
             ->toArray();
 
@@ -69,7 +85,12 @@ class AssistantController extends Controller
 
     public function clear(): JsonResponse
     {
+        // محادثة هذا الموظّف وحده — لا محادثة غيره
+        AssistantMessage::where('user_id', auth()->id())->delete();
+
+        // وما بقي في الجلسات القديمة من قبل الحفظ في القاعدة
         session()->forget('assistant_history');
+
         return response()->json(['ok' => true]);
     }
 
