@@ -189,4 +189,4 @@ php artisan serve --host=0.0.0.0 --port=8000
 
 ## حقوق النشر
 
-مُداوَلة © 2026 — https://dev.riyami.om/
+مُداوَلة © 2026 — https://mudawala.riyami.om/

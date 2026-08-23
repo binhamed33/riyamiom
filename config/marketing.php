@@ -39,6 +39,6 @@ return [
     /*
     | رابط موقع البورتفوليو
     */
-    'portfolio_url' => 'https://dev.riyami.om/',
+    'portfolio_url' => env('MUDAWALA_URL', 'https://mudawala.riyami.om') . '/',
 
 ];

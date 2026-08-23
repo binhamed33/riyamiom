@@ -71,13 +71,13 @@
 
                         primary: { DEFAULT: mdAccent('--accent-dark-rgb'), hover: mdAccent('--accent-rgb'), dark: mdAccent('--accent-deep-rgb'), light: mdAccent('--accent-light-rgb') },
 
-                        background: '#F7F8FA',
+                        background: '#F3EFE7',
 
-                        surface: '#FFFFFF',
+                        surface: '#FCFAF6',
 
                         text: { DEFAULT: '#111827', secondary: '#4B5563', muted: '#6B7280' },
 
-                        border: '#E2E6EC',
+                        border: '#E4DFD4',
 
                         success: { DEFAULT: '#16A34A', light: '#DCFCE7', dark: '#166534' },
 
@@ -367,14 +367,38 @@
             a[class*="rounded-full"], button[class*="rounded-full"] { min-height: 40px; display: inline-flex; align-items: center; }
         }
 
-        /* Warm ivory surfaces (light mode) */
-        .bg-white, .bg-white\/60, .bg-white\/70, .bg-white\/80, .bg-white\/90 { background-color: #FFFFFF; }
+        /* أسطح فاتحة تريح العين.
+           كان التعليق يعد بعاجٍ دافئ والقيمة #FFFFFF — بياضٌ صرف.
+           شاشة كاملة منه تحت ضوء المكتب تُتعب النظر بعد ساعة.
+           الأسطح هنا أخفض من البياض الصرف بقليل ومائلة إلى الدفء،
+           والنصّ عليها لا يزال فوق 15:1 — أي أعلى بكثير من حدّ
+           AAA. لا شيء غير لون الخلفية يتغيّر. */
+        :root {
+            --surface: #FCFAF6;   /* البطاقات واللوحات */
+            --surface-2: #F7F4ED;  /* أرضية الصفحة */
+            --surface-3: #F2EEE5;  /* الأشرطة الثانوية */
+        }
+        .bg-white, .bg-white\/60, .bg-white\/70, .bg-white\/80, .bg-white\/90 { background-color: var(--surface); }
+        .bg-gray-50 { background-color: var(--surface-2); }
+        .bg-gray-100 { background-color: var(--surface-3); }
+
+        /* الحدود الرمادية كانت باردة (#E5E7EB) وسط أسطح دافئة فتبدو
+           زرقاء بجانبها. هذه هي نفسها في القيمة، دافئة في المزاج. */
+        .border-gray-100 { border-color: #EFEAE0; }
+        .border-gray-200 { border-color: #E7E2D8; }
+        .divide-gray-100 > * + * { border-color: #EFEAE0; }
+        .divide-gray-200 > * + * { border-color: #E7E2D8; }
+
+        /* رمادي 400 كان 2.19:1 فوق أفتح أسطحنا — ولم يكن مقروءاً فوق
+           البياض الصرف قبلها (2.54:1). هذه القيمة ترفعه إلى 3.63:1
+           وتبقيه أفتح من رمادي 500 فلا تنهار مراتب النصّ. */
+        .text-gray-400 { color: #767C86; }
 
         * { font-family: 'Tajawal', sans-serif; }
         h1, h2, h3, h4, h5, h6, .font-heading { font-family: 'Cairo', sans-serif; }
 
         ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #F2F4F7; }
+        ::-webkit-scrollbar-track { background: var(--surface-3); }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--accent-hover); }
 
@@ -429,7 +453,7 @@
         }
 
         /* --- Theme base (applied before first paint) --- */
-        html { background-color: #F7F8FA; }
+        html { background-color: #F3EFE7; }
         html[data-theme="dark"] { background-color: #080B12; color-scheme: dark; }
 
         /* --- Premium page transitions (View Transitions API) --- */
@@ -619,7 +643,7 @@
             transform: scaleX(1);
         }
 
-::-webkit-scrollbar-track { background: #F2F4F7; }
+::-webkit-scrollbar-track { background: var(--surface-3); }
         ::-webkit-scrollbar-thumb { background: #C9CDD6; border-radius: 8px; }
         input[type=checkbox] { accent-color: var(--accent-dark) !important; }
         .ts-wrapper .ts-control { background: #FFFFFF !important; border: 1px solid #E2E6EC !important; color: #111827 !important; }
@@ -750,7 +774,7 @@
 </style>
     @stack('styles')
 </head>
-<body class="font-body min-h-screen" style="background-color: #F7F8FA; color: #111827;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: '{{ $appearanceMode }}', fontSize: parseInt(localStorage.getItem('fontSize') || '100', 10) || 100, fontStep(step) { const levels = [100, 110, 125]; let i = levels.indexOf(this.fontSize); if (i === -1) i = 0; const ni = Math.max(0, Math.min(levels.length - 1, i + step)); this.fontSize = levels[ni]; localStorage.setItem('fontSize', this.fontSize); document.documentElement.style.fontSize = (16 * this.fontSize / 100) + 'px'; } }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
+<body class="font-body min-h-screen" style="background-color: #F3EFE7; color: #111827;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: '{{ $appearanceMode }}', fontSize: parseInt(localStorage.getItem('fontSize') || '100', 10) || 100, fontStep(step) { const levels = [100, 110, 125]; let i = levels.indexOf(this.fontSize); if (i === -1) i = 0; const ni = Math.max(0, Math.min(levels.length - 1, i + step)); this.fontSize = levels[ni]; localStorage.setItem('fontSize', this.fontSize); document.documentElement.style.fontSize = (16 * this.fontSize / 100) + 'px'; } }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
 
     {{-- Mobile Overlay --}}
     <div
@@ -772,7 +796,7 @@
             sidebarOpen ? 'sb-open' : 'sb-closed',
             mobileOpen ? 'translate-x-0' : '{{ $isRtl ? 'translate-x-full' : '-translate-x-full' }} md:translate-x-0'
         ]"
-            style="background: #FFFFFF; {{ $isRtl ? 'border-left' : 'border-right' }}: 1px solid #E2E6EC;"
+            style="background: var(--surface); {{ $isRtl ? 'border-left' : 'border-right' }}: 1px solid #E4DFD4;"
     >
         {{-- Logo --}}
         <div class="flex items-center justify-between h-16 px-4" style="border-bottom: 1px solid #E2E6EC;">
@@ -1068,7 +1092,7 @@
         :class="sidebarOpen ? 'ct-open' : 'ct-closed'"
     >
         {{-- Top Bar --}}
-        <header class="sticky top-0 z-30" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-bottom: 1px solid rgba(212,175,55,0.08);">
+        <header class="sticky top-0 z-30" style="background: rgba(252,250,246,0.95); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-bottom: 1px solid rgba(212,175,55,0.08);">
             <div class="flex items-center justify-between h-16 px-4 sm:px-6">
                 {{-- Right Side: Hamburger + Breadcrumb --}}
                 <div class="flex items-center gap-3">
@@ -1434,14 +1458,14 @@
         <footer style="border-top: 1px solid #E2E6EC; background: rgba(244,242,238,0.5);">
             <div class="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <a href="https://dev.riyami.om/" target="_blank" class="text-sm font-heading font-bold hover:opacity-80 transition-opacity" style="color: #E5C158;">مُداوَلة</a>
+                    <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" class="text-sm font-heading font-bold hover:opacity-80 transition-opacity" style="color: #E5C158;">مُداوَلة</a>
                     <span class="text-xs text-gray-400">&copy;</span>
                     <span class="text-sm text-gray-500">{{ date('Y') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <p class="text-xs text-gray-400">{{ $officeName }}</p>
                     <span class="text-gray-300">|</span>
-                    <a href="https://dev.riyami.om/" target="_blank" class="text-xs text-gray-400 hover:text-gold-dark transition">{{ __('app.developer_credit') }}</a>
+                    <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" class="text-xs text-gray-400 hover:text-gold-dark transition">{{ __('app.developer_credit') }}</a>
                 </div>
             </div>
         </footer>

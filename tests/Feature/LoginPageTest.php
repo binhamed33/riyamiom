@@ -22,7 +22,7 @@ class LoginPageTest extends TestCase
         $this->get('/login')
             ->assertOk()
             ->assertSee('مُداوَلة', false)
-            ->assertSee('https://dev.riyami.om/', false)
+            ->assertSee(\App\Support\Mudawala::url(), false)
             ->assertSee('rel="icon"', false)
             ->assertSee('name="csrf-token"', false)
             ->assertDontSee('LexPro', false);

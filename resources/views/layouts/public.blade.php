@@ -98,11 +98,11 @@
     <footer class="bg-white/50 border-t border-gold/15">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
             <div class="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 text-[10px] sm:text-xs text-gray-400">
-                <a href="https://dev.riyami.om/" target="_blank" class="hover:text-gold-dark transition-colors">مُداوَلة &copy; {{ date('Y') }}</a>
+                <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" class="hover:text-gold-dark transition-colors">مُداوَلة &copy; {{ date('Y') }}</a>
                 <span class="hidden sm:inline text-gray-300">|</span>
                 <span>{{ $officeName }}</span>
                 <span class="hidden sm:inline text-gray-300">|</span>
-                <a href="https://dev.riyami.om/" target="_blank" class="hover:text-gold-dark transition-colors">المطور عبدالرحمن الريامي</a>
+                <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" class="hover:text-gold-dark transition-colors">المطور عبدالرحمن الريامي</a>
             </div>
         </div>
     </footer>

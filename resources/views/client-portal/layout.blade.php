@@ -318,7 +318,7 @@
 <footer class="p-foot">
     {{ $officeName }}
     <span style="opacity:.4">·</span>
-    <a href="https://dev.riyami.om/" target="_blank" rel="noopener">{{ __('portal.powered_by', ['brand' => __('portal.brand')]) }}</a>
+    <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" rel="noopener">{{ __('portal.powered_by', ['brand' => __('portal.brand')]) }}</a>
 </footer>
 
 <script nonce="{{ $cspNonce ?? '' }}">

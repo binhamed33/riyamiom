@@ -100,7 +100,7 @@
         @endauth
 
         <div class="foot">
-            {{ $officeName }} · <a href="https://dev.riyami.om/" target="_blank" rel="noopener">مُداوَلة</a>
+            {{ $officeName }} · <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" rel="noopener">مُداوَلة</a>
         </div>
     </main>
 </body>

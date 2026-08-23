@@ -626,7 +626,7 @@
                     {{-- مُداوَلة = هوية المنتج؛ النقر عليها يفتح موقع المنصة --}}
                     <p class="text-sm tracking-wide" style="color:var(--muted);">
                         {{ __('app.login_title') }} ·
-                        <a href="https://dev.riyami.om/" target="_blank" rel="noopener" class="link-soft font-semibold">مُداوَلة</a> ⚖
+                        <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" rel="noopener" class="link-soft font-semibold">مُداوَلة</a> ⚖
                     </p>
                 </div>
 
@@ -734,7 +734,7 @@
                         </form>
 
                         <div class="mt-5 pt-5 border-t text-center" style="border-color:rgba(146,153,165,0.14);">
-                            <p class="text-xs" style="color:rgba(146,153,165,0.6);">{{ $officeName }} — <a href="https://dev.riyami.om/" target="_blank" class="link-soft" rel="noopener">مُداوَلة</a> · {{ __('app.login_tagline') }}</p>
+                            <p class="text-xs" style="color:rgba(146,153,165,0.6);">{{ $officeName }} — <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" class="link-soft" rel="noopener">مُداوَلة</a> · {{ __('app.login_tagline') }}</p>
                         </div>
                     </div>
                 </div>
@@ -1083,7 +1083,7 @@
                 <span style="color:var(--gold);">◆</span>
                 <span>{{ $officeName }} — © {{ date('Y') }}</span>
                 <span aria-hidden="true">·</span>
-                <a href="https://dev.riyami.om/" target="_blank" rel="noopener" class="link-soft font-semibold">مُداوَلة</a>
+                <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" rel="noopener" class="link-soft font-semibold">مُداوَلة</a>
             </p>
             <div class="flex items-center gap-3">
                 <button type="button" class="foot-btn" data-theme-toggle aria-pressed="false"

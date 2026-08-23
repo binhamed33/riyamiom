@@ -1,125 +1,165 @@
 @php
-    $officeName = \App\Models\Setting::get('office_name', 'مُداوَلة');
+    $officeName = \App\Support\OfficeBrand::name();
+    $logo = \App\Support\OfficeBrand::logoUrl();
     $supportEmail = \App\Models\Setting::get('office_email', 'admin@riyami.om');
-    $supportPhone = \App\Models\Setting::get('office_phone', '');
+    $info = app(\App\Services\SubscriptionService::class)->info();
+    $endAt = $info['end_at'] ?? null;
+    $suspended = ($info['key'] ?? null) === \App\Services\SubscriptionService::STATUS_SUSPENDED;
     $isRtl = app()->getLocale() === 'ar';
 @endphp
+{{-- صفحة انتهاء الاشتراك.
+
+     كانت تبني شكلها كلّه على Tailwind من شبكة توزيع خارجية. وهذه
+     بالذات هي الصفحة التي تُفتح حين لا يعمل شيء: فإن تأخّر ذلك
+     المصدر أو حجبه مزوّد، انهارت إلى نصٍّ متراكم على سواد — وهو ما
+     رآه صاحب النظام ووصفه بأنه قبيح.
+
+     صارت مكتفيةً بنفسها: لا سكربت، ولا صنف من الخارج، ولا شيء
+     يُنتظر تحميله. وعلى عائلة صفحة الصيانة نفسها، فالحالتان
+     «النظام لا يعمل الآن» فليكونا وجهاً واحداً.
+
+     وزرّ الواتساب أُزيل — القناة المعتمدة البريد وحده. --}}
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html dir="{{ $isRtl ? 'rtl' : 'ltr' }}" lang="{{ app()->getLocale() }}" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>انتهت صلاحية الاشتراك — {{ $officeName }}</title>
-
+    <title>{{ $suspended ? 'الاشتراك متوقف' : 'انتهت صلاحية الاشتراك' }} — {{ $officeName }}</title>
+    <link rel="icon" href="/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script nonce="{{ $cspNonce }}" src="https://cdn.tailwindcss.com"></script>
-    <script nonce="{{ $cspNonce }}">
-        tailwind.config = {
-            theme: { extend: { colors: {
-                obsidian: '#080B12', navy: '#0D111B', charcoal: '#121826',
-                gold: { DEFAULT: 'var(--accent-hover)', soft: 'var(--accent-light)', dim: 'var(--accent-dark)' },
-                muted: '#94A3B8'
-            } } }
-        }
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --obsidian: #080B12; --navy: #0D111B; --charcoal: #121826;
-            --gold: var(--accent-hover); --gold-soft: var(--accent-light); --gold-dim: var(--accent-dark);
-            --ivory: #FFFFFF; --muted: #94A3B8;
+        :root { --bg: #F6F3EC; --ink: #141922; --muted: #5C6675; --gold: #C9A227; --gold-dark: #8C6A12; --line: rgba(20,25,34,0.10); }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; min-height: 100%; }
+        body { background:
+                radial-gradient(120% 90% at 78% 8%, rgba(201,162,39,0.10) 0%, transparent 45%),
+                linear-gradient(165deg, #FBF9F4 0%, #F4F0E7 55%, #EFEADF 100%);
+            color: var(--ink); font-family: 'Tajawal', 'Cairo', sans-serif;
+            display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+        .card { width: 100%; max-width: 34rem; text-align: center;
+            background: rgba(255,255,255,0.86); backdrop-filter: blur(14px);
+            border: 1px solid var(--line); border-radius: 26px; padding: 3rem 2rem;
+            box-shadow: 0 30px 70px rgba(46,38,18,0.13); }
+        .mark { width: 74px; height: 74px; margin: 0 auto 1.5rem; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+            border: 1px solid rgba(201,162,39,0.35); background: #FFFFFF;
+            box-shadow: 0 0 40px rgba(201,162,39,0.16); }
+        .mark img { width: 100%; height: 100%; object-fit: cover; }
+        h1 { font-family: 'Cairo', sans-serif; font-size: 1.65rem; margin: 0 0 0.75rem; line-height: 1.5; }
+        p { color: var(--muted); line-height: 1.9; margin: 0 0 0.5rem; font-size: 0.95rem; }
+
+        /* الطمأنة أولاً: أول ما يسأل عنه الموظّف هو مصير بيانات مكتبه */
+        .safe { margin-top: 1.5rem; padding: 0.9rem 1.25rem; border-radius: 14px;
+            background: rgba(201,162,39,0.08); border: 1px solid rgba(201,162,39,0.25);
+            color: var(--gold-dark); font-weight: 600; font-size: 0.9rem; line-height: 1.8;
+            display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
+        .safe svg { flex: none; }
+
+        .facts { margin: 1.75rem 0 0; padding: 0; list-style: none;
+            border-top: 1px solid var(--line); }
+        .facts li { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+            padding: 0.8rem 0.25rem; border-bottom: 1px solid var(--line); font-size: 0.875rem; }
+        .facts dt, .facts .k { color: var(--muted); font-weight: 500; }
+        .facts .v { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+        .cta { display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+            width: 100%; min-height: 48px; margin-top: 1.75rem; padding: 0 1.25rem;
+            border-radius: 14px; font-weight: 700; font-size: 0.92rem; text-decoration: none;
+            background: linear-gradient(135deg, var(--gold-dark), #A88222 55%, var(--gold));
+            color: #FFFFFF; box-shadow: 0 12px 30px rgba(140,106,18,0.22);
+            transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s; }
+        .cta:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(140,106,18,0.3); }
+        .cta:focus-visible { outline: 2px solid var(--gold-dark); outline-offset: 3px; }
+
+        .mail { display: block; margin-top: 0.85rem; font-size: 0.8rem; color: var(--muted); }
+        .mail a { color: var(--gold-dark); font-weight: 700; text-decoration: none; }
+        .mail a:hover { text-decoration: underline; }
+
+        .logout { background: none; border: 1px solid var(--line); color: var(--muted);
+            font: inherit; font-size: 0.8rem; font-weight: 600; min-height: 44px; padding: 0 1rem;
+            border-radius: 12px; cursor: pointer; margin-top: 1.25rem; }
+        .logout:hover { color: var(--ink); border-color: rgba(20,25,34,0.2); }
+
+        .foot { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--line);
+            font-size: 0.75rem; color: rgba(92,102,117,0.85); }
+        .foot a { color: var(--gold-dark); font-weight: 700; text-decoration: none; }
+        .foot a:hover { text-decoration: underline; }
+
+        @media (max-width: 420px) {
+            .card { padding: 2.25rem 1.35rem; border-radius: 20px; }
+            h1 { font-size: 1.4rem; }
+            .facts li { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
         }
-        body {
-            background: var(--obsidian); color: var(--ivory);
-            font-family: 'IBM Plex Sans Arabic', sans-serif;
-            min-height: 100vh; -webkit-font-smoothing: antialiased;
-        }
-        .scene {
-            position: fixed; inset: 0; overflow: hidden; z-index: 0;
-            background:
-                radial-gradient(120% 90% at 78% 12%, rgba(200,169,107,0.08) 0%, transparent 45%),
-                radial-gradient(90% 70% at 15% 85%, rgba(11,18,32,0.9) 0%, transparent 60%),
-                linear-gradient(165deg, #0D111B 0%, #080B12 55%, #080B12 100%);
-        }
-        .grid-faint { position: absolute; inset: 0; opacity: 0.05;
-            background-image: linear-gradient(rgba(200,169,107,0.25) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(200,169,107,0.25) 1px, transparent 1px);
-            background-size: 72px 72px;
-            mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, black 20%, transparent 75%);
-            -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, black 20%, transparent 75%);
-        }
-        .noise-layer { position: absolute; inset: 0; opacity: 0.035; pointer-events: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
-        }
-        .panel {
-            position: relative; max-width: 460px; margin: 0 auto;
-            background: linear-gradient(158deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.022) 55%, rgba(224,201,138,0.025) 100%);
-            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            border-radius: 26px; padding: 3rem 2.5rem;
-            box-shadow: 0 40px 90px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07);
-        }
-        .panel::before { content: ''; position: absolute; inset: 0; border-radius: 26px; padding: 1px;
-            background: linear-gradient(150deg, rgba(224,201,138,0.32), rgba(224,201,138,0.05) 32%, rgba(255,255,255,0.05) 58%, rgba(200,169,107,0.22));
-            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-            -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
-        .seal { width: 84px; height: 84px; margin: 0 auto 1.5rem; border-radius: 50%;
-            border: 1px solid rgba(224,201,138,0.35); display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 50px rgba(200,169,107,0.12); }
-        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-            width: 100%; padding: 0.95rem; border-radius: 14px; font-weight: 700; font-size: 0.95rem;
-            transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s, opacity 0.3s; }
-        .btn-gold { background: linear-gradient(120deg, var(--gold-soft), var(--gold) 50%, var(--accent));
-            color: #0D111B; }
-        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 14px 44px rgba(200,169,107,0.3); }
-        .btn-ghost { border: 1px solid rgba(146,153,165,0.25); color: var(--muted); background: transparent; }
-        .btn-ghost:hover { color: var(--ivory); border-color: rgba(224,201,138,0.4); }
     </style>
 </head>
 <body>
-    <div class="scene">
-        <div class="noise-layer"></div>
-        <div class="grid-faint"></div>
-        <div style="position:absolute;width:520px;height:520px;border-radius:50%;filter:blur(120px);background:radial-gradient(circle, rgba(200,169,107,0.12), transparent 65%);top:-15%;inset-inline-start:60%;"></div>
-    </div>
-
-    <div class="relative z-10 min-h-screen flex items-center justify-center px-6 py-14">
-        <div class="panel text-center">
-            <div class="seal">
-                <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hover)" stroke-width="1.2">
-                    <circle cx="12" cy="12" r="9"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 3.5L12 2l5 1.5"/>
+    <main class="card">
+        <div class="mark">
+            @if($logo)
+                <img src="{{ $logo }}" alt="{{ $officeName }}">
+            @else
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2.6L9.4 8.7 5 9.4l3.2 3.1L7.6 17 12 14.7 16.4 17l-.6-4.5L19 9.4l-4.4-.7L12 4.6z" fill="#C9A227"/>
                 </svg>
-            </div>
-            <h1 class="font-serif text-2xl sm:text-3xl font-bold mb-3" style="color:var(--gold-soft);">انتهت صلاحية الاشتراك</h1>
-            <p class="text-sm leading-relaxed mb-6" style="color:var(--muted);">
-                انتهت مدة الاشتراك الخاصة بهذا النظام.
-                يرجى التواصل مع المطور لتفعيل النظام من جديد.
-            </p>
-
-            <div class="space-y-3 mb-6">
-                <a href="mailto:{{ $supportEmail }}?subject=تجديد اشتراك {{ $officeName }}" class="btn btn-gold">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-                    تواصل مع الإدارة
-                </a>
-                @if($supportPhone)
-                    <a href="https://wa.me/{{ preg_replace('/\D+/', '', $supportPhone) }}?text=أرغب بتجديد اشتراك النظام" target="_blank" rel="noopener" class="btn btn-ghost">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h4l2 5-2.5 1.5a12 12 0 005 5L15 12l5 2v4a2 2 0 01-2 2A16 16 0 013 5z"/></svg>
-                        واتساب
-                    </a>
-                @endif
-            </div>
-
-            <form method="POST" action="{{ route('logout') }}" class="mt-2">
-                @csrf
-                <button type="submit" class="text-xs underline-offset-4 hover:underline" style="color:rgba(146,153,165,0.6);">تسجيل الخروج</button>
-            </form>
+            @endif
         </div>
-    </div>
+
+        <h1>{{ $suspended ? 'الاشتراك متوقف مؤقتاً' : 'انتهت صلاحية الاشتراك' }}</h1>
+
+        <p>
+            {{ $suspended
+                ? 'أُوقف اشتراك ' . $officeName . ' مؤقتاً. تواصل مع إدارة مُداوَلة لإعادة التفعيل.'
+                : 'انتهت مدة اشتراك ' . $officeName . '. النظام يعود إلى العمل فور تجديد الاشتراك.' }}
+        </p>
+
+        <div class="safe">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6l7-3z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.5 12l1.8 1.8L15 10"/>
+            </svg>
+            بياناتك كلّها محفوظة كما هي — لم يُحذف منها شيء.
+        </div>
+
+        <ul class="facts">
+            <li><span class="k">المكتب</span> <span class="v">{{ $officeName }}</span></li>
+            @if($endAt)
+                <li>
+                    <span class="k">{{ $suspended ? 'نهاية المدة المدفوعة' : 'تاريخ الانتهاء' }}</span>
+                    <span class="v" dir="ltr">{{ $endAt->format('Y-m-d') }}</span>
+                </li>
+                @if(! $suspended)
+                    <li>
+                        <span class="k">منذ</span>
+                        <span class="v">{{ \App\Support\ArabicCount::days((int) max(0, $endAt->diffInDays(now()))) }}</span>
+                    </li>
+                @endif
+            @endif
+        </ul>
+
+        <a class="cta" href="mailto:{{ $supportEmail }}?subject={{ rawurlencode('تجديد اشتراك ' . $officeName) }}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7l9 6 9-6M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z"/>
+            </svg>
+            راسل الإدارة لتجديد الاشتراك
+        </a>
+
+        <span class="mail">أو مباشرةً: <a href="mailto:{{ $supportEmail }}" dir="ltr">{{ $supportEmail }}</a></span>
+
+        @auth
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="logout">تسجيل الخروج</button>
+            </form>
+        @endauth
+
+        <div class="foot">
+            {{ $officeName }} · <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" rel="noopener">مُداوَلة</a>
+        </div>
+    </main>
 </body>
 </html>
