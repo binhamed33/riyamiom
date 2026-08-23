@@ -751,8 +751,20 @@ class CaseController extends Controller
                 }
             });
 
-        return redirect()->back()
-            ->with('success', $updated > 0 ? __('app.overdue_marked', ['count' => $updated]) : __('app.overdue_none'));
+        // «كشف المتأخرة» يعرض المتأخرة وحدها.
+        //
+        // كان الزر يعيد إلى القائمة كما هي، فيقف المستخدم أمام كل
+        // القضايا بحثاً عمّا كُشف للتوّ. الكشف والعرض عملٌ واحد في
+        // ذهن من يضغط الزر، فليكونا واحداً في النظام.
+        $total = LegalCase::where('status', 'overdue')->count();
+
+        return redirect()
+            ->route('cases.index', ['status' => 'overdue'])
+            ->with('success', match (true) {
+                $updated > 0 => __('app.overdue_marked', ['count' => $updated, 'total' => $total]),
+                $total > 0   => __('app.overdue_existing', ['total' => $total]),
+                default      => __('app.overdue_none'),
+            });
     }
 
     public function trashed(): View

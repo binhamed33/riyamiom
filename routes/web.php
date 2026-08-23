@@ -274,6 +274,11 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     
     // Tasks - developer, admin, lawyer, staff
     Route::middleware(['role:developer,admin,lawyer,staff', 'feature:tasks'])->group(function () {
+        // تغيير الحالة وحده — قبله كان زرّ «إكمال المهمة» يمرّ عبر
+        // tasks.update فيرسل كل حقول المهمة كما رُسمت في الصفحة، فإن
+        // عدّلها زميلٌ في تلك اللحظة عادت تعديلاتُه إلى ما كانت عليه
+        // بلا إنذار. المسار هنا لا يلمس غير الحالة.
+        Route::patch('/tasks/{task}/status', [TaskController::class, 'changeStatus'])->name('tasks.status');
         Route::resource('tasks', TaskController::class);
         Route::get('/my-tasks', [TaskController::class, 'myTasks'])->name('tasks.my');
     });

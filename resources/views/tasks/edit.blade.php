@@ -101,7 +101,6 @@
                     <option value="pending" {{ old('status', $task->status) === 'pending' ? 'selected' : '' }}>{{ __('app.status_pending') }}</option>
                     <option value="in_progress" {{ old('status', $task->status) === 'in_progress' ? 'selected' : '' }}>{{ __('app.status_in_progress') }}</option>
                     <option value="completed" {{ old('status', $task->status) === 'completed' ? 'selected' : '' }}>{{ __('app.status_completed') }}</option>
-                    <option value="cancelled" {{ old('status', $task->status) === 'cancelled' ? 'selected' : '' }}>{{ __('app.status_cancelled') }}</option>
                 </select>
                 @error('status')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

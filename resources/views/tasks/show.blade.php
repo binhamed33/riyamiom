@@ -102,7 +102,7 @@
             @if ($task->completed_at)
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">{{ __('app.completion_date') }}</dt>
-                    <dd class="text-gray-800 font-medium">{{ \Carbon\Carbon::parse($task->completed_at)->format('Y-m-d H:i') }}</dd>
+                    <dd class="text-gray-800 font-medium">{{ $task->completed_at->format('Y-m-d H:i') }}</dd>
                 </div>
             @endif
         </dl>
@@ -127,46 +127,7 @@
         </div>
     @endif
 
-    @if ($task->status !== 'completed' && $task->status !== 'cancelled')
-        <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ __('app.change_status') }}</h3>
-            <div class="flex items-center gap-3">
-                @if ($task->status === 'pending')
-                    <form method="POST" action="{{ route('tasks.update', $task) }}">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="title" value="{{ $task->title }}">
-                        <input type="hidden" name="description" value="{{ $task->description }}">
-                        <input type="hidden" name="case_id" value="{{ $task->case_id }}">
-                        <input type="hidden" name="assigned_to" value="{{ $task->assigned_to }}">
-                        <input type="hidden" name="priority" value="{{ $task->priority }}">
-                        <input type="hidden" name="due_date" value="{{ $task->due_date?->format('Y-m-d') }}">
-                        <input type="hidden" name="status" value="in_progress">
-                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
-                            {{ __('app.start_progress') }}
-                        </button>
-                    </form>
-                @endif
-
-                @if ($task->status === 'pending' || $task->status === 'in_progress')
-                    <form method="POST" action="{{ route('tasks.update', $task) }}">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="title" value="{{ $task->title }}">
-                        <input type="hidden" name="description" value="{{ $task->description }}">
-                        <input type="hidden" name="case_id" value="{{ $task->case_id }}">
-                        <input type="hidden" name="assigned_to" value="{{ $task->assigned_to }}">
-                        <input type="hidden" name="priority" value="{{ $task->priority }}">
-                        <input type="hidden" name="due_date" value="{{ $task->due_date?->format('Y-m-d') }}">
-                        <input type="hidden" name="status" value="completed">
-                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
-                            {{ __('app.complete_task') }}
-                        </button>
-                    </form>
-                @endif
-            </div>
-        </div>
-    @endif
+    @include('tasks._stage')
 
     <div class="flex items-center gap-3">
         <form method="POST" action="{{ route('tasks.destroy', $task) }}" class="contents" x-data @submit.prevent="if(confirm('{{ __("app.confirm_delete_task") }}')) $el.submit()">

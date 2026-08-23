@@ -78,7 +78,7 @@ class LawyerEvaluationService
         $completedRows = $completedQuery->get(['id', 'due_date', 'completed_at']);
         $completedCount = $completedRows->count();
         $onTimeCount = $completedRows
-            ->filter(fn ($t) => $t->due_date && $t->completed_at && Carbon::createFromTimestamp($t->completed_at)->lte($t->due_date->copy()->endOfDay()))
+            ->filter(fn ($t) => $t->due_date && $t->completed_at && $t->completed_at->lte($t->due_date->copy()->endOfDay()))
             ->count();
 
         $documentsQuery = Document::where('uploaded_by', $user->id);

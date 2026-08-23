@@ -162,17 +162,7 @@ class TaskController extends Controller
 
         $task->update($validated);
 
-        if ($task->status === 'completed' && $oldValues['status'] !== 'completed' && $task->created_by && $task->created_by !== auth()->id()) {
-            \App\Support\Notify::send(
-                userId: $task->created_by,
-                titleKey: 'app.notif_task_done_title',
-                messageKey: 'app.notif_task_done_body',
-                params: ['task' => $task->title],
-                type: Notification::TYPE_SUCCESS,
-                notifiableType: Task::class,
-                notifiableId: $task->id,
-            );
-        }
+        $this->notifyIfJustCompleted($task, $oldValues['status']);
 
         $this->logAudit(
             AuditLog::ACTION_UPDATE,
@@ -184,6 +174,72 @@ class TaskController extends Controller
 
         return redirect()->route('tasks.show', $task)
             ->with('success', 'Task updated successfully.');
+    }
+
+    /**
+     * تغيير الحالة وحدها.
+     *
+     * كان الزرّ يمرّ عبر update فيرسل معه عنوان المهمة ووصفها ومَن
+     * أُسندت إليه — كما كانت الصفحة ساعة فُتحت. فإن عدّلها زميلٌ في
+     * تلك الأثناء، مسح الضغطُ تعديلَه وأعاد القديم بلا إنذار.
+     *
+     * هنا لا يُكتب غير الحالة ووقت الإتمام.
+     */
+    public function changeStatus(Request $request, Task $task): RedirectResponse
+    {
+        $this->authorizeTaskAccess($task);
+
+        $validated = $request->validate([
+            'status' => 'required|in:pending,in_progress,completed',
+        ]);
+
+        if ($validated['status'] === $task->status) {
+            return redirect()->route('tasks.show', $task);
+        }
+
+        $oldValues = $task->toArray();
+        $wasStatus = $task->status;
+
+        $task->status = $validated['status'];
+        $task->completed_at = $validated['status'] === 'completed' ? now() : null;
+        $task->save();
+
+        $this->notifyIfJustCompleted($task, $wasStatus);
+
+        $this->logAudit(
+            AuditLog::ACTION_UPDATE,
+            Task::class,
+            $task->id,
+            $oldValues,
+            $task->toArray()
+        );
+
+        return redirect()->route('tasks.show', $task)
+            ->with('success', __('app.task_status_changed', [
+                'status' => __('app.status_' . $validated['status']),
+            ]));
+    }
+
+    /** مَن أنشأ المهمة يُخبَر باكتمالها — مرةً واحدة، ولا يُخبِر نفسه. */
+    private function notifyIfJustCompleted(Task $task, ?string $wasStatus): void
+    {
+        if ($task->status !== 'completed' || $wasStatus === 'completed') {
+            return;
+        }
+
+        if (! $task->created_by || $task->created_by === auth()->id()) {
+            return;
+        }
+
+        \App\Support\Notify::send(
+            userId: $task->created_by,
+            titleKey: 'app.notif_task_done_title',
+            messageKey: 'app.notif_task_done_body',
+            params: ['task' => $task->title],
+            type: Notification::TYPE_SUCCESS,
+            notifiableType: Task::class,
+            notifiableId: $task->id,
+        );
     }
 
     public function destroy(Task $task): RedirectResponse
