@@ -371,6 +371,11 @@ class AutomationEngine
             return AutomationRun::STATUS_SKIPPED;
         }
 
+        // الساعة تبدأ قبل أول إجراء وتنتهي عند التسجيل، فالمدّة هي
+        // زمن العمل نفسه لا زمن الفحوص التي سبقته.
+        $startedAt = hrtime(true);
+        $attempts = $failures + 1;
+
         try {
             // كل إجراءات القاعدة وحدة واحدة: تنجح كلها أو لا يبقى أثر جزئي
             $summaries = \Illuminate\Support\Facades\DB::transaction(function () use ($rule, $subject, $case) {
@@ -382,7 +387,7 @@ class AutomationEngine
                 return $out;
             });
 
-            $this->log($rule, $subject, AutomationRun::STATUS_SUCCESS, implode(' • ', array_filter($summaries)), null, $dedupe);
+            $this->log($rule, $subject, AutomationRun::STATUS_SUCCESS, implode(' • ', array_filter($summaries)), null, $dedupe, $startedAt, $attempts);
 
             return AutomationRun::STATUS_SUCCESS;
         } catch (QueryException $e) {
@@ -390,11 +395,11 @@ class AutomationEngine
             if (str_contains($e->getMessage(), 'dedupe_key')) {
                 return AutomationRun::STATUS_SKIPPED;
             }
-            $this->log($rule, $subject, AutomationRun::STATUS_FAILED, null, $e->getMessage(), null);
+            $this->log($rule, $subject, AutomationRun::STATUS_FAILED, null, $e->getMessage(), null, $startedAt, $attempts);
 
             return AutomationRun::STATUS_FAILED;
         } catch (\Throwable $e) {
-            $this->log($rule, $subject, AutomationRun::STATUS_FAILED, null, $e->getMessage(), null);
+            $this->log($rule, $subject, AutomationRun::STATUS_FAILED, null, $e->getMessage(), null, $startedAt, $attempts);
 
             return AutomationRun::STATUS_FAILED;
         }
@@ -631,8 +636,22 @@ class AutomationEngine
         return sha1($rule->id . '|' . $rule->trigger . '|' . $subject->getMorphClass() . '|' . $subject->getKey() . $bucket);
     }
 
-    private function log(Automation $rule, Model $subject, string $status, ?string $summary, ?string $error, ?string $dedupe): void
-    {
+    private function log(
+        Automation $rule,
+        Model $subject,
+        string $status,
+        ?string $summary,
+        ?string $error,
+        ?string $dedupe,
+        ?float $startedAt = null,
+        int $attempts = 1
+    ): void {
+        // التوقيت يُقاس بساعة أحادية (hrtime) لا بـnow(): تعديل ساعة
+        // الخادم أو التوقيت الصيفي لا يجوز أن يُنتج مدّةً سالبة.
+        $durationMs = $startedAt !== null
+            ? (int) round((hrtime(true) - $startedAt) / 1e6)
+            : null;
+
         AutomationRun::create([
             'automation_id' => $rule->id,
             'trigger' => $rule->trigger,
@@ -643,6 +662,10 @@ class AutomationEngine
             'summary' => $summary ? mb_substr($summary, 0, 250) : null,
             'error' => $error,
             'dedupe_key' => $dedupe,
+            'started_at' => $startedAt !== null ? now()->subMilliseconds((int) $durationMs) : null,
+            'finished_at' => $startedAt !== null ? now() : null,
+            'duration_ms' => $durationMs,
+            'attempts' => $attempts,
         ]);
     }
 

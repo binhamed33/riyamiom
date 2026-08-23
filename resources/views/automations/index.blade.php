@@ -59,6 +59,31 @@
                 </button>
             </form>
         </div>
+
+        {{-- تفعيل/تعطيل كل القواعد.
+             غير إيقاف المحرّك: ذاك يوقف التشغيل كلّه وحالةُ القواعد
+             تحته لا تتغيّر؛ وهذا يغيّر حالة القواعد نفسها. ولا يحذف
+             شيئًا في الحالتين. --}}
+        <div class="bg-white rounded-xl border border-gold/15 p-4 flex items-center justify-between gap-3">
+            <div>
+                <p class="text-xs text-gray-400 mb-1">كل القواعد</p>
+                <p class="font-bold text-gray-900">{{ $automations->where('is_active', true)->count() }} / {{ $automations->count() }} مفعّلة</p>
+            </div>
+            <div class="flex gap-2">
+                <form method="POST" action="{{ route('automations.bulk') }}"
+                      data-confirm="تفعيل كل القواعد؟">
+                    @csrf
+                    <input type="hidden" name="action" value="enable">
+                    <button type="submit" class="text-xs font-bold px-3 py-1.5 rounded-lg border border-green-300 text-green-700 hover:bg-green-50 transition">تفعيل الكل</button>
+                </form>
+                <form method="POST" action="{{ route('automations.bulk') }}"
+                      data-confirm="تعطيل كل القواعد؟ تبقى محفوظة ويمكن إعادتها بضغطة.">
+                    @csrf
+                    <input type="hidden" name="action" value="disable">
+                    <button type="submit" class="text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 transition">تعطيل الكل</button>
+                </form>
+            </div>
+        </div>
         <div class="bg-white rounded-xl border border-gold/15 p-4">
             <p class="text-xs text-gray-400 mb-1">إجراءات نُفذت اليوم</p>
             <p class="text-2xl font-bold text-gold-dark">{{ $todayRuns }}</p>

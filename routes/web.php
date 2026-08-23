@@ -348,6 +348,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::get('/runs', [App\Http\Controllers\AutomationController::class, 'runs'])->name('automations.runs');
         Route::post('/seed-defaults', [App\Http\Controllers\AutomationController::class, 'seedDefaults'])->name('automations.seed');
         Route::post('/toggle-engine', [App\Http\Controllers\AutomationController::class, 'toggleEngine'])->name('automations.engine');
+        Route::post('/bulk', [App\Http\Controllers\AutomationController::class, 'bulkToggle'])->name('automations.bulk');
         Route::put('/{automation}', [App\Http\Controllers\AutomationController::class, 'update'])->name('automations.update');
         Route::post('/{automation}/toggle', [App\Http\Controllers\AutomationController::class, 'toggle'])->name('automations.toggle');
         Route::post('/{automation}/test', [App\Http\Controllers\AutomationController::class, 'test'])->name('automations.test');

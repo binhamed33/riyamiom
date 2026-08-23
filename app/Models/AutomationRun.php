@@ -18,7 +18,33 @@ class AutomationRun extends Model
     protected $fillable = [
         'automation_id', 'trigger', 'subject_type', 'subject_id',
         'case_id', 'status', 'summary', 'error', 'dedupe_key',
+        'started_at', 'finished_at', 'duration_ms', 'attempts',
     ];
+
+    /**
+     * المدّة كما تُقرأ: «٤٢٠ مل.ث» أو «١٫٣ ث».
+     *
+     * الرقم الخام بالمللي ثانية لا يُقرأ في جدول — والمقصود أن يُلحظ
+     * البطء بالنظر لا بالحساب.
+     */
+    public function durationLabel(): string
+    {
+        if ($this->duration_ms === null) {
+            return '—';
+        }
+
+        return $this->duration_ms < 1000
+            ? $this->duration_ms . ' مل.ث'
+            : number_format($this->duration_ms / 1000, 1) . ' ث';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'started_at' => 'datetime',
+            'finished_at' => 'datetime',
+        ];
+    }
 
     public function automation(): BelongsTo
     {

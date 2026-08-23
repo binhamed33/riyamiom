@@ -124,6 +124,44 @@ class AutomationController extends Controller
     }
 
     /** المفتاح الرئيسي للمحرك (يبقى أيضاً في لوحة المطور). */
+    /**
+     * تفعيل الكل أو تعطيل الكل.
+     *
+     * «تعطيل الكل» لا يحذف قاعدة واحدة: يُطفئ is_active ويبقي كل شيء
+     * كما هو، فالعودة ضغطةٌ واحدة. وهذا غير إيقاف المحرّك: ذاك يوقف
+     * التشغيل كلّه مؤقتاً وحالةُ القواعد تحته لا تتغيّر، وهذا يغيّر
+     * حالة القواعد نفسها.
+     */
+    public function bulkToggle(Request $request): RedirectResponse
+    {
+        $enable = $request->input('action') === 'enable';
+
+        $ids = Automation::query()->where('is_active', !$enable)->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return back()->with('success', $enable
+                ? 'كل القواعد مفعّلة أصلاً.'
+                : 'كل القواعد معطّلة أصلاً.');
+        }
+
+        Automation::whereIn('id', $ids)->update(['is_active' => $enable]);
+
+        AuditLog::create([
+            'user_id' => auth()->id(),
+            'action' => $enable ? 'automations.enable_all' : 'automations.disable_all',
+            'model_type' => Automation::class,
+            'model_id' => null,
+            'old_values' => ['is_active' => !$enable],
+            'new_values' => ['is_active' => $enable, 'count' => $ids->count()],
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return back()->with('success', $enable
+            ? 'فُعّلت ' . $ids->count() . ' قاعدة.'
+            : 'عُطّلت ' . $ids->count() . ' قاعدة — كلها محفوظة ولم تُحذف.');
+    }
+
     public function toggleEngine(): RedirectResponse
     {
         $on = AutomationEngine::enabled();

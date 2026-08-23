@@ -151,4 +151,47 @@ class SmartTemplateTest extends TestCase
         $other = LegalCase::factory()->create();
         $this->actingAs($admin)->post(route('cases.checklist.toggle', [$other, $item]))->assertNotFound();
     }
+
+    public function test_editing_a_template_does_not_touch_cases_already_created(): void
+    {
+        // «إصدارات القوالب» مطلوبة: تعديل قالب لا يغيّر القضايا القديمة.
+        // وهي متحقّقة بالبناء لا بعمود إصدار: applyTo ينسخ البنود إلى
+        // صفوف حقيقية على القضية، فالقضية لا ترجع إلى القالب بعد ذلك
+        // أبداً. هذا الاختبار يُثبت ذلك — ويسقط لو صار الربط مرجعياً.
+        $template = $this->template();
+
+        $old = LegalCase::factory()->create(['status' => 'pending']);
+        $template->applyTo($old, $this->admin()->id);
+
+        $tasksBefore = $old->tasks()->pluck('title')->sort()->values()->all();
+        $countBefore = $old->tasks()->count();
+
+        $template->update([
+            'items' => [
+                ['title' => 'بندٌ مختلف تماماً', 'priority' => 'urgent', 'days_offset' => 1],
+            ],
+        ]);
+
+        $old->refresh();
+
+        $this->assertSame($countBefore, $old->tasks()->count(), 'تعديل القالب غيّر عدد مهام قضية قائمة');
+        $this->assertSame($tasksBefore, $old->tasks()->pluck('title')->sort()->values()->all(),
+            'تعديل القالب غيّر مهام قضية قائمة');
+        $this->assertNotContains('بندٌ مختلف تماماً', $old->tasks()->pluck('title')->all());
+    }
+
+    public function test_a_new_case_gets_the_edited_template(): void
+    {
+        $template = $this->template();
+
+        $template->update([
+            'items' => [['title' => 'البند الجديد', 'priority' => 'high', 'days_offset' => 2]],
+        ]);
+
+        $fresh = LegalCase::factory()->create(['status' => 'pending']);
+        $template->fresh()->applyTo($fresh, $this->admin()->id);
+
+        $this->assertContains('البند الجديد', $fresh->tasks()->pluck('title')->all(),
+            'القضية الجديدة لم تأخذ الإصدار المعدّل');
+    }
 }

@@ -48,7 +48,13 @@ class ClientTimelineSyncTest extends TestCase
         }
 
         $this->client = Client::factory()->create();
-        $this->case = LegalCase::factory()->create(['client_id' => $this->client->id]);
+        // الحالة مثبّتة عمداً: مصنع القضايا يختار حالةً عشوائية، فلو
+        // وقعت على «won» صار تحديثُها إليها في الاختبار لا تغييراً
+        // أصلاً — ويسقط الاختبار مرّةً كل ستّ مرّات بلا سبب ظاهر.
+        $this->case = LegalCase::factory()->create([
+            'client_id' => $this->client->id,
+            'status' => LegalCase::STATUS_ACTIVE,
+        ]);
     }
 
     private function timeline(): \Illuminate\Support\Collection
@@ -148,6 +154,8 @@ class ClientTimelineSyncTest extends TestCase
 
     public function test_a_status_change_reaches_the_client(): void
     {
+        $this->assertSame(LegalCase::STATUS_ACTIVE, $this->case->status);
+
         $this->case->update(['status' => LegalCase::STATUS_WON]);
 
         $entry = $this->timeline()->firstWhere('type', CaseActivity::TYPE_STATUS);
