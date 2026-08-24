@@ -19,6 +19,40 @@ class CourtSessionController extends Controller
     use AuditLoggable;
     public function index(Request $request): View
     {
+        $query = $this->filtered($request);
+
+        $sessions = $query->orderBy('date', 'asc')->orderBy('id', 'asc')->paginate(15)->withQueryString();
+
+        return view('sessions.index', ['sessions' => $sessions] + $this->filterLists());
+    }
+
+    /**
+     * §30: جدول جلسات قابل للطباعة — نفس الفلاتر، ترويسة المكتب، بلا واجهة.
+     * ورقة تُحمل إلى المحكمة: من يطبع «جلسات الأسبوع» يحصل عليها كما صفّاها.
+     */
+    public function print(Request $request): View
+    {
+        $sessions = $this->filtered($request)
+            ->orderBy('date', 'asc')->orderBy('id', 'asc')
+            ->limit(300)->get();
+
+        return view('sessions.print', [
+            'sessions' => $sessions,
+            'generatedAt' => now(),
+            'filtersSummary' => collect([
+                $request->boolean('mine') ? 'جلساتي فقط' : null,
+                $request->filled('status') ? 'الحالة: ' . __('app.status_' . $request->status) : null,
+                $request->filled('court') ? 'المحكمة: ' . $request->court : null,
+                $request->filled('date_from') ? 'من ' . $request->date_from : null,
+                $request->filled('date_to') ? 'إلى ' . $request->date_to : null,
+                $request->filled('range') ? ['today' => 'اليوم', 'week' => 'هذا الأسبوع', 'month' => 'هذا الشهر'][$request->range] ?? null : null,
+            ])->filter()->implode(' • '),
+        ]);
+    }
+
+    /** استعلام الجلسات بنفس فلاتر الصفحة — تستعمله القائمة والطباعة معاً. */
+    private function filtered(Request $request)
+    {
         $query = Session::with(['case.client', 'case.lawyer']);
 
         // سياسة المكتب: كل عضو في الفريق يرى جلسات المكتب كلّها — كما هي
@@ -61,9 +95,7 @@ class CourtSessionController extends Controller
             $query->where('date', '<=', $request->date_to);
         }
 
-        $sessions = $query->orderBy('date', 'asc')->orderBy('id', 'asc')->paginate(15)->withQueryString();
-
-        return view('sessions.index', ['sessions' => $sessions] + $this->filterLists());
+        return $query;
     }
 
     /**

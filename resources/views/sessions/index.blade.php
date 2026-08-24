@@ -6,6 +6,15 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <h2 class="text-2xl font-bold text-gray-900">{{ __('app.sessions') }}</h2>
+        <div class="flex items-center gap-2">
+        {{-- الطباعة تحمل التصفية نفسها: من صفّى «جلسات الأسبوع» يطبعها هي --}}
+        <a href="{{ route('sessions.print', request()->query()) }}" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 bg-white border border-gold/30 text-gold-dark hover:bg-gold/5 px-4 py-2.5 rounded-lg font-semibold transition-colors text-sm md-touch">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+            طباعة الجدول
+        </a>
         <a href="{{ route('sessions.create') }}"
            class="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -13,6 +22,7 @@
             </svg>
             {{ __('app.new_session') }}
         </a>
+        </div>
     </div>
 
     @php

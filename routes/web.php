@@ -277,6 +277,8 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     // Court Sessions - developer, admin, lawyer, staff
     Route::middleware(['role:developer,admin,lawyer,staff', 'feature:sessions'])->group(function () {
         Route::post('/sessions/quick', [CourtSessionController::class, 'quickStore'])->name('sessions.quick');
+        // قبل resource عمداً: وإلا التقط sessions/{session} كلمةَ print معرّفاً
+        Route::get('/sessions/print', [CourtSessionController::class, 'print'])->name('sessions.print');
         Route::resource('sessions', CourtSessionController::class);
         Route::get('/sessions/today/list', [CourtSessionController::class, 'today'])->name('sessions.today');
     });
