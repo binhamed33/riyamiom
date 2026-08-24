@@ -36,6 +36,7 @@ class OfficeHealth extends Command
         $this->checkBackups();
         $this->checkData();
         $this->checkFeatures();
+        $this->checkMail();
         $this->checkLog();
 
         $this->line('');
@@ -179,6 +180,53 @@ class OfficeHealth extends Command
     }
 
     // --------------------------------------------------------------- السجلّ
+
+    /**
+     * البريد.
+     *
+     * الطابور المتراكم أخطرُ من الطابور المتعطّل: النظام يقول «أُرسلت»
+     * والموكّل لا يستلم. وسببُه الأشهر أنّ cron لا يشغّل schedule:run،
+     * فلا يعمل العامل أصلاً.
+     */
+    private function checkMail(): void
+    {
+        $this->section('البريد');
+
+        if (!\App\Support\MailIdentity::isConfigured()) {
+            $this->bad('البريد غير مضبوط — لا يصل الموكّلين شيء (السائق: ' . config('mail.default') . ')');
+
+            return;
+        }
+
+        $this->ok('SMTP مضبوط — المُرسِل ' . \App\Support\MailIdentity::fromAddress());
+
+        if (config('queue.default') !== 'database') {
+            return;
+        }
+
+        try {
+            $pending = \Illuminate\Support\Facades\DB::table('jobs')->where('queue', 'mail')->count();
+            $stuck = \Illuminate\Support\Facades\DB::table('jobs')
+                ->where('queue', 'mail')
+                ->where('available_at', '<', now()->subMinutes(15)->timestamp)
+                ->count();
+            $failed = \Illuminate\Support\Facades\DB::table('failed_jobs')->count();
+        } catch (\Throwable) {
+            return;
+        }
+
+        if ($stuck > 0) {
+            $this->bad($stuck . ' رسالة عالقة منذ ربع ساعة — الأرجح أنّ cron لا يشغّل schedule:run');
+        } elseif ($pending > 0) {
+            $this->ok($pending . ' رسالة في الطابور تنتظر دورها');
+        } else {
+            $this->ok('طابور البريد فارغ');
+        }
+
+        if ($failed > 0) {
+            $this->bad($failed . ' رسالة أخفقت نهائياً — راجع السجلّ');
+        }
+    }
 
     private function checkLog(): void
     {

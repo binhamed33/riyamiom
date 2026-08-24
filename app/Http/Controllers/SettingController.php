@@ -53,6 +53,18 @@ class SettingController extends Controller
             }
         }
 
+        // أنواع البريد: يقرّر المكتب ما يصل موكّليه. تُقرأ من التعداد
+        // نفسه، فإضافة نوعٍ جديدٍ هناك تظهر هنا بلا تعديل.
+        if ($request->has('mail_kinds_section')) {
+            foreach (\App\Mail\MailKind::all() as $kind) {
+                Setting::set(
+                    $kind->settingKey(),
+                    $request->boolean($kind->settingKey()) ? '1' : '0',
+                    'notifications',
+                );
+            }
+        }
+
         $groupMap = [
             'office_name'        => 'general',
             'office_email'       => 'general',

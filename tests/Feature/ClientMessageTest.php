@@ -99,25 +99,47 @@ class ClientMessageTest extends TestCase
         $this->assertSame('info@mizan.example.om', ClientMessage::fromAddress());
     }
 
+    /**
+     * البريد صار مؤجَّلاً، فيُفحَص ما دخل الطابور لا ما خرج من الناقل.
+     *
+     * وتبدّل معه المُرسِل: عنوانُه بريدُ مُداوَلة المركزي دائماً لأنّ
+     * Gmail لا يرسل باسم عنوانٍ لا يملكه، واسمُ المكتب في الاسم المعروض
+     * وبريدُه في Reply-To. والمقصودُ الأصلي باقٍ: لا يظهر في بريد مكتبٍ
+     * اسمُ مكتبٍ آخر ولا نطاقُه.
+     */
     public function test_the_email_that_actually_leaves_carries_this_office_only(): void
     {
         Setting::set('office_name', 'مكتب العدالة الذهبية');
         Setting::set('office_email', 'info@adala.example.om');
-        config()->set('mail.default', 'array');
+
+        config([
+            'mail.default' => 'smtp',
+            'mail.from.address' => 'mudawalah@gmail.com',
+            'mail.mailers.smtp.host' => 'smtp.gmail.com',
+            'mail.mailers.smtp.username' => 'mudawalah@gmail.com',
+        ]);
+
+        \Illuminate\Support\Facades\Mail::fake();
 
         \App\Services\ClientNotifier::notifyCaseUpdate($this->case());
 
-        $messages = app('mailer')->getSymfonyTransport()->messages();
-        $this->assertCount(1, $messages);
+        \Illuminate\Support\Facades\Mail::assertQueued(
+            \App\Mail\ClientCaseMail::class,
+            function ($mail) {
+                $envelope = $mail->envelope();
+                $body = $mail->render() . ' ' . $envelope->subject;
 
-        $sent = $messages[0]->getOriginalMessage();
-        $body = $sent->getTextBody() . ' ' . $sent->getSubject();
+                $this->assertStringContainsString('مكتب العدالة الذهبية', $body);
+                $this->assertStringNotContainsString(self::INHERITED_NAME, $body);
+                $this->assertStringNotContainsString('office.riyami.om', $body);
 
-        $this->assertStringContainsString('مكتب العدالة الذهبية', $body);
-        $this->assertStringNotContainsString(self::INHERITED_NAME, $body);
-        $this->assertStringNotContainsString('office.riyami.om', $body);
-        $this->assertSame('info@adala.example.om', $sent->getFrom()[0]->getAddress());
-        $this->assertSame('client@example.om', $sent->getTo()[0]->getAddress());
+                $this->assertSame('mudawalah@gmail.com', $envelope->from->address);
+                $this->assertSame('مكتب العدالة الذهبية', $envelope->from->name);
+                $this->assertSame('info@adala.example.om', $envelope->replyTo[0]->address);
+
+                return $mail->hasTo('client@example.om');
+            },
+        );
     }
 
     private function case(): LegalCase

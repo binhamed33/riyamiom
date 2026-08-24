@@ -199,6 +199,11 @@ class DocumentController extends Controller
             'تغيير ظهور المستند للعميل: ' . ($document->client_visible ? 'مرئي' : 'مخفي')
         );
 
+        // الإشعار عند الإتاحة فقط: إخفاءُ مستندٍ لا يُبشَّر به أحد
+        if ($document->client_visible) {
+            \App\Services\ClientNotifier::notifyDocument($document);
+        }
+
         return back()->with('success', $document->client_visible
             ? 'صار المستند مرئياً للعميل في بوابته.'
             : 'أُخفي المستند عن بوابة العميل.');

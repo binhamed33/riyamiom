@@ -8,6 +8,9 @@ use App\Models\CaseAiMessage;
 use App\Models\Client;
 use App\Models\Document;
 use App\Models\LegalCase;
+use App\Mail\ClientCaseMail;
+use App\Mail\MailKind;
+use App\Services\OfficeMailer;
 use App\Support\ClientMessage;
 use App\Models\Notification;
 use App\Models\Session;
@@ -1133,23 +1136,17 @@ SYSTEM;
         $sentChannels = [];
         $failures = [];
 
-        // Email - automatic
-        if ($client->email) {
-            if (config('mail.default', 'log') !== 'log') {
-                try {
-                    Mail::raw($message, function ($m) use ($client, $case) {
-                        $m->from(ClientMessage::fromAddress(), ClientMessage::officeName());
-                        $m->to($client->email)
-                            ->subject(ClientMessage::inviteSubject($case));
-                    });
-                    $sentChannels[] = 'email';
-                } catch (\Throwable $e) {
-                    Log::error('Portal invite email failed: ' . $e->getMessage());
-                    $failures[] = 'الإيميل: ' . $e->getMessage();
-                }
-            } else {
-                $failures[] = 'الإيميل غير مفعل في إعدادات الخادم';
-            }
+        // البريد: يُجدوَل ويعود فوراً. وسببُ التعذّر يُقال بلغةٍ تُفهم
+        // بدل «تعذّر الإرسال» أو رسالة استثناء تقنية.
+        $mail = OfficeMailer::send(
+            $client->email,
+            new ClientCaseMail(MailKind::CaseCreated, $case, (string) $client->name),
+        );
+
+        if ($mail['status'] === OfficeMailer::SENT) {
+            $sentChannels[] = 'email';
+        } elseif ($mail['reason'] !== null) {
+            $failures[] = 'الإيميل: ' . $mail['reason'];
         }
 
         // WhatsApp - Meta Cloud API (preferred) or Green API fallback

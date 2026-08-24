@@ -3,13 +3,89 @@
 namespace App\Services;
 
 use App\Models\LegalCase;
+use App\Mail\ClientCaseMail;
+use App\Mail\ClientEventMail;
+use App\Mail\MailKind;
 use App\Support\ClientMessage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class ClientNotifier
 {
+    /**
+     * إشعارُ الموكّل بجلسةٍ قادمة — مُطفأٌ حتى يطلبه المكتب.
+     *
+     * وتفاصيلُ الجلسة تُبنى هنا حيث تُعرف، لا في طبقة البريد.
+     */
+    public static function notifySession(LegalCase $case, \App\Models\Session $session): void
+    {
+        try {
+            $case->loadMissing('client');
+            $client = $case->client;
+
+            if (!$client) {
+                return;
+            }
+
+            $when = $session->date
+                ? \Illuminate\Support\Carbon::parse($session->date)->locale('ar')->isoFormat('dddd D MMMM YYYY')
+                : null;
+
+            $lines = array_filter([
+                'نُفيدكم بأنّ لقضيتكم جلسةً مسجَّلة لدى المكتب.',
+                $case->case_number ? 'رقم القضية: ' . $case->case_number : null,
+                $when ? 'التاريخ: ' . $when : null,
+                $session->location ? 'المحكمة/المكان: ' . $session->location : null,
+            ]);
+
+            OfficeMailer::send($client->email, new ClientEventMail(
+                MailKind::SessionNotice,
+                'إشعار بجلسة',
+                implode("\n\n", $lines),
+                (string) $client->name,
+                $case->case_number,
+            ));
+        } catch (\Throwable $e) {
+            Log::error('Session notice failed for case ' . $case->id . ': ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * إشعارُ الموكّل بمستندٍ أُتيح له — مُطفأٌ حتى يطلبه المكتب.
+     *
+     * ولا يُذكر اسمُ الملف في البريد: قد يحمل اسماً يكشف ما لا يُراد
+     * كشفُه في صندوق بريدٍ قد يقرؤه غيرُه. يُقال إنّ مستنداً أُتيح،
+     * ويُقرأ في البوابة خلف تحقّقٍ من الهوية.
+     */
+    public static function notifyDocument(\App\Models\Document $document): void
+    {
+        try {
+            $document->loadMissing('case.client');
+            $case = $document->case;
+            $client = $case?->client;
+
+            if (!$client) {
+                return;
+            }
+
+            $lines = array_filter([
+                'نُفيدكم بإتاحة مستندٍ جديد في بوابة متابعة قضيتكم.',
+                $case->case_number ? 'رقم القضية: ' . $case->case_number : null,
+                'يمكنكم الاطّلاع عليه بعد الدخول إلى البوابة.',
+            ]);
+
+            OfficeMailer::send($client->email, new ClientEventMail(
+                MailKind::DocumentNotice,
+                'إشعار بمستند',
+                implode("\n\n", $lines),
+                (string) $client->name,
+                $case->case_number,
+            ));
+        } catch (\Throwable $e) {
+            Log::error('Document notice failed for document ' . $document->id . ': ' . $e->getMessage());
+        }
+    }
+
     public static function notifyCaseUpdate(LegalCase $case): void
     {
         try {
@@ -20,17 +96,12 @@ class ClientNotifier
                 return;
             }
 
-            if ($client->email) {
-                try {
-                    Mail::raw(ClientMessage::caseUpdate($case), function ($m) use ($client, $case) {
-                        $m->from(ClientMessage::fromAddress(), ClientMessage::officeName());
-                        $m->to($client->email)
-                            ->subject(ClientMessage::updateSubject($case));
-                    });
-                } catch (\Throwable $e) {
-                    Log::error('Client update email failed for case ' . $case->id . ': ' . $e->getMessage());
-                }
-            }
+            // البريد يمرّ من البابِ الواحد: يُجدوَل ولا يُرسَل داخل الطلب،
+            // ولا يُفشِل شيئاً مهما جرى.
+            OfficeMailer::send(
+                $client->email,
+                new ClientCaseMail(MailKind::CaseUpdated, $case, (string) $client->name),
+            );
 
             self::sendWhatsApp($client->phone, $case);
         } catch (\Throwable $e) {

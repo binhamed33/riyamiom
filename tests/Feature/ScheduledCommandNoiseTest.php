@@ -35,7 +35,9 @@ class ScheduledCommandNoiseTest extends TestCase
         $scheduled = [];
         foreach (file(base_path('routes/console.php')) as $line) {
             if (preg_match("/Schedule::command\('([^']+)'/", $line, $m)) {
-                $scheduled[] = $m[1];
+                // الاسم وحده: «queue:work --queue=mail …» أمرٌ واحد
+                // ومعامِلاتُه ليست جزءاً من اسمه المسجَّل.
+                $scheduled[] = strtok($m[1], ' ');
             }
         }
 

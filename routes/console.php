@@ -38,3 +38,25 @@ Schedule::command('suggestions:retry-delivery')->hourly()->withoutOverlapping();
 // فيرى الموظّف مصير اقتراحه ويصله إشعار بلغته — خامدة إن لم يكن
 // المكتب مربوطاً.
 Schedule::command('suggestions:sync-replies')->everyFifteenMinutes()->withoutOverlapping();
+
+// ═══ عاملُ طابور البريد ═══
+//
+// لا يعمل على هذا الخادم عاملُ طابورٍ دائم (لا supervisor ولا systemd)،
+// فكلُّ ما يُلقى في الطابور يبقى فيه إلى الأبد. ولمّا صار البريد
+// مؤجَّلاً — كي لا تنتظر «حفظ القضية» مصافحةَ Gmail — لزم من يحمله.
+//
+// فالمجدولُ نفسه هو العامل: كلَّ دقيقة يُصرَّف ما في طابور «mail» ثم
+// يتوقّف (--stop-when-empty)، بسقفٍ زمنيّ دون الدقيقة كي لا تتراكب
+// العمليات، و withoutOverlapping حارسٌ ثانٍ لو تأخّرت واحدة.
+//
+// وطابور «mail» وحده: الطابور العام له مهامّه وحسابُه، ولا يُقحَم
+// عاملُ البريد عليها.
+Schedule::command('queue:work --queue=mail --stop-when-empty --tries=3 --max-time=50 --sleep=1')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground();
+
+// الرسائل التي أخفقت محاولاتها الثلاث تبقى في failed_jobs. تُنظَّف
+// القديمة أسبوعياً كي لا يكبر الجدول بلا حدّ — والأسبوع يكفي لمن
+// يريد أن يقرأ سبب الإخفاق.
+Schedule::command('queue:prune-failed --hours=168')->weekly();

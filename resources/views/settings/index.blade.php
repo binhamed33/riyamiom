@@ -385,6 +385,36 @@
             </div>
         </div>
 
+        {{-- بريد الموكّلين: ما الذي يصلهم فعلاً --}}
+        <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+            <div class="border-b border-gray-200 pb-3">
+                <h2 class="text-lg font-semibold text-gold-dark">بريد الموكّلين</h2>
+                <p class="text-xs text-gray-400 mt-1">
+                    يُرسَل من بريد مُداوَلة المركزي باسم مكتبك، والردّ يصل إلى بريد المكتب أعلاه.
+                </p>
+            </div>
+            <input type="hidden" name="mail_kinds_section" value="1">
+            <div class="space-y-4">
+                @foreach(\App\Mail\MailKind::all() as $mailKind)
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="{{ $mailKind->settingKey() }}"
+                            value="1"
+                            {{ old($mailKind->settingKey(), $mailKind->isEnabled()) ? 'checked' : '' }}
+                            class="w-4 h-4 mt-0.5 text-gold-dark bg-white border-gray-300 rounded focus:ring-gold-dark"
+                        >
+                        <span class="text-gray-700">{{ $mailKind->label() }}</span>
+                    </label>
+                @endforeach
+            </div>
+            @if(!\App\Support\MailIdentity::isConfigured())
+                <p class="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2" role="alert">
+                    البريد غير مُفعَّل على هذا الخادم — لن تصل أي رسالة حتى يُضبط. راجع الدعم.
+                </p>
+            @endif
+        </div>
+
         <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
             <h2 class="text-lg font-semibold text-gold-dark border-b border-gray-200 pb-3">{{ __('app.notification_settings') }}</h2>
             <div class="space-y-4">

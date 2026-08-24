@@ -166,6 +166,7 @@ class CourtSessionController extends Controller
         );
 
         \App\Services\ClientNotifier::notifyCaseUpdate($case);
+        \App\Services\ClientNotifier::notifySession($case, $session);
 
         $case = LegalCase::find($validated['case_id']);
         if ($case && $case->lawyer_id) {
