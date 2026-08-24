@@ -40,14 +40,32 @@ App Password:
 > إن لم يظهر خيار «كلمات مرور التطبيقات» فالتحقق بخطوتين غير مفعَّل،
 > أو الحساب تابعٌ لمؤسسة تمنعه.
 
-### ٢) وضعها في `.env` على الخادم — لكل مكتب
+### ٢) وضعها في `.env` على الخادم
 
-**لا تُكتب في أي ملفٍ يدخل Git.** ولا تُرسَل في محادثة.
+**لا تُكتب في أي ملفٍ يدخل Git، ولا تُلصق في محادثة.**
+
+الطريقة الموصى بها — أداةٌ تقرؤها بلا إظهارٍ ولا حفظٍ في تاريخ الأوامر:
 
 ```bash
-# لكل مكتب على حدة
-nano /home/office-XXXX/htdocs/XXXX.riyami.om/.env
+bash /home/riyami-dev/htdocs/dev.riyami.om/scripts/set-mail-credentials.sh
 ```
+
+تسأل مرّةً واحدة، وتضبط كل المكاتب، وتحفظ نسخةً من كل `.env` قبل
+تعديله، وتضبط صلاحياته على `600`، وتنظّف الكاش. ولا تلمس النطاق المحمي
+إلا بإقرارٍ صريح:
+
+```bash
+CONFIRM_PROTECTED=1 bash .../set-mail-credentials.sh /home/riyami-office/htdocs/office.riyami.om
+```
+
+ولمكتبٍ واحد فقط: مرّر مجلّده وسيطاً.
+
+<details>
+<summary>أو يدوياً بالمحرّر</summary>
+
+```bash
+nano /home/office-XXXX/htdocs/XXXX.riyami.om/.env
+```</details>
 
 وضع هذه القيم (ألصق كلمة المرور بلا مسافات ولا شرطات):
 
@@ -68,6 +86,13 @@ QUEUE_CONNECTION=database
 ```bash
 php8.4 artisan config:clear
 ```
+
+> **إن سرَّبتَ كلمة المرور** — لصقتها في محادثة أو ظهرت على شاشة — فهي
+> محروقة. ألغِها من `myaccount.google.com/apppasswords` وولّد غيرها.
+> إلغاؤها فوريّ ولا يؤثّر على شيء سوى الإرسال حتى تُستبدل.
+>
+> وتذكّر أنّ نسخ `.env.bak-*` تحمل القديمة، فاحذفها متى اطمأننت:
+> `find /home/*/htdocs/*/.env.bak-* -mtime +7 -delete`
 
 ### ٣) التأكد من أنّ cron يشغّل المجدول
 
