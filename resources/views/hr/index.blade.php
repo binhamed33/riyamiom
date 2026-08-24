@@ -311,7 +311,7 @@
 {{-- Performance Modal --}}
 @if($isAdmin)
 <div id="perfModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'perfModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
+    <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gold-dark">إضافة تقييم</h3>
@@ -347,7 +347,7 @@
 
 {{-- Bonus Modal --}}
 <div id="bonusModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'bonusModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
+    <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gold-dark">إضافة مكافأة</h3>
@@ -383,7 +383,7 @@
 
 {{-- Penalty Modal --}}
 <div id="penaltyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'penaltyModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
+    <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gold-dark">إضافة جزاء</h3>
@@ -420,7 +420,7 @@
 
 {{-- Leave Modal --}}
 <div id="leaveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'leaveModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
+    <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gold-dark">طلب إجازة</h3>

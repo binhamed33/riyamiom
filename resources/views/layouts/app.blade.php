@@ -1264,6 +1264,7 @@
 
                         <div
                             x-show="open"
+                            x-cloak
                             @click.away="open = false"
                             x-transition:enter="transition ease-out duration-200"
                             x-transition:enter-start="opacity-0 scale-95 translate-y-1"
@@ -1339,6 +1340,7 @@
 
                         <div
                             x-show="open"
+                            x-cloak
                             @click.away="open = false"
                             x-transition:enter="transition ease-out duration-200"
                             x-transition:enter-start="opacity-0 scale-95"
@@ -1410,7 +1412,7 @@
             @endphp
             @if($todayMsg && !$todayMsgSeen)
                 <div x-data="{ hidden: false, locked: false }" x-show="!hidden" x-cloak x-transition:leave="transition ease-in duration-300" x-transition:leave-end="opacity-0 scale-95" class="fixed inset-0 z-[100] flex items-center justify-center p-4" dir="rtl">
-                    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content } }).catch(() => {}).finally(() => { hidden = true; })"></div>
+                    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" @click="fetch('{{ route('announcements.seen', $todayMsg) }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content } }).catch(() => {}).finally(() => { hidden = true; })"></div>
                     <div class="relative w-full max-w-sm rounded-2xl bg-gradient-to-b from-[#121826] to-[#080B12] border border-gold/25 shadow-[0_30px_90px_-15px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(212,175,55,0.12)] overflow-hidden">
                         <div class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-l from-gold-dark/70 via-gold/80 to-gold-dark/70"></div>
                         <div class="p-7 text-center">
@@ -1949,7 +1951,7 @@
             <svg x-show="!open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
             </svg>
-            <svg x-show="open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg x-show="open" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
         </button>

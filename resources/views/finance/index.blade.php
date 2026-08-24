@@ -149,7 +149,7 @@
 
 {{-- Add Transaction Modal --}}
 <div id="txModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'txModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
+    <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-on:click.away="open = false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gold-dark">إضافة معاملة</h3>
@@ -202,7 +202,7 @@
 @if($isFinAdmin)
 {{-- Edit Transaction Modal --}}
 <div id="txEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, tx: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'txEditModal') open = true" x-on:set-tx.window="tx = $event.detail" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
+    <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gold-dark">تعديل المعاملة</h3>
@@ -256,7 +256,7 @@
 
 {{-- Add Invoice Modal --}}
 <div id="invModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'invModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
+    <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gold-dark">إضافة فاتورة</h3>
@@ -309,7 +309,7 @@
 @if($isFinAdmin)
 {{-- Edit Invoice Modal --}}
 <div id="invEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, inv: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'invEditModal') open = true" x-on:set-inv.window="inv = $event.detail" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
+    <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gold-dark">تعديل الفاتورة</h3>
@@ -359,7 +359,7 @@
 
 {{-- Add Fee Modal --}}
 <div id="feeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'feeModal') open = true" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
+    <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gold-dark">إضافة رسم قضية</h3>
@@ -404,7 +404,7 @@
 @if($isFinAdmin)
 {{-- Edit Fee Modal --}}
 <div id="feeEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, fee: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'feeEditModal') open = true" x-on:set-fee.window="fee = $event.detail" @keydown.escape="open = false">
-    <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
+    <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gold-dark">تعديل الرسم</h3>

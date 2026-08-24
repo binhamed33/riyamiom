@@ -142,7 +142,7 @@
 
     {{-- ===== Template Builder (Modal) ===== --}}
     <div x-show="openModal" x-cloak class="fixed inset-0 z-[90] flex items-start justify-center p-4 overflow-y-auto" dir="rtl">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="openModal = false"></div>
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="openModal = false"></div>
         <form :action="editingId ? '{{ url('case-templates') }}/' + editingId : '{{ route('case-templates.store') }}'" method="POST"
               class="relative w-full max-w-2xl bg-white rounded-2xl border border-gold/25 shadow-2xl my-8"
               x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0">

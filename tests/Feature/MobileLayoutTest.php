@@ -44,6 +44,38 @@ class MobileLayoutTest extends TestCase
         $this->assertStringContainsString('x-cloak', $chunk, 'طبقة التعتيم بلا x-cloak — ستظهر قبل Alpine');
     }
 
+    public function test_no_modal_backdrop_scrolls_away_with_its_modal(): void
+    {
+        // التعتيم absolute داخل غلافٍ يتمرر كان يخرج من الشاشة مع
+        // التمرير في نافذة طويلة فينكشف ما خلفها ساطعاً بلا تعتيم
+        $bad = [];
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(resource_path('views')));
+        foreach ($files as $file) {
+            if ($file->isFile() && str_ends_with($file->getFilename(), '.blade.php')) {
+                if (str_contains(file_get_contents($file->getPathname()), 'absolute inset-0 bg-black')) {
+                    $bad[] = $file->getFilename();
+                }
+            }
+        }
+        $this->assertSame([], $bad, 'طبقات تعتيم تتمرر مع المحتوى: ' . implode('، ', $bad));
+    }
+
+    public function test_the_header_dropdowns_are_cloaked_until_alpine_wakes(): void
+    {
+        $html = $this->page();
+
+        // كل x-show="open" في الترويسة يجب أن يصاحبه x-cloak — وإلا
+        // ظهرت قائمة الإشعارات كاملة مع كل تنقّل ثم اختفت فجأة
+        preg_match_all('/x-show="open"(.{0,120})/s', $html, $m, PREG_OFFSET_CAPTURE);
+        foreach ($m[0] as $i => [$match, $offset]) {
+            $before = substr($html, max(0, $offset - 120), 150);
+            $this->assertTrue(
+                str_contains($match, 'x-cloak') || str_contains($before, 'x-cloak'),
+                'عنصر x-show="open" بلا x-cloak قرب الموضع ' . $offset
+            );
+        }
+    }
+
     public function test_the_ai_button_sits_above_the_bottom_nav_on_mobile(): void
     {
         $html = $this->page();
