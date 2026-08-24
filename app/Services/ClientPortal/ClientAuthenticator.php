@@ -75,11 +75,11 @@ class ClientAuthenticator
 
         // عميل بلا هاتف مسجَّل لا يمكن التحقّق منه — يُعامَل كغير موجود
         // بالضبط، فلا يكشف الرد أن الهوية صحيحة.
-        $digits = $client ? $this->phoneDigits($client) : null;
+        $numbers = $client ? $this->phoneNumbers($client) : [];
 
-        $this->record($request, $nationalId, 'lookup', (bool) $digits, $client?->id);
+        $this->record($request, $nationalId, 'lookup', $numbers !== [], $client?->id);
 
-        if (!$client || !$digits) {
+        if (!$client || $numbers === []) {
             return ['ok' => false, 'locked' => false, 'hint' => null, 'retry_after' => null];
         }
 
@@ -93,7 +93,7 @@ class ClientAuthenticator
         return [
             'ok' => true,
             'locked' => false,
-            'hint' => self::maskDigits($digits),
+            'hint' => self::hint($numbers),
             'retry_after' => null,
         ];
     }
@@ -129,13 +129,22 @@ class ClientAuthenticator
         RateLimiter::hit($key, self::VERIFY_DECAY);
 
         $client = Client::find($challenge['client_id']);
-        $expected = $client ? $this->phoneDigits($client) : null;
+        $expected = $client ? $this->phoneNumbers($client) : [];
         $given = preg_replace('/\D+/', '', $digits) ?? '';
 
-        $matches = $client
-            && $expected
-            && strlen($given) === 3
-            && hash_equals(substr($expected, -3), $given);
+        // كل رقم سجّله المكتب للموكّل هو رقمه: يُقبل آخرُ ثلاثةٍ من أيّها.
+        // كان يُقارَن بالأول وحده، فمن سجّل المكتب له رقمين لا يدخل إلا
+        // بأحدهما ويُقال له «تعذّر التحقق» وهو يُدخل رقمه الصحيح.
+        //
+        // ولا تُكسر الحلقة عند أول تطابق: زمنُ الردّ لا يدلّ على أيّ رقم
+        // طابق ولا على كم رقماً لدى الموكّل.
+        $matches = false;
+
+        if ($client && strlen($given) === 3) {
+            foreach ($expected as $candidate) {
+                $matches = hash_equals(substr($candidate, -3), $given) || $matches;
+            }
+        }
 
         $this->record($request, null, 'verify', $matches, $client?->id);
 
@@ -196,9 +205,9 @@ class ClientAuthenticator
         }
 
         $client = Client::find($challenge['client_id'] ?? 0);
-        $digits = $client ? $this->phoneDigits($client) : null;
+        $numbers = $client ? $this->phoneNumbers($client) : [];
 
-        return $digits ? ['hint' => self::maskDigits($digits)] : null;
+        return $numbers === [] ? null : ['hint' => self::hint($numbers), 'count' => count($numbers)];
     }
 
     // ------------------------------------------------------------ داخلي
@@ -228,20 +237,44 @@ class ClientAuthenticator
         return substr($local, 0, $visible) . str_repeat('•', strlen($local) - $visible);
     }
 
-    /** أرقام أول هاتف مسجَّل للعميل (الحقل قد يحمل أكثر من رقم مفصولة بفاصلة) */
-    private function phoneDigits(Client $client): ?string
-    {
-        $raw = (string) $client->phone;
+    /**
+     * أرقام كل هاتف مسجَّل للموكّل — الحقل قد يحمل أكثر من رقم مفصولة
+     * بفاصلة، وكلّها أرقامه.
+     *
+     * ويُكتفى بأربعة: سجلٌّ فيه عشرون رقماً يجعل لكل تخمينٍ عشرين باباً
+     * بدل باب، فيَضعُف ما بُني ليقوى.
+     */
+    private const MAX_NUMBERS = 4;
 
-        foreach (array_map('trim', explode(',', $raw)) as $candidate) {
+    /** @return list<string> */
+    private function phoneNumbers(Client $client): array
+    {
+        $numbers = [];
+
+        foreach (array_map('trim', explode(',', (string) $client->phone)) as $candidate) {
             $digits = preg_replace('/\D+/', '', $candidate) ?? '';
 
-            if (strlen($digits) >= 3) {
-                return $digits;
+            if (strlen($digits) >= 3 && !in_array($digits, $numbers, true)) {
+                $numbers[] = $digits;
+            }
+
+            if (count($numbers) === self::MAX_NUMBERS) {
+                break;
             }
         }
 
-        return null;
+        return $numbers;
+    }
+
+    /**
+     * تلميحٌ لكل رقم مسجَّل: يعرف الموكّل أنّ لدى المكتب رقمين وأنّ
+     * أيّهما يفي، فلا يظنّ رقمه الصحيح خطأً.
+     *
+     * @param list<string> $numbers
+     */
+    private static function hint(array $numbers): string
+    {
+        return implode(' · ', array_map(self::maskDigits(...), $numbers));
     }
 
     private function normalizeId(string $value): string

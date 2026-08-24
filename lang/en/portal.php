@@ -18,6 +18,7 @@ return [
         'verify_title' => 'Complete verification',
         'verify_intro' => 'To confirm your identity, enter the last 3 digits of the phone number registered with us.',
         'verify_hint' => 'The number we have on file: :digits',
+        'verify_hint_many' => 'The numbers we have on file — any one works: :digits',
         'verify_action' => 'Verify and continue',
         'back' => 'Back',
         'digits_label' => 'Last three digits',

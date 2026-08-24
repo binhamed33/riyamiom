@@ -116,7 +116,7 @@
             @if (!empty($challenge['hint']))
                 <p class="p-hint" style="margin-top:.7rem">
                     <span class="p-badge mute" dir="ltr"
-                          aria-label="{{ __('portal.login.verify_hint', ['digits' => $challenge['hint']]) }}">{{ $challenge['hint'] }}</span>
+                          aria-label="{{ __(($challenge['count'] ?? 1) > 1 ? 'portal.login.verify_hint_many' : 'portal.login.verify_hint', ['digits' => $challenge['hint']]) }}">{{ $challenge['hint'] }}</span>
                 </p>
             @endif
 

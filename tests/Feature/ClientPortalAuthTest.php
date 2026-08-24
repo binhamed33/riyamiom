@@ -114,6 +114,78 @@ class ClientPortalAuthTest extends TestCase
         }
     }
 
+    /**
+     * حالةٌ حقيقية: سجّل المكتب للموكّل رقمين، فدخل بآخر ثلاثة من رقمه
+     * الثاني فقيل له «تعذّر التحقق» — ورقمُه صحيح. كان يُقارَن بالأول
+     * وحده، وكلا الرقمين رقمُه.
+     */
+    public function test_any_registered_number_proves_the_client(): void
+    {
+        $this->client(['phone' => '06234567, 99382311']);
+
+        $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
+        $this->post(route('client.access.verify'), ['digits' => '311'])
+            ->assertRedirect(route('client.portal.home'));
+
+        $this->assertNotNull(session('client_access_id'));
+    }
+
+    /** والأول ما زال يفي كذلك. */
+    public function test_the_first_registered_number_still_works(): void
+    {
+        $this->client(['phone' => '06234567, 99382311']);
+
+        $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
+        $this->post(route('client.access.verify'), ['digits' => '567'])
+            ->assertRedirect(route('client.portal.home'));
+
+        $this->assertNotNull(session('client_access_id'));
+    }
+
+    /** ورقمٌ لم يسجّله المكتب لا يفي. */
+    public function test_a_number_the_office_never_registered_is_refused(): void
+    {
+        $this->client(['phone' => '06234567, 99382311']);
+
+        $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
+        $this->post(route('client.access.verify'), ['digits' => '999']);
+
+        $this->assertNull(session('client_access_id'));
+    }
+
+    /** التلميح يعرض الرقمين محجوبين، فيعرف الموكّل أن أيّهما يفي. */
+    public function test_the_hint_names_every_registered_number(): void
+    {
+        $this->client(['phone' => '06234567, 99382311']);
+        $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
+
+        $badge = $this->hintBadge();
+
+        $this->assertSame('0623•••• · 9938••••', $badge);
+        $this->assertStringNotContainsString('567', $badge);
+        $this->assertStringNotContainsString('311', $badge);
+    }
+
+    /**
+     * سجلٌّ محشوٌّ بالأرقام يجعل لكل تخمينٍ أبواباً بدل باب — فيُكتفى
+     * بأربعة، وإلا ضَعُف ما بُني ليقوى.
+     */
+    public function test_a_record_stuffed_with_numbers_cannot_widen_the_guess(): void
+    {
+        $this->client(['phone' => '11111111, 22222222, 33333333, 44444444, 55555555, 66666666']);
+
+        $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
+
+        // الخامس خارج الحدّ
+        $this->post(route('client.access.verify'), ['digits' => '555']);
+        $this->assertNull(session('client_access_id'));
+
+        // والرابع داخله
+        $this->post(route('client.access.verify'), ['digits' => '444'])
+            ->assertRedirect(route('client.portal.home'));
+        $this->assertNotNull(session('client_access_id'));
+    }
+
     public function test_the_second_step_cannot_be_skipped(): void
     {
         $this->client();
