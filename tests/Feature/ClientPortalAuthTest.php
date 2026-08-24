@@ -55,6 +55,65 @@ class ClientPortalAuthTest extends TestCase
         $this->get(route('client.portal.home'))->assertOk()->assertSee('محمد بن سالم');
     }
 
+    /** نصّ شارة التلميح كما يقرؤه الموكّل على الشاشة. */
+    private function hintBadge(): string
+    {
+        $html = $this->get(route('client.access'))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/p-badge mute/', $html, 'شارة التلميح غائبة');
+        preg_match('/p-badge mute[^>]*>([^<]*)</u', $html, $m);
+
+        return trim($m[1] ?? '');
+    }
+
+    /**
+     * كانت شاشة الخطوة الثانية تطبع «••••• 567» — و«567» هي بعينها ما
+     * تطلبه. فمن عرف رقم الهوية وحده يقرأ الجواب ويدخل، ورقمُ الهوية
+     * يُكتب في العقود ويُعطى لجهات كثيرة فليس سرّاً يُبنى عليه دخول.
+     */
+    public function test_the_verification_screen_never_prints_the_digits_it_asks_for(): void
+    {
+        $this->client(['phone' => '+968 91234567']);
+        $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
+
+        $badge = $this->hintBadge();
+
+        $this->assertStringNotContainsString('567', $badge, 'الأرقام المطلوبة مطبوعة على الشاشة');
+        $this->assertStringNotContainsString('4567', $badge, 'ما يضيّق التخمين إليها مطبوع كذلك');
+        $this->assertSame('9123••••', $badge);
+    }
+
+    /**
+     * التلميح يحجب الأربعة الأخيرة مهما كانت صيغة الرقم، ولا يتبدّل
+     * على العميل نفسه بين رقمٍ محفوظ بمفتاح الدولة وآخر بدونه.
+     */
+    public function test_the_hint_hides_the_last_four_digits_in_every_shape(): void
+    {
+        foreach ([
+            '+968 91234567' => '9123••••',
+            '96891234567' => '9123••••',
+            '91234567' => '9123••••',
+            '12345' => '1••••',
+            '456' => '•••',
+        ] as $phone => $expected) {
+            $client = Client::factory()->create([
+                'national_id' => (string) random_int(1000000, 9999999),
+                'phone' => $phone,
+            ]);
+
+            $this->post(route('client.access.lookup'), ['national_id' => $client->national_id]);
+
+            $badge = $this->hintBadge();
+            $secret = substr(preg_replace('/\D+/', '', $phone), -3);
+
+            $this->assertSame($expected, $badge, "التلميح خاطئ للرقم {$phone}");
+            $this->assertStringNotContainsString($secret, $badge, "السرّ ظاهر في تلميح {$phone}");
+
+            $this->post(route('client.access.logout'));
+            RateLimiter::clear('client-portal:lookup:127.0.0.1');
+        }
+    }
+
     public function test_the_second_step_cannot_be_skipped(): void
     {
         $this->client();
@@ -108,10 +167,8 @@ class ClientPortalAuthTest extends TestCase
         $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
         $html = $this->get(route('client.access'))->assertOk()->getContent();
 
-        // التلميح المسموح هو آخر ٣ أرقام فقط
         $this->assertStringNotContainsString('91234567', $html);
         $this->assertStringNotContainsString('9123456', $html);
-        $this->assertStringContainsString('567', $html);
     }
 
     public function test_repeated_guessing_is_throttled(): void
