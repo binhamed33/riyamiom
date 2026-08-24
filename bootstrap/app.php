@@ -34,6 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->dontReport(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
         $exceptions->dontReport(\Illuminate\Auth\AuthenticationException::class);
+        // بوتات الإنترنت ترمي POST على الصفحة الرئيسة طوال اليوم — طلب
+        // مرفوض من عميل غريب ليس عطلاً في النظام، وتسجيله ERROR كان
+        // يجعل كل مكتب يظهر في اللوحة وكأن فيه أخطاء يومية.
+        $exceptions->dontReport(\Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException::class);
 
         $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
             if ($request->expectsJson() || $request->is('api/*')) {
@@ -108,11 +112,23 @@ return Application::configure(basePath: dirname(__DIR__))
             // مرجعاً يُربط به السجلّ عند الشكوى.
             $reference = strtoupper(substr(md5($e->getMessage() . microtime()), 0, 8));
 
-            logger()->error('Unhandled exception [' . $reference . ']: ' . $e->getMessage(), [
-                'exception' => $e,
-                'url' => $request->fullUrl(),
-                'user_id' => auth()->id(),
-            ]);
+            // طلب بطريقة غير مدعومة (بوت يرمي POST على /) أو صفحة غير
+            // موجودة: ضجيج عملاء لا عطل نظام — يُدوَّن INFO كي لا يعدّه
+            // نبضُ الأخطاء ولا يوقظ فحصَ الصحة اليومي زوراً.
+            $isClientNoise = $e instanceof \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException
+                || $e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+            if ($isClientNoise) {
+                logger()->info('Client request refused [' . $reference . ']: ' . $e->getMessage(), [
+                    'url' => $request->fullUrl(),
+                ]);
+            } else {
+                logger()->error('Unhandled exception [' . $reference . ']: ' . $e->getMessage(), [
+                    'exception' => $e,
+                    'url' => $request->fullUrl(),
+                    'user_id' => auth()->id(),
+                ]);
+            }
 
             $message = 'تعذّر إتمام العملية. أعد المحاولة، وإن تكرّر أبلغ الدعم بالرمز: ' . $reference;
 

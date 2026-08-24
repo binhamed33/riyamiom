@@ -54,7 +54,7 @@
                     value="{{ old('phone') }}"
                     class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
                     dir="ltr"
-                 data-phone inputmode="tel" autocomplete="tel" maxlength="20" placeholder="9123 4567 أو +968 9123 4567">
+                 data-phone inputmode="tel" autocomplete="tel" maxlength="20" placeholder="+968 9123 4567">
                 @error('phone')
                     <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
                 @enderror

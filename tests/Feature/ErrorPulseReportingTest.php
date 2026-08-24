@@ -96,4 +96,21 @@ class ErrorPulseReportingTest extends TestCase
 
         $this->assertSame(0, ErrorPulse::summary()['count']);
     }
+
+    /**
+     * بوتات الإنترنت ترمي POST على الصفحة الرئيسة كل يوم. كانت تُدوَّن
+     * ERROR فيظهر كل مكتب في اللوحة وكأن فيه عطلاً دائماً، ويفشل فحص
+     * الصحة اليومي زوراً. طلبٌ مرفوض من عميل غريب يُدوَّن INFO فقط.
+     */
+    public function test_bot_post_on_home_is_info_not_error(): void
+    {
+        \Illuminate\Support\Facades\Log::spy();
+
+        $this->post('/');
+
+        \Illuminate\Support\Facades\Log::shouldNotHaveReceived('error');
+        \Illuminate\Support\Facades\Log::shouldHaveReceived('info')
+            ->withArgs(fn ($message) => is_string($message) && str_contains($message, 'Client request refused'))
+            ->once();
+    }
 }
