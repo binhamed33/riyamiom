@@ -62,19 +62,52 @@ class HrController extends Controller
 
         $chartData = [];
         $ratingDistribution = ['excellent' => 0, 'good' => 0, 'poor' => 0];
+
         if ($isAdmin) {
+            // كانت أربعة استعلامات لكل موظّف داخل حلقة — مكتبٌ بعشرين
+            // موظفاً يفتح صفحته بثمانين استعلاماً. أربعة استعلامات
+            // مجمَّعة تكفي مهما كثر الفريق.
+            $ids = $employees->pluck('id');
+
+            $ratings = HrPerformance::whereIn('employee_id', $ids)
+                ->groupBy('employee_id')
+                ->selectRaw('employee_id, AVG(rating) as avg_rating')
+                ->pluck('avg_rating', 'employee_id');
+
+            $caseCounts = LegalCase::whereIn('lawyer_id', $ids)
+                ->groupBy('lawyer_id')
+                ->selectRaw('lawyer_id, COUNT(*) as total')
+                ->pluck('total', 'lawyer_id');
+
+            $taskCounts = Task::whereIn('assigned_to', $ids)
+                ->groupBy('assigned_to')
+                ->selectRaw('assigned_to, COUNT(*) as total')
+                ->pluck('total', 'assigned_to');
+
+            $doneCounts = Task::whereIn('assigned_to', $ids)
+                ->where('status', 'completed')
+                ->groupBy('assigned_to')
+                ->selectRaw('assigned_to, COUNT(*) as total')
+                ->pluck('total', 'assigned_to');
+
             foreach ($employees as $emp) {
-                $avgRating = HrPerformance::where('employee_id', $emp->id)->avg('rating');
+                $avgRating = $ratings[$emp->id] ?? null;
+
                 $chartData[] = [
                     'name' => $emp->name,
-                    'rating' => round($avgRating ?? 0, 1),
-                    'cases' => LegalCase::where('lawyer_id', $emp->id)->count(),
-                    'tasks' => Task::where('assigned_to', $emp->id)->count(),
-                    'tasks_done' => Task::where('assigned_to', $emp->id)->where('status', 'completed')->count(),
+                    'rating' => round((float) ($avgRating ?? 0), 1),
+                    'cases' => (int) ($caseCounts[$emp->id] ?? 0),
+                    'tasks' => (int) ($taskCounts[$emp->id] ?? 0),
+                    'tasks_done' => (int) ($doneCounts[$emp->id] ?? 0),
                 ];
-                if ($avgRating >= 4) $ratingDistribution['excellent']++;
-                elseif ($avgRating >= 3) $ratingDistribution['good']++;
-                else $ratingDistribution['poor']++;
+
+                if ($avgRating >= 4) {
+                    $ratingDistribution['excellent']++;
+                } elseif ($avgRating >= 3) {
+                    $ratingDistribution['good']++;
+                } else {
+                    $ratingDistribution['poor']++;
+                }
             }
         }
 
