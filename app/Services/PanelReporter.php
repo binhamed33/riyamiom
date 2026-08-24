@@ -84,6 +84,9 @@ class PanelReporter
                     'storage_bytes' => (int) \App\Models\Document::query()->sum('file_size'),
                     'ai_enabled' => self::aiEnabled(),
                     'app_version' => (string) config('app.version', ''),
+                    // نبض الأخطاء: عدد ونوع ومسار — بلا نصّ الخطأ، فبيانات
+                    // المكتب لا تغادر خادمه (§56)
+                    'errors' => \App\Support\ErrorPulse::summary(),
                 ]);
 
             // الردّ يحمل الباقة والحدود نزولاً — هذه هي قناة المزامنة.
