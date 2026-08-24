@@ -55,7 +55,7 @@
 
     <div class="meta">
         <span>{{ $filtersSummary ?: 'كل الجلسات' }}</span>
-        <span>عدد الجلسات: {{ $sessions->count() }} • طُبع في {{ $generatedAt->format('Y/m/d — H:i') }}</span>
+        <span>عدد الجلسات: {{ $sessions->count() }}@if ($truncated ?? false) (بلغ الجدول حدّه — ضيّق الفلتر لطباعة الباقي)@endif • طُبع في {{ $generatedAt->format('Y/m/d — H:i') }}</span>
     </div>
 
     @if ($sessions->isEmpty())

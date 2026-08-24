@@ -111,7 +111,9 @@ class HrController extends Controller
 
     public function checkOut()
     {
-        $record = HrAttendance::todayFor(auth()->id());
+        // سجلّ اليوم أولاً، فإن لم يوجد فالسجلّ المفتوح من دوام امتدّ
+        // إلى ما بعد منتصف الليل — فلا يبقى يومٌ بلا انصراف
+        $record = HrAttendance::todayFor(auth()->id()) ?? HrAttendance::openFor(auth()->id());
 
         if (!$record) {
             return redirect()->route('hr.index', ['tab' => 'attendance'])

@@ -101,15 +101,36 @@ PROMPT;
         }
 
         if (isset($data['error'])) {
-            throw new \RuntimeException('لا يمكن تمثيل الطلب: ' . mb_substr((string) $data['error'], 0, 200));
+            throw new \RuntimeException('لا يمكن تمثيل الطلب: ' . (self::text($data['error'], 200) ?: 'خارج نطاق ما يمكن بناؤه'));
         }
 
         return $data;
     }
 
+    /**
+     * نصٌّ من قيمةٍ لا نثق بشكلها.
+     *
+     * النموذج يخرج أحياناً كائناً حيث انتظرنا نصّاً ({"title":{"ar":"..."}})،
+     * و(string) على مصفوفة ترمي ErrorException لا RuntimeException — فتفلت
+     * من المعالج وتصير 500 ورسالةً عامة بدل «أعد الصياغة». هنا تُطرح
+     * المصفوفة صراحةً بدل أن تُكسر.
+     */
+    private static function text(mixed $value, int $max): string
+    {
+        if (is_string($value)) {
+            return mb_substr(trim($value), 0, $max);
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        return '';
+    }
+
     private function validateAutomation(array $d): array
     {
-        $trigger = (string) ($d['trigger'] ?? '');
+        $trigger = self::text($d['trigger'] ?? '', 60);
         if (!array_key_exists($trigger, AutomationEngine::triggers())) {
             throw new \RuntimeException('المولد اقترح مشغّلاً غير موجود في النظام — أعد الصياغة.');
         }
@@ -121,7 +142,7 @@ PROMPT;
             if (!is_array($c) || !in_array($c['field'] ?? '', $fields, true) || !in_array($c['operator'] ?? '', $ops, true)) {
                 continue;
             }
-            $conditions[] = ['field' => $c['field'], 'operator' => $c['operator'], 'value' => (string) ($c['value'] ?? '')];
+            $conditions[] = ['field' => $c['field'], 'operator' => $c['operator'], 'value' => self::text($c['value'] ?? '', 190)];
         }
 
         $known = array_keys(AutomationEngine::actions());
@@ -133,13 +154,15 @@ PROMPT;
             }
             $actions[] = [
                 'type' => $a['type'],
-                'title' => mb_substr((string) ($a['title'] ?? ''), 0, 200),
-                'message' => mb_substr((string) ($a['message'] ?? ''), 0, 300),
+                'title' => self::text($a['title'] ?? '', 190),
+                'message' => self::text($a['message'] ?? '', 300),
                 'priority' => in_array($a['priority'] ?? '', ['low', 'medium', 'high', 'urgent'], true) ? $a['priority'] : 'high',
                 'assign' => in_array($a['assign'] ?? '', $targets, true) ? $a['assign'] : 'case_lawyer',
                 'target' => in_array($a['target'] ?? '', $targets, true) ? $a['target'] : 'manager',
-                'status' => (string) ($a['status'] ?? 'active'),
-                'due_in_days' => max(0, min(90, (int) ($a['due_in_days'] ?? 1))),
+                // الحالة قائمةٌ مغلقة كبقية الحقول — لا تُمرَّر كما جاءت
+                'status' => in_array($a['status'] ?? '', ['active', 'pending', 'overdue', 'closed', 'won', 'lost', 'adjudicated', 'fees_pending'], true)
+                    ? $a['status'] : 'active',
+                'due_in_days' => max(0, min(90, is_numeric($a['due_in_days'] ?? null) ? (int) $a['due_in_days'] : 1)),
             ];
         }
 
@@ -148,7 +171,7 @@ PROMPT;
         }
 
         return [
-            'name' => mb_substr(trim((string) ($d['name'] ?? '')) ?: 'قاعدة مقترحة', 0, 100),
+            'name' => self::text($d['name'] ?? '', 100) ?: 'قاعدة مقترحة',
             'trigger' => $trigger,
             'conditions' => $conditions,
             'actions' => $actions,
@@ -159,30 +182,30 @@ PROMPT;
     {
         $items = [];
         foreach (array_slice((array) ($d['items'] ?? []), 0, 8) as $i) {
-            $title = trim((string) (is_array($i) ? ($i['title'] ?? '') : $i));
+            $title = self::text(is_array($i) ? ($i['title'] ?? '') : $i, 190);
             if ($title === '') {
                 continue;
             }
             $items[] = [
-                'title' => mb_substr($title, 0, 200),
+                'title' => $title,
                 'priority' => in_array(is_array($i) ? ($i['priority'] ?? '') : '', ['low', 'medium', 'high', 'urgent'], true) ? $i['priority'] : 'medium',
-                'days_offset' => max(0, min(90, (int) (is_array($i) ? ($i['days_offset'] ?? 1) : 1))),
+                'days_offset' => max(0, min(90, is_numeric($raw = (is_array($i) ? ($i['days_offset'] ?? 1) : 1)) ? (int) $raw : 1)),
             ];
         }
 
         $strings = fn ($list, $max) => collect((array) $list)->take($max)
-            ->map(fn ($x) => mb_substr(trim((string) (is_array($x) ? ($x['title'] ?? $x['name'] ?? '') : $x)), 0, 120))
+            ->map(fn ($x) => self::text(is_array($x) ? ($x['title'] ?? $x['name'] ?? '') : $x, 120))
             ->filter()->values()->all();
 
         $reminders = [];
         foreach (array_slice((array) ($d['reminders'] ?? []), 0, 4) as $r) {
-            $title = trim((string) (is_array($r) ? ($r['title'] ?? '') : ''));
+            $title = self::text(is_array($r) ? ($r['title'] ?? '') : '', 190);
             if ($title === '') {
                 continue;
             }
             $reminders[] = [
-                'title' => mb_substr($title, 0, 200),
-                'days_offset' => max(0, min(180, (int) ($r['days_offset'] ?? 7))),
+                'title' => $title,
+                'days_offset' => max(0, min(180, is_numeric($r['days_offset'] ?? null) ? (int) $r['days_offset'] : 7)),
                 'target' => in_array($r['target'] ?? '', ['lawyer', 'manager', 'both'], true) ? $r['target'] : 'lawyer',
             ];
         }
@@ -192,8 +215,8 @@ PROMPT;
         }
 
         return [
-            'name' => mb_substr(trim((string) ($d['name'] ?? '')) ?: 'قالب مقترح', 0, 100),
-            'description' => mb_substr(trim((string) ($d['description'] ?? '')), 0, 300) ?: null,
+            'name' => self::text($d['name'] ?? '', 100) ?: 'قالب مقترح',
+            'description' => self::text($d['description'] ?? '', 300) ?: null,
             'default_status' => in_array($d['default_status'] ?? '', ['active', 'pending'], true) ? $d['default_status'] : 'active',
             'items' => $items,
             'checklist' => $strings($d['checklist'] ?? [], 10),

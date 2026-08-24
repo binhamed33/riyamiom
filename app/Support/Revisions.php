@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -14,27 +15,44 @@ use Illuminate\Support\Facades\DB;
  */
 class Revisions
 {
-    /** يحفظ لقطة من الحالة الحالية قبل أن يكتب التعديل فوقها. */
+    /**
+     * يحفظ لقطة من الحالة الحالية قبل أن يكتب التعديل فوقها.
+     *
+     * «اقرأ أكبر رقم ثم اكتب الذي يليه» يتسابق: تعديلان معاً يقرآن الرقم
+     * نفسه. القيد الفريد في القاعدة يرفض التوأم، فنعيد المحاولة برقم
+     * أحدث — ثلاث محاولات تكفي أي تزاحم واقعي.
+     */
     public static function capture(Model $subject, ?int $userId = null): void
     {
-        try {
-            $last = (int) DB::table('revision_snapshots')
-                ->where('subject_type', $subject->getMorphClass())
-                ->where('subject_id', $subject->getKey())
-                ->max('version');
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            try {
+                $last = (int) DB::table('revision_snapshots')
+                    ->where('subject_type', $subject->getMorphClass())
+                    ->where('subject_id', $subject->getKey())
+                    ->max('version');
 
-            DB::table('revision_snapshots')->insert([
-                'subject_type' => $subject->getMorphClass(),
-                'subject_id' => $subject->getKey(),
-                'version' => $last + 1,
-                'payload' => json_encode($subject->only($subject->getFillable()), JSON_UNESCAPED_UNICODE),
-                'created_by' => $userId,
-                'created_at' => now(),
-            ]);
-        } catch (\Throwable $e) {
-            // اللقطة توثيق لا شرط: تعذّرها لا يوقف حفظ التعديل نفسه
-            \Illuminate\Support\Facades\Log::warning('Revisions: تعذّر حفظ اللقطة — ' . $e->getMessage());
+                DB::table('revision_snapshots')->insert([
+                    'subject_type' => $subject->getMorphClass(),
+                    'subject_id' => $subject->getKey(),
+                    'version' => $last + 1,
+                    'payload' => json_encode($subject->only($subject->getFillable()), JSON_UNESCAPED_UNICODE),
+                    'created_by' => $userId,
+                    'created_at' => now(),
+                ]);
+
+                return;
+            } catch (UniqueConstraintViolationException) {
+                continue;   // سبقنا أحدٌ إلى هذا الرقم — نأخذ الذي يليه
+            } catch (\Throwable $e) {
+                // اللقطة توثيق لا شرط: تعذّرها لا يوقف حفظ التعديل نفسه
+                \Illuminate\Support\Facades\Log::warning('Revisions: تعذّر حفظ اللقطة — ' . $e->getMessage());
+
+                return;
+            }
         }
+
+        \Illuminate\Support\Facades\Log::warning('Revisions: تعذّر حفظ اللقطة بعد ثلاث محاولات — تزاحم على '
+            . $subject->getMorphClass() . '#' . $subject->getKey());
     }
 
     /** @return \Illuminate\Support\Collection لقطات هذا العنصر، الأحدث أولاً */

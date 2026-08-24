@@ -20,7 +20,8 @@ class CaseTemplateController extends Controller
 
     public function index(Request $request): View
     {
-        $q = trim((string) $request->get('q', ''));
+        // مصفوفة في ?q[]= كانت تُحوَّل إلى نصّ فترمي ErrorException وتُسقط الصفحة
+        $q = is_string($raw = $request->input('q')) ? trim($raw) : '';
         $state = $request->get('state');           // active | disabled
         $sort = $request->get('sort', 'name');     // name | most_used | recent
 
@@ -85,6 +86,8 @@ class CaseTemplateController extends Controller
         $copy->created_by = auth()->id();
         $copy->save();
 
+        $this->logAudit(AuditLog::ACTION_CREATE, CaseTemplate::class, $copy->id, null, $copy->toArray());
+
         return back()->with('success', 'نُسخ القالب — عدّل «' . $copy->name . '» كما تريد.');
     }
 
@@ -108,6 +111,12 @@ class CaseTemplateController extends Controller
             return response()->json(['ok' => true, 'draft' => $draft]);
         } catch (\RuntimeException $e) {
             return response()->json(['ok' => false, 'error' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            // مسودةٌ مشوّهة من النموذج ليست عطلاً في الخادم: تُسجَّل ويُقال
+            // للمدير أعد الصياغة، بدل 500 ورسالة عامة لا تدلّه على شيء
+            \Illuminate\Support\Facades\Log::warning('DraftGenerator: مسودة غير صالحة — ' . $e->getMessage());
+
+            return response()->json(['ok' => false, 'error' => 'وصلت المسودة بشكل غير متوقع — أعد الصياغة بجملة أوضح.'], 422);
         }
     }
 
@@ -124,7 +133,12 @@ class CaseTemplateController extends Controller
 
     public function restoreVersion(CaseTemplate $caseTemplate, int $version): RedirectResponse
     {
+        $before = $caseTemplate->toArray();
         $ok = \App\Support\Revisions::restore($caseTemplate, $version, auth()->id());
+
+        if ($ok) {
+            $this->logAudit(AuditLog::ACTION_UPDATE, CaseTemplate::class, $caseTemplate->id, $before, $caseTemplate->fresh()->toArray());
+        }
 
         return $ok
             ? redirect()->route('case-templates.index')->with('success', 'استُعيدت النسخة v' . $version . ' من «' . $caseTemplate->fresh()->name . '» — والحالة السابقة محفوظة كنسخة جديدة.')

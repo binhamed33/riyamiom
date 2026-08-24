@@ -41,4 +41,21 @@ class HrAttendance extends Model
     {
         return static::where('user_id', $userId)->whereDate('work_date', self::today())->first();
     }
+
+    /**
+     * السجلّ المفتوح الذي ينتظر انصرافاً — ولو كان حضورُه أمس.
+     *
+     * موظّف حضر ١١:٥٠ ليلاً وانصرف ١٢:١٠ بعد منتصف الليل كان يُقال له
+     * «لم تسجّل حضوراً اليوم» ويبقى سجلّ أمس مفتوحاً بلا انصراف أبداً،
+     * ولا شيء في الواجهة يُغلقه. النافذة يوم كامل: أطول من أي دوام،
+     * وأقصر من أن يُغلق سجلّ نُسي منذ أسبوع بانصراف اليوم.
+     */
+    public static function openFor(int $userId): ?self
+    {
+        return static::where('user_id', $userId)
+            ->whereNull('check_out_at')
+            ->where('check_in_at', '>=', now()->subDay())
+            ->orderByDesc('check_in_at')
+            ->first();
+    }
 }

@@ -13,6 +13,8 @@ use App\Models\Session;
 use App\Models\Setting;
 use App\Models\Task;
 use App\Models\User;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
@@ -514,7 +516,9 @@ class AutomationEngine
             throw new \RuntimeException('حالة غير صالحة أو لا توجد قضية');
         }
 
-        // لا يوجد Trigger يستمع لتغيير الحالة — لا خطر حلقات.
+        // يوجد الآن مشغّل يستمع لتغيير الحالة، لكن هذا الإجراء يكتب
+        // بـupdate() مباشرة ولا يستدعي fire()، وfire() لا يُستدعى إلا من
+        // متحكّم القضية — فلا حلقة. من يضيف نداءً جديداً لـfire() فليراجع هذا.
         $case->update(['status' => $status]);
 
         return 'الحالة → ' . $status;
@@ -643,9 +647,19 @@ class AutomationEngine
     private function dedupeKey(Automation $rule, Model $subject): string
     {
         $bucket = '';
+
         // القضية الراكدة تعود للتنبيه بعد أي تحديث جديد ثم ركود جديد
         if ($rule->trigger === 'case_stale' && $subject instanceof LegalCase) {
             $bucket = '|' . $subject->updated_at?->timestamp;
+        }
+
+        // تغيّر الحالة حدثٌ متكرّر بطبعه: القضية تُغلق وتُفتح وتُغلق.
+        // بلا هذا الدلو كان المفتاح واحداً للقضية أبداً، فتعمل القاعدة
+        // مرةً في عمر القضية ثم تصمت — والقاعدة موضوعة لتعمل كل مرة.
+        // التاريخ يُميّز كل تغيير، والحالة تُبقي المفتاح مقروءاً؛ وتغييران
+        // في الثانية نفسها يبقيان واحداً وهو المطلوب ضد النقر المزدوج.
+        if ($rule->trigger === 'case_status_changed' && $subject instanceof LegalCase) {
+            $bucket = '|' . $subject->updated_at?->timestamp . '|' . $subject->status;
         }
 
         return sha1($rule->id . '|' . $rule->trigger . '|' . $subject->getMorphClass() . '|' . $subject->getKey() . $bucket);
@@ -689,30 +703,55 @@ class AutomationEngine
     // ------------------------------------------------------------------
 
     /** ينشئ قاعدة جاهزة واحدة باسمها — لتفعيل اقتراحٍ بعينه (§12). */
+    /**
+     * الزرع «افحص ثم أنشئ» — ونقرتان متزامنتان كانتا تجتازان الفحص معاً
+     * فتُنشآن قاعدتين متطابقتين تعملان كلتاهما (مفتاح منع التكرار يحمل
+     * رقم القاعدة، فلا يمنع التوأم) — مهمّتان ونداءان لكل حدث. القفل
+     * يجعل الزرع عمليةً واحدة لا يدخلها نقران.
+     */
+    private static function seeding(\Closure $work): mixed
+    {
+        try {
+            return Cache::lock('automation-seed', 20)->block(8, $work);
+        } catch (LockTimeoutException) {
+            // ازدحام غير مألوف: الأسلم ألّا يُزرع شيء على أن يُزرع مكرّراً
+            return 0;
+        }
+    }
+
     public static function seedByName(string $name, ?int $creatorId = null): bool
     {
         $def = collect(self::defaultRules())->firstWhere('name', $name);
 
-        if (!$def || Automation::where('name', $name)->exists()) {
+        if (!$def) {
             return false;
         }
 
-        Automation::create($def + ['is_active' => true, 'created_by' => $creatorId]);
+        return (bool) self::seeding(function () use ($def, $name, $creatorId) {
+            if (Automation::where('name', $name)->exists()) {
+                return false;
+            }
 
-        return true;
+            Automation::create($def + ['is_active' => true, 'created_by' => $creatorId]);
+
+            return true;
+        });
     }
 
     public static function seedDefaults(?int $creatorId = null): int
     {
-        $created = 0;
-        foreach (self::defaultRules() as $def) {
-            if (!Automation::where('name', $def['name'])->exists()) {
-                Automation::create($def + ['is_active' => true, 'created_by' => $creatorId]);
-                $created++;
-            }
-        }
+        return (int) self::seeding(function () use ($creatorId) {
+            $created = 0;
 
-        return $created;
+            foreach (self::defaultRules() as $def) {
+                if (!Automation::where('name', $def['name'])->exists()) {
+                    Automation::create($def + ['is_active' => true, 'created_by' => $creatorId]);
+                    $created++;
+                }
+            }
+
+            return $created;
+        });
     }
 
     /** @return array<int,array> قواعد مُداوَلة الجاهزة — مصدرها الواحد */

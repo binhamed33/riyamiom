@@ -153,7 +153,10 @@ class PlanLimits
             return $create();
         }
 
-        $lock = Cache::lock('plan-limit:' . $resource, 15);
+        // المهلة تفوق ما يجري داخل القفل: رفع ملفٍ كبير يُكتب على القرص
+        // هنا، وقفلٌ بخمس عشرة ثانية كان ينتهي تحت رفعٍ بطيء فيمرّ رفعان
+        // معاً على آخر جيجابايت — وهو ما وُضع القفل ليمنعه.
+        $lock = Cache::lock('plan-limit:' . $resource, 120);
 
         try {
             return $lock->block(10, function () use ($resource, $create, $incomingBytes) {
@@ -179,6 +182,12 @@ class PlanLimits
         $limit = self::of($resource);
         $label = self::RESOURCES[$resource] ?? $resource;
         $plan = self::planName();
+
+        // مورد بلا حدّ معروف يصل هنا في حالة واحدة: ازدحامٌ على القفل رُفض
+        // احتياطاً. رقمٌ غائب كان يُطبع «من .» — والصدق أوضح من فراغ.
+        if ($limit === null) {
+            return 'تعذّر إتمام العملية الآن بسبب ازدحام لحظي. أعد المحاولة بعد لحظات.';
+        }
 
         return 'لقد وصلت إلى الحد المسموح في باقتك'
             . ($plan ? ' (' . $plan . ')' : '')

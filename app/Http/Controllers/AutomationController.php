@@ -24,7 +24,8 @@ class AutomationController extends Controller
     public function index(Request $request): View
     {
         // §29: بحث وتصفية وترتيب من الخادم — الرابط يحمل الحالة فيُشارك
-        $q = trim((string) $request->get('q', ''));
+        // مصفوفة في ?q[]= كانت تُحوَّل إلى نصّ فترمي ErrorException وتُسقط الصفحة
+        $q = is_string($raw = $request->input('q')) ? trim($raw) : '';
         $state = $request->get('state');           // active | disabled
         $sort = $request->get('sort', 'recent');   // recent | most_used | name
 
@@ -109,6 +110,8 @@ class AutomationController extends Controller
         $copy->runs_count = 0;
         $copy->save();
 
+        $this->logAudit(AuditLog::ACTION_CREATE, Automation::class, $copy->id, null, $copy->toArray());
+
         return back()->with('success', 'نُسخت القاعدة باسم «' . $copy->name . '» معطَّلةً — عدّلها ثم فعّلها.');
     }
 
@@ -125,7 +128,14 @@ class AutomationController extends Controller
 
     public function restoreVersion(Automation $automation, int $version): RedirectResponse
     {
+        // الاستعادة تعيد كتابة الصفّ كاملاً — أخطر من تعديل حقل، فلا
+        // تمرّ خارج سجلّ التدقيق كما كان
+        $before = $automation->toArray();
         $ok = \App\Support\Revisions::restore($automation, $version, auth()->id());
+
+        if ($ok) {
+            $this->logAudit(AuditLog::ACTION_UPDATE, Automation::class, $automation->id, $before, $automation->fresh()->toArray());
+        }
 
         return $ok
             ? redirect()->route('automations.index')->with('success', 'استُعيدت النسخة v' . $version . ' من «' . $automation->fresh()->name . '» — والحالة السابقة محفوظة كنسخة جديدة.')
@@ -227,6 +237,12 @@ class AutomationController extends Controller
             return response()->json(['ok' => true, 'draft' => $draft]);
         } catch (\RuntimeException $e) {
             return response()->json(['ok' => false, 'error' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            // مسودةٌ مشوّهة من النموذج ليست عطلاً في الخادم: تُسجَّل ويُقال
+            // للمدير أعد الصياغة، بدل 500 ورسالة عامة لا تدلّه على شيء
+            \Illuminate\Support\Facades\Log::warning('DraftGenerator: مسودة غير صالحة — ' . $e->getMessage());
+
+            return response()->json(['ok' => false, 'error' => 'وصلت المسودة بشكل غير متوقع — أعد الصياغة بجملة أوضح.'], 422);
         }
     }
 

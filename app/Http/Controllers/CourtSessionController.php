@@ -17,6 +17,10 @@ use Illuminate\View\View;
 class CourtSessionController extends Controller
 {
     use AuditLoggable;
+
+    /** سقفُ ورقةٍ واحدة — ويُقال للقارئ صراحةً إن بلغه الجدول. */
+    private const PRINT_LIMIT = 300;
+
     public function index(Request $request): View
     {
         $query = $this->filtered($request);
@@ -34,18 +38,23 @@ class CourtSessionController extends Controller
     {
         $sessions = $this->filtered($request)
             ->orderBy('date', 'asc')->orderBy('id', 'asc')
-            ->limit(300)->get();
+            ->limit(self::PRINT_LIMIT)->get();
+
+        // ‏?status[]=x يصل مصفوفةً، وتحويلها إلى نصّ يرمي ErrorException —
+        // القائمة كانت تتسامح معها والطباعة تسقط. النصّ وحده يُقبل هنا.
+        $text = static fn (string $key): ?string => is_string($v = $request->input($key)) && $v !== '' ? $v : null;
 
         return view('sessions.print', [
             'sessions' => $sessions,
+            'truncated' => $sessions->count() >= self::PRINT_LIMIT,
             'generatedAt' => now(),
             'filtersSummary' => collect([
                 $request->boolean('mine') ? 'جلساتي فقط' : null,
-                $request->filled('status') ? 'الحالة: ' . __('app.status_' . $request->status) : null,
-                $request->filled('court') ? 'المحكمة: ' . $request->court : null,
-                $request->filled('date_from') ? 'من ' . $request->date_from : null,
-                $request->filled('date_to') ? 'إلى ' . $request->date_to : null,
-                $request->filled('range') ? ['today' => 'اليوم', 'week' => 'هذا الأسبوع', 'month' => 'هذا الشهر'][$request->range] ?? null : null,
+                $text('status') ? 'الحالة: ' . __('app.status_' . $text('status')) : null,
+                $text('court') ? 'المحكمة: ' . $text('court') : null,
+                $text('date_from') ? 'من ' . $text('date_from') : null,
+                $text('date_to') ? 'إلى ' . $text('date_to') : null,
+                $text('range') ? (['today' => 'اليوم', 'week' => 'هذا الأسبوع', 'month' => 'هذا الشهر'][$text('range')] ?? null) : null,
             ])->filter()->implode(' • '),
         ]);
     }

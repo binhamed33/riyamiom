@@ -41,7 +41,7 @@
             <p class="text-xs text-gray-400 mt-0.5">إليك ما يحتاج انتباهك اليوم — {{ now()->format('l d F Y') }}</p>
         </div>
         {{-- الحضور من هنا مباشرة: نقرة واحدة صباحاً وواحدة مساءً --}}
-        @if (\App\Models\Setting::get('feature_hr', '0') !== '1')
+        @if (!auth()->user()->isClient() && \App\Models\Setting::get('feature_hr', '0') !== '1')
         <div class="flex items-center gap-2 flex-shrink-0">
             @if(!$attendanceToday)
                 <form method="POST" action="{{ route('hr.attendance.checkin') }}">@csrf
