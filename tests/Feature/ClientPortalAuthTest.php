@@ -186,6 +186,42 @@ class ClientPortalAuthTest extends TestCase
         $this->assertNotNull(session('client_access_id'));
     }
 
+    /**
+     * رقمٌ إماراتي محفوظ بصيغته الدولية ‎00971506233112‎: كان التلميح
+     * يُقصّ آخر ثمانيةٍ فيُعرض ‎0623••••‎ — شريحةٌ من وسط الرقم لا يعرفها
+     * صاحبها. وبحذف المفتاح يُعرض أوّل رقمه كما يكتبه: ‎5062•••••‎.
+     */
+    public function test_an_international_number_is_hinted_by_its_local_part(): void
+    {
+        $this->client(['phone' => '00971506233112']);
+        $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
+
+        $this->assertSame('5062•••••', $this->hintBadge());
+
+        $this->post(route('client.access.verify'), ['digits' => '112'])
+            ->assertRedirect(route('client.portal.home'));
+    }
+
+    /** ولا يتبدّل التلميح على الموكّل نفسه باختلاف صيغة حفظ رقمه. */
+    public function test_the_hint_does_not_change_with_the_stored_format(): void
+    {
+        $seen = [];
+
+        foreach (['0096891234567', '+968 9123 4567', '96891234567', '91234567'] as $i => $phone) {
+            $client = Client::factory()->create([
+                'national_id' => '900000' . $i,
+                'phone' => $phone,
+            ]);
+
+            $this->post(route('client.access.lookup'), ['national_id' => $client->national_id]);
+            $seen[$phone] = $this->hintBadge();
+            $this->post(route('client.access.logout'));
+            RateLimiter::clear('client-portal:lookup:127.0.0.1');
+        }
+
+        $this->assertSame(['9123••••'], array_values(array_unique($seen)), 'التلميح تبدّل بتبدّل صيغة الحفظ: ' . json_encode($seen, JSON_UNESCAPED_UNICODE));
+    }
+
     public function test_the_second_step_cannot_be_skipped(): void
     {
         $this->client();

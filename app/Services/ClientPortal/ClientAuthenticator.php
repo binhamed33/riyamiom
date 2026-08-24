@@ -4,6 +4,7 @@ namespace App\Services\ClientPortal;
 
 use App\Models\Client;
 use App\Models\ClientPortalAttempt;
+use App\Support\GulfPhone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -224,17 +225,37 @@ class ClientAuthenticator
      * كي لا يضيق التخمين — ولا يظهر من المقدّمة أكثر من أربعة أرقام.
      * ويبقى نافعاً لمن سجّل لدى المكتب أكثر من رقم: يعرف أيَّها يقصد.
      *
-     * ويُقتصر على الأرقام الثمانية الأخيرة قبل الحجب، لأنّ مفتاح الدولة
-     * لا يميّز أحداً: «‎+968 91234567‎» بلا ذلك تُعرض ‎9689•••‎ — مقدّمةٌ
-     * يشترك فيها كل أهل عُمان. وبه يستوي الرقمُ المحفوظ بمفتاحه
-     * والمحفوظُ بدونه، فلا يتبدّل التلميح على العميل نفسه.
+     * ويُحذف مفتاح الدولة قبل الحجب، لأنّه لا يميّز أحداً: «‎+968 91234567‎»
+     * بدونه تُعرض ‎9689•••‎ — مقدّمةٌ يشترك فيها كل أهل عُمان. وبه يستوي
+     * الرقمُ المحفوظ بمفتاحه والمحفوظُ بدونه فلا يتبدّل على الموكّل نفسه.
      */
     private static function maskDigits(string $digits): string
     {
-        $local = strlen($digits) > 8 ? substr($digits, -8) : $digits;
+        $local = self::localPart($digits);
         $visible = max(0, min(4, strlen($local) - 4));
 
         return substr($local, 0, $visible) . str_repeat('•', strlen($local) - $visible);
+    }
+
+    /**
+     * الرقم المحلّي بلا مفتاح دولة.
+     *
+     * كان يُؤخذ آخرُ ثمانيةٍ مهما كان الرقم، فيُقصّ الرقم الإماراتي
+     * ‎00971506233112‎ من وسطه فيُعرض ‎0623••••‎ — شريحةٌ لا تقابل شيئاً
+     * في رقم صاحبها، فينظر إليها ولا يعرفها. وبطول الدولة يُقتطع
+     * المفتاح وحده فيبقى ‎5062•••••‎ — وهو أوّل رقمه كما يكتبه.
+     */
+    private static function localPart(string $digits): string
+    {
+        $digits = str_starts_with($digits, '00') ? substr($digits, 2) : $digits;
+
+        foreach (GulfPhone::COUNTRIES as [$code, $length]) {
+            if (strlen($digits) === strlen($code) + $length && str_starts_with($digits, $code)) {
+                return substr($digits, strlen($code));
+            }
+        }
+
+        return $digits;
     }
 
     /**
