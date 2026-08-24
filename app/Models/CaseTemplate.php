@@ -49,6 +49,110 @@ class CaseTemplate extends Model
      * تجهيز قضية جديدة من القالب: يعيد عدد ما أُنشئ من كل نوع.
      * @return array{tasks:int,checklist:int,folders:int,reminders:int}
      */
+    /**
+     * مكتبة مُداوَلة: قوالب جاهزة لأشيع أنواع القضايا في عُمان.
+     *
+     * تُستورد بطلب المدير لا فرضاً، وكل قالب بعدها ملك المكتب: يعدّله
+     * ويعطّله ويحذفه كأي قالب كتبه بيده. الاستيراد آمن للتكرار —
+     * قالب باسم موجود لا يُكتب فوقه، فتعديلات المكتب لا تضيع.
+     */
+    public static function seedDefaults(?int $creatorId = null): int
+    {
+        $folders = ['المستندات', 'المراسلات', 'الجلسات', 'المذكرات', 'الوكالات', 'المرفقات'];
+
+        $checklist = fn (array $extra = []) => array_merge([
+            'مراجعة المستندات الأساسية',
+            'التحقق من بيانات الموكّل',
+            'إدخال بيانات الخصم',
+            'تحديد المحامي المسؤول',
+        ], $extra);
+
+        $followUps = [
+            ['title' => 'مراجعة القضية بعد الفتح', 'days_offset' => 1, 'target' => 'lawyer'],
+            ['title' => 'متابعة دورية للقضية', 'days_offset' => 7, 'target' => 'lawyer'],
+        ];
+
+        $defaults = [
+            [
+                'name' => 'قضية مدنية',
+                'description' => 'التجهيز القياسي لقضية مدنية: مستندات، مذكرة، وموعد أول جلسة.',
+                'items' => [
+                    ['title' => 'دراسة صحيفة الدعوى وتحديد الطلبات', 'priority' => 'high', 'days_offset' => 1],
+                    ['title' => 'تجهيز حافظة المستندات', 'priority' => 'medium', 'days_offset' => 3],
+                    ['title' => 'إعداد المذكرة الأولى', 'priority' => 'high', 'days_offset' => 5],
+                ],
+                'checklist' => $checklist(['التحقق من الاختصاص والمواعيد']),
+            ],
+            [
+                'name' => 'قضية تجارية',
+                'description' => 'نزاعات العقود والشركات: تدقيق العقد وتقدير المطالبة.',
+                'items' => [
+                    ['title' => 'مراجعة العقد محلّ النزاع بنودَه وملاحقه', 'priority' => 'high', 'days_offset' => 1],
+                    ['title' => 'حصر المطالبات وتقدير قيمتها', 'priority' => 'high', 'days_offset' => 2],
+                    ['title' => 'مخاطبة الطرف الآخر أو تجهيز الدعوى', 'priority' => 'medium', 'days_offset' => 5],
+                ],
+                'checklist' => $checklist(['نسخة العقد وملاحقه كاملة', 'مستندات السجل التجاري للطرفين']),
+            ],
+            [
+                'name' => 'قضية عمالية',
+                'description' => 'مطالبات العمل: مستحقات، فصل تعسفي، وإجراءات دائرة العمل.',
+                'items' => [
+                    ['title' => 'حصر مستحقات العامل (أجور، بدلات، مكافأة نهاية خدمة)', 'priority' => 'high', 'days_offset' => 1],
+                    ['title' => 'التحقق من شكوى دائرة العمل قبل المحكمة', 'priority' => 'high', 'days_offset' => 2],
+                    ['title' => 'تجهيز عقد العمل وكشوف الرواتب', 'priority' => 'medium', 'days_offset' => 3],
+                ],
+                'checklist' => $checklist(['عقد العمل', 'إثبات مدة الخدمة وآخر أجر']),
+            ],
+            [
+                'name' => 'قضية أحوال شخصية',
+                'description' => 'مسائل الأسرة: تجهيز حسّاس يراعي السرية وأطراف العائلة.',
+                'items' => [
+                    ['title' => 'جلسة استماع خاصة مع الموكّل وتوثيق الوقائع', 'priority' => 'high', 'days_offset' => 1],
+                    ['title' => 'تجهيز مستندات الحالة (عقود، شهادات، إثباتات)', 'priority' => 'medium', 'days_offset' => 3],
+                ],
+                'checklist' => $checklist(['التحقق من محاولات الصلح إن لزمت']),
+            ],
+            [
+                'name' => 'قضية تنفيذ',
+                'description' => 'تنفيذ حكم أو سند: ملف التنفيذ ومتابعة إجراءات الحجز.',
+                'items' => [
+                    ['title' => 'التحقق من صيغة السند التنفيذية وقابليته للتنفيذ', 'priority' => 'high', 'days_offset' => 1],
+                    ['title' => 'فتح ملف التنفيذ وإيداع المستندات', 'priority' => 'high', 'days_offset' => 2],
+                    ['title' => 'متابعة إجراءات الحجز والإعلان', 'priority' => 'medium', 'days_offset' => 7],
+                ],
+                'checklist' => $checklist(['نسخة الحكم أو السند مذيّلة بالصيغة التنفيذية']),
+            ],
+            [
+                'name' => 'قضية مطالبة مالية',
+                'description' => 'تحصيل دين أو مطالبة مالية: إثبات المديونية ثم التدرج في المطالبة.',
+                'items' => [
+                    ['title' => 'حصر المديونية ومستنداتها (فواتير، شيكات، إقرارات)', 'priority' => 'high', 'days_offset' => 1],
+                    ['title' => 'إنذار المدين كتابياً قبل الدعوى', 'priority' => 'medium', 'days_offset' => 3],
+                    ['title' => 'تجهيز صحيفة الدعوى إن لم يسدّد', 'priority' => 'medium', 'days_offset' => 10],
+                ],
+                'checklist' => $checklist(['إثبات المديونية موقَّعاً', 'حساب الفوائد أو الغرامات إن وُجدت']),
+            ],
+        ];
+
+        $created = 0;
+        foreach ($defaults as $def) {
+            if (static::where('name', $def['name'])->exists()) {
+                continue;
+            }
+
+            static::create($def + [
+                'folders' => $folders,
+                'reminders' => $followUps,
+                'default_status' => 'active',
+                'is_active' => true,
+                'created_by' => $creatorId,
+            ]);
+            $created++;
+        }
+
+        return $created;
+    }
+
     public function applyTo(LegalCase $case, int $creatorId): array
     {
         $created = ['tasks' => 0, 'checklist' => 0, 'folders' => 0, 'reminders' => 0];

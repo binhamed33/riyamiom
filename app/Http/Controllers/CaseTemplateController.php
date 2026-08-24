@@ -18,10 +18,26 @@ class CaseTemplateController extends Controller
 {
     use AuditLoggable;
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $q = trim((string) $request->get('q', ''));
+        $state = $request->get('state');           // active | disabled
+        $sort = $request->get('sort', 'name');     // name | most_used | recent
+
         return view('case-templates.index', [
-            'templates' => CaseTemplate::with('creator')->orderByDesc('is_active')->orderBy('name')->get(),
+            'filters' => ['q' => $q, 'state' => $state, 'sort' => $sort],
+            'stats' => [
+                'active' => CaseTemplate::where('is_active', true)->count(),
+                'disabled' => CaseTemplate::where('is_active', false)->count(),
+                'most_used' => CaseTemplate::orderByDesc('usage_count')->where('usage_count', '>', 0)->first()?->name,
+            ],
+            'templates' => CaseTemplate::with('creator')
+                ->when($q !== '', fn ($q2) => $q2->where('name', 'like', '%' . $q . '%'))
+                ->when($state === 'active', fn ($q2) => $q2->where('is_active', true))
+                ->when($state === 'disabled', fn ($q2) => $q2->where('is_active', false))
+                ->when($sort === 'most_used', fn ($q2) => $q2->orderByDesc('usage_count'),
+                    fn ($q2) => $sort === 'recent' ? $q2->latest('updated_at') : $q2->orderByDesc('is_active')->orderBy('name'))
+                ->get(),
         ]);
     }
 
@@ -41,6 +57,7 @@ class CaseTemplateController extends Controller
 
     public function update(Request $request, CaseTemplate $caseTemplate): RedirectResponse
     {
+        \App\Support\Revisions::capture($caseTemplate, auth()->id());
         $old = $caseTemplate->toArray();
         $caseTemplate->update($this->validateTemplate($request));
 
@@ -48,6 +65,16 @@ class CaseTemplateController extends Controller
 
         return redirect()->route('case-templates.index')
             ->with('success', 'حُدّث القالب «' . $caseTemplate->name . '».');
+    }
+
+    /** استيراد مكتبة مُداوَلة — آمن للتكرار، ولا يمسّ قالباً عدّله المكتب. */
+    public function seedDefaults(): \Illuminate\Http\RedirectResponse
+    {
+        $created = \App\Models\CaseTemplate::seedDefaults(auth()->id());
+
+        return redirect()->route('case-templates.index')->with('success', $created > 0
+            ? "استُوردت {$created} قوالب من مكتبة مُداوَلة — عدّلها كما يناسب مكتبك."
+            : 'مكتبة مُداوَلة مستوردة من قبل — لم يتغيّر شيء.');
     }
 
     public function duplicate(CaseTemplate $caseTemplate): RedirectResponse
@@ -68,6 +95,40 @@ class CaseTemplateController extends Controller
         return back()->with('success', $caseTemplate->is_active
             ? 'فُعّل القالب «' . $caseTemplate->name . '».'
             : 'عُطّل القالب «' . $caseTemplate->name . '» — لن يظهر عند إنشاء قضية جديدة.');
+    }
+
+    /** §2: مسودة قالب من جملة المدير — للمعاينة في المحرِّر لا للحفظ المباشر. */
+    public function aiDraft(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $wish = (string) $request->validate(['prompt' => 'required|string|min:10|max:500'])['prompt'];
+
+        try {
+            $draft = app(\App\Services\Ai\DraftGenerator::class)->templateDraft($wish);
+
+            return response()->json(['ok' => true, 'draft' => $draft]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 422);
+        }
+    }
+
+    public function versions(CaseTemplate $caseTemplate): \Illuminate\View\View
+    {
+        return view('revisions.index', [
+            'subject' => $caseTemplate,
+            'title' => 'نسخ قالب «' . $caseTemplate->name . '»',
+            'revisions' => \App\Support\Revisions::for($caseTemplate),
+            'restoreRoute' => fn ($v) => route('case-templates.versions.restore', [$caseTemplate, $v]),
+            'backUrl' => route('case-templates.index'),
+        ]);
+    }
+
+    public function restoreVersion(CaseTemplate $caseTemplate, int $version): RedirectResponse
+    {
+        $ok = \App\Support\Revisions::restore($caseTemplate, $version, auth()->id());
+
+        return $ok
+            ? redirect()->route('case-templates.index')->with('success', 'استُعيدت النسخة v' . $version . ' من «' . $caseTemplate->fresh()->name . '» — والحالة السابقة محفوظة كنسخة جديدة.')
+            : back()->withErrors(['version' => 'النسخة المطلوبة غير موجودة.']);
     }
 
     public function destroy(CaseTemplate $caseTemplate): RedirectResponse

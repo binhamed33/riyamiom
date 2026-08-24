@@ -21,19 +21,39 @@ class AutomationController extends Controller
 {
     use AuditLoggable;
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        // §29: بحث وتصفية وترتيب من الخادم — الرابط يحمل الحالة فيُشارك
+        $q = trim((string) $request->get('q', ''));
+        $state = $request->get('state');           // active | disabled
+        $sort = $request->get('sort', 'recent');   // recent | most_used | name
+
         $automations = Automation::with('creator')
-            ->withCount(['runs as success_runs_count' => fn ($q) => $q->where('status', AutomationRun::STATUS_SUCCESS)])
-            ->latest()
+            ->withCount(['runs as success_runs_count' => fn ($q2) => $q2->where('status', AutomationRun::STATUS_SUCCESS)])
+            ->when($q !== '', fn ($q2) => $q2->where('name', 'like', '%' . $q . '%'))
+            ->when($state === 'active', fn ($q2) => $q2->where('is_active', true))
+            ->when($state === 'disabled', fn ($q2) => $q2->where('is_active', false))
+            ->when($sort === 'most_used', fn ($q2) => $q2->orderByDesc('runs_count'),
+                fn ($q2) => $sort === 'name' ? $q2->orderBy('name') : $q2->latest())
             ->get();
 
         $todayRuns = AutomationRun::whereDate('created_at', today())
             ->where('status', AutomationRun::STATUS_SUCCESS)->count();
+        $todayFailed = AutomationRun::whereDate('created_at', today())
+            ->where('status', AutomationRun::STATUS_FAILED)->count();
         $failedRecently = AutomationRun::where('status', AutomationRun::STATUS_FAILED)
             ->where('created_at', '>=', now()->subDays(7))->count();
 
         return view('automations.index', [
+            'filters' => ['q' => $q, 'state' => $state, 'sort' => $sort],
+            'stats' => [
+                'active' => Automation::where('is_active', true)->count(),
+                'disabled' => Automation::where('is_active', false)->count(),
+                'today_ok' => $todayRuns,
+                'today_failed' => $todayFailed,
+                'most_used' => Automation::orderByDesc('runs_count')->where('runs_count', '>', 0)->first()?->name,
+            ],
+            'suggestions' => \App\Support\AutomationAdvisor::suggestions(),
             'automations' => $automations,
             'engineEnabled' => AutomationEngine::enabled(),
             'todayRuns' => $todayRuns,
@@ -62,6 +82,7 @@ class AutomationController extends Controller
     public function update(Request $request, Automation $automation): RedirectResponse
     {
         $old = $automation->toArray();
+        \App\Support\Revisions::capture($automation, auth()->id());
         $automation->update($this->validateRule($request));
 
         $this->logAudit(AuditLog::ACTION_UPDATE, Automation::class, $automation->id, $old, $automation->fresh()->toArray());
@@ -76,6 +97,39 @@ class AutomationController extends Controller
         return back()->with('success', $automation->is_active
             ? 'فُعّلت قاعدة «' . $automation->name . '».'
             : 'عُطّلت قاعدة «' . $automation->name . '» (تبقى محفوظة).');
+    }
+
+    /** نسخة للتجربة: تُنشأ معطَّلة، فلا تعمل قاعدتان متطابقتان معاً بغتة. */
+    public function duplicate(Automation $automation): RedirectResponse
+    {
+        $copy = $automation->replicate(['runs_count', 'last_run_at']);
+        $copy->name = $automation->name . ' (نسخة)';
+        $copy->is_active = false;
+        $copy->created_by = auth()->id();
+        $copy->runs_count = 0;
+        $copy->save();
+
+        return back()->with('success', 'نُسخت القاعدة باسم «' . $copy->name . '» معطَّلةً — عدّلها ثم فعّلها.');
+    }
+
+    public function versions(Automation $automation): View
+    {
+        return view('revisions.index', [
+            'subject' => $automation,
+            'title' => 'نسخ قاعدة «' . $automation->name . '»',
+            'revisions' => \App\Support\Revisions::for($automation),
+            'restoreRoute' => fn ($v) => route('automations.versions.restore', [$automation, $v]),
+            'backUrl' => route('automations.index'),
+        ]);
+    }
+
+    public function restoreVersion(Automation $automation, int $version): RedirectResponse
+    {
+        $ok = \App\Support\Revisions::restore($automation, $version, auth()->id());
+
+        return $ok
+            ? redirect()->route('automations.index')->with('success', 'استُعيدت النسخة v' . $version . ' من «' . $automation->fresh()->name . '» — والحالة السابقة محفوظة كنسخة جديدة.')
+            : back()->withErrors(['version' => 'النسخة المطلوبة غير موجودة.']);
     }
 
     public function destroy(Automation $automation): RedirectResponse
@@ -162,6 +216,39 @@ class AutomationController extends Controller
             : 'عُطّلت ' . $ids->count() . ' قاعدة — كلها محفوظة ولم تُحذف.');
     }
 
+    /** §11: مسودة قاعدة من جملة المدير — تُعبَّأ بها الاستمارة، ولا تُحفظ هنا. */
+    public function aiDraft(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $wish = (string) $request->validate(['prompt' => 'required|string|min:10|max:500'])['prompt'];
+
+        try {
+            $draft = app(\App\Services\Ai\DraftGenerator::class)->automationDraft($wish);
+
+            return response()->json(['ok' => true, 'draft' => $draft]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 422);
+        }
+    }
+
+    /** §12: تفعيل اقتراح — ينشئ قاعدته الجاهزة بقرار المدير الصريح. */
+    public function acceptSuggestion(Request $request): RedirectResponse
+    {
+        $key = (string) $request->validate(['key' => 'required|string|max:60'])['key'];
+        $name = \App\Support\AutomationAdvisor::accept($key, auth()->id());
+
+        return $name
+            ? back()->with('success', 'فُعّل الاقتراح: أُنشئت قاعدة «' . $name . '» — تجدها في القائمة وتستطيع تعديلها.')
+            : back()->withErrors(['suggestion' => 'الاقتراح لم يعد متاحاً.']);
+    }
+
+    public function dismissSuggestion(Request $request): RedirectResponse
+    {
+        $key = (string) $request->validate(['key' => 'required|string|max:60'])['key'];
+        \App\Support\AutomationAdvisor::dismiss($key);
+
+        return back()->with('success', 'أُخفي الاقتراح ولن يظهر مجدداً.');
+    }
+
     public function toggleEngine(): RedirectResponse
     {
         $on = AutomationEngine::enabled();
@@ -193,8 +280,8 @@ class AutomationController extends Controller
             'actions.*.title' => ['nullable', 'string', 'max:190'],
             'actions.*.message' => ['nullable', 'string', 'max:500'],
             'actions.*.priority' => ['nullable', 'in:low,medium,high,urgent'],
-            'actions.*.assign' => ['nullable', 'in:case_lawyer,manager'],
-            'actions.*.target' => ['nullable', 'in:case_lawyer,manager,both'],
+            'actions.*.assign' => ['nullable', 'in:case_lawyer,manager,task_assignee'],
+            'actions.*.target' => ['nullable', 'in:case_lawyer,manager,task_assignee,both'],
             'actions.*.status' => ['nullable', 'in:active,pending,overdue,closed,won,lost,adjudicated,fees_pending'],
             'actions.*.due_in_days' => ['nullable', 'integer', 'min:0', 'max:365'],
         ], [

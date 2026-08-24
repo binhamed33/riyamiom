@@ -660,6 +660,12 @@ class CaseController extends Controller
             $oldValues = $case->toArray();
             $case->update($validated);
 
+            if (isset($validated['status']) && $oldValues['status'] !== $validated['status']) {
+                // مشغّل الأتمتة اللحظي: قواعد «تغيّرت حالة القضية» — آمن،
+                // لا يكسر الحفظ أبداً (المحرك يلتقط أخطاءه في سجلّه)
+                \App\Services\Automation\AutomationEngine::fire('case_status_changed', $case);
+            }
+
             if (isset($validated['status']) && $oldValues['status'] !== $validated['status'] && $case->lawyer_id) {
                 \App\Support\Notify::send(
                     userId: $case->lawyer_id,

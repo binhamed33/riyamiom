@@ -8,8 +8,11 @@
     $priorities = ['low' => 'منخفضة', 'medium' => 'متوسطة', 'high' => 'عالية', 'urgent' => 'عاجلة'];
     $templatesJs = $templates->keyBy('id')->map(fn ($t) => [
         'name' => $t->name, 'description' => $t->description, 'default_status' => $t->default_status,
-        'items' => $t->items ?? [], 'checklist' => $t->checklist ?? [],
-        'folders' => $t->folders ?? [], 'reminders' => $t->reminders ?? [],
+        'items' => $t->items ?? [],
+        // قوالب المكتبة تخزن القائمة والمجلدات نصوصاً مجردة — المحرِّر يتوقع كائنات
+        'checklist' => collect($t->checklist ?? [])->map(fn ($c) => is_array($c) ? $c : ['title' => $c])->values(),
+        'folders' => collect($t->folders ?? [])->map(fn ($f) => is_array($f) ? $f : ['name' => $f])->values(),
+        'reminders' => $t->reminders ?? [],
     ]);
 @endphp
 
@@ -20,7 +23,52 @@
             <h1 class="text-2xl font-bold text-gold-dark">📋 القوالب الذكية</h1>
             <p class="text-sm text-gray-500 mt-1">قالب واحد يجهّز القضية كاملة: مهام، قائمة تحقق، مجلدات، وتذكيرات — بضغطة واحدة</p>
         </div>
-        <button type="button" @click="open()" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold transition text-sm">+ قالب جديد</button>
+        <div class="flex items-center gap-2">
+            <form method="POST" action="{{ route('case-templates.seed') }}" data-confirm="استيراد قوالب مُداوَلة الجاهزة؟ القوالب المستوردة سابقاً لا تُمسّ.">
+                @csrf
+                <button class="bg-white border border-gold/30 text-gold-dark hover:bg-gold/5 px-4 py-2.5 rounded-lg font-semibold transition text-sm">مكتبة مُداوَلة</button>
+            </form>
+            <button type="button" @click="aiOpen = !aiOpen" class="bg-white border border-gold/30 text-gold-dark hover:bg-gold/5 px-4 py-2.5 rounded-lg font-semibold transition text-sm">✨ توليد بالذكاء</button>
+            <button type="button" @click="open()" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold transition text-sm">+ قالب جديد</button>
+        </div>
+    </div>
+
+    {{-- §2: صِف القالب بجملة — المولد يجهّز مسودة تراجعها ثم تحفظها --}}
+    <div x-show="aiOpen" x-cloak class="bg-white rounded-xl border border-gold/25 p-4">
+        <p class="text-sm font-bold text-gray-900 mb-1">صِف القالب الذي تريده</p>
+        <p class="text-xs text-gray-400 mb-3">مثال: «أريد قالباً لقضية مطالبة مالية». المولد يقترح المهام وقائمة التحقق والمجلدات والتذكيرات — وتُعرض عليك مسودةً كاملة قبل الحفظ.</p>
+        <div class="flex flex-col sm:flex-row gap-2">
+            <input type="text" x-model="aiPrompt" @keydown.enter.prevent="aiGenerate()" maxlength="500"
+                   class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gold" placeholder="أريد قالباً لـ…">
+            <button type="button" @click="aiGenerate()" :disabled="aiBusy"
+                    class="text-sm font-bold px-5 py-2.5 rounded-lg bg-primary text-white hover:bg-primary-dark transition disabled:opacity-50 md-touch"
+                    x-text="aiBusy ? 'يولّد…' : 'توليد المسودة'"></button>
+        </div>
+        <p x-show="aiError" x-text="aiError" class="text-xs text-red-600 mt-2"></p>
+    </div>
+
+    {{-- §26 + §29: إحصاء وتصفية --}}
+    <div class="bg-white rounded-xl border border-gold/15 px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+        <span class="text-gray-500">المفعّلة: <b class="text-gray-800">{{ $stats['active'] }}</b></span>
+        <span class="text-gray-500">المعطّلة: <b class="text-gray-800">{{ $stats['disabled'] }}</b></span>
+        @if($stats['most_used'])
+            <span class="text-gray-500">الأكثر استخداماً: <b class="text-gold-dark">{{ $stats['most_used'] }}</b></span>
+        @endif
+        <form method="GET" action="{{ route('case-templates.index') }}" class="flex flex-wrap items-center gap-2 ms-auto">
+            <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="بحث باسم القالب…"
+                   class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:border-gold">
+            <select name="state" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
+                <option value="">الكل</option>
+                <option value="active" @selected($filters['state'] === 'active')>المفعّلة</option>
+                <option value="disabled" @selected($filters['state'] === 'disabled')>المعطّلة</option>
+            </select>
+            <select name="sort" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
+                <option value="name" @selected($filters['sort'] === 'name')>الاسم</option>
+                <option value="most_used" @selected($filters['sort'] === 'most_used')>الأكثر استخداماً</option>
+                <option value="recent" @selected($filters['sort'] === 'recent')>آخر تعديل</option>
+            </select>
+            <button class="text-xs font-bold px-3 py-1.5 rounded-lg border border-gold/25 text-gold-dark hover:bg-gold/10 transition">تصفية</button>
+        </form>
     </div>
 
     <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
@@ -63,6 +111,7 @@
                                         @csrf
                                         <button class="text-[11px] font-bold px-2 py-1 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition">نسخ</button>
                                     </form>
+                                    <a href="{{ route('case-templates.versions', $t) }}" class="text-[11px] font-bold px-2 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition">النسخ السابقة</a>
                                     <form method="POST" action="{{ route('case-templates.toggle', $t) }}">
                                         @csrf
                                         <button class="text-[11px] font-bold px-2 py-1 rounded-lg border transition {{ $t->is_active ? 'border-amber-200 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50' }}">
@@ -212,6 +261,36 @@ document.addEventListener('alpine:init', () => {
         openModal: false,
         editingId: null,
         tpl: { name: '', description: '', default_status: '', items: [], checklist: [], folders: [], reminders: [] },
+        aiOpen: false, aiPrompt: '', aiBusy: false, aiError: '',
+
+        // §2: المولد يملأ المحرِّر — [مراجعة القالب] ثم [حفظ القالب] بيد المدير
+        async aiGenerate() {
+            if (this.aiBusy || this.aiPrompt.trim().length < 10) { this.aiError = 'اكتب وصفاً أوضح (١٠ أحرف على الأقل).'; return; }
+            this.aiBusy = true; this.aiError = '';
+            try {
+                const r = await fetch('{{ route('case-templates.ai-draft') }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json',
+                               'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ prompt: this.aiPrompt }),
+                });
+                const d = await r.json();
+                if (!d.ok) { this.aiError = d.error || 'تعذّر التوليد — أعد المحاولة.'; return; }
+                this.editingId = null;
+                this.tpl = {
+                    name: d.draft.name, description: d.draft.description || '', default_status: d.draft.default_status || '',
+                    items: d.draft.items || [],
+                    checklist: (d.draft.checklist || []).map(c => typeof c === 'string' ? { title: c } : c),
+                    folders: (d.draft.folders || []).map(f => typeof f === 'string' ? { name: f } : f),
+                    reminders: d.draft.reminders || [],
+                };
+                this.aiOpen = false; this.aiPrompt = '';
+                this.openModal = true;
+            } catch (e) {
+                this.aiError = 'تعذّر الاتصال — تحقق من الشبكة وأعد المحاولة.';
+            } finally { this.aiBusy = false; }
+        },
 
         open(id = null) {
             this.editingId = id;

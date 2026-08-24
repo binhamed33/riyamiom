@@ -346,8 +346,12 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::middleware(['role:developer,admin,permission:templates.manage', 'feature:case_templates'])->group(function () {
         Route::resource('case-templates', App\Http\Controllers\CaseTemplateController::class)
             ->only(['index', 'store', 'update', 'destroy']);
+        Route::post('/case-templates/ai-draft', [App\Http\Controllers\CaseTemplateController::class, 'aiDraft'])->middleware('throttle:10,10')->name('case-templates.ai-draft');
+        Route::post('/case-templates/seed-defaults', [App\Http\Controllers\CaseTemplateController::class, 'seedDefaults'])->name('case-templates.seed');
         Route::post('/case-templates/{case_template}/duplicate', [App\Http\Controllers\CaseTemplateController::class, 'duplicate'])->name('case-templates.duplicate');
         Route::post('/case-templates/{case_template}/toggle', [App\Http\Controllers\CaseTemplateController::class, 'toggle'])->name('case-templates.toggle');
+        Route::get('/case-templates/{case_template}/versions', [App\Http\Controllers\CaseTemplateController::class, 'versions'])->name('case-templates.versions');
+        Route::post('/case-templates/{case_template}/versions/{version}/restore', [App\Http\Controllers\CaseTemplateController::class, 'restoreVersion'])->whereNumber('version')->name('case-templates.versions.restore');
     });
 
     // مركز الأتمتة — للإدارة أو من يملك صلاحية automations.manage صراحةً
@@ -358,8 +362,14 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::post('/seed-defaults', [App\Http\Controllers\AutomationController::class, 'seedDefaults'])->name('automations.seed');
         Route::post('/toggle-engine', [App\Http\Controllers\AutomationController::class, 'toggleEngine'])->name('automations.engine');
         Route::post('/bulk', [App\Http\Controllers\AutomationController::class, 'bulkToggle'])->name('automations.bulk');
+        Route::post('/ai-draft', [App\Http\Controllers\AutomationController::class, 'aiDraft'])->middleware('throttle:10,10')->name('automations.ai-draft');
+        Route::post('/suggestions/accept', [App\Http\Controllers\AutomationController::class, 'acceptSuggestion'])->name('automations.suggestions.accept');
+        Route::post('/suggestions/dismiss', [App\Http\Controllers\AutomationController::class, 'dismissSuggestion'])->name('automations.suggestions.dismiss');
         Route::put('/{automation}', [App\Http\Controllers\AutomationController::class, 'update'])->name('automations.update');
         Route::post('/{automation}/toggle', [App\Http\Controllers\AutomationController::class, 'toggle'])->name('automations.toggle');
+        Route::post('/{automation}/duplicate', [App\Http\Controllers\AutomationController::class, 'duplicate'])->name('automations.duplicate');
+        Route::get('/{automation}/versions', [App\Http\Controllers\AutomationController::class, 'versions'])->name('automations.versions');
+        Route::post('/{automation}/versions/{version}/restore', [App\Http\Controllers\AutomationController::class, 'restoreVersion'])->whereNumber('version')->name('automations.versions.restore');
         Route::post('/{automation}/test', [App\Http\Controllers\AutomationController::class, 'test'])->name('automations.test');
         Route::delete('/{automation}', [App\Http\Controllers\AutomationController::class, 'destroy'])->name('automations.destroy');
     });

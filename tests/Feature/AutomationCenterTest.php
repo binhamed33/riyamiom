@@ -192,13 +192,14 @@ class AutomationCenterTest extends TestCase
         $this->assertSame(0, Task::count());
     }
 
-    public function test_seed_defaults_creates_three_editable_rules_once(): void
+    public function test_seed_defaults_creates_the_ready_pack_once(): void
     {
+        // كانت ثلاثاً ثم صارت الحزمة عشراً (§7) — الثابت هو عدم التكرار
         $this->actingAs($this->admin())->post(route('automations.seed'))->assertRedirect();
-        $this->assertSame(3, Automation::count());
+        $this->assertSame(10, Automation::count());
 
         $this->actingAs($this->admin())->post(route('automations.seed'))->assertRedirect();
-        $this->assertSame(3, Automation::count());
+        $this->assertSame(10, Automation::count());
     }
 
     public function test_due_reminders_notify_target_once(): void

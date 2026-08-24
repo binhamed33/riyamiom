@@ -36,6 +36,7 @@
             <a href="{{ route('automations.runs') }}" class="bg-white hover:bg-gray-100 text-gray-600 border border-gold/15 px-4 py-2.5 rounded-lg font-medium transition text-sm">
                 📜 سجل التنفيذ
             </a>
+            <button type="button" @click="aiOpen = !aiOpen" class="bg-white border border-gold/30 text-gold-dark hover:bg-gold/5 px-4 py-2.5 rounded-lg font-semibold transition text-sm">✨ توليد بالذكاء</button>
             <button type="button" @click="openBuilder()" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold transition text-sm">
                 + قاعدة جديدة
             </button>
@@ -85,8 +86,13 @@
             </div>
         </div>
         <div class="bg-white rounded-xl border border-gold/15 p-4">
-            <p class="text-xs text-gray-400 mb-1">إجراءات نُفذت اليوم</p>
-            <p class="text-2xl font-bold text-gold-dark">{{ $todayRuns }}</p>
+            <p class="text-xs text-gray-400 mb-1">اليوم</p>
+            <p class="text-2xl font-bold text-gold-dark">{{ $todayRuns }} <span class="text-xs font-semibold text-gray-400">نجاح</span>
+                @if(($stats['today_failed'] ?? 0) > 0)<span class="text-sm font-bold text-red-600">+ {{ $stats['today_failed'] }} فشل</span>@endif
+            </p>
+            @if($stats['most_used'] ?? null)
+                <p class="text-[11px] text-gray-400 mt-1 truncate">الأكثر عملاً: {{ $stats['most_used'] }}</p>
+            @endif
         </div>
         <div class="bg-white rounded-xl border border-gold/15 p-4">
             <p class="text-xs text-gray-400 mb-1">إخفاقات آخر 7 أيام</p>
@@ -97,16 +103,73 @@
         </div>
     </div>
 
+    {{-- §11: صِف القاعدة بجملة — المولد يملأ المحرِّر وأنت تراجع وتحفظ --}}
+    <div x-show="aiOpen" x-cloak class="bg-white rounded-xl border border-gold/25 p-4">
+        <p class="text-sm font-bold text-gray-900 mb-1">صِف ما تريد أتمتته بجملة واحدة</p>
+        <p class="text-xs text-gray-400 mb-3">مثال: «إذا كانت الجلسة بعد ثلاثة أيام أنشئ مهمة للمحامي المسؤول». المولد يجهّز مسودة تراجعها في المحرِّر قبل حفظها — لا يُحفظ ولا يُفعَّل شيء تلقائياً.</p>
+        <div class="flex flex-col sm:flex-row gap-2">
+            <input type="text" x-model="aiPrompt" @keydown.enter.prevent="aiGenerate()" maxlength="500"
+                   class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gold" placeholder="أريد النظام أن…">
+            <button type="button" @click="aiGenerate()" :disabled="aiBusy"
+                    class="text-sm font-bold px-5 py-2.5 rounded-lg bg-primary text-white hover:bg-primary-dark transition disabled:opacity-50 md-touch"
+                    x-text="aiBusy ? 'يولّد…' : 'توليد المسودة'"></button>
+        </div>
+        <p x-show="aiError" x-text="aiError" class="text-xs text-red-600 mt-2"></p>
+    </div>
+
+    {{-- §12: اقتراحات من نمط استخدام المكتب — لا يُفعَّل شيء تلقائياً --}}
+    @if(!empty($suggestions))
+        <div class="space-y-3">
+            @foreach($suggestions as $sug)
+                <div class="bg-white rounded-xl border border-gold/25 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold text-gray-900 text-sm">💡 {{ $sug['title'] }}</p>
+                        <p class="text-xs text-gray-500 mt-1 leading-relaxed">{{ $sug['reason'] }}</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <form method="POST" action="{{ route('automations.suggestions.accept') }}">
+                            @csrf
+                            <input type="hidden" name="key" value="{{ $sug['key'] }}">
+                            <button class="text-xs font-bold px-3.5 py-2 rounded-lg bg-primary text-white hover:bg-primary-dark transition md-touch">تفعيل الاقتراح</button>
+                        </form>
+                        <form method="POST" action="{{ route('automations.suggestions.dismiss') }}">
+                            @csrf
+                            <input type="hidden" name="key" value="{{ $sug['key'] }}">
+                            <button class="text-xs font-bold px-3.5 py-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition md-touch">تجاهل</button>
+                        </form>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
     {{-- Rules list --}}
     <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
-        <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div class="px-5 py-3 border-b border-gray-100 flex flex-wrap items-center gap-3">
             <h2 class="font-bold text-gold-dark text-sm">القواعد ({{ $automations->count() }})</h2>
-            @if($automations->isEmpty())
-                <form method="POST" action="{{ route('automations.seed') }}">
-                    @csrf
-                    <button class="text-xs font-bold text-gold-dark border border-gold/25 px-3 py-1.5 rounded-lg hover:bg-gold/10 transition">✨ أضف القواعد الجاهزة (3)</button>
-                </form>
-            @endif
+
+            {{-- §29: بحث وتصفية من الخادم --}}
+            <form method="GET" action="{{ route('automations.index') }}" class="flex flex-wrap items-center gap-2 ms-auto">
+                <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="بحث باسم القاعدة…"
+                       class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:border-gold">
+                <select name="state" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
+                    <option value="">الكل</option>
+                    <option value="active" @selected($filters['state'] === 'active')>المفعّلة</option>
+                    <option value="disabled" @selected($filters['state'] === 'disabled')>المعطّلة</option>
+                </select>
+                <select name="sort" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
+                    <option value="recent" @selected($filters['sort'] === 'recent')>الأحدث</option>
+                    <option value="most_used" @selected($filters['sort'] === 'most_used')>الأكثر استخداماً</option>
+                    <option value="name" @selected($filters['sort'] === 'name')>الاسم</option>
+                </select>
+                <button class="text-xs font-bold px-3 py-1.5 rounded-lg border border-gold/25 text-gold-dark hover:bg-gold/10 transition">تصفية</button>
+            </form>
+
+            <form method="POST" action="{{ route('automations.seed') }}"
+                  data-confirm="إضافة قواعد مُداوَلة الجاهزة؟ الموجود منها لا يُمسّ — يُضاف الناقص فقط.">
+                @csrf
+                <button class="text-xs font-bold text-gold-dark border border-gold/25 px-3 py-1.5 rounded-lg hover:bg-gold/10 transition">✨ القواعد الجاهزة</button>
+            </form>
         </div>
 
         @forelse($automations as $rule)
@@ -133,6 +196,11 @@
                         <button class="text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition" title="كم عنصراً سيطابق الآن؟ لا يُنفَّذ شيء">🧪 اختبار</button>
                     </form>
                     <button type="button" @click="openBuilder({{ $rule->id }})" class="text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-gold/25 text-gold-dark hover:bg-gold/10 transition">تعديل</button>
+                    <form method="POST" action="{{ route('automations.duplicate', $rule) }}">
+                        @csrf
+                        <button class="text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition">نسخ</button>
+                    </form>
+                    <a href="{{ route('automations.versions', $rule) }}" class="text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition">النسخ السابقة</a>
                     <form method="POST" action="{{ route('automations.toggle', $rule) }}">
                         @csrf
                         <button class="text-[11px] font-bold px-2.5 py-1.5 rounded-lg border transition {{ $rule->is_active ? 'border-amber-200 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50' }}">
@@ -283,13 +351,15 @@
                                     <select :name="'actions['+i+'][assign]'" x-model="a.assign" class="border border-gray-300 rounded-lg px-2 py-2 text-xs bg-white">
                                         <option value="case_lawyer">إسناد إلى: محامي القضية</option>
                                         <option value="manager">إسناد إلى: المدير</option>
+                                <option value="task_assignee">إسناد إلى: المسؤول عن المهمة</option>
                                     </select>
                                 </template>
                                 <template x-if="a.type === 'notify' || a.type === 'create_reminder'">
                                     <select :name="'actions['+i+'][target]'" x-model="a.target" class="border border-gray-300 rounded-lg px-2 py-2 text-xs bg-white">
                                         <option value="case_lawyer">المستهدف: محامي القضية</option>
                                         <option value="manager">المستهدف: المدير</option>
-                                        <option value="both">المستهدف: كلاهما</option>
+                                        <option value="task_assignee">المستهدف: المسؤول عن المهمة</option>
+                                <option value="both">المستهدف: كلاهما</option>
                                     </select>
                                 </template>
                                 <template x-if="a.type === 'change_case_status'">
@@ -329,6 +399,32 @@ document.addEventListener('alpine:init', () => {
         builderOpen: false,
         editingId: null,
         rule: { name: '', trigger: 'session_approaching', conditions: [], actions: [] },
+        aiOpen: false, aiPrompt: '', aiBusy: false, aiError: '',
+
+        // §11: المولد يملأ الاستمارة نفسها — المراجعة والحفظ بيد المدير
+        async aiGenerate() {
+            if (this.aiBusy || this.aiPrompt.trim().length < 10) { this.aiError = 'اكتب وصفاً أوضح (١٠ أحرف على الأقل).'; return; }
+            this.aiBusy = true; this.aiError = '';
+            try {
+                const r = await fetch('{{ route('automations.ai-draft') }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json',
+                               'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ prompt: this.aiPrompt }),
+                });
+                const d = await r.json();
+                if (!d.ok) { this.aiError = d.error || 'تعذّر التوليد — أعد المحاولة.'; return; }
+                this.editingId = null;
+                this.rule = d.draft;
+                this.rule.actions = (this.rule.actions || []).map(a => Object.assign(
+                    { title: '', message: '', priority: 'high', assign: 'case_lawyer', target: 'manager', status: 'active', due_in_days: 1 }, a));
+                this.aiOpen = false; this.aiPrompt = '';
+                this.builderOpen = true;   // معاينة كاملة قبل أي حفظ
+            } catch (e) {
+                this.aiError = 'تعذّر الاتصال — تحقق من الشبكة وأعد المحاولة.';
+            } finally { this.aiBusy = false; }
+        },
 
         openBuilder(id = null) {
             this.editingId = id;

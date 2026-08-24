@@ -85,6 +85,12 @@ class AutomationEngine
                 'scheduled' => true,
                 'description' => 'مهمة غير منجزة تجاوزت موعد استحقاقها',
             ],
+            'case_status_changed' => [
+                'label' => 'تغيّرت حالة القضية',
+                'subject' => 'case',
+                'scheduled' => false,
+                'description' => 'تنفَّذ لحظة تغيير حالة القضية — قيّدها بشرط «حالة القضية» لتستهدف حالة بعينها (مثل الإغلاق)',
+            ],
             'case_created' => [
                 'label' => 'أُنشئت قضية جديدة',
                 'subject' => 'case',
@@ -421,7 +427,7 @@ class AutomationEngine
 
     private function actionCreateTask(Automation $rule, array $action, Model $subject, ?LegalCase $case): string
     {
-        $assignee = $this->resolveUsers($action['assign'] ?? 'case_lawyer', $case)->first();
+        $assignee = $this->resolveUsers($action['assign'] ?? 'case_lawyer', $case, $subject)->first();
         if (!$assignee) {
             throw new \RuntimeException('لا يوجد مستخدم لإسناد المهمة إليه');
         }
@@ -454,7 +460,7 @@ class AutomationEngine
 
     private function actionNotify(Automation $rule, array $action, Model $subject, ?LegalCase $case): string
     {
-        $users = $this->resolveUsers($action['target'] ?? 'manager', $case);
+        $users = $this->resolveUsers($action['target'] ?? 'manager', $case, $subject);
         if ($users->isEmpty()) {
             throw new \RuntimeException('لا يوجد مستهدف للإشعار');
         }
@@ -591,7 +597,7 @@ class AutomationEngine
     // ------------------------------------------------------------------
 
     /** @return Collection<int,User> */
-    private function resolveUsers(string $target, ?LegalCase $case): Collection
+    private function resolveUsers(string $target, ?LegalCase $case, ?Model $subject = null): Collection
     {
         $managers = fn () => User::whereIn('role', ['admin', 'developer'])->where('is_active', true)->get();
         $lawyer = function () use ($case, $managers) {
@@ -605,9 +611,18 @@ class AutomationEngine
             return $managers()->take(1);
         };
 
+        // المسؤول عن المهمة نفسها — لتنبيه «مهمتك متأخرة» صاحبَها لا مديره
+        $assignee = function () use ($subject, $lawyer) {
+            $id = $subject instanceof Task ? $subject->assigned_to : null;
+            $u = $id ? User::where('id', $id)->where('is_active', true)->first() : null;
+
+            return $u ? collect([$u]) : $lawyer();
+        };
+
         return match ($target) {
             'case_lawyer' => $lawyer(),
             'manager' => $managers(),
+            'task_assignee' => $assignee(),
             'both' => $lawyer()->merge($managers())->unique('id')->values(),
             default => $lawyer(),
         };
@@ -673,9 +688,37 @@ class AutomationEngine
     // القواعد الجاهزة (تحل محل AutomationService القديمة بنفس السلوك)
     // ------------------------------------------------------------------
 
+    /** ينشئ قاعدة جاهزة واحدة باسمها — لتفعيل اقتراحٍ بعينه (§12). */
+    public static function seedByName(string $name, ?int $creatorId = null): bool
+    {
+        $def = collect(self::defaultRules())->firstWhere('name', $name);
+
+        if (!$def || Automation::where('name', $name)->exists()) {
+            return false;
+        }
+
+        Automation::create($def + ['is_active' => true, 'created_by' => $creatorId]);
+
+        return true;
+    }
+
     public static function seedDefaults(?int $creatorId = null): int
     {
-        $defaults = [
+        $created = 0;
+        foreach (self::defaultRules() as $def) {
+            if (!Automation::where('name', $def['name'])->exists()) {
+                Automation::create($def + ['is_active' => true, 'created_by' => $creatorId]);
+                $created++;
+            }
+        }
+
+        return $created;
+    }
+
+    /** @return array<int,array> قواعد مُداوَلة الجاهزة — مصدرها الواحد */
+    private static function defaultRules(): array
+    {
+        return [
             [
                 'name' => 'تحضير الجلسات القادمة',
                 'trigger' => 'session_approaching',
@@ -683,6 +726,15 @@ class AutomationEngine
                 'actions' => [[
                     'type' => 'create_task', 'title' => 'تحضير جلسة {date} — {case}',
                     'priority' => 'high', 'assign' => 'case_lawyer', 'due_in_days' => 1,
+                ]],
+            ],
+            [
+                'name' => 'تذكير جلسة الغد',
+                'trigger' => 'session_approaching',
+                'conditions' => [['field' => 'days_until_session', 'operator' => 'lte', 'value' => 1]],
+                'actions' => [[
+                    'type' => 'notify', 'target' => 'case_lawyer',
+                    'message' => 'جلسة غداً {date} في قضية «{case}» — تأكد من جاهزية الملف.',
                 ]],
             ],
             [
@@ -703,16 +755,59 @@ class AutomationEngine
                     'message' => 'القضية «{case}» لم تُحدَّث منذ فترة طويلة — راجع وضعها أو أعد توزيعها.',
                 ]],
             ],
+            [
+                'name' => 'تنبيه المهام المتأخرة',
+                'trigger' => 'task_overdue',
+                'conditions' => [],
+                'actions' => [[
+                    'type' => 'notify', 'target' => 'task_assignee',
+                    'message' => 'لديك مهمة متأخرة عن موعدها في قضية «{case}» — أنجزها أو حدّث موعدها.',
+                ]],
+            ],
+            [
+                'name' => 'تذكير قرب استحقاق المهام',
+                'trigger' => 'task_due_soon',
+                'conditions' => [['field' => 'days_until_due', 'operator' => 'lte', 'value' => 2]],
+                'actions' => [[
+                    'type' => 'notify', 'target' => 'task_assignee',
+                    'message' => 'مهمة تستحق خلال يومين في قضية «{case}» — رتّب وقتك لها.',
+                ]],
+            ],
+            [
+                'name' => 'استقبال القضية الجديدة',
+                'trigger' => 'case_created',
+                'conditions' => [],
+                'actions' => [[
+                    'type' => 'create_task', 'title' => 'مراجعة القضية الجديدة «{case}» وتجهيز ملفها',
+                    'priority' => 'high', 'assign' => 'case_lawyer', 'due_in_days' => 1,
+                ]],
+            ],
+            [
+                'name' => 'ترحيب بالعميل الجديد',
+                'trigger' => 'client_created',
+                'conditions' => [],
+                'actions' => [[
+                    'type' => 'notify', 'target' => 'manager',
+                    'message' => 'أُضيف عميل جديد: {client} — راجع بياناته ورحّب به.',
+                ]],
+            ],
+            [
+                'name' => 'توثيق تغيّر حالة القضية',
+                'trigger' => 'case_status_changed',
+                'conditions' => [],
+                'actions' => [[
+                    'type' => 'add_timeline_event', 'title' => 'تغيّرت حالة القضية — راجع الخط الزمني للتفاصيل',
+                ]],
+            ],
+            [
+                'name' => 'خطوات إغلاق القضية',
+                'trigger' => 'case_status_changed',
+                'conditions' => [['field' => 'case_status', 'operator' => 'equals', 'value' => 'closed']],
+                'actions' => [[
+                    'type' => 'create_task', 'title' => 'إغلاق ملف «{case}»: تسليم المستندات وتسوية الأتعاب وأرشفة الملف',
+                    'priority' => 'medium', 'assign' => 'case_lawyer', 'due_in_days' => 3,
+                ]],
+            ],
         ];
-
-        $created = 0;
-        foreach ($defaults as $def) {
-            if (!Automation::where('name', $def['name'])->exists()) {
-                Automation::create($def + ['is_active' => true, 'created_by' => $creatorId]);
-                $created++;
-            }
-        }
-
-        return $created;
     }
 }
