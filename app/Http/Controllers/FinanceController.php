@@ -10,7 +10,9 @@ use App\Models\LegalCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Support\Attachments;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FinanceController extends Controller
 {
@@ -95,7 +97,7 @@ class FinanceController extends Controller
 
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
-            $data['attachment_path'] = $file->store('finance-attachments', 'public');
+            $data['attachment_path'] = $file->store('finance-attachments', Attachments::DISK);
             $data['attachment_name'] = $file->getClientOriginalName();
         }
 
@@ -118,9 +120,9 @@ class FinanceController extends Controller
         ]);
 
         if ($request->hasFile('attachment')) {
-            if ($transaction->attachment_path) Storage::disk('public')->delete($transaction->attachment_path);
+            if ($transaction->attachment_path) Attachments::delete($transaction->attachment_path);
             $file = $request->file('attachment');
-            $data['attachment_path'] = $file->store('finance-attachments', 'public');
+            $data['attachment_path'] = $file->store('finance-attachments', Attachments::DISK);
             $data['attachment_name'] = $file->getClientOriginalName();
         }
 
@@ -146,7 +148,7 @@ class FinanceController extends Controller
 
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
-            $data['attachment_path'] = $file->store('finance-attachments', 'public');
+            $data['attachment_path'] = $file->store('finance-attachments', Attachments::DISK);
             $data['attachment_name'] = $file->getClientOriginalName();
         }
 
@@ -171,9 +173,9 @@ class FinanceController extends Controller
         $data['paid_amount'] = $data['paid_amount'] ?? ($data['status'] === 'paid' ? $data['amount'] : 0);
 
         if ($request->hasFile('attachment')) {
-            if ($invoice->attachment_path) Storage::disk('public')->delete($invoice->attachment_path);
+            if ($invoice->attachment_path) Attachments::delete($invoice->attachment_path);
             $file = $request->file('attachment');
-            $data['attachment_path'] = $file->store('finance-attachments', 'public');
+            $data['attachment_path'] = $file->store('finance-attachments', Attachments::DISK);
             $data['attachment_name'] = $file->getClientOriginalName();
         }
 
@@ -252,7 +254,7 @@ class FinanceController extends Controller
     public function destroyTransaction(FinanceTransaction $transaction)
     {
         abort_unless($this->isAdmin() || $transaction->user_id === auth()->id(), 403);
-        if ($transaction->attachment_path) Storage::disk('public')->delete($transaction->attachment_path);
+        if ($transaction->attachment_path) Attachments::delete($transaction->attachment_path);
         $transaction->delete();
         return redirect()->route('finance.index', ['tab' => 'transactions'])->with('success', 'تم حذف المعاملة');
     }
@@ -260,7 +262,7 @@ class FinanceController extends Controller
     public function destroyInvoice(FinanceInvoice $invoice)
     {
         abort_unless($this->isAdmin() || $invoice->user_id === auth()->id(), 403);
-        if ($invoice->attachment_path) Storage::disk('public')->delete($invoice->attachment_path);
+        if ($invoice->attachment_path) Attachments::delete($invoice->attachment_path);
         $invoice->delete();
         return redirect()->route('finance.index', ['tab' => 'invoices'])->with('success', 'تم حذف الفاتورة');
     }
@@ -277,5 +279,27 @@ class FinanceController extends Controller
         abort_unless($this->isAdmin(), 403);
         $invoice->update(['status' => 'paid', 'paid_amount' => $invoice->amount]);
         return redirect()->route('finance.index', ['tab' => 'invoices'])->with('success', 'تم تسديد الفاتورة');
+    }
+
+    /**
+     * مرفقُ قيدٍ ماليّ — إيصالٌ أو فاتورة — لا يُقدَّم إلا لمن يملك
+     * الدخول إلى الماليّة. كان يُقدَّم من ‎/storage/…‎ بلا تحقّق، وكان
+     * لا يُفتح أصلاً لأنّ الرابط الرمزيّ غير موجود.
+     */
+    public function transactionAttachment(Request $request, FinanceTransaction $transaction): StreamedResponse
+    {
+        return $this->serveAttachment($request, $transaction->attachment_path, $transaction->attachment_name);
+    }
+
+    public function invoiceAttachment(Request $request, FinanceInvoice $invoice): StreamedResponse
+    {
+        return $this->serveAttachment($request, $invoice->attachment_path, $invoice->attachment_name);
+    }
+
+    private function serveAttachment(Request $request, ?string $path, ?string $name): StreamedResponse
+    {
+        abort_if($path === null || $path === '', 404, 'لا مرفق لهذا القيد.');
+
+        return Attachments::respond($request, $path, $name, null);
     }
 }

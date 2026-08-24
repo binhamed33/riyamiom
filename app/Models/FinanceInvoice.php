@@ -11,11 +11,22 @@ class FinanceInvoice extends Model
 
     protected $fillable = ['invoice_number', 'client_id', 'amount', 'paid_amount', 'status', 'issue_date', 'due_date', 'description', 'user_id', 'attachment_path', 'attachment_name'];
 
-    protected $appends = ['attachment_url'];
+    protected $appends = ['attachment_url', 'attachment_download_url'];
+
+    public function getAttachmentDownloadUrlAttribute(): ?string
+    {
+        return $this->attachment_path && $this->exists
+            ? route('finance.invoices.attachment', [$this, 'download' => 1])
+            : null;
+    }
 
     public function getAttachmentUrlAttribute(): ?string
     {
-        return $this->attachment_path ? \Illuminate\Support\Facades\Storage::url($this->attachment_path) : null;
+        // مسارٌ محميّ لا رابطٌ عام: Storage::url() كان يبني ‎/storage/…‎
+        // ويعتمد رابطاً رمزياً لا يُنشأ هنا، فكان المرفق لا يُفتح أبداً.
+        return $this->attachment_path && $this->exists
+            ? route('finance.invoices.attachment', $this)
+            : null;
     }
 
     protected function casts(): array

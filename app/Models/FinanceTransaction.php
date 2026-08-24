@@ -11,11 +11,22 @@ class FinanceTransaction extends Model
 
     protected $fillable = ['type', 'category', 'amount', 'description', 'date', 'payment_method', 'reference', 'user_id', 'attachment_path', 'attachment_name'];
 
-    protected $appends = ['attachment_url'];
+    protected $appends = ['attachment_url', 'attachment_download_url'];
+
+    public function getAttachmentDownloadUrlAttribute(): ?string
+    {
+        return $this->attachment_path && $this->exists
+            ? route('finance.transactions.attachment', [$this, 'download' => 1])
+            : null;
+    }
 
     public function getAttachmentUrlAttribute(): ?string
     {
-        return $this->attachment_path ? \Illuminate\Support\Facades\Storage::url($this->attachment_path) : null;
+        // مسارٌ محميّ لا رابطٌ عام: Storage::url() كان يبني ‎/storage/…‎
+        // ويعتمد رابطاً رمزياً لا يُنشأ هنا، فكان المرفق لا يُفتح أبداً.
+        return $this->attachment_path && $this->exists
+            ? route('finance.transactions.attachment', $this)
+            : null;
     }
 
     protected function casts(): array

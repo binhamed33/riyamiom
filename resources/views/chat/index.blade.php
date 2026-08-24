@@ -3,6 +3,9 @@
 @section('title', __('app.chat') ?? 'المحادثات')
 
 @php
+// الدوالّ تُعرَّف عند تضمين الملف المُصرَّف. بلا هذا الحارس يسقط الطلب
+// بـ «cannot redeclare» متى رُسمت الصفحة مرتين في العملية نفسها.
+if (!function_exists('roleAvatar')) {
 function roleAvatar($user, $size = 9) {
     $g = ['developer'=>'from-purple-600 to-purple-800','admin'=>'from-red-500 to-red-700','lawyer'=>'from-blue-500 to-blue-700','staff'=>'from-emerald-500 to-emerald-700'];
     $i = ['developer'=>'<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>','admin'=>'<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2l7 3v6c0 6.5-4.5 10.5-7 12-2.5-1.5-7-5.5-7-12V5l7-3z"/></svg>','lawyer'=>'<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>','staff'=>'<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>'];
@@ -10,18 +13,52 @@ function roleAvatar($user, $size = 9) {
     $c = $size === 10 ? 'w-10 h-10' : 'w-9 h-9';
     return '<div class="' . $c . ' rounded-full bg-gradient-to-br ' . ($g[$role]??$g['staff']) . ' flex items-center justify-center flex-shrink-0">' . ($i[$role]??$i['staff']) . '</div>';
 }
+
+/** «اليوم» و«أمس» أقرب إلى القارئ من تاريخٍ كامل يتكرّر فوق كل رسالة. */
+function chatDay($date) {
+    if ($date->isToday()) return 'اليوم';
+    if ($date->isYesterday()) return 'أمس';
+    return $date->locale('ar')->isoFormat('dddd D MMMM YYYY');
+}
+
+/** الدور بالعربية: كانت الترويسة تعرض «developer» كما هو في القاعدة. */
+function roleLabel($role) {
+    return ['developer' => 'مطوّر', 'admin' => 'مدير', 'lawyer' => 'محامٍ', 'staff' => 'موظف'][$role] ?? '';
+}
+
+/** أيقونةٌ تدلّ على نوع الملف قبل فتحه. */
+function fileGlyph($name, $type) {
+    $ext = strtolower(pathinfo((string) $name, PATHINFO_EXTENSION));
+    if (str_starts_with((string) $type, 'image/')) return ['🖼', 'صورة'];
+    if (str_starts_with((string) $type, 'video/')) return ['🎬', 'مقطع'];
+    if (str_starts_with((string) $type, 'audio/')) return ['🎧', 'صوت'];
+    return match ($ext) {
+        'pdf' => ['📕', 'PDF'],
+        'doc', 'docx' => ['📘', 'مستند'],
+        'xls', 'xlsx' => ['📗', 'جدول'],
+        'zip', 'rar' => ['🗜', 'أرشيف'],
+        'txt' => ['📄', 'نص'],
+        default => ['📎', 'ملف'],
+    };
+}
+}
 @endphp
 @section('content')
 <div class="flex gap-4 h-[calc(100vh-10rem)]">
     {{-- Conversations List --}}
-    <div class="w-80 flex-shrink-0 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden flex flex-col">
-        <div class="p-4 border-b border-gray-100">
+    <div class="w-full md:w-80 flex-shrink-0 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden flex-col {{ isset($conversation) ? 'hidden md:flex' : 'flex' }}">
+        <div class="p-4 border-b border-gray-100 space-y-3">
             <h2 class="text-lg font-bold text-gold-dark">{{ __('app.chat') ?? 'المحادثات' }}</h2>
+            <div>
+                <label for="convSearch" class="sr-only">بحث في المحادثات</label>
+                <input id="convSearch" type="search" placeholder="ابحث عن محادثة…" autocomplete="off"
+                       class="w-full bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/30 transition">
+            </div>
         </div>
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1 overflow-y-auto" data-filter-list="conv">
             @forelse($conversations as $conv)
                 @php $other = $conv->participants->where('id', '!=', auth()->id())->first(); @endphp
-                <a href="{{ route('chat.show', $conv) }}" class="block px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition {{ isset($conversation) && $conversation->id === $conv->id ? 'bg-gold/10 border-r-2 border-r-gold-dark' : '' }}">
+                <a href="{{ route('chat.show', $conv) }}" data-filter-text="{{ mb_strtolower(($other?->name ?? 'مجموعة') . ' ' . ($conv->lastMessage?->message ?? '')) }}" class="block px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition {{ isset($conversation) && $conversation->id === $conv->id ? 'bg-gold/10 border-r-2 border-r-gold-dark' : '' }}">
                     <div class="flex items-center gap-3">
                         <div class="relative">
                             {!! $other ? roleAvatar($other, 10) : '<div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"><span class="text-gray-500 font-bold text-sm">?</span></div>' !!}
@@ -54,28 +91,58 @@ function roleAvatar($user, $size = 9) {
                     </div>
                 </a>
             @empty
-                <div class="p-8 text-center text-gray-400 text-sm">لا توجد محادثات</div>
+                <div class="p-8 text-center text-gray-400 text-sm">لا توجد محادثات بعد — اختر موظفاً من القائمة لتبدأ.</div>
             @endforelse
         </div>
     </div>
 
     {{-- Chat Area --}}
-    <div class="flex-1 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden flex flex-col">
+    <div class="flex-1 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden flex-col {{ isset($conversation) ? 'flex' : 'hidden md:flex' }}">
         @if(isset($conversation))
             {{-- Chat Header --}}
             @php $other = $conversation->participants->where('id', '!=', auth()->id())->first(); @endphp
             <div class="px-4 py-3 border-b border-gray-100 flex items-center gap-3 bg-gray-100">
                 {!! $other ? roleAvatar($other) : '<div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"><span class="text-gray-500 font-bold text-sm">?</span></div>' !!}
-                <div>
-                    <h3 class="text-sm font-bold text-gray-900">{{ $other?->name ?? 'المحادثة' }}</h3>
-                    <p class="text-[11px] text-gray-400">{{ $other?->role ?? '' }}</p>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-sm font-bold text-gray-900 truncate">{{ $other?->name ?? 'المحادثة' }}</h3>
+                    <p class="text-[11px] text-gray-400">{{ roleLabel($other?->role) }}</p>
                 </div>
+                <div class="relative flex-shrink-0">
+                    <label for="msgSearch" class="sr-only">بحث في الرسائل</label>
+                    <input id="msgSearch" type="search" placeholder="بحث في الرسائل…" autocomplete="off"
+                           class="w-40 md:w-56 bg-gray-50 border border-gray-200 rounded-lg ps-3 pe-8 py-1.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/30 transition">
+                    <span id="msgSearchCount" class="absolute inset-y-0 left-2 flex items-center text-[10px] text-gray-400"></span>
+                </div>
+                <a href="{{ route('chat.index') }}" class="md:hidden flex-shrink-0 w-9 h-9 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-500" aria-label="رجوع إلى المحادثات">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </a>
             </div>
 
             {{-- Messages --}}
-            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="chatMessages">
+            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="chatMessages" data-drop-zone>
+                @php
+                    // «قُرئت» تعني: كلُّ من في المحادثة سواي فتحها بعد وقت
+                    // الرسالة. ويكفي أن يتأخّر واحدٌ ليبقى ✓ واحدة.
+                    $others = $conversation->participants->where('id', '!=', auth()->id());
+                    $seenAt = $others->isNotEmpty() && $others->every(fn ($p) => $p->pivot->last_read_at)
+                        ? $others->map(fn ($p) => \Illuminate\Support\Carbon::parse($p->pivot->last_read_at))->min()
+                        : null;
+                    $lastDay = null;
+                @endphp
                 @foreach($messages as $msg)
-                    @php $isOwn = $msg->user_id === auth()->id(); $escMsg = htmlspecialchars($msg->message, ENT_QUOTES, 'UTF-8'); @endphp
+                    @php
+                        $isOwn = $msg->user_id === auth()->id();
+                        $escMsg = htmlspecialchars($msg->message, ENT_QUOTES, 'UTF-8');
+                        $day = chatDay($msg->created_at);
+                    @endphp
+                    @if($day !== $lastDay)
+                        <div class="flex items-center gap-3 py-1" data-day-separator>
+                            <span class="flex-1 h-px bg-gray-200"></span>
+                            <span class="text-[10px] text-gray-400 bg-gray-50 px-2 rounded-full">{{ $day }}</span>
+                            <span class="flex-1 h-px bg-gray-200"></span>
+                        </div>
+                        @php $lastDay = $day; @endphp
+                    @endif
                     <div class="flex {{ $isOwn ? 'justify-end' : 'justify-start' }} group" data-message-id="{{ $msg->id }}">
                         <div class="max-w-[75%] {{ $isOwn ? 'bg-gold-dark border-gold-deep' : 'bg-white border-gray-200' }} rounded-2xl px-4 py-2.5 border relative shadow-sm">
                             @if(!$isOwn)
@@ -92,20 +159,47 @@ function roleAvatar($user, $size = 9) {
                                 </p>
                             @endif
                             @if($msg->attachment_path)
-                                @if($msg->is_image)
-                                    <div class="mt-2 rounded-xl overflow-hidden {{ $isOwn ? 'border border-gold/40' : 'border border-gray-200' }}">
-                                        <img src="{{ $msg->attachment_url }}" alt="{{ $msg->attachment_name }}" class="max-w-full h-auto">
+                                @if(!$msg->attachment_exists)
+                                    {{-- الملف مفقود من القرص: يُقال ذلك بدل صورةٍ مكسورة --}}
+                                    <div class="mt-2 px-3 py-2 rounded-lg text-xs {{ $isOwn ? 'bg-gold-deep/60 text-gold-light' : 'bg-gray-100 text-gray-400' }}">
+                                        تعذّر العثور على المرفق «{{ $msg->attachment_name }}»
                                     </div>
-                                @endif
-                                <div class="mt-2">
-                                    <a href="{{ $msg->attachment_url }}" download="{{ $msg->attachment_name }}" class="flex items-center gap-2 px-3 py-2 rounded-lg transition text-xs {{ $isOwn ? 'bg-gold-deep hover:bg-gold-deep text-gold-light' : 'bg-gold/12 hover:bg-gold/15 text-gold-dark' }}">
-                                        <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                        <span class="truncate">{{ $msg->attachment_name }}</span>
+                                @elseif($msg->is_image)
+                                    {{-- الصورة تُفتح بحجمها الكامل، ولها زرّ تنزيل مستقل --}}
+                                    <figure class="mt-2 relative group/img">
+                                        <button type="button" class="block w-full rounded-xl overflow-hidden {{ $isOwn ? 'border border-gold/40' : 'border border-gray-200' }} focus-visible:outline-2"
+                                                data-lightbox="{{ $msg->attachment_url }}"
+                                                data-lightbox-name="{{ $msg->attachment_name }}"
+                                                data-lightbox-download="{{ $msg->attachment_download_url }}">
+                                            <img src="{{ $msg->attachment_url }}" alt="{{ $msg->attachment_name }}" loading="lazy"
+                                                 class="max-w-full h-auto max-h-72 object-cover w-full bg-black/5">
+                                        </button>
+                                        <a href="{{ $msg->attachment_download_url }}" download
+                                           aria-label="تنزيل {{ $msg->attachment_name }}"
+                                           class="absolute top-2 left-2 w-8 h-8 rounded-lg bg-black/55 text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 focus-visible:opacity-100 transition">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
+                                        </a>
+                                        <figcaption class="sr-only">{{ $msg->attachment_name }}</figcaption>
+                                    </figure>
+                                @else
+                                    @php [$glyph, $kind] = fileGlyph($msg->attachment_name, $msg->attachment_type); @endphp
+                                    <a href="{{ $msg->attachment_download_url }}" download
+                                       class="mt-2 flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition text-xs {{ $isOwn ? 'bg-gold-deep hover:bg-gold-deep/80 text-gold-light' : 'bg-gold/12 hover:bg-gold/20 text-gold-dark' }}">
+                                        <span class="text-lg leading-none flex-shrink-0" aria-hidden="true">{{ $glyph }}</span>
+                                        <span class="flex-1 min-w-0">
+                                            <span class="block truncate font-medium">{{ $msg->attachment_name }}</span>
+                                            <span class="block text-[10px] opacity-70">{{ $kind }}@if($msg->attachment_size_label) · {{ $msg->attachment_size_label }}@endif</span>
+                                        </span>
+                                        <svg class="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
                                     </a>
-                                </div>
+                                @endif
                             @endif
                             <div class="flex items-center justify-between mt-1">
-                                <p class="text-[10px] {{ $isOwn ? 'text-gold-light' : 'text-gray-400' }}">{{ $msg->created_at->diffForHumans() }}
+                                <p class="text-[10px] {{ $isOwn ? 'text-gold-light' : 'text-gray-400' }}"><span title="{{ $msg->created_at->format('Y-m-d H:i') }}">{{ $msg->created_at->diffForHumans() }}</span>
+                                    @if($isOwn)
+                                        @php $seen = $seenAt !== null && $seenAt->gte($msg->created_at); @endphp
+                                        <span class="{{ $seen ? 'text-green-200' : 'text-gold-light/70' }}" title="{{ $seen ? 'قُرئت' : 'أُرسلت' }}" aria-label="{{ $seen ? 'قُرئت' : 'أُرسلت' }}">{{ $seen ? '✓✓' : '✓' }}</span>
+                                    @endif
                                     @if($msg->discord_message_id)
                                         <span class="font-medium {{ $msg->discord_replied_at ? ($isOwn ? 'text-green-200' : 'text-green-600') : ($isOwn ? 'text-gold-light' : 'text-gold-dark') }}">— @if($msg->discord_replied_at) تم الرد من المطور @else بانتظار رد المطور @endif</span>
                                     @endif
@@ -156,8 +250,12 @@ function roleAvatar($user, $size = 9) {
                             <div class="flex-1 relative">
                                 <input type="text" id="messageInput" placeholder="اكتب رسالة..." autocomplete="off" aria-label="{{ __('app.a11y_message_text') }}"
                                     class="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/25 focus:bg-gold/10 transition">
-                                <div id="filePreview" class="hidden absolute bottom-full mb-2 right-0 left-0 bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
-                                    <span id="fileName" class="text-xs text-gray-700 flex-1 truncate"></span>
+                                <div id="filePreview" class="hidden absolute bottom-full mb-2 right-0 left-0 bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3 shadow-lg">
+                                    <img id="fileThumb" alt="" class="hidden w-10 h-10 rounded-lg object-cover border border-gray-200">
+                                    <span class="flex-1 min-w-0">
+                                        <span id="fileName" class="block text-xs text-gray-700 truncate"></span>
+                                        <span id="fileSize" class="block text-[10px] text-gray-400"></span>
+                                    </span>
                                     <button type="button" id="clearFile" aria-label="{{ __('app.a11y_remove_attachment') }}" class="text-red-700 hover:text-red-600 transition">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                     </button>
@@ -184,21 +282,40 @@ function roleAvatar($user, $size = 9) {
         @endif
     </div>
 
+    {{-- عارض الصورة: الصورة الصغيرة داخل الفقاعة لا تكفي لقراءة مستند مصوّر --}}
+    <div id="lightbox" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/85 p-4" role="dialog" aria-modal="true" aria-label="عرض الصورة">
+        <button type="button" id="lightboxClose" class="absolute top-4 left-4 w-10 h-10 rounded-xl bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition" aria-label="إغلاق">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+        <a id="lightboxDownload" href="#" download class="absolute top-4 left-16 w-10 h-10 rounded-xl bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition" aria-label="تنزيل الصورة">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
+        </a>
+        <figure class="max-w-full max-h-full flex flex-col items-center gap-3">
+            <img id="lightboxImage" src="" alt="" class="max-w-full max-h-[80vh] object-contain rounded-lg">
+            <figcaption id="lightboxName" class="text-xs text-white/70 text-center break-all"></figcaption>
+        </figure>
+    </div>
+
     {{-- Users List (new conversation) --}}
-    <div class="w-72 flex-shrink-0 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden flex flex-col">
-        <div class="p-4 border-b border-gray-100">
+    <div class="w-72 flex-shrink-0 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden hidden lg:flex flex-col">
+        <div class="p-4 border-b border-gray-100 space-y-3">
             <h3 class="text-sm font-bold text-gold-dark">{{ __('app.chat_users') ?? 'الموظفون' }}</h3>
+            <div>
+                <label for="userSearch" class="sr-only">بحث عن موظف</label>
+                <input id="userSearch" type="search" placeholder="ابحث عن موظف…" autocomplete="off"
+                       class="w-full bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gold/30 transition">
+            </div>
         </div>
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1 overflow-y-auto" data-filter-list="user">
             @forelse($users as $user)
-                <form method="POST" action="{{ route('chat.store') }}" class="block">
+                <form method="POST" action="{{ route('chat.store') }}" class="block" data-filter-text="{{ mb_strtolower($user->name . ' ' . roleLabel($user->role)) }}">
                     @csrf
                     <input type="hidden" name="user_id" value="{{ $user->id }}">
                     <button type="submit" class="w-full text-right px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition flex items-center gap-3">
                         {!! roleAvatar($user) !!}
                         <div>
                             <p class="text-sm text-gray-700">{{ $user->name }}</p>
-                            <p class="text-xs text-gray-400">{{ $user->role }}</p>
+                            <p class="text-xs text-gray-400">{{ roleLabel($user->role) }}</p>
                         </div>
                     </button>
                 </form>
@@ -393,19 +510,101 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    fileInput.addEventListener('change', function() {
-        if (this.files.length) {
-            selectedFile = this.files[0];
-            fileName.textContent = selectedFile.name + ' (' + (selectedFile.size / 1024).toFixed(1) + ' KB)';
-            filePreview.classList.remove('hidden');
-        }
-    });
+    const fileSizeEl = document.getElementById('fileSize');
+    const fileThumb = document.getElementById('fileThumb');
+    let thumbUrl = null;
 
-    clearFile.addEventListener('click', function() {
+    function humanSize(bytes) {
+        if (!bytes) return '';
+        const units = [['ج.ب', 1073741824], ['م.ب', 1048576], ['ك.ب', 1024]];
+        for (const [unit, step] of units) {
+            if (bytes >= step) {
+                const v = bytes / step;
+                return (v >= 10 ? Math.round(v) : v.toFixed(1)) + ' ' + unit;
+            }
+        }
+        return bytes + ' بايت';
+    }
+
+    // مصدرٌ واحد لاختيار الملف: الزرّ والسحب واللصق كلها تمرّ من هنا
+    function setFile(file) {
+        if (!file) return;
+        if (file.size > 20 * 1024 * 1024) {
+            showComposerError('الملف أكبر من ٢٠ م.ب — اختر ملفاً أصغر.');
+            return;
+        }
+        selectedFile = file;
+        fileName.textContent = file.name;
+        fileSizeEl.textContent = humanSize(file.size);
+        if (thumbUrl) { URL.revokeObjectURL(thumbUrl); thumbUrl = null; }
+        if (file.type.startsWith('image/')) {
+            thumbUrl = URL.createObjectURL(file);
+            fileThumb.src = thumbUrl;
+            fileThumb.classList.remove('hidden');
+        } else {
+            fileThumb.classList.add('hidden');
+        }
+        filePreview.classList.remove('hidden');
+        input.focus();
+    }
+
+    function clearSelectedFile() {
         selectedFile = null;
         fileInput.value = '';
+        if (thumbUrl) { URL.revokeObjectURL(thumbUrl); thumbUrl = null; }
+        fileThumb.classList.add('hidden');
         filePreview.classList.add('hidden');
+    }
+
+    fileInput.addEventListener('change', function() {
+        if (this.files.length) setFile(this.files[0]);
     });
+
+    clearFile.addEventListener('click', clearSelectedFile);
+
+    // لصق صورة من الحافظة: أسرع طريق للقطة شاشة
+    input.addEventListener('paste', function(e) {
+        const item = Array.from(e.clipboardData?.items || []).find(i => i.kind === 'file');
+        if (!item) return;
+        e.preventDefault();
+        setFile(item.getAsFile());
+    });
+
+    // سحبٌ وإفلات على مساحة الرسائل
+    const dropZone = document.querySelector('[data-drop-zone]');
+    if (dropZone) {
+        ['dragenter', 'dragover'].forEach(function (type) {
+            dropZone.addEventListener(type, function (e) {
+                e.preventDefault();
+                dropZone.classList.add('ring-2', 'ring-gold-dark', 'ring-inset');
+            });
+        });
+        ['dragleave', 'drop'].forEach(function (type) {
+            dropZone.addEventListener(type, function (e) {
+                e.preventDefault();
+                dropZone.classList.remove('ring-2', 'ring-gold-dark', 'ring-inset');
+            });
+        });
+        dropZone.addEventListener('drop', function (e) {
+            if (e.dataTransfer?.files?.length) setFile(e.dataTransfer.files[0]);
+        });
+    }
+
+    // خطأ الإرسال يُقال في مكانه لا في نافذة alert تقطع العمل
+    let errorTimer = null;
+    function showComposerError(text) {
+        let box = document.getElementById('composerError');
+        if (!box) {
+            box = document.createElement('p');
+            box.id = 'composerError';
+            box.className = 'text-xs text-red-700 mt-2';
+            box.setAttribute('role', 'alert');
+            form.appendChild(box);
+        }
+        box.textContent = text;
+        clearTimeout(errorTimer);
+        errorTimer = setTimeout(function () { box.remove(); }, 8000);
+    }
 
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -426,15 +625,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return r.json();
         }).then(data => {
             input.value = '';
-            selectedFile = null;
-            fileInput.value = '';
-            filePreview.classList.add('hidden');
+            clearSelectedFile();
             cancelReply.click();
             appendMessage(data, true);
             lastMessageId = data.id;
             scrollToBottom();
-        }).catch(e => {
-            alert('حدث خطأ أثناء الإرسال. تأكد من حجم الملف لا يتجاوز 20MB.');
+        }).catch(() => {
+            // النصّ يعود إلى الحقل: فقدانُ ما كُتب أسوأ من فشل الإرسال
+            input.value = msg;
+            showComposerError('تعذّر الإرسال. تحقّق من الاتصال وأنّ المرفق لا يتجاوز ٢٠ م.ب، ثم أعد المحاولة.');
         });
     });
 
@@ -459,30 +658,50 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch(_) {}
         }
 
+        // اسمُ الملف واسمُ المرسل يأتيان من مستخدم، وكانا يُحقنان في
+        // الـHTML كما هما: ملفٌ اسمُه وسمٌ يُنفَّذ في متصفّح كل من في
+        // المحادثة. فلا يدخل شيءٌ منهما إلا مهروباً.
+        const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        })[c]);
+
         let attachmentHtml = '';
         if (data.attachment_url) {
+            const name = esc(data.attachment_name || 'ملف مرفق');
+            const url = esc(data.attachment_url);
+            const dl = esc(data.attachment_download_url || data.attachment_url);
+
             if (data.is_image) {
-                attachmentHtml += `<div class="mt-2 rounded-xl overflow-hidden border border-gray-200 bg-black/20">
-                    <img src="${data.attachment_url}" alt="${data.attachment_name || ''}" class="max-w-full h-auto">
-                </div>`;
+                attachmentHtml = `<figure class="mt-2 relative group/img">
+                    <button type="button" class="block w-full rounded-xl overflow-hidden border border-gray-200"
+                            data-lightbox="${url}" data-lightbox-name="${name}" data-lightbox-download="${dl}">
+                        <img src="${url}" alt="${name}" loading="lazy" class="max-w-full h-auto max-h-72 object-cover w-full bg-black/5">
+                    </button>
+                    <a href="${dl}" download aria-label="تنزيل ${name}" class="absolute top-2 left-2 w-8 h-8 rounded-lg bg-black/55 text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
+                    </a>
+                </figure>`;
+            } else {
+                attachmentHtml = `<a href="${dl}" download class="mt-2 flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-gold/12 hover:bg-gold/20 transition text-xs text-gold-dark">
+                    <span class="text-lg leading-none flex-shrink-0" aria-hidden="true">📎</span>
+                    <span class="flex-1 min-w-0">
+                        <span class="block truncate font-medium">${name}</span>
+                        <span class="block text-[10px] opacity-70">${esc(data.attachment_size_label || '')}</span>
+                    </span>
+                    <svg class="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
+                </a>`;
             }
-            attachmentHtml += `<div class="mt-2">
-                <a href="${data.attachment_url}" download="${data.attachment_name || 'download'}" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-gold/12 hover:bg-gold/15 transition text-xs text-gold-dark">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <span class="truncate">${data.attachment_name || 'ملف مرفق'}</span>
-                </a>
-            </div>`;
         }
 
         const replyHtml = data.reply_message ? `<div class="text-[11px] text-gray-400 mb-1.5 pr-2 border-r-2 border-r-gold-light/60 py-0.5 truncate">
-            <span class="text-gold-dark/50">رد:</span> ${data.reply_message.replace(/</g, '&lt;')}
+            <span class="text-gold-dark/50">رد:</span> ${esc(data.reply_message)}
         </div>` : '';
 
         const editedHtml = data.edited_at ? '<span class="text-[10px] text-gray-400">(تم التعديل)</span>' : '';
 
         const pendingHtml = data.discord_pending ? '<p class="text-[10px] text-gold-dark font-medium mt-1">↦ أُرسلت للمطورين — بانتظار الرد</p>' : '';
 
-        const senderNameDisplay = !isOwn ? `<p class="text-[11px] text-gold-dark/60 font-medium mb-1" data-sender-name="${data.user_name.replace(/"/g, '&quot;')}">${data.user_name}</p>` : '';
+        const senderNameDisplay = !isOwn ? `<p class="text-[11px] text-gold-dark/60 font-medium mb-1" data-sender-name="${esc(data.user_name)}">${esc(data.user_name)}</p>` : '';
 
         const actionsHtml = `<div class="flex items-center justify-between mt-1">
             <p class="text-[10px] text-gray-400">${data.created_at}</p>
@@ -504,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
         div.innerHTML = `<div class="max-w-[75%] ${isOwn ? 'bg-gold/10 border-gold/15' : 'bg-gray-100 border-gray-200'} rounded-2xl px-4 py-2.5 border relative">
             ${senderNameDisplay}
             ${replyHtml}
-            ${data.message ? '<p class="text-sm text-gray-800" data-message-text="' + data.message.replace(/"/g, '&quot;') + '">' + data.message.replace(/</g, '&lt;') + ' ' + editedHtml + '</p>' : ''}
+            ${data.message ? '<p class="text-sm text-gray-800" data-message-text="' + esc(data.message) + '">' + esc(data.message) + ' ' + editedHtml + '</p>' : ''}
             ${attachmentHtml}
             ${pendingHtml}
             ${actionsHtml}
@@ -512,22 +731,156 @@ document.addEventListener('DOMContentLoaded', function() {
         messagesEl.insertBefore(div, anchor);
     }
 
-    setInterval(function() {
+    // استطلاعٌ يهدأ: لا يسأل الخادمَ وتبويبةُ المستخدم مخفيّة، ويتباعد
+    // عند انقطاع الشبكة بدل أن يطرق كل خمس ثوانٍ بلا طائل.
+    const BASE_POLL = 5000;
+    let pollDelay = BASE_POLL;
+    let pollTimer = null;
+
+    function poll() {
+        if (document.hidden) return schedulePoll();
+
         fetch('{{ route('chat.messages.fetch', $conversation) }}?after=' + lastMessageId, {
             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
-        }).then(r => r.json()).then(data => {
+        }).then(r => {
+            if (!r.ok) throw new Error('fetch failed');
+            return r.json();
+        }).then(data => {
+            pollDelay = BASE_POLL;
             if (data.length) {
+                const stuck = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 120;
                 data.forEach(m => { appendMessage(m, m.user_id === {{ auth()->id() }}); lastMessageId = m.id; });
-                scrollToBottom();
+                if (stuck) scrollToBottom();
             }
-        }).catch(() => {});
-    }, 5000);
+        }).catch(() => {
+            pollDelay = Math.min(pollDelay * 2, 60000);
+        }).finally(schedulePoll);
+    }
+
+    function schedulePoll() {
+        clearTimeout(pollTimer);
+        pollTimer = setTimeout(poll, pollDelay);
+    }
+
+    schedulePoll();
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) { pollDelay = BASE_POLL; clearTimeout(pollTimer); poll(); }
+    });
 });
 </script>
 @endif
 
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function() {
+    // ── عارض الصورة: الصورة داخل الفقاعة صغيرة، ومستندٌ مصوّر لا يُقرأ فيها
+    const lightbox = document.getElementById('lightbox');
+    if (lightbox) {
+        const image = document.getElementById('lightboxImage');
+        const nameEl = document.getElementById('lightboxName');
+        const dl = document.getElementById('lightboxDownload');
+        const closeBtn = document.getElementById('lightboxClose');
+        let lastFocused = null;
+
+        function openLightbox(src, name, download) {
+            lastFocused = document.activeElement;
+            image.src = src;
+            image.alt = name || '';
+            nameEl.textContent = name || '';
+            dl.href = download || src;
+            lightbox.classList.remove('hidden');
+            lightbox.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            closeBtn.focus();
+        }
+
+        function closeLightbox() {
+            lightbox.classList.add('hidden');
+            lightbox.classList.remove('flex');
+            image.src = '';
+            document.body.style.overflow = '';
+            lastFocused?.focus();
+        }
+
+        document.addEventListener('click', function (e) {
+            const trigger = e.target.closest('[data-lightbox]');
+            if (trigger) {
+                e.preventDefault();
+                openLightbox(trigger.dataset.lightbox, trigger.dataset.lightboxName, trigger.dataset.lightboxDownload);
+                return;
+            }
+            // النقر على الخلفية يُغلق؛ النقر على الصورة أو أزرارها لا
+            if (!lightbox.classList.contains('hidden') && e.target === lightbox) closeLightbox();
+        });
+
+        closeBtn.addEventListener('click', closeLightbox);
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !lightbox.classList.contains('hidden')) closeLightbox();
+        });
+    }
+
+    // ── بحثٌ فوريّ في المحادثات وفي الموظفين
+    function wireFilter(inputId, listName) {
+        const box = document.getElementById(inputId);
+        const list = document.querySelector('[data-filter-list="' + listName + '"]');
+        if (!box || !list) return;
+
+        box.addEventListener('input', function () {
+            const q = box.value.trim().toLowerCase();
+            let shown = 0;
+
+            list.querySelectorAll('[data-filter-text]').forEach(function (row) {
+                const hit = q === '' || row.dataset.filterText.includes(q);
+                row.classList.toggle('hidden', !hit);
+                if (hit) shown++;
+            });
+
+            let empty = list.querySelector('[data-filter-empty]');
+            if (shown === 0 && q !== '') {
+                if (!empty) {
+                    empty = document.createElement('div');
+                    empty.dataset.filterEmpty = '1';
+                    empty.className = 'p-6 text-center text-gray-400 text-xs';
+                    list.appendChild(empty);
+                }
+                empty.textContent = 'لا نتائج لـ «' + box.value.trim() + '»';
+            } else if (empty) {
+                empty.remove();
+            }
+        });
+    }
+
+    wireFilter('convSearch', 'conv');
+    wireFilter('userSearch', 'user');
+
+    // ── بحثٌ داخل الرسائل المفتوحة: يُبرز المطابق ويُخفي ما عداه
+    const msgSearch = document.getElementById('msgSearch');
+    const msgList = document.getElementById('chatMessages');
+    const msgCount = document.getElementById('msgSearchCount');
+
+    if (msgSearch && msgList) {
+        msgSearch.addEventListener('input', function () {
+            const q = msgSearch.value.trim().toLowerCase();
+            let hits = 0;
+
+            msgList.querySelectorAll('[data-message-id]').forEach(function (row) {
+                const text = (row.textContent || '').toLowerCase();
+                const hit = q === '' || text.includes(q);
+                row.classList.toggle('hidden', !hit);
+                row.classList.toggle('ring-2', q !== '' && hit);
+                row.classList.toggle('ring-gold-dark/40', q !== '' && hit);
+                row.classList.toggle('rounded-2xl', q !== '' && hit);
+                if (hit && q !== '') hits++;
+            });
+
+            // فواصل الأيام تُخفى مع البحث: يومٌ بلا رسائل ظاهرة لا معنى لفاصله
+            msgList.querySelectorAll('[data-day-separator]').forEach(function (sep) {
+                sep.classList.toggle('hidden', q !== '');
+            });
+
+            msgCount.textContent = q === '' ? '' : hits;
+        });
+    }
+
     function updateUnread() {
         fetch('{{ route('chat.unread') }}').then(r => r.json()).then(data => {
             const badge = document.getElementById('chatUnreadBadge');

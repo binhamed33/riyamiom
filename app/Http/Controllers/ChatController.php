@@ -6,11 +6,11 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
 use App\Services\DiscordNotifier;
+use App\Support\Attachments;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ChatController extends Controller
@@ -97,7 +97,9 @@ class ChatController extends Controller
     {
         $request->validate([
             'message' => 'nullable|string|max:5000',
-            'attachment' => 'nullable|file|max:20480|mimes:jpg,jpeg,png,gif,webp,svg,pdf,doc,docx,xls,xlsx,txt,zip,rar,mp3,mp4,mov',
+            // svg مرفوض: صورةٌ في ظاهرها تحمل سكربتاً في حقيقتها، وعرضُها
+            // من نطاق المكتب يُشغّل سكربتها في جلسة من يفتحها.
+            'attachment' => 'nullable|file|max:20480|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,zip,rar,mp3,mp4,mov',
         ]);
 
         $user = auth()->user();
@@ -115,7 +117,7 @@ class ChatController extends Controller
 
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
-            $path = $file->store('chat-attachments', 'public');
+            $path = $file->store('chat-attachments', Attachments::DISK);
             $data['attachment_path'] = $path;
             $data['attachment_name'] = $file->getClientOriginalName();
             $data['attachment_type'] = $file->getMimeType();
@@ -139,6 +141,8 @@ class ChatController extends Controller
             'user_name' => $user->name,
             'created_at' => $message->created_at->diffForHumans(),
             'attachment_url' => $message->attachment_url,
+            'attachment_download_url' => $message->attachment_download_url,
+            'attachment_size_label' => $message->attachment_size_label,
             'attachment_name' => $message->attachment_name,
             'attachment_type' => $message->attachment_type,
             'is_image' => $message->is_image,
@@ -174,6 +178,8 @@ class ChatController extends Controller
             'user_name' => $m->user->name,
             'created_at' => $m->created_at->diffForHumans(),
             'attachment_url' => $m->attachment_url,
+            'attachment_download_url' => $m->attachment_download_url,
+            'attachment_size_label' => $m->attachment_size_label,
             'attachment_name' => $m->attachment_name,
             'attachment_type' => $m->attachment_type,
             'is_image' => $m->is_image,
@@ -211,13 +217,34 @@ class ChatController extends Controller
             abort(403);
         }
 
-        if ($message->attachment_path) {
-            Storage::disk('public')->delete($message->attachment_path);
-        }
+        Attachments::delete($message->attachment_path);
 
         $message->delete();
 
         return response()->json(['id' => $message->id]);
+    }
+
+    /**
+     * المرفق لا يُقدَّم إلا لمن هو في المحادثة.
+     *
+     * كان يُقدَّم من ‎/storage/…‎ بلا أي تحقّق: من ملك الرابط قرأ الملف
+     * ولو لم يكن في المكتب أصلاً. ومرفقاتُ محادثات مكتب محاماة صورُ
+     * هوياتٍ وعقودٌ ومستنداتُ قضايا.
+     */
+    public function attachment(Request $request, Message $message): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_if($message->attachment_path === null || $message->attachment_path === '', 404);
+
+        if (!$message->conversation?->participants()->where('user_id', auth()->id())->exists()) {
+            abort(403, 'هذا المرفق في محادثة لست طرفاً فيها.');
+        }
+
+        return Attachments::respond(
+            $request,
+            $message->attachment_path,
+            $message->attachment_name,
+            $message->attachment_type,
+        );
     }
 
     public function unreadCount(): JsonResponse

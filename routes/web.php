@@ -408,6 +408,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::put('/chat/messages/{message}', [App\Http\Controllers\ChatController::class, 'editMessage'])->name('chat.messages.edit');
         Route::delete('/chat/messages/{message}', [App\Http\Controllers\ChatController::class, 'deleteMessage'])->name('chat.messages.destroy');
         Route::get('/chat/unread/count', [App\Http\Controllers\ChatController::class, 'unreadCount'])->name('chat.unread');
+        Route::get('/chat/messages/{message}/attachment', [App\Http\Controllers\ChatController::class, 'attachment'])->name('chat.attachment');
     });
 
     // Backup - developer, admin (أو بصلاحية backup.manage)
@@ -444,6 +445,8 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::get('/finance/invoices/{invoice}/print', [FinanceController::class, 'printInvoice'])->name('finance.invoices.print');
         Route::get('/finance/fees/{fee}', [FinanceController::class, 'showFee'])->name('finance.fees.show');
         Route::get('/finance/fees/{fee}/print', [FinanceController::class, 'printFee'])->name('finance.fees.print');
+        Route::get('/finance/transactions/{transaction}/attachment', [FinanceController::class, 'transactionAttachment'])->name('finance.transactions.attachment');
+        Route::get('/finance/invoices/{invoice}/attachment', [FinanceController::class, 'invoiceAttachment'])->name('finance.invoices.attachment');
         Route::post('/finance/transactions', [FinanceController::class, 'storeTransaction'])->name('finance.transactions.store');
         Route::put('/finance/transactions/{transaction}', [FinanceController::class, 'updateTransaction'])->name('finance.transactions.update');
         Route::delete('/finance/transactions/{transaction}', [FinanceController::class, 'destroyTransaction'])->name('finance.transactions.destroy');

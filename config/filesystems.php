@@ -45,6 +45,17 @@ return [
             'report' => false,
         ],
 
+        // مرفقات المحادثات والقيود المالية. داخل app/private فيدخل
+        // النسخَ الاحتياطي (يؤرشف الشجرة كاملة) — وكانت على القرص العام
+        // فلم تكن تُنسخ أصلاً. ومنفصلٌ عن قرص المستندات كي لا تختلط
+        // ملفاتُ القضايا بمرفقات الدردشة.
+        'attachments' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/attachments'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
