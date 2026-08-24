@@ -36,7 +36,8 @@
             <a href="{{ route('automations.runs') }}" class="bg-white hover:bg-gray-100 text-gray-600 border border-gold/15 px-4 py-2.5 rounded-lg font-medium transition text-sm">
                 📜 سجل التنفيذ
             </a>
-            <button type="button" @click="aiOpen = !aiOpen" class="bg-white border border-gold/30 text-gold-dark hover:bg-gold/5 px-4 py-2.5 rounded-lg font-semibold transition text-sm">✨ توليد بالذكاء</button>
+            <button type="button" @click="aiOpen = !aiOpen" :aria-expanded="aiOpen ? 'true' : 'false'" aria-controls="autoAiPanel"
+                    class="bg-white border border-gold/30 text-gold-dark hover:bg-gold/5 px-4 py-2.5 rounded-lg font-semibold transition text-sm md-touch">✨ توليد بالذكاء</button>
             <button type="button" @click="openBuilder()" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold transition text-sm">
                 + قاعدة جديدة
             </button>
@@ -104,17 +105,18 @@
     </div>
 
     {{-- §11: صِف القاعدة بجملة — المولد يملأ المحرِّر وأنت تراجع وتحفظ --}}
-    <div x-show="aiOpen" x-cloak class="bg-white rounded-xl border border-gold/25 p-4">
-        <p class="text-sm font-bold text-gray-900 mb-1">صِف ما تريد أتمتته بجملة واحدة</p>
+    <div x-show="aiOpen" x-cloak id="autoAiPanel" class="bg-white rounded-xl border border-gold/25 p-4">
+        <p class="text-sm font-bold text-gray-900 mb-1" id="autoAiTitle">صِف ما تريد أتمتته بجملة واحدة</p>
         <p class="text-xs text-gray-400 mb-3">مثال: «إذا كانت الجلسة بعد ثلاثة أيام أنشئ مهمة للمحامي المسؤول». المولد يجهّز مسودة تراجعها في المحرِّر قبل حفظها — لا يُحفظ ولا يُفعَّل شيء تلقائياً.</p>
         <div class="flex flex-col sm:flex-row gap-2">
             <input type="text" x-model="aiPrompt" @keydown.enter.prevent="aiGenerate()" maxlength="500"
-                   class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gold" placeholder="أريد النظام أن…">
+                   aria-labelledby="autoAiTitle"
+                   class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:border-gold" placeholder="أريد النظام أن…">
             <button type="button" @click="aiGenerate()" :disabled="aiBusy"
                     class="text-sm font-bold px-5 py-2.5 rounded-lg bg-primary text-white hover:bg-primary-dark transition disabled:opacity-50 md-touch"
                     x-text="aiBusy ? 'يولّد…' : 'توليد المسودة'"></button>
         </div>
-        <p x-show="aiError" x-text="aiError" class="text-xs text-red-600 mt-2"></p>
+        <p x-show="aiError" x-text="aiError" role="alert" class="text-xs text-red-600 mt-2"></p>
     </div>
 
     {{-- §12: اقتراحات من نمط استخدام المكتب — لا يُفعَّل شيء تلقائياً --}}
@@ -150,14 +152,17 @@
 
             {{-- §29: بحث وتصفية من الخادم --}}
             <form method="GET" action="{{ route('automations.index') }}" class="flex flex-wrap items-center gap-2 ms-auto">
-                <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="بحث باسم القاعدة…"
-                       class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:border-gold">
-                <select name="state" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
+                <label for="autoQ" class="sr-only">بحث باسم القاعدة</label>
+                <input type="search" id="autoQ" name="q" value="{{ $filters['q'] }}" placeholder="بحث باسم القاعدة…"
+                       class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 w-40 focus:border-gold">
+                <label for="autoState" class="sr-only">تصفية حسب الحالة</label>
+                <select id="autoState" name="state" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
                     <option value="">الكل</option>
                     <option value="active" @selected($filters['state'] === 'active')>المفعّلة</option>
                     <option value="disabled" @selected($filters['state'] === 'disabled')>المعطّلة</option>
                 </select>
-                <select name="sort" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
+                <label for="autoSort" class="sr-only">ترتيب القواعد</label>
+                <select id="autoSort" name="sort" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
                     <option value="recent" @selected($filters['sort'] === 'recent')>الأحدث</option>
                     <option value="most_used" @selected($filters['sort'] === 'most_used')>الأكثر استخداماً</option>
                     <option value="name" @selected($filters['sort'] === 'name')>الاسم</option>

@@ -231,7 +231,7 @@
                 <form x-show="editing" x-cloak method="POST" action="{{ route('suggestions.update', $suggestion) }}" class="mt-1">
                     @csrf
                     @method('PUT')
-                    <textarea name="content" rows="3" minlength="20" maxlength="2000" class="w-full bg-gray-50 border border-gold/25 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none transition resize-y">{{ $suggestion->content }}</textarea>
+                    <textarea name="content" rows="3" minlength="20" maxlength="2000" class="w-full bg-gray-50 border border-gold/25 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:border-gold-dark transition resize-y">{{ $suggestion->content }}</textarea>
                     <div class="flex gap-2 mt-2">
                         <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-1.5 rounded-lg text-xs transition">حفظ التعديل</button>
                         <button type="button" @click="editing = false" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-1.5 rounded-lg text-xs transition">إلغاء</button>

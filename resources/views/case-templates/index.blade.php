@@ -28,23 +28,25 @@
                 @csrf
                 <button class="bg-white border border-gold/30 text-gold-dark hover:bg-gold/5 px-4 py-2.5 rounded-lg font-semibold transition text-sm">مكتبة مُداوَلة</button>
             </form>
-            <button type="button" @click="aiOpen = !aiOpen" class="bg-white border border-gold/30 text-gold-dark hover:bg-gold/5 px-4 py-2.5 rounded-lg font-semibold transition text-sm">✨ توليد بالذكاء</button>
+            <button type="button" @click="aiOpen = !aiOpen" :aria-expanded="aiOpen ? 'true' : 'false'" aria-controls="tplAiPanel"
+                    class="bg-white border border-gold/30 text-gold-dark hover:bg-gold/5 px-4 py-2.5 rounded-lg font-semibold transition text-sm md-touch">✨ توليد بالذكاء</button>
             <button type="button" @click="open()" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold transition text-sm">+ قالب جديد</button>
         </div>
     </div>
 
     {{-- §2: صِف القالب بجملة — المولد يجهّز مسودة تراجعها ثم تحفظها --}}
-    <div x-show="aiOpen" x-cloak class="bg-white rounded-xl border border-gold/25 p-4">
-        <p class="text-sm font-bold text-gray-900 mb-1">صِف القالب الذي تريده</p>
+    <div x-show="aiOpen" x-cloak id="tplAiPanel" class="bg-white rounded-xl border border-gold/25 p-4">
+        <p class="text-sm font-bold text-gray-900 mb-1" id="tplAiTitle">صِف القالب الذي تريده</p>
         <p class="text-xs text-gray-400 mb-3">مثال: «أريد قالباً لقضية مطالبة مالية». المولد يقترح المهام وقائمة التحقق والمجلدات والتذكيرات — وتُعرض عليك مسودةً كاملة قبل الحفظ.</p>
         <div class="flex flex-col sm:flex-row gap-2">
             <input type="text" x-model="aiPrompt" @keydown.enter.prevent="aiGenerate()" maxlength="500"
-                   class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gold" placeholder="أريد قالباً لـ…">
+                   aria-labelledby="tplAiTitle"
+                   class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:border-gold" placeholder="أريد قالباً لـ…">
             <button type="button" @click="aiGenerate()" :disabled="aiBusy"
                     class="text-sm font-bold px-5 py-2.5 rounded-lg bg-primary text-white hover:bg-primary-dark transition disabled:opacity-50 md-touch"
                     x-text="aiBusy ? 'يولّد…' : 'توليد المسودة'"></button>
         </div>
-        <p x-show="aiError" x-text="aiError" class="text-xs text-red-600 mt-2"></p>
+        <p x-show="aiError" x-text="aiError" role="alert" class="text-xs text-red-600 mt-2"></p>
     </div>
 
     {{-- §26 + §29: إحصاء وتصفية --}}
@@ -55,14 +57,17 @@
             <span class="text-gray-500">الأكثر استخداماً: <b class="text-gold-dark">{{ $stats['most_used'] }}</b></span>
         @endif
         <form method="GET" action="{{ route('case-templates.index') }}" class="flex flex-wrap items-center gap-2 ms-auto">
-            <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="بحث باسم القالب…"
-                   class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:border-gold">
-            <select name="state" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
+            <label for="tplQ" class="sr-only">بحث باسم القالب</label>
+            <input type="search" id="tplQ" name="q" value="{{ $filters['q'] }}" placeholder="بحث باسم القالب…"
+                   class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 w-40 focus:border-gold">
+            <label for="tplState" class="sr-only">تصفية حسب الحالة</label>
+            <select id="tplState" name="state" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
                 <option value="">الكل</option>
                 <option value="active" @selected($filters['state'] === 'active')>المفعّلة</option>
                 <option value="disabled" @selected($filters['state'] === 'disabled')>المعطّلة</option>
             </select>
-            <select name="sort" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
+            <label for="tplSort" class="sr-only">ترتيب القوالب</label>
+            <select id="tplSort" name="sort" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5">
                 <option value="name" @selected($filters['sort'] === 'name')>الاسم</option>
                 <option value="most_used" @selected($filters['sort'] === 'most_used')>الأكثر استخداماً</option>
                 <option value="recent" @selected($filters['sort'] === 'recent')>آخر تعديل</option>

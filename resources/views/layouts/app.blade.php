@@ -348,6 +348,31 @@
         .md-theme-card.is-on .md-theme-name { color: var(--accent-dark); }
         [data-theme="dark"] .md-theme-card.is-on .md-theme-name { color: var(--accent-light); }
 
+        /* ═══ حلقة التركيز: من يتنقّل بلوحة المفاتيح يجب أن يرى أين هو ═══
+           لم يكن في النظام حلقةُ تركيز ظاهرة إلا على حقول .form-input،
+           فمن يتنقّل بـTab — ومنهم من لا يستطيع استعمال الفأرة — كان
+           يتحرّك أعمى بين الأزرار والروابط. focus-visible وحدها: النقر
+           بالفأرة لا يُظهرها، فلا يتغيّر شيء لمن يستعمل الفأرة. */
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            border-radius: 6px;
+        }
+
+        /* المتصفحات التي لا تعرف focus-visible تُبقي سلوكها الافتراضي */
+        a:focus-visible, button:focus-visible, [role="button"]:focus-visible,
+        input:focus-visible, select:focus-visible, textarea:focus-visible,
+        summary:focus-visible, [tabindex]:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* الأزرار الذهبية: حلقة داكنة فوقها لتُرى على أرضيتها */
+        .bg-primary:focus-visible, .bg-gold-dark:focus-visible {
+            outline-color: var(--accent-deep, #8C6A12);
+            outline-offset: 3px;
+        }
+
         /* شريط التقدّم العلوي */
         #mdProgress { position: fixed; top: 0; inset-inline-start: 0; height: 3px; width: 0;
             background: linear-gradient(90deg, var(--accent-dark), var(--accent), var(--accent-light));
