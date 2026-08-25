@@ -71,7 +71,11 @@ class DailyBackup extends Command
                 $this->error('تعذّر تفريغ قاعدة البيانات ولا يوجد بديل — لم تُنشأ نسخة.');
                 $this->error('النسخ القديمة لم تُمسّ.');
 
-                \App\Models\AuditLog::create([
+                // تُدوَّن الحقيقة حيث تقرؤها اللوحة، لا في السجلّ وحده:
+                // نسخةٌ تخفق كلَّ ليلة كانت تخفق بصمت.
+                \App\Support\BackupStatus::record(false, 'تعذّر تفريغ قاعدة البيانات ولا بديل لها');
+
+                self::audit([
                     'user_id' => null,
                     'action' => 'backup_failed',
                     'model_type' => 'System',
@@ -107,7 +111,9 @@ class DailyBackup extends Command
             $this->error('النسخ القديمة لم تُمسّ. لا تعتمد على هذا الملف.');
             @unlink($filepath);
 
-            \App\Models\AuditLog::create([
+            \App\Support\BackupStatus::record(false, 'فشل الفحص: ' . $verify['reason']);
+
+            self::audit([
                 'user_id' => null,
                 'action' => 'backup_failed',
                 'model_type' => 'System',
@@ -121,11 +127,13 @@ class DailyBackup extends Command
             return 1;
         }
 
+        \App\Support\BackupStatus::record(true, tables: (int) $verify['tables']);
+
         $size = round(filesize($filepath) / 1024 / 1024, 2);
         $this->info("Backup created: {$filename} ({$size} MB)");
         $this->info('الفحص: قاعدة البيانات داخل الأرشيف، ' . $verify['tables'] . ' جدولاً، ' . $verify['files'] . ' ملفاً.');
 
-        \App\Models\AuditLog::create([
+        self::audit([
             'user_id' => null,
             'action' => 'backup_created',
             'model_type' => 'System',
@@ -151,6 +159,25 @@ class DailyBackup extends Command
         return 0;
     }
 
+
+    /**
+     * تدوينُ الحدث في السجلّ — ولا يُفشل النسخَ إن تعذّر.
+     *
+     * وقع فعلاً: مكتبٌ لم تُنفَّذ هجراتُه فلا جدول audit_logs عنده،
+     * فرمت الكتابةُ استثناءً بعد أن تمّت النسخة، فمات الأمرُ ورمزُ
+     * خروجه غير صفر — فامتنع تحديثُ ذلك المكتب لأنّ «النسخة لم تنجح»،
+     * وهي قد نجحت.
+     *
+     * @param array<string, mixed> $row
+     */
+    private static function audit(array $row): void
+    {
+        try {
+            \App\Models\AuditLog::create($row);
+        } catch (\Throwable) {
+            // السجلّ خبرٌ عن الحدث لا الحدثُ نفسه
+        }
+    }
 
     private function addDirectoryToZip(ZipArchive $zip, string $directory, string $zipDir): void
     {
