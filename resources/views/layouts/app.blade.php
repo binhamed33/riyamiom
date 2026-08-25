@@ -1417,6 +1417,9 @@
 
         {{-- Page Content --}}
         <main class="p-4 sm:p-6 lg:p-8 page-enter pb-20 md:pb-8">
+            {{-- بلوغُ حدّ الباقة: يُعرض قبل غيره — هو سببُ عدم وقوع ما طُلب --}}
+            <x-limit-notice />
+
             @if(session('success'))
                 <x-alert type="success" :message="session('success')" />
             @endif
