@@ -166,8 +166,19 @@ class MailIdentity
             return true;
         }
 
+        // وكلمةُ المرور من الأركان لا من الزينة.
+        //
+        // كانت تُستثنى، فكان مكتبٌ فيه MAIL_PASSWORD فارغ يُعلن
+        // «✓ SMTP مضبوط — المُرسِل mudawalah@gmail.com» في office:health،
+        // ويقبل OfficeMailer رسائله فيدفعها إلى الطابور، وترتدّ كلُّها
+        // بـ ٥٣٥ بعد ربع ساعة في failed_jobs. والمكتبُ يبدو سليماً في
+        // كل شاشة.
+        //
+        // و«مضبوط» هنا تعني «فيه ما يكفي للمحاولة» لا «سينجح»: صحّةُ
+        // الكلمة لا تُعرف إلا من الخادم، وذلك عمل ‎--probe.
         return trim((string) config('mail.mailers.smtp.host', '')) !== ''
-            && trim((string) config('mail.mailers.smtp.username', '')) !== '';
+            && trim((string) config('mail.mailers.smtp.username', '')) !== ''
+            && trim((string) config('mail.mailers.smtp.password', '')) !== '';
     }
 
     /**

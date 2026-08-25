@@ -291,18 +291,85 @@ class CentralMailTest extends TestCase
     /** ومع سائقٍ حقيقي تخرج فعلاً. */
     public function test_the_doctor_sends_when_a_transport_exists(): void
     {
-        // الناقل مصفوفة، والمضيف والمستخدم يبقيان: استبدال الكتلة
-        // كاملةً يمحوهما فتقول isConfigured() «غير مضبوط» عن حق.
+        // الناقل مصفوفة، والمضيف والمستخدم وكلمةُ المرور يبقون:
+        // استبدال الكتلة كاملةً يمحوهم فتقول isConfigured() «غير
+        // مضبوط» عن حق.
         config([
             'mail.mailers.smtp' => ['transport' => 'array'],
             'mail.mailers.smtp.host' => 'smtp.gmail.com',
             'mail.mailers.smtp.username' => 'mudawalah@gmail.com',
+            'mail.mailers.smtp.password' => 'sixteenlowercase',
         ]);
 
         $this->artisan('mail:doctor', ['--to' => 'x@example.com', '--now' => true])
             ->assertExitCode(0);
 
         $this->assertCount(1, Mail::mailer('smtp')->getSymfonyTransport()->messages());
+    }
+
+    /**
+     * و‎--now يُرسل الآن ولو كان الطابور database.
+     *
+     * ═══ لماذا اختبارٌ مستقلّ لهذا ═══
+     *
+     * الاختبار الذي فوقه كان يمرّ وهو يحرس عطلاً: الطابور في الاختبارات
+     * sync، فـ ‎->queue() تُنفَّذ فوراً وتصل الرسالةُ الناقلَ، فيبدو أنّ
+     * ‎--now أرسلت. وفي الإنتاج الطابور database، فتنام الرسالة في
+     * jobs ويطبع الأمر «أُرسلت مباشرةً» ويخرج بصفر.
+     *
+     * فالفرقُ كلُّه في سطرٍ واحد من الإعداد — ولذلك يُثبَّت هنا صراحةً:
+     * database، ثم يُطلب ‎--now، ثم يُتحقَّق أنّ الرسالة خرجت وأنّ
+     * الطابور فارغ. ولو عاد أحدٌ يوماً إلى send() لسقط هذا وحده.
+     */
+    public function test_now_really_bypasses_the_queue_even_when_one_is_configured(): void
+    {
+        config([
+            'queue.default' => 'database',
+            'mail.mailers.smtp' => ['transport' => 'array'],
+            'mail.mailers.smtp.host' => 'smtp.gmail.com',
+            'mail.mailers.smtp.username' => 'mudawalah@gmail.com',
+            'mail.mailers.smtp.password' => 'sixteenlowercase',
+        ]);
+
+        $this->artisan('mail:doctor', ['--to' => 'x@example.com', '--now' => true])
+            ->assertExitCode(0);
+
+        $this->assertCount(
+            1,
+            Mail::mailer('smtp')->getSymfonyTransport()->messages(),
+            'لم تخرج رسالة — ‎--now أُلقيت في الطابور بدل أن تُرسَل',
+        );
+
+        $this->assertSame(
+            0,
+            \Illuminate\Support\Facades\DB::table('jobs')->count(),
+            'الرسالة نامت في الطابور، و‎--now تعني «الآن»',
+        );
+    }
+
+    /**
+     * وكلمةُ المرور ركنٌ في «مضبوط».
+     *
+     * مكتبٌ فيه MAIL_PASSWORD فارغ كان يُعلن «✓ SMTP مضبوط» في
+     * office:health، ويقبل OfficeMailer رسائله فيدفعها إلى الطابور،
+     * وترتدّ كلُّها بـ ٥٣٥ في failed_jobs بعد ربع ساعة. والمكتبُ يبدو
+     * سليماً في كل شاشة.
+     */
+    public function test_an_empty_password_is_not_a_configured_mailer(): void
+    {
+        config(['mail.mailers.smtp.password' => '']);
+
+        $this->assertFalse(MailIdentity::isConfigured());
+    }
+
+    /** ولا تُقبل رسالةٌ من مكتبٍ لا كلمةَ مرورٍ فيه. */
+    public function test_no_mail_is_queued_from_an_office_without_a_password(): void
+    {
+        config(['mail.mailers.smtp.password' => '   ']);
+
+        $result = OfficeMailer::send('client@example.om', new SystemNoticeMail('عنوان', 'نصّ'));
+
+        $this->assertSame(OfficeMailer::NOT_CONFIGURED, $result['status']);
     }
 
     public function test_diagnostics_carry_no_secret(): void

@@ -46,6 +46,10 @@ class MailQueueWorkerTest extends TestCase
             'mail.from.address' => 'mudawalah@gmail.com',
             'mail.mailers.smtp.host' => 'smtp.gmail.com',
             'mail.mailers.smtp.username' => 'mudawalah@gmail.com',
+            // كلمةُ المرور ركنٌ في isConfigured(): بدونها لا يقبل
+            // OfficeMailer الرسالة أصلاً، وهو الصواب — مكتبٌ بلا كلمة
+            // مرور لا يُرسل، ولا ينبغي أن يبدو كأنّه يُرسل.
+            'mail.mailers.smtp.password' => 'sixteenlowercase',
         ]);
 
         Setting::set('office_name', 'مكتب الاختبار', 'general');

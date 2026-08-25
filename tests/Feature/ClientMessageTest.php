@@ -117,6 +117,8 @@ class ClientMessageTest extends TestCase
             'mail.from.address' => 'mudawalah@gmail.com',
             'mail.mailers.smtp.host' => 'smtp.gmail.com',
             'mail.mailers.smtp.username' => 'mudawalah@gmail.com',
+            // ركنٌ في isConfigured(): مكتبٌ بلا كلمة مرور لا يُرسل
+            'mail.mailers.smtp.password' => 'sixteenlowercase',
         ]);
 
         \Illuminate\Support\Facades\Mail::fake();
