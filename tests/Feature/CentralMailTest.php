@@ -273,6 +273,38 @@ class CentralMailTest extends TestCase
         $this->assertStringNotContainsString('secret-app-password', $output);
     }
 
+    /**
+     * «أُرسلت» لا تُقال والسائق log.
+     *
+     * حدث فعلاً: شُغِّل ‎--now‎ على خادمٍ سائقُه log فقال «أُرسلت
+     * مباشرةً»، والرسالة كُتبت في السجلّ ولم تخرج. فظُنَّ البريد يعمل.
+     */
+    public function test_the_doctor_refuses_to_claim_a_send_that_did_not_happen(): void
+    {
+        config(['mail.default' => 'log']);
+
+        $this->artisan('mail:doctor', ['--to' => 'x@example.com', '--now' => true])
+            ->expectsOutputToContain('لم تُرسَل')
+            ->assertExitCode(1);
+    }
+
+    /** ومع سائقٍ حقيقي تخرج فعلاً. */
+    public function test_the_doctor_sends_when_a_transport_exists(): void
+    {
+        // الناقل مصفوفة، والمضيف والمستخدم يبقيان: استبدال الكتلة
+        // كاملةً يمحوهما فتقول isConfigured() «غير مضبوط» عن حق.
+        config([
+            'mail.mailers.smtp' => ['transport' => 'array'],
+            'mail.mailers.smtp.host' => 'smtp.gmail.com',
+            'mail.mailers.smtp.username' => 'mudawalah@gmail.com',
+        ]);
+
+        $this->artisan('mail:doctor', ['--to' => 'x@example.com', '--now' => true])
+            ->assertExitCode(0);
+
+        $this->assertCount(1, Mail::mailer('smtp')->getSymfonyTransport()->messages());
+    }
+
     public function test_diagnostics_carry_no_secret(): void
     {
         $flat = json_encode(MailIdentity::diagnostics(), JSON_UNESCAPED_UNICODE);

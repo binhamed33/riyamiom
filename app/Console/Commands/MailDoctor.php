@@ -82,13 +82,17 @@ class MailDoctor extends Command
         $ok = $ok && $hasFrom;
 
         $queue = (string) config('queue.default', 'sync');
-        $this->state($queue !== 'sync', 'الطابور: ' . $queue, 'الطابور sync — البريد يُرسَل داخل الطلب فيبطئه');
+        $this->state(
+            $queue !== 'sync',
+            'الطابور: ' . $queue,
+            'الطابور sync — البريد يُرسَل داخل الطلب: «حفظ القضية» ينتظر Gmail. اضبط QUEUE_CONNECTION=database',
+        );
 
         $pending = $this->pending();
         $this->line(sprintf('  •  في طابور البريد الآن: %s رسالة', $pending['pending']));
         $this->line(sprintf('  •  أخفقت نهائياً: %s', $pending['failed']));
 
-        if ($pending['pending'] > 20) {
+        if (is_int($pending['pending']) && $pending['pending'] > 20) {
             $this->components->warn('الطابور متراكم — تأكّد أنّ cron يشغّل schedule:run كل دقيقة.');
         }
 
@@ -121,6 +125,20 @@ class MailDoctor extends Command
         }
 
         $this->line('');
+
+        // لا يُقال «أُرسلت» ما لم يكن هناك ناقلٌ يُرسل. السائق log يكتب
+        // الرسالة في السجلّ، وarray يبتلعها — وكلاهما ينجح فيظنّ المشرف
+        // أنّ البريد يعمل، ويكتشف الحقيقة من شكوى موكّل.
+        if (!MailIdentity::isConfigured()) {
+            $this->components->error(
+                'لم تُرسَل: السائق «' . config('mail.default') . '» لا يُرسل شيئاً — يكتب في السجلّ أو يبتلع.'
+            );
+            $this->line('');
+            $this->line('  اضبط SMTP أولاً:  bash scripts/set-mail-credentials.sh');
+
+            return false;
+        }
+
         $this->components->info('إرسال رسالة تجربة إلى ' . MailIdentity::maskEmail($to));
 
         $mail = new SystemNoticeMail(

@@ -47,8 +47,12 @@ App Password:
 الطريقة الموصى بها — أداةٌ تقرؤها بلا إظهارٍ ولا حفظٍ في تاريخ الأوامر:
 
 ```bash
-bash /home/riyami-dev/htdocs/dev.riyami.om/scripts/set-mail-credentials.sh
+bash /home/office-hamedr/htdocs/hamedr.riyami.om/scripts/set-mail-credentials.sh
 ```
+
+> المسار من **مجلّد أي مكتب**، لا من مجلّد اللوحة: هذه الأداة في
+> مستودع المكتب، و`update-all.sh` في مستودع اللوحة. وهي تضبط كل
+> المكاتب أياً كان المكتب الذي شُغّلت من مجلّده.
 
 تسأل مرّةً واحدة، وتضبط كل المكاتب، وتحفظ نسخةً من كل `.env` قبل
 تعديله، وتضبط صلاحياته على `600`، وتنظّف الكاش. ولا تلمس النطاق المحمي
