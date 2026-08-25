@@ -161,7 +161,49 @@ class PlanLimits
     {
         $limit = self::of($resource);
 
+        if ($limit === null || self::used($resource) < $limit) {
+            return false;
+        }
+
+        // ═══ حدودٌ طازجة قبل الرفض ═══
+        //
+        // الحدود تنزل من اللوحة في ردّ النبضة، والنبضة كل ربع ساعة.
+        // فمن رُقّيت باقتُه من اللوحة بقي مكتبُه يرفض بحدود الباقة
+        // القديمة حتى النبضة التالية — ترقيةٌ دُفع ثمنها ثم تُنتظر.
+        //
+        // فقبل أن يُقال «لا» تُطلب الحدود الآن: نداءٌ واحد مخنوق بفاصل،
+        // ولا يقع إلا في مسار الرفض — من هو دون حدّه لا يُبطأ بشيء.
+        // وإن لم تُجب اللوحة بقي الرفض بآخر ما وصل: الفشل هنا مغلقٌ
+        // عمداً، عكسَ غيابِ الحدود كلّها — حدٌّ معروف يُحترم حتى يُبدَّل.
+        self::refresh();
+
+        $limit = self::of($resource);
+
         return $limit !== null && self::used($resource) >= $limit;
+    }
+
+    /**
+     * طلبُ الحدود من اللوحة الآن — مخنوقٌ كي لا يصير المسارُ الساخن
+     * قصفاً على الجسر: محاولةٌ واحدة كل نصف دقيقة مهما تزاحم الرافضون.
+     */
+    private static function refresh(): void
+    {
+        try {
+            if (!\App\Services\PanelReporter::configured()) {
+                return;
+            }
+
+            // Cache::add ذرّية: الأول يمرّ ومن بعده يقرأ ما جلبه
+            if (!Cache::add('plan-limits:jit-refresh', 1, 30)) {
+                return;
+            }
+
+            // النبضة نفسها هي القناة: ردُّها يحمل الباقة والحدود فيُحفظان
+            // في sync() — لا مسار مزامنةٍ ثانٍ يُخترع هنا.
+            \App\Services\PanelReporter::heartbeat();
+        } catch (\Throwable) {
+            // تعذُّر الجلب لا يُغيّر الحكم: يُرفض بآخر ما وصل
+        }
     }
 
     /** كم بقي قبل الحدّ — null تعني «بلا حدّ معروف». */
@@ -185,6 +227,17 @@ class PlanLimits
 
     /** هل تتّسع الباقة لملفٍ بهذا الحجم؟ يُحسب بالبايت لا بالجيجا المقرَّبة. */
     public static function storageAllows(int $incomingBytes): bool
+    {
+        if (!self::storageAllowsAsKnown($incomingBytes)) {
+            // الرفضُ وشيك: تُطلب حدودٌ طازجة أولاً — كما في reached()
+            self::refresh();
+        }
+
+        return self::storageAllowsAsKnown($incomingBytes);
+    }
+
+    /** الحكم بآخر حدودٍ واصلة، بلا أي نداء. */
+    private static function storageAllowsAsKnown(int $incomingBytes): bool
     {
         $limitGb = self::of('storage_gb');
 
