@@ -74,3 +74,8 @@ coverage/
 /install_*.sh
 /check_*.php
 /fix_*.php
+
+# ملفات تجريبية عابرة: تُكتب أثناء التشخيص ولا يُقصد شحنُها. تسرّب
+# أحدها إلى تسعة مكاتب في الإنتاج قبل أن يُلحَظ.
+/tests/Feature/Zz*Test.php
+/*_probe.php
