@@ -77,11 +77,21 @@ class PanelReporter
                 ->withHeaders(['X-Mudawala-Token' => config('panel.ingest_token')])
                 ->acceptJson()
                 ->post(rtrim((string) config('panel.ingest_url'), '/') . '/ingest/heartbeat', [
-                    'users_count' => \App\Models\User::query()->where('is_active', true)->count(),
-                    'clients_count' => \App\Models\Client::query()->count(),
-                    'cases_count' => \App\Models\LegalCase::query()->count(),
-                    'documents_count' => \App\Models\Document::query()->count(),
-                    'storage_bytes' => (int) \App\Models\Document::query()->sum('file_size'),
+                    // الأرقامُ من محاسبة الحدود نفسها لا من عدٍّ موازٍ.
+                    //
+                    // كانت هذه السطور تعدّ «المستخدمين النشطين»، والحدُّ
+                    // يُفرَض على «كلِّ من ليس موكّلاً». فرقمان لكلمةٍ
+                    // واحدة: تعرض اللوحةُ أحدهما ويمنع المكتبُ بالآخر،
+                    // فيقف صاحب اللوحة أمام «١ من ٥» في مكتبٍ فيه ستّة.
+                    'users_count' => \App\Support\PlanLimits::used('users'),
+                    'clients_count' => \App\Support\PlanLimits::used('clients'),
+                    'cases_count' => \App\Support\PlanLimits::used('cases'),
+                    'documents_count' => \App\Support\PlanLimits::used('documents'),
+                    'storage_bytes' => \App\Support\PlanLimits::usedStorageBytes(),
+                    // وهل يعرف هذا المكتب حدوده أصلاً؟ مكتبٌ لم تصله
+                    // يعمل بلا حدّ — وذاك مقصود، لكنّه يجب أن يُرى.
+                    'limits_known' => !\App\Support\PlanLimits::unlimited(),
+                    'limits_synced_at' => \App\Support\PlanLimits::syncedAt()?->toIso8601String(),
                     'ai_enabled' => self::aiEnabled(),
                     'app_version' => (string) config('app.version', ''),
                     // نبض الأخطاء: عدد ونوع ومسار — بلا نصّ الخطأ، فبيانات

@@ -25,6 +25,7 @@ class PlanLimits
     public const KEY = 'plan_limits';
     public const PLAN_KEY = 'plan_key';
     public const PLAN_NAME = 'plan_name';
+    public const SYNCED_AT = 'plan_limits_synced_at';
 
     /** الموارد التي لها حدّ، واسم كل واحد كما يُعرض. */
     public const RESOURCES = [
@@ -53,6 +54,63 @@ class PlanLimits
         Setting::set(self::KEY, json_encode($clean, JSON_UNESCAPED_UNICODE), 'subscription');
         Setting::set(self::PLAN_KEY, (string) $planKey, 'subscription');
         Setting::set(self::PLAN_NAME, (string) $planName, 'subscription');
+        Setting::set(self::SYNCED_AT, now()->toIso8601String(), 'subscription');
+    }
+
+    /**
+     * متى وصلت الحدود آخر مرّة — null تعني «لم تصل قطّ».
+     *
+     * ═══ لماذا يلزم أن يُعرف ═══
+     *
+     * الفشلُ مفتوحٌ عن قصد: مكتبٌ لم تصله حدود يعمل بلا حدّ، لأنّ إقفال
+     * مكتبٍ يعمل لأنّ نبضةً لم تصل أسوأ من تجاوزٍ يوماً.
+     *
+     * لكنّ «يوماً» صارت شهوراً في مكتبٍ لم يُلاحظ أحدٌ أنّ حدوده لم تصل
+     * أصلاً — فبقي بلا حدّ، ولم يظهر ذلك في شاشةٍ ولا أمر. والفشلُ
+     * المفتوح يبقى صحيحاً؛ ما يجب أن يتغيّر هو أن يُقال.
+     */
+    public static function syncedAt(): ?\Illuminate\Support\Carbon
+    {
+        $raw = Setting::get(self::SYNCED_AT);
+
+        if (!$raw) {
+            return null;
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse((string) $raw);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /** هل يعمل هذا المكتب بلا حدٍّ معروف؟ */
+    public static function unlimited(): bool
+    {
+        return self::all() === [];
+    }
+
+    /**
+     * الاستهلاك كما تفرضه المحاسبة — لا كما يُعدّ في مكانٍ آخر.
+     *
+     * ═══ العطل الذي وُضع له ═══
+     *
+     * كانت النبضة تُرسل عدداً آخر: المستخدمون النشطون. والحدُّ يُفرَض على
+     * غيره: كلُّ من ليس موكّلاً، نشطاً كان أو موقوفاً. فرقمان لكلمةٍ
+     * واحدة — تعرض اللوحةُ أحدهما ويمنع المكتبُ بالآخر، ويقف صاحب
+     * اللوحة أمام «١ من ٥» في مكتبٍ فيه ستّة.
+     *
+     * @return array<string, int>
+     */
+    public static function usage(): array
+    {
+        $usage = [];
+
+        foreach (array_keys(self::RESOURCES) as $key) {
+            $usage[$key] = self::used($key);
+        }
+
+        return $usage;
     }
 
     /** @return array<string, int> فارغة = لم تصل حدود بعد */

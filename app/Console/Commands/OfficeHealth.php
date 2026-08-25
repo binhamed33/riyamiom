@@ -36,6 +36,7 @@ class OfficeHealth extends Command
         $this->checkBackups();
         $this->checkData();
         $this->checkFeatures();
+        $this->checkPlanLimits();
         $this->checkMail();
         $this->checkLog();
 
@@ -188,6 +189,43 @@ class OfficeHealth extends Command
      * والموكّل لا يستلم. وسببُه الأشهر أنّ cron لا يشغّل schedule:run،
      * فلا يعمل العامل أصلاً.
      */
+    /**
+     * حدودُ الباقة: أوصلت، وأيُّ موردٍ تجاوزها؟
+     *
+     * ═══ لماذا فحصٌ لهذا ═══
+     *
+     * الفشلُ مفتوحٌ عن قصد: مكتبٌ لم تصله حدود يعمل بلا حدّ. لكنّ ذلك
+     * لم يكن يظهر في شيء — لا شاشة ولا أمر — فبقي مكتبٌ شهوراً يُنشئ
+     * ما شاء وباقتُه تقول غير ذلك، ولم يعلم أحد.
+     */
+    private function checkPlanLimits(): void
+    {
+        $this->section('حدود الباقة');
+
+        if (\App\Support\PlanLimits::unlimited()) {
+            $this->bad('لم تصل حدود الباقة إلى هذا المكتب — يعمل بلا حدّ.');
+            $this->line('        الحدود تنزل في ردّ النبضة. جرّب: php artisan panel:heartbeat --strict');
+
+            return;
+        }
+
+        $synced = \App\Support\PlanLimits::syncedAt();
+        $plan = \App\Support\PlanLimits::planName() ?: 'غير مسمّاة';
+
+        $this->ok('الباقة: ' . $plan . ($synced ? ' — وصلت حدودها ' . $synced->diffForHumans() : ''));
+
+        // تجاوزٌ قائم: يقع حين تُخفَّض الباقة بعد أن أُنشئ ما أُنشئ، أو
+        // حين تأخّرت الحدود عن الوصول فمرّ ما مرّ. والمنعُ يمنع الجديد
+        // ولا يحذف القديم — فيبقى التجاوز قائماً حتى يُقال.
+        foreach (\App\Support\PlanLimits::report() as $row) {
+            if ($row['used'] > $row['limit']) {
+                $this->bad($row['label'] . ': ' . $row['used'] . ' والحدّ ' . $row['limit'] . ' — تجاوزٌ قائم');
+            } elseif ($row['reached']) {
+                $this->line('      •  ' . $row['label'] . ': بلغ الحدّ (' . $row['used'] . '/' . $row['limit'] . ')');
+            }
+        }
+    }
+
     private function checkMail(): void
     {
         $this->section('البريد');
