@@ -115,8 +115,14 @@ class MailQueueWorkerTest extends TestCase
         $this->assertSame('مكتب الاختبار', $sent->getFrom()[0]->getName());
     }
 
-    /** والطابور العام لا يُمسّ: مهامّه تبقى مكانها. */
-    public function test_draining_mail_leaves_the_default_queue_alone(): void
+    /**
+     * تسميةُ الطابور تعزل فعلاً.
+     *
+     * يُصرَّف الطابوران معاً في الإنتاج، لكنّ العزل يبقى صحيحاً: من
+     * صرّف «mail» وحده لم يمسّ ما في «default». وعليه بُني ترتيبُ
+     * الأولوية في المجدول.
+     */
+    public function test_naming_a_queue_really_isolates_it(): void
     {
         $this->dispatchOne();
 
@@ -158,12 +164,67 @@ class MailQueueWorkerTest extends TestCase
     /** المجدول يحمل عاملَ البريد — بدونه لا يخرج شيء من الطابور. */
     public function test_the_scheduler_carries_the_mail_worker(): void
     {
-        $schedule = app(\Illuminate\Console\Scheduling\Schedule::class);
+        $this->assertStringContainsString('--queue=mail', $this->scheduledCommands(), 'لا عامل بريد في المجدول');
+        $this->assertStringContainsString('--stop-when-empty', $this->scheduledCommands());
+        $this->assertMatchesRegularExpression(
+            '/--queue=[^ ]*mail[^\n]*\* \* \* \* \*/',
+            $this->scheduledCommands(),
+            'عامل البريد لا يعمل كل دقيقة',
+        );
+    }
 
-        $commands = collect($schedule->events())->map(fn ($e) => $e->command . ' ' . $e->expression)->implode("\n");
+    /**
+     * كلُّ طابورٍ يُدفَع إليه شيء له من يصرّفه.
+     *
+     * حدث فعلاً: صُرِّف طابور «mail» وحده وبقي «default» بلا قارئ. ولم
+     * يظهر لأنّ QUEUE_CONNECTION كان sync فلا شيء يمرّ بطابور؛ فلمّا صار
+     * database توقّف تسليم الاقتراحات بلا رسالة خطأ واحدة — دُفعت إلى
+     * مكانٍ لا أحد ينظر فيه.
+     */
+    public function test_every_queue_that_receives_work_has_someone_draining_it(): void
+    {
+        $drained = [];
 
-        $this->assertStringContainsString('--queue=mail', $commands, 'لا عامل بريد في المجدول');
-        $this->assertStringContainsString('--stop-when-empty', $commands);
-        $this->assertMatchesRegularExpression('/--queue=mail[^\n]*\* \* \* \* \*/', $commands, 'عامل البريد لا يعمل كل دقيقة');
+        foreach (explode("\n", $this->scheduledCommands()) as $line) {
+            if (preg_match('/--queue=([^ ]+)/', $line, $m)) {
+                $drained = array_merge($drained, explode(',', $m[1]));
+            }
+        }
+
+        // «mail» للبريد، و«default» لكل ما يُدفَع بلا تسمية — ومنه
+        // DeliverSuggestionJob.
+        foreach (['mail', 'default'] as $queue) {
+            $this->assertContains($queue, $drained, "طابور «{$queue}» بلا عامل يصرّفه");
+        }
+    }
+
+    /** والاقتراح المدفوع فعلاً يُلتقَط. */
+    public function test_a_suggestion_job_is_picked_up_by_the_same_worker(): void
+    {
+        DB::table('jobs')->insert([
+            'queue' => 'default',
+            'payload' => json_encode([
+                'uuid' => 'test',
+                'displayName' => 'App\\Jobs\\DeliverSuggestionJob',
+                'job' => 'Illuminate\\Queue\\CallQueuedHandler@call',
+                'maxTries' => 1,
+                'data' => ['commandName' => 'App\\Jobs\\DeliverSuggestionJob', 'command' => serialize(new \App\Jobs\DeliverSuggestionJob(999))],
+            ]),
+            'attempts' => 0,
+            'reserved_at' => null,
+            'available_at' => now()->timestamp,
+            'created_at' => now()->timestamp,
+        ]);
+
+        $this->artisan('queue:work', ['--queue' => 'mail,default', '--once' => true, '--tries' => 1]);
+
+        $this->assertSame(0, DB::table('jobs')->count(), 'الاقتراح بقي في الطابور — لا أحد يصرّفه');
+    }
+
+    private function scheduledCommands(): string
+    {
+        return collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())
+            ->map(fn ($e) => $e->command . ' ' . $e->expression)
+            ->implode("\n");
     }
 }

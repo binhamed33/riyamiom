@@ -49,9 +49,17 @@ Schedule::command('suggestions:sync-replies')->everyFifteenMinutes()->withoutOve
 // يتوقّف (--stop-when-empty)، بسقفٍ زمنيّ دون الدقيقة كي لا تتراكب
 // العمليات، و withoutOverlapping حارسٌ ثانٍ لو تأخّرت واحدة.
 //
-// وطابور «mail» وحده: الطابور العام له مهامّه وحسابُه، ولا يُقحَم
-// عاملُ البريد عليها.
-Schedule::command('queue:work --queue=mail --stop-when-empty --tries=3 --max-time=50 --sleep=1')
+// والطابوران معاً — «mail» أولاً ثم «default».
+//
+// ولم يكن كذلك في أول الأمر: صُرِّف طابور البريد وحده، فبقي الطابور
+// العام بلا قارئ. ولم يُلحَظ لأنّ QUEUE_CONNECTION كان sync في المكاتب،
+// فمهمّةُ توصيل الاقتراحات تُنفَّذ داخل الطلب ولا تمرّ بطابور أصلاً.
+// فلمّا صار database — وهو الصواب كي لا ينتظر «حفظ القضية» مصافحةَ
+// Gmail — نزلت الاقتراحاتُ طابوراً لا أحد يقرؤه، فتوقّف تسليمُها.
+//
+// ترتيبُ الأسماء أولويّةٌ لا تعداد: ما في «mail» يخرج قبل ما في
+// «default»، فلا يؤخّر إشعارَ موكّلٍ عملٌ خلفيّ طويل.
+Schedule::command('queue:work --queue=mail,default --stop-when-empty --tries=3 --max-time=50 --sleep=1')
     ->everyMinute()
     ->withoutOverlapping()
     ->runInBackground();

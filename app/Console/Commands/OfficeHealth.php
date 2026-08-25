@@ -204,10 +204,11 @@ class OfficeHealth extends Command
             return;
         }
 
+        // كل الطوابير لا طابور البريد وحده: مهمّةٌ عالقة في «default»
+        // — توصيلُ اقتراح مثلاً — لا تُصدر خطأً ولا تُرى، تبقى صامتة.
         try {
-            $pending = \Illuminate\Support\Facades\DB::table('jobs')->where('queue', 'mail')->count();
+            $pending = \Illuminate\Support\Facades\DB::table('jobs')->count();
             $stuck = \Illuminate\Support\Facades\DB::table('jobs')
-                ->where('queue', 'mail')
                 ->where('available_at', '<', now()->subMinutes(15)->timestamp)
                 ->count();
             $failed = \Illuminate\Support\Facades\DB::table('failed_jobs')->count();
@@ -216,15 +217,15 @@ class OfficeHealth extends Command
         }
 
         if ($stuck > 0) {
-            $this->bad($stuck . ' رسالة عالقة منذ ربع ساعة — الأرجح أنّ cron لا يشغّل schedule:run');
+            $this->bad($stuck . ' مهمّة عالقة منذ ربع ساعة — الأرجح أنّ cron لا يشغّل schedule:run');
         } elseif ($pending > 0) {
-            $this->ok($pending . ' رسالة في الطابور تنتظر دورها');
+            $this->ok($pending . ' مهمّة في الطابور تنتظر دورها');
         } else {
-            $this->ok('طابور البريد فارغ');
+            $this->ok('الطوابير فارغة');
         }
 
         if ($failed > 0) {
-            $this->bad($failed . ' رسالة أخفقت نهائياً — راجع السجلّ');
+            $this->bad($failed . ' مهمّة أخفقت نهائياً — راجع السجلّ');
         }
     }
 
