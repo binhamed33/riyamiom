@@ -372,6 +372,84 @@ class CentralMailTest extends TestCase
         $this->assertSame(OfficeMailer::NOT_CONFIGURED, $result['status']);
     }
 
+    /**
+     * كتلةُ AUTH تُحجب كاملةً مهما كان ترميزها.
+     *
+     * AUTH PLAIN يرسل base64("\0مستخدم\0كلمة") — كتلةً واحدة لا تطابق
+     * ترميزَ أيٍّ منهما وحده، فكانت تمرّ من scrub سليمة. وفكُّها
+     * بـ base64 عمليةُ سطرٍ واحد لمن يقرأ السجلّ.
+     */
+    public function test_scrub_redacts_the_whole_auth_blob(): void
+    {
+        config([
+            'mail.mailers.smtp.username' => 'mudawalah@gmail.com',
+            'mail.mailers.smtp.password' => 'abcdefghijklmnop',
+        ]);
+
+        $blob = base64_encode("\0mudawalah@gmail.com\0abcdefghijklmnop");
+        $clean = MailIdentity::scrub("AUTH PLAIN {$blob} rejected");
+
+        $this->assertStringNotContainsString($blob, $clean);
+        $this->assertStringNotContainsString('abcdefghijklmnop', $clean);
+        $this->assertStringContainsString('[محجوب]', $clean);
+    }
+
+    /**
+     * والمُبلِّغ العام لا يكتب اسمَ المستخدم خاماً.
+     *
+     * كان OfficeMailer وOfficeMail ينقّيان ما يدوّنانه، ثم يأتي
+     * المُبلِّغ في bootstrap/app.php فيكتب رسالة الاستثناء خاماً مرّةً
+     * أخرى. ورسالةُ Symfony تحمل اسم المستخدم نصّاً.
+     */
+    public function test_the_global_reporter_never_writes_the_smtp_username(): void
+    {
+        config(['mail.mailers.smtp.username' => 'mudawalah@gmail.com']);
+
+        // المفحوصُ الملفُّ نفسه لا ما يمرّ بالمستمعين.
+        //
+        // فبلاغٌ واحد يُنتج سطرين: واحدٌ من مُبلِّغنا وآخرُ من مُبلِّغ
+        // لارافل الافتراضي. وتنقيةُ الأوّل وحدها كانت تترك الثاني خاماً
+        // — وهو ما ثبت بالتجربة قبل هذا الإصلاح.
+        config(['logging.default' => 'single']);
+        $file = storage_path('logs/laravel.log');
+        @unlink($file);
+
+        report(new \Symfony\Component\Mailer\Exception\TransportException(
+            'Failed to authenticate on SMTP server with username "mudawalah@gmail.com" using LOGIN'
+        ));
+
+        $written = (string) @file_get_contents($file);
+        @unlink($file);
+
+        $this->assertNotSame('', $written, 'لم يُدوَّن شيء');
+        $this->assertStringNotContainsString('mudawalah@gmail.com', $written);
+        $this->assertStringContainsString('[محجوب]', $written);
+    }
+
+    /**
+     * والحراسةُ عند المُنسِّق، فلا تنجو منها كتابةٌ مهما كان مصدرها.
+     *
+     * سطرٌ يكتبه أيُّ كودٍ بـ Log::error مباشرةً — لا عبر استثناء ولا
+     * عبر OfficeMailer — يمرّ من المُنسِّق نفسه.
+     */
+    public function test_even_a_direct_log_call_cannot_write_the_secret(): void
+    {
+        config([
+            'logging.default' => 'single',
+            'mail.mailers.smtp.password' => 'abcdefghijklmnop',
+        ]);
+
+        $file = storage_path('logs/laravel.log');
+        @unlink($file);
+
+        Log::error('debug dump: password=abcdefghijklmnop');
+
+        $written = (string) @file_get_contents($file);
+        @unlink($file);
+
+        $this->assertStringNotContainsString('abcdefghijklmnop', $written);
+    }
+
     public function test_diagnostics_carry_no_secret(): void
     {
         $flat = json_encode(MailIdentity::diagnostics(), JSON_UNESCAPED_UNICODE);

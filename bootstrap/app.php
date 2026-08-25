@@ -28,8 +28,22 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // ═══ لا يدخل السجلَّ سرٌّ ═══
+        //
+        // رسالةُ TransportException من Symfony تحمل اسمَ المستخدم نصّاً:
+        // «Failed to authenticate on SMTP server with username "…"».
+        // وsetPassword موسومةٌ #[SensitiveParameter] فتبقى كلمةُ المرور
+        // خارج الأثر، أمّا setUsername فلا — فهو ما يتسرّب.
+        //
+        // وكان OfficeMailer وOfficeMail ينقّيان ما يدوّنانه، ثم يأتي
+        // هذا المُبلِّغ العام فيكتب الرسالة خاماً مرّةً أخرى. وسجلُّ
+        // المكتب يُقرأ ويُنسخ ويُرسَل عند الشكوى.
+        //
+        // ويعود null لا false عمداً: false يُوقف مُبلِّغ لارافل
+        // الافتراضي، وهو من يكتب الأثر الكامل الذي نحتاجه للتشخيص.
+        // فالمكتوب هنا منقّىً، والافتراضيُّ يكتب ما يكتب.
         $exceptions->report(function (\Throwable $e) {
-            logger()->error($e->getMessage(), ['exception' => $e]);
+            logger()->error(\App\Support\MailIdentity::scrub($e->getMessage()), ['exception' => $e]);
         });
 
         $exceptions->dontReport(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);

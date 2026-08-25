@@ -65,11 +65,15 @@ return [
             'level' => env('LOG_LEVEL', 'error'),
         ],
 
+        // ScrubSecrets: آخرُ نقطةٍ قبل أن تصير السطورُ بايتات على
+        // القرص. تنقيةُ من يكتب لا تكفي — لارافل يسجّل الاستثناء مرّةً
+        // ثانية بمُبلِّغه الافتراضي، فيُكتب خاماً بجانب المنقّى.
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
+            'tap' => [App\Logging\ScrubSecrets::class],
         ],
 
         'daily' => [
@@ -78,6 +82,7 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
+            'tap' => [App\Logging\ScrubSecrets::class],
         ],
 
         'slack' => [

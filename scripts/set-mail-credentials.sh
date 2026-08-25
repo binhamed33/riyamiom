@@ -167,18 +167,41 @@ fi
 ok "استُلمت (${#APP_PW} حرفاً) — لن تُطبع بعد الآن."
 
 # ── تعديلٌ ذرّي لمفتاحٍ واحد: يُستبدل إن وُجد، ويُضاف إن غاب.
+#
+# ═══ ولماذا بلا awk ولا sed ولا أيّ أمرٍ خارجي ═══
+#
+# كانت القيمة تُمرَّر هكذا: awk -v v="$value". وawk برنامجٌ خارجي
+# يُشتقّ ويُنفَّذ، فتظهر وسائطُه في ‎/proc/<pid>/cmdline — وهو مقروءٌ
+# لكلّ مستخدمي الجهاز، لا لصاحب العملية وحده.
+#
+# فمن شغّل ‎ps -ef‎ في تلك اللحظة على خادمٍ فيه عشرة مستخدمي مكاتب رأى:
+#
+#     awk -v k=MAIL_PASSWORD -v v=xxxxxxxxxxxxxxxx
+#
+# ونافذةُ الظهور قصيرة، لكنّ السكربت يمرّ على عشرة مكاتب فيفتحها عشراً،
+# ومن يراقب في حلقةٍ لا يحتاج أكثر.
+#
+# فالتعديلُ الآن داخل الصدفة وحدها: لا اشتقاقَ ولا وسائط، والسرُّ لا
+# يغادر ذاكرةَ العملية إلى ملفٍّ يُقرأ.
 put_key() {
-    local file="$1" key="$2" value="$3"
+    local file="$1" key="$2" value="$3" line out="" found=0
 
-    if grep -q "^${key}=" "$file"; then
-        # القيمة تُمرَّر عبر awk لا sed: لا تفسير لمحارف خاصة فيها
-        awk -v k="$key" -v v="$value" '
-            $0 ~ "^" k "=" { print k "=" v; next }
-            { print }
-        ' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
-    else
-        printf '%s=%s\n' "$key" "$value" >> "$file"
-    fi
+    while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in
+            "$key="*) out+="$key=$value"$'\n'; found=1 ;;
+            *)        out+="$line"$'\n' ;;
+        esac
+    done < "$file"
+
+    [ "$found" = "0" ] && out+="$key=$value"$'\n'
+
+    # الملفُّ المؤقّت يُقيَّد قبل أن يُكتب فيه شيء: umask الافتراضية
+    # ‎0644، وmv ينقل الأذونات معه — فكانت .env تعود مقروءةً للجميع
+    # لحظةً، وchmod بعدها كان يُسكَت خطؤه ويُعلن النجاح على كل حال.
+    : > "$file.tmp" || return 1
+    chmod 600 "$file.tmp" || return 1
+    printf '%s' "$out" > "$file.tmp" || return 1
+    mv "$file.tmp" "$file"
 }
 
 DONE=0
@@ -216,9 +239,14 @@ while read -r dir; do
     put_key "$dir/.env" MAIL_FROM_NAME '"مُداوَلة"'
     put_key "$dir/.env" QUEUE_CONNECTION database
 
-    chown "$owner":"$owner" "$dir/.env" 2>/dev/null
-    chmod 600 "$dir/.env" 2>/dev/null
-    ok "‏.env مضبوط (الصلاحيات 600 — لا يقرؤه إلا صاحبه)"
+    # تُفحص نتيجتُهما: كان يُسكَت خطؤهما ثم يُعلن «الصلاحيات 600»
+    # على كل حال — وهو وعدٌ بأمانٍ لم يتحقّق.
+    if chown "$owner":"$owner" "$dir/.env" && chmod 600 "$dir/.env"; then
+        ok "‏.env مضبوط (الصلاحيات 600 — لا يقرؤه إلا صاحبه)"
+    else
+        bad "‏.env مضبوط، لكن تعذّر ضبط أذوناته — راجعها بنفسك:"
+        note "chown $owner:$owner $dir/.env && chmod 600 $dir/.env"
+    fi
 
     sudo -u "$owner" "$PHP" "$dir/artisan" config:clear --no-interaction >/dev/null 2>&1 \
         && ok "الكاش نُظّف" || bad "تعذّر تنظيف الكاش — نظّفه يدوياً"

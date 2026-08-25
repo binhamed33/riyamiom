@@ -103,6 +103,9 @@ class MailDoctor extends Command
      */
     private function brief(): int
     {
+        // المستخدم محجوب هنا كما في diagnostics(): السطرُ يُلصق في
+        // تذكرة دعم، وعنوانُ البريد المركزي نصفُ الاعتماد.
+
         $probe = 'skipped';
 
         if ($this->option('probe')) {
@@ -114,7 +117,7 @@ class MailDoctor extends Command
         $this->line(implode(' ', [
             'MAILSTATE',
             'configured=' . (MailIdentity::isConfigured() ? '1' : '0'),
-            'from=' . MailIdentity::fromAddress(),
+            'from=' . MailIdentity::maskEmail(MailIdentity::fromAddress()),
             'name=' . (trim((string) \App\Models\Setting::get('office_name', '')) !== '' ? '1' : '0'),
             'replyto=' . (MailIdentity::replyTo() !== null ? '1' : '0'),
             'queue=' . (string) config('queue.default', 'sync'),

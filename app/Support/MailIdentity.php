@@ -236,6 +236,18 @@ class MailIdentity
             (string) config('mail.mailers.smtp.username', ''),
         ], static fn (string $s): bool => trim($s) !== '');
 
+        // وكتلةُ AUTH كاملةً مهما كان ترميزها.
+        //
+        // AUTH PLAIN يرسل base64("\0مستخدم\0كلمة") — كتلةً واحدة لا
+        // تطابق ترميزَ أيٍّ منهما وحده، فتمرّ من الاستبدال أعلاه سليمة.
+        // وXOAUTH2 كذلك. فيُحجب ما بعد الكلمة أياً كان، لأنّ كلَّ ما
+        // يلي «AUTH» في حوار SMTP اعتمادٌ بحكم التعريف.
+        $text = (string) preg_replace(
+            '/\b(AUTH\s+(?:PLAIN|LOGIN|XOAUTH2|CRAM-MD5))\s+[A-Za-z0-9+\/=]+/i',
+            '$1 [محجوب]',
+            $text,
+        );
+
         foreach ($secrets as $secret) {
             $text = str_replace($secret, '[محجوب]', $text);
             $text = str_replace(base64_encode($secret), '[محجوب]', $text);

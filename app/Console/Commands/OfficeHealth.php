@@ -267,7 +267,10 @@ class OfficeHealth extends Command
 
             if (preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/', $line, $m)
                 && \Illuminate\Support\Carbon::parse($m[1])->gte($since)) {
-                $recent[] = mb_substr($line, 0, 160);
+                // يُنقّى قبل أن يُقصّ: هذه السطور تُطبع على الشاشة
+                // ثم تُنسخ في تذكرة دعم، وفيها اسمُ مستخدم SMTP كما
+                // ردّه الخادم.
+                $recent[] = mb_substr(\App\Support\MailIdentity::scrub($line), 0, 160);
             }
         }
 
