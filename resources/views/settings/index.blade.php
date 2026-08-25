@@ -341,6 +341,7 @@
                     @error('office_name')
                         <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
                     @enderror
+                    <p class="mt-1 text-xs text-gray-400">يظهر مُرسِلاً في كل رسالة تصل موكّليك.</p>
                 </div>
                 <div>
                     <label for="office_email" class="block text-sm font-medium text-gray-700 mb-2">{{ __('app.office_email') }}</label>
@@ -354,6 +355,7 @@
                     @error('office_email')
                         <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
                     @enderror
+                    <p class="mt-1 text-xs text-gray-400">وجهةُ الردّ: حين يردّ الموكّل على رسالته يصل ردُّه هنا.</p>
                 </div>
                 <div>
                     <label for="office_phone" class="block text-sm font-medium text-gray-700 mb-2">{{ __('app.office_phone') }}</label>
@@ -390,9 +392,61 @@
             <div class="border-b border-gray-200 pb-3">
                 <h2 class="text-lg font-semibold text-gold-dark">بريد الموكّلين</h2>
                 <p class="text-xs text-gray-400 mt-1">
-                    يُرسَل من بريد مُداوَلة المركزي باسم مكتبك، والردّ يصل إلى بريد المكتب أعلاه.
+                    يُرسَل من بريد مُداوَلة المركزي باسم مكتبك، والردّ يصل إلى بريد المكتب.
                 </p>
             </div>
+
+            {{--
+                بطاقةُ الهوية.
+
+                اسمُ المكتب وبريدُه حقلان في «معلومات المكتب» أعلاه، ولا
+                يبدو منهما أنّهما يحكمان ما يقرؤه الموكّل في رسالته. فتُعرض
+                الترويسةُ هنا كما ستخرج فعلاً — من MailIdentity نفسها التي
+                يقرأ منها الإرسال، فلا تعِد الشاشةُ بشيءٍ ويخرج البريد بغيره.
+            --}}
+            @php
+                $mailIdentity = \App\Support\MailIdentity::clientSees();
+                $mailIssues = \App\Support\MailIdentity::identityIssues();
+            @endphp
+
+            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <p class="text-xs font-semibold text-gray-500 mb-3">ما يظهر للموكّل في رسالته</p>
+                <dl class="space-y-2.5">
+                    <div class="flex items-baseline gap-3">
+                        <dt class="w-28 shrink-0 text-xs text-gray-500">المُرسِل</dt>
+                        <dd class="text-sm font-semibold text-gray-900">{{ $mailIdentity['name'] }}</dd>
+                    </div>
+                    <div class="flex items-baseline gap-3">
+                        <dt class="w-28 shrink-0 text-xs text-gray-500">العنوان</dt>
+                        <dd class="text-xs text-gray-500" dir="ltr">{{ $mailIdentity['address'] }}</dd>
+                    </div>
+                    <div class="flex items-baseline gap-3">
+                        <dt class="w-28 shrink-0 text-xs text-gray-500">يصل الردّ إلى</dt>
+                        <dd class="text-xs">
+                            @if($mailIdentity['replyTo'])
+                                <span class="text-gray-900 font-medium" dir="ltr">{{ $mailIdentity['replyTo'] }}</span>
+                            @else
+                                <span class="text-red-700 font-medium">الصندوق المركزي — لا يراه أحدٌ في مكتبك</span>
+                            @endif
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+            @if($mailIssues)
+                <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 space-y-2" role="alert">
+                    @foreach($mailIssues as $mailIssue)
+                        <p class="text-xs text-amber-900 leading-relaxed">
+                            {{ $mailIssue['text'] }}
+                            <a href="#{{ $mailIssue['key'] }}"
+                               class="font-bold underline decoration-amber-400 underline-offset-2 hover:text-amber-950">
+                                اضبطه في «معلومات المكتب»
+                            </a>
+                        </p>
+                    @endforeach
+                </div>
+            @endif
+
             <input type="hidden" name="mail_kinds_section" value="1">
             <div class="space-y-4">
                 @foreach(\App\Mail\MailKind::all() as $mailKind)

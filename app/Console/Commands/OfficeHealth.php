@@ -200,6 +200,12 @@ class OfficeHealth extends Command
 
         $this->ok('SMTP مضبوط — المُرسِل ' . \App\Support\MailIdentity::fromAddress());
 
+        // هويّةُ المكتب في الترويسة: نقصُها لا يمنع الإرسال، فيمرّ
+        // صامتاً حتى يردّ موكّلٌ على رسالةٍ ولا يصل ردُّه أحداً.
+        foreach (\App\Support\MailIdentity::identityIssues() as $issue) {
+            $this->bad($issue['text']);
+        }
+
         if (config('queue.default') !== 'database') {
             return;
         }

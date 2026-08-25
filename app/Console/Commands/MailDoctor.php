@@ -9,6 +9,7 @@ use App\Support\MailIdentity;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Symfony\Component\Mailer\Transport\Smtp\SmtpTransport;
 
 /**
  * فحصُ البريد وإرسالُ رسالة تجربة.
@@ -23,7 +24,8 @@ class MailDoctor extends Command
 {
     protected $signature = 'mail:doctor
                             {--to= : عنوانٌ تُرسَل إليه رسالة تجربة}
-                            {--now : أرسل مباشرةً بلا طابور — لرؤية خطأ SMTP فوراً}';
+                            {--now : أرسل مباشرةً بلا طابور — لرؤية خطأ SMTP فوراً}
+                            {--probe : تحقّق من الاعتماد لدى الخادم بلا إرسال رسالة}';
 
     protected $description = 'يفحص إعداد البريد ويرسل رسالة تجربة';
 
@@ -34,6 +36,13 @@ class MailDoctor extends Command
 
         foreach (MailIdentity::diagnostics() as $key => $value) {
             $this->line(sprintf('  %-16s %s', $key, $value));
+        }
+
+        // ثغراتُ الهويّة تُقال هنا لا في «الجاهزية»: هذه يسدّها المكتب
+        // من شاشة إعداداته، وتلك يصلحها من يملك الخادم.
+        foreach (MailIdentity::identityIssues() as $issue) {
+            $this->line('');
+            $this->components->warn($issue['text']);
         }
 
         $this->line('');
@@ -51,11 +60,16 @@ class MailDoctor extends Command
         $this->line('');
         $ok = $this->report();
 
+        if ($this->option('probe')) {
+            return $this->probe() ? self::SUCCESS : self::FAILURE;
+        }
+
         $to = $this->option('to');
 
         if (!is_string($to) || $to === '') {
             $this->line('');
             $this->line('  لإرسال رسالة تجربة:  php artisan mail:doctor --to=you@example.com');
+            $this->line('  للتحقق من الاعتماد بلا إرسال:  php artisan mail:doctor --probe');
 
             return $ok ? self::SUCCESS : self::FAILURE;
         }
@@ -173,6 +187,63 @@ class MailDoctor extends Command
 
         $this->components->info('أُدرجت في الطابور. تخرج خلال دقيقة إن كان cron يعمل.');
         $this->line('  لإرسالها الآن يدوياً:  php artisan queue:work --queue=mail --stop-when-empty');
+
+        return true;
+    }
+
+    /**
+     * مصافحةٌ كاملة بلا رسالة: اتصال، ثم EHLO، ثم TLS، ثم AUTH.
+     *
+     * ═══ لماذا يلزم فحصٌ لا يُرسل ═══
+     *
+     * كلمةُ المرور تُضبط على عشرة مكاتب دفعةً واحدة، وواحدٌ منها قد
+     * يخرج بقيمةٍ مقطوعة أو قديمة. والطريقة الوحيدة قبل اليوم لاكتشاف
+     * ذلك كانت إرسال عشر رسائل حقيقية — أو انتظار موكّلٍ لا تصله
+     * رسالته. وهذا يسأل الخادم: هل تقبل هذا الاعتماد؟ ثم ينصرف.
+     *
+     * ولا تُطبع كلمةُ المرور ولا جزءٌ منها في أي مسار: ردُّ الخادم
+     * نفسه يمرّ بـ scrub لأنّ بعض الخوادم تُعيد ما أُرسل إليها.
+     */
+    private function probe(): bool
+    {
+        $this->line('');
+
+        if (!MailIdentity::isConfigured()) {
+            $this->components->error(
+                'لا شيء يُفحص: السائق «' . config('mail.default') . '» لا يتصل بخادم بريد أصلاً.'
+            );
+
+            return false;
+        }
+
+        $transport = Mail::mailer()->getSymfonyTransport();
+
+        if (!$transport instanceof SmtpTransport) {
+            $this->components->warn('الناقل ليس SMTP — لا مصافحة تُفحص.');
+
+            return true;
+        }
+
+        $this->components->info('مصافحة ' . config('mail.mailers.smtp.host') . ' بلا إرسال…');
+
+        try {
+            $transport->start();
+        } catch (\Throwable $e) {
+            $this->components->error(MailIdentity::scrub($e->getMessage()));
+            $this->hint($e);
+
+            return false;
+        } finally {
+            // الاتصال يُغلق في الحالين: جلسةٌ معلّقة تبقى محسوبةً على
+            // الحساب عند Gmail، وحدُّه على الجلسات المتزامنة ضيّق.
+            try {
+                $transport->stop();
+            } catch (\Throwable) {
+                // إغلاقٌ متعذّر بعد إخفاق الاتصال لا يضيف شيئاً
+            }
+        }
+
+        $this->components->info('الخادم قَبِل الاعتماد. البريد جاهز للإرسال من هذا المكتب.');
 
         return true;
     }

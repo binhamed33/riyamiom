@@ -55,7 +55,18 @@ class MailIdentity
 
         $name = trim((string) Setting::get('office_name', ''));
 
-        return $name !== '' ? $name : (string) config('app.name', self::SYSTEM_NAME);
+        if ($name !== '') {
+            return $name;
+        }
+
+        // ولا يُسقَط على app.name بلا فحص: قيمتُه الافتراضية في لارافل
+        // «Laravel»، وهي تصل الموكّل مُرسِلاً باسمها إن لم يُضبط
+        // APP_NAME. فما لم يكن اسماً حقيقياً فاسمُ النظام أصدق.
+        $appName = trim((string) config('app.name', ''));
+
+        return ($appName !== '' && strcasecmp($appName, 'Laravel') !== 0)
+            ? $appName
+            : self::SYSTEM_NAME;
     }
 
     /**
@@ -68,6 +79,63 @@ class MailIdentity
         $email = trim((string) Setting::get('office_email', ''));
 
         return self::isDeliverable($email) ? $email : null;
+    }
+
+    /**
+     * ترويسةُ الرسالة كما يقرؤها الموكّل — من موضعٍ واحد.
+     *
+     * الشاشةُ التي تعرضها والرسالةُ التي تُرسَل تقرآن من هنا معاً، فلا
+     * تعِد الشاشةُ بشيءٍ ويخرج البريد بغيره.
+     *
+     * @return array{name:string, address:string, replyTo:?string}
+     */
+    public static function clientSees(): array
+    {
+        return [
+            'name' => self::fromName(),
+            'address' => self::fromAddress(),
+            'replyTo' => self::replyTo(),
+        ];
+    }
+
+    /**
+     * ثغراتُ الهويّة التي يملك المكتبُ سدَّها بنفسه.
+     *
+     * لا تُخلط بأعطال الخادم: تلك يصلحها الدعم، وهذه حقلٌ فارغ في
+     * شاشة الإعدادات. وسكوتُ النظام عنها هو ما يجعل موكّلاً يردّ على
+     * رسالةٍ فلا يصل ردُّه أحداً.
+     *
+     * @return list<array{key:string, text:string}>
+     */
+    public static function identityIssues(): array
+    {
+        $issues = [];
+
+        if (trim((string) Setting::get('office_name', '')) === '') {
+            $issues[] = [
+                'key' => 'office_name',
+                'text' => 'اسم المكتب غير مضبوط — تصل رسائل موكّليك باسم «'
+                    . self::fromName() . '» لا باسم مكتبك.',
+            ];
+        }
+
+        $email = trim((string) Setting::get('office_email', ''));
+
+        if ($email === '') {
+            $issues[] = [
+                'key' => 'office_email',
+                'text' => 'بريد المكتب غير مضبوط — إن ردّ الموكّل على الرسالة'
+                    . ' وصل ردُّه الصندوقَ المركزي ولم يره أحدٌ في مكتبك.',
+            ];
+        } elseif (!self::isDeliverable($email)) {
+            $issues[] = [
+                'key' => 'office_email',
+                'text' => 'بريد المكتب المسجَّل غير صالح — يُتجاهَل، ويذهب ردُّ'
+                    . ' الموكّل إلى الصندوق المركزي.',
+            ];
+        }
+
+        return $issues;
     }
 
     /** عنوانٌ يصلح للإرسال إليه — لا فارغ ولا مشوَّه. */
