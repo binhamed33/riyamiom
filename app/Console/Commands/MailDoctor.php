@@ -25,12 +25,17 @@ class MailDoctor extends Command
     protected $signature = 'mail:doctor
                             {--to= : عنوانٌ تُرسَل إليه رسالة تجربة}
                             {--now : أرسل مباشرةً بلا طابور — لرؤية خطأ SMTP فوراً}
-                            {--probe : تحقّق من الاعتماد لدى الخادم بلا إرسال رسالة}';
+                            {--probe : تحقّق من الاعتماد لدى الخادم بلا إرسال رسالة}
+                            {--brief : سطرٌ واحد يُقرأ آلياً — لفحص المكاتب دفعةً واحدة}';
 
     protected $description = 'يفحص إعداد البريد ويرسل رسالة تجربة';
 
     public function handle(): int
     {
+        if ($this->option('brief')) {
+            return $this->brief();
+        }
+
         $this->line('');
         $this->components->info('إعداد البريد');
 
@@ -75,6 +80,86 @@ class MailDoctor extends Command
         }
 
         return $this->sendTest($to) ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * سطرٌ واحد يُقرأ آلياً — لفحص المكاتب دفعةً واحدة.
+     *
+     * ═══ العطل الذي وُضع له ═══
+     *
+     * كان الفحصُ الجماعي حلقةً تُشغّل `mail:doctor --probe` وتقرأ رمز
+     * الخروج وحده: صفرٌ «مقبول» وما دونه «مرفوض». فلمّا شُغّلت على
+     * الخادم ظهرت عشرةُ مكاتب «مرفوضة» — ولم يكن في واحدٍ منها اعتمادٌ
+     * مرفوض. الخيار `--probe` لم يكن موجوداً في نسخها بعد، فردّ لارافل
+     * «خيارٌ لا يُعرف» ورمزُ خروجه غير صفر، فقرأت الحلقةُ الخطأَ
+     * الإداري إجابةً عن سؤالٍ لم يُطرح أصلاً.
+     *
+     * ودرسُه أنّ رمز الخروج وحده لا يُفرّق بين «سألتُ فأجاب لا» وبين
+     * «لم أستطع السؤال». فهنا يُطبع سطرٌ صريح لكل حقيقة على حدة، ويخرج
+     * الأمر بصفرٍ دائماً: التقريرُ نجح ولو كان ما يُقرّره سيّئاً.
+     *
+     * ولا يحمل السطرُ سرّاً: عنوانُ المُرسِل عامٌّ يظهر في كل رسالة،
+     * وما عداه أرقامٌ ونعم/لا.
+     */
+    private function brief(): int
+    {
+        $probe = 'skipped';
+
+        if ($this->option('probe')) {
+            $probe = $this->probeQuietly();
+        }
+
+        $pending = $this->pending();
+
+        $this->line(implode(' ', [
+            'MAILSTATE',
+            'configured=' . (MailIdentity::isConfigured() ? '1' : '0'),
+            'from=' . MailIdentity::fromAddress(),
+            'name=' . (trim((string) \App\Models\Setting::get('office_name', '')) !== '' ? '1' : '0'),
+            'replyto=' . (MailIdentity::replyTo() !== null ? '1' : '0'),
+            'queue=' . (string) config('queue.default', 'sync'),
+            'pending=' . $pending['pending'],
+            'failed=' . $pending['failed'],
+            'probe=' . $probe,
+        ]));
+
+        // صفرٌ دائماً: هذا تقرير، ورمزُ خروجه يقول «طُبع التقرير» لا
+        // «كلُّ شيء سليم». من يقرأ السطر يقرأ الحقائق من حقولها.
+        return self::SUCCESS;
+    }
+
+    /** مصافحةٌ بلا طباعة — تُرجع الحالة كلمةً واحدة. */
+    private function probeQuietly(): string
+    {
+        if (!MailIdentity::isConfigured()) {
+            return 'not_configured';
+        }
+
+        $transport = Mail::mailer()->getSymfonyTransport();
+
+        if (!$transport instanceof SmtpTransport) {
+            return 'not_smtp';
+        }
+
+        try {
+            $transport->start();
+        } catch (\Throwable $e) {
+            // ٥٣٥ اعتمادٌ مرفوض، وما عداه عطلُ شبكةٍ أو شهادة — والفرق
+            // بينهما هو الفرق بين «أعِد ضبط كلمة المرور» و«افتح المنفذ».
+            $message = $e->getMessage();
+
+            return (str_contains($message, '535') || str_contains($message, 'not accepted'))
+                ? 'rejected'
+                : 'unreachable';
+        } finally {
+            try {
+                $transport->stop();
+            } catch (\Throwable) {
+                // إغلاقٌ متعذّر بعد إخفاق الاتصال لا يضيف شيئاً
+            }
+        }
+
+        return 'ok';
     }
 
     /** حالةُ الأركان الأربعة التي بدونها لا يصل بريد. */
