@@ -24,12 +24,68 @@ ok()   { echo "  ✓ $*"; }
 bad()  { echo "  ✗ $*"; }
 note() { echo "    $*"; }
 
-# ── المكاتب: نفس منطق update-all.sh، ومعها مكتب الوالد لأنّ هذا إعداد
-#    لا بيانات. ويُطلب إقرارٌ صريح قبل لمسه.
+# ── المكاتب.
+#
+# ═══ ما كان هنا وما كسره ═══
+#
+# كانت الجذور مساراتٍ مسمّاة: ‎/home/office-*/htdocs و‎/home/riyami-office/htdocs.
+# ثم وُجد على الخادم مجلدٌ ثالث — ‎/home/riyami/htdocs/office.riyami.om،
+# وهو مكتب الوالد الحيّ — فلم تره هذه الأداة أصلاً. فذهبت كلمةُ المرور
+# إلى نسخةٍ متروكة بجانبه، وأعلنت الأداةُ نجاحاً، وبقي المكتب الحيّ
+# بكلمةٍ قديمة حتى ردّ Gmail ٥٣٥ على رسالةِ موكّل.
+#
+# فالجذورُ الآن هي جذور update-all.sh نفسها، والتعرّفُ بنموذجٍ في الكود
+# (LegalCase) لا باسم مجلد — واللوحةُ تُستبعد بوجود Site دونه.
+OFFICE_ROOTS="${OFFICE_ROOTS:-/home/*/htdocs/* /home/*/public_html/* /var/www/*}"
+
+# أين يضع خادمُ الويب كتلَ مواقعه. يُغيَّر في الاختبار وحده.
+NGINX_CONFS="${NGINX_CONFS:-/etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf}"
+
+read_domain() {
+    grep -E '^APP_URL=' "$1/.env" 2>/dev/null | head -1 \
+        | sed 's|^APP_URL=||; s|https\?://||; s|/.*$||; s|["'"'"']||g' | tr -d '[:space:]'
+}
+
+# أيَّ مجلدٍ يخدم nginx لهذا النطاق — حقيقةٌ لا حدس.
+served_root() {
+    local dom="$1" f r
+
+    for f in $NGINX_CONFS; do
+        [ -f "$f" ] || continue
+
+        # المطابقةُ بالكلمة لا بأوّل السطر: كتلُ nginx تُكتب بأشكال،
+        # ومنها «server { server_name x; root y; }» في سطرٍ واحد.
+        awk -v d="$dom" '
+            {
+                for (i = 1; i <= NF; i++) {
+                    if ($i != "server_name") continue
+                    for (j = i + 1; j <= NF; j++) {
+                        t = $j; sub(/;$/, "", t); sub(/\{$/, "", t)
+                        if (t == d) found = 1
+                        if ($j ~ /;/) break
+                    }
+                }
+            }
+            END { exit !found }
+        ' "$f" || continue
+
+        r=$(awk '{ for (i = 1; i < NF; i++) if ($i == "root") { r = $(i + 1); sub(/;$/, "", r); print r; exit } }' "$f" \
+            | sed 's#/*$##; s#/public$##')
+
+        [ -n "$r" ] && [ -d "$r" ] && { echo "$r"; return 0; }
+    done
+
+    return 1
+}
+
 find_offices() {
     local d
-    for d in /home/office-*/htdocs/*.riyami.om /home/riyami-office/htdocs/office.riyami.om; do
-        [ -f "$d/artisan" ] && [ -f "$d/.env" ] && echo "$d"
+    for d in $OFFICE_ROOTS; do
+        [ -d "$d" ] || continue
+        [ -f "$d/artisan" ] || continue
+        [ -f "$d/.env" ] || continue
+        [ -f "$d/app/Models/LegalCase.php" ] || continue
+        echo "$d"
     done
 }
 
@@ -58,7 +114,32 @@ fi
 
 say "ضبط البريد المركزي — $MAIL_USER"
 echo "  المكاتب التي ستُضبط:"
-while read -r d; do note "· $d"; done <<< "$OFFICES"
+
+DEAD_SEEN=0
+
+while read -r d; do
+    [ -n "$d" ] || continue
+    dom="$(read_domain "$d")"
+    srv="$(served_root "$dom" 2>/dev/null)"
+
+    if [ -z "$srv" ]; then
+        note "· $d"
+    elif [ "$srv" = "$d" ]; then
+        note "· $d   ← يخدمه nginx"
+    else
+        note "· $d   ✗ لا يخدمه nginx (المخدوم: $srv)"
+        DEAD_SEEN=1
+    fi
+done <<< "$OFFICES"
+
+# نسخةٌ لا تُخدَم تبتلع الإعداد بصمت: تُكتب كلمةُ المرور فيها ويُعلن
+# النجاح، ولا يتغيّر شيء في الموقع الحيّ. وهذا ما وقع فعلاً.
+if [ "$DEAD_SEEN" = "1" ]; then
+    echo
+    bad "في القائمة نسخةٌ لا يخدمها nginx."
+    note "ضبطُها يبدو ناجحاً ولا يمسّ الموقع الحيّ. راجع القائمة قبل أن تمضي،"
+    note "أو مرّر مجلّداً واحداً بعينه:  sudo bash \$0 <مسار المكتب>"
+fi
 
 echo
 echo "  ملاحظة: لن تظهر كلمة المرور أثناء الكتابة — الصقها ثم اضغط Enter."
@@ -106,10 +187,12 @@ SKIPPED=0
 while read -r dir; do
     [ -n "$dir" ] || continue
 
-    domain="$(basename "$dir")"
+    # النطاقُ من ملف البيئة لا من اسم المجلد: مجلدان مختلفا الاسم قد
+    # يحملان نطاقاً واحداً، ومجلدٌ اسمُه نطاقٌ قد يحمل غيره.
+    domain="$(read_domain "$dir")"
     owner="$(stat -c '%U' "$dir/.env")"
 
-    say "$domain"
+    say "$domain  ($dir)"
 
     # مكتب الوالد إنتاجٌ حقيقي: يُطلب إقرارٌ صريح قبل لمس إعداداته
     if [ "$domain" = "office.riyami.om" ] && [ "${CONFIRM_PROTECTED:-0}" != "1" ]; then
