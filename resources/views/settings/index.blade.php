@@ -224,19 +224,25 @@
             </div>
             <div class="flex-1">
                 <h2 class="text-base font-bold text-gray-800">الذكاء الاصطناعي</h2>
-                <p class="text-xs text-gray-500 mt-0.5">مفتاح ونموذج خاصان بمكتبك وحده — لا يشاركه أي مكتب آخر.</p>
+                <p class="text-xs text-gray-500 mt-0.5">
+                    @if($aiFromEnv)
+                        يعمل مكتبك بمفتاح مُداوَلة المركزي — جاهزٌ بلا إعداد، ولك أن تضع مفتاحك الخاص متى شئت.
+                    @else
+                        مفتاح ونموذج خاصان بمكتبك وحده — لا يشاركه أي مكتب آخر.
+                    @endif
+                </p>
             </div>
             @if($aiMasked)
-                <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">مُعدّ ✓</span>
+                <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">{{ $aiFromEnv ? 'يعمل — مفتاح مُداوَلة' : 'مُعدّ ✓' }}</span>
             @else
                 <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 border border-gray-200 whitespace-nowrap">غير مُعدّ</span>
             @endif
         </div>
 
         @if($aiFromEnv)
-            <div class="mt-4 flex items-start gap-2 text-[12px] leading-relaxed bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2.5">
-                <span class="font-bold">⚠</span>
-                <span>يعمل مكتبك حالياً على مفتاح موروث من إعداد الخادم. اضبط مفتاحك الخاص من هنا ليصبح استهلاكك وحصتك مستقلَّين تماماً.</span>
+            <div class="mt-4 flex items-start gap-2 text-[12px] leading-relaxed bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg px-3 py-2.5">
+                <span class="font-bold">✓</span>
+                <span>مساعدك يعمل بمفتاح مُداوَلة المركزي — لا إعداد مطلوب منك. وإن فضّلت مفتاحاً خاصاً بمكتبك (حصة واستهلاك مستقلَّان تماماً) فأضفه هنا، وسيتقدّم على المركزي فوراً.</span>
             </div>
         @endif
 
