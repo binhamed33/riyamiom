@@ -1166,7 +1166,7 @@
 
          والقياس بـscrollHeight لا برقمٍ ثابت: قسمٌ يُضاف إليه رابطٌ
          غداً يفتح كاملاً بلا أن يتذكّر أحدٌ تعديل رقم. --}}
-    <script>
+    <script nonce="{{ $cspNonce }}">
     (function () {
         var KEY = 'sbSections';
 
