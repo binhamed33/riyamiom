@@ -26,7 +26,21 @@ class AttendanceController extends Controller
         return $u && ($u->isDeveloper() || $u->role === 'admin' || $u->hasPermission('attendance.manage'));
     }
 
-    public function index(Request $request): View
+    /**
+     * الصفحة صارت تبويباً داخل الموارد البشرية.
+     *
+     * المسار يبقى ويحوّل: رابطٌ محفوظٌ في متصفّح أحدهم أو في بريدٍ
+     * قديم يجب أن يصل إلى المكان الجديد لا إلى ٤٠٤.
+     */
+    public function index(Request $request)
+    {
+        return redirect()->route('hr.index', array_merge(
+            ['tab' => 'attendance_log'],
+            $request->only(['range', 'date', 'employee_id', 'status'])
+        ));
+    }
+
+    public function legacyIndex(Request $request): View
     {
         $user = auth()->user();
         $manager = $this->isManager();

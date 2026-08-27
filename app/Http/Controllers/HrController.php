@@ -12,7 +12,9 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Models\LegalCase;
 use App\Models\Task;
+use App\Support\AttendanceGuard;
 use App\Support\Payroll;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -122,7 +124,146 @@ class HrController extends Controller
             ? HrAttendance::with('user')->whereDate('work_date', HrAttendance::today())->orderBy('check_in_at')->get()
             : collect();
 
-        return view('hr.index', compact('tab', 'employees', 'performances', 'bonuses', 'penalties', 'leaves', 'stats', 'chartData', 'ratingDistribution', 'attendanceToday', 'attendanceMonth', 'teamAttendance'));
+        // تبويبا سجلّ الحضور والرواتب: بياناتهما تُحسب عند الحاجة
+        // فقط — صفحةُ التقييمات لا تدفع ثمن استعلامات كشفٍ لا تعرضه.
+        $extra = $this->tabData($request, $tab, $isAdmin, $employees);
+
+        return view('hr.index', array_merge(
+            compact('tab', 'employees', 'performances', 'bonuses', 'penalties', 'leaves', 'stats', 'chartData', 'ratingDistribution', 'attendanceToday', 'attendanceMonth', 'teamAttendance'),
+            $extra
+        ));
+    }
+
+    /** هل يُدير الرواتب؟ — الشرط نفسه الذي يحرس المسار والمتحكّم. */
+    private function canManageSalaries(): bool
+    {
+        $u = auth()->user();
+
+        return $u && ($u->isDeveloper() || $u->role === 'admin' || $u->hasPermission('salaries.manage'));
+    }
+
+    /**
+     * بيانات التبويبين المنقولين.
+     *
+     * الرواتب لا تُحسب إلا لمن يملك رؤيتها: حسابُها ثم إخفاؤها في
+     * القالب يعني أنّ الأرقام مرّت في الذاكرة وربما في سجلّ استعلامات.
+     */
+    private function tabData(Request $request, string $tab, bool $isAdmin, $employees): array
+    {
+        $canManageSalaries = $this->canManageSalaries();
+        $out = ['canManageSalaries' => $canManageSalaries];
+
+        if ($tab === 'attendance_log') {
+            $user = auth()->user();
+            $manager = $isAdmin || $user->hasPermission('attendance.manage');
+
+            $range = in_array($request->get('range'), ['day', 'week', 'month'], true)
+                ? $request->get('range') : 'day';
+
+            try {
+                $date = $request->filled('date')
+                    ? CarbonImmutable::parse($request->get('date'))
+                    : CarbonImmutable::now('Asia/Muscat');
+            } catch (\Throwable) {
+                $date = CarbonImmutable::now('Asia/Muscat');
+            }
+
+            [$from, $to] = match ($range) {
+                'week' => [$date->startOfWeek(CarbonImmutable::SATURDAY), $date->endOfWeek(CarbonImmutable::FRIDAY)],
+                'month' => [$date->startOfMonth(), $date->endOfMonth()],
+                default => [$date, $date],
+            };
+
+            // whereDate لا whereBetween: العمود يُحفظ سلسلةً كاملة
+            $q = HrAttendance::with('user')
+                ->whereDate('work_date', '>=', $from->toDateString())
+                ->whereDate('work_date', '<=', $to->toDateString());
+
+            if (! $manager) {
+                $q->where('user_id', $user->id);
+            } elseif ($request->filled('employee_id')) {
+                $q->where('user_id', (int) $request->get('employee_id'));
+            }
+
+            if ($request->get('status') === 'present') {
+                $q->whereNull('check_out_at');
+            } elseif ($request->get('status') === 'completed') {
+                $q->whereNotNull('check_out_at');
+            }
+
+            $out += [
+                'isManagerAtt' => $manager,
+                'attRange' => $range,
+                'attDate' => $date,
+                'attRecords' => $q->orderByDesc('work_date')->orderBy('check_in_at')
+                    ->paginate(50)->withQueryString(),
+                'attStats' => $manager ? $this->attendanceStats($employees) : null,
+                'attBoard' => $manager ? $this->attendanceBoard($employees) : collect(),
+            ];
+        }
+
+        if ($tab === 'salaries' && $canManageSalaries) {
+            $period = (string) $request->get('period', '');
+            $period = preg_match('/^\d{4}-\d{2}$/', $period) ? $period : Payroll::currentPeriod();
+
+            $payslips = $employees->map(fn (User $e) => Payroll::payslip($e, $period));
+
+            $out += [
+                'payPeriod' => $period,
+                'payslips' => $payslips,
+                'payTotals' => [
+                    'gross' => round($payslips->sum('gross'), 2),
+                    'deductions' => round($payslips->sum('deductions'), 2),
+                    'net' => round($payslips->sum('net'), 2),
+                    'without_salary' => $payslips->where('has_salary', false)->count(),
+                ],
+                'monthDaysMode' => Payroll::monthDaysMode(),
+            ];
+        }
+
+        return $out;
+    }
+
+    /** عدّادات اليوم — استعلامان لا استعلامٌ لكل موظف. */
+    private function attendanceStats($employees): array
+    {
+        $today = HrAttendance::today();
+        $records = HrAttendance::whereDate('work_date', $today)->get()->keyBy('user_id');
+
+        $onLeave = HrLeave::where('status', 'approved')
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->pluck('employee_id')->unique();
+
+        return [
+            'present' => $records->whereNull('check_out_at')->count(),
+            'completed' => $records->whereNotNull('check_out_at')->count(),
+            'on_leave' => $employees->filter(fn ($e) => $onLeave->contains($e->id))->count(),
+            'absent' => $employees->filter(
+                fn ($e) => ! $records->has($e->id) && ! $onLeave->contains($e->id)
+            )->count(),
+        ];
+    }
+
+    private function attendanceBoard($employees)
+    {
+        $today = HrAttendance::today();
+        $records = HrAttendance::whereDate('work_date', $today)->get()->keyBy('user_id');
+
+        $onLeave = HrLeave::where('status', 'approved')
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->pluck('employee_id')->unique();
+
+        return $employees->map(function ($e) use ($records, $onLeave) {
+            $rec = $records->get($e->id);
+
+            return [
+                'employee' => $e,
+                'status' => ($onLeave->contains($e->id) && ! $rec) ? 'on_leave' : AttendanceGuard::statusOf($rec),
+                'record' => $rec,
+            ];
+        });
     }
 
     /**

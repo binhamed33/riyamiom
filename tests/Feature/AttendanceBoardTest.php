@@ -48,7 +48,7 @@ class AttendanceBoardTest extends TestCase
         $this->record($present);
         $this->record($left, 'out');
 
-        $response = $this->actingAs($manager)->get(route('attendance.index'));
+        $response = $this->actingAs($manager)->get(route('hr.index', ['tab' => 'attendance_log']));
 
         $response->assertOk();
         $response->assertSee('حاضرٌ اليوم');
@@ -66,7 +66,7 @@ class AttendanceBoardTest extends TestCase
         $this->record($me);
         $this->record($other);
 
-        $response = $this->actingAs($me)->get(route('attendance.index'));
+        $response = $this->actingAs($me)->get(route('hr.index', ['tab' => 'attendance_log']));
 
         $response->assertOk();
         $response->assertSee('أنا الموظف');
@@ -85,13 +85,13 @@ class AttendanceBoardTest extends TestCase
         $this->record($b);
 
         $response = $this->actingAs($manager)
-            ->get(route('attendance.index', ['employee_id' => $a->id]));
+            ->get(route('hr.index', array_merge(['tab' => 'attendance_log'], ['employee_id' => $a->id])));
 
         $response->assertOk();
 
         // العدّ النصّي لا يصلح هنا: الاسم يظهر في قائمة الترشيح وفي
         // لوحة الحالة أيضاً. المقصود ما رشّحه الاستعلام — فنفحصه هو.
-        $rows = $response->viewData('records');
+        $rows = $response->viewData('attRecords');
 
         $this->assertCount(1, $rows);
         $this->assertSame($a->id, $rows->first()->user_id);
@@ -108,11 +108,11 @@ class AttendanceBoardTest extends TestCase
         $this->record($left, 'out');
 
         $response = $this->actingAs($manager)
-            ->get(route('attendance.index', ['status' => 'present']));
+            ->get(route('hr.index', array_merge(['tab' => 'attendance_log'], ['status' => 'present'])));
 
         $response->assertOk();
 
-        $rows = $response->viewData('records');
+        $rows = $response->viewData('attRecords');
 
         $this->assertCount(1, $rows);
         $this->assertSame($present->id, $rows->first()->user_id);
@@ -135,15 +135,15 @@ class AttendanceBoardTest extends TestCase
             'source' => 'manual',
         ]);
 
-        $day = $this->actingAs($manager)->get(route('attendance.index', ['range' => 'day']));
-        $month = $this->actingAs($manager)->get(route('attendance.index', ['range' => 'month']));
+        $day = $this->actingAs($manager)->get(route('hr.index', array_merge(['tab' => 'attendance_log'], ['range' => 'day'])));
+        $month = $this->actingAs($manager)->get(route('hr.index', array_merge(['tab' => 'attendance_log'], ['range' => 'month'])));
 
         $month->assertOk();
-        $this->assertCount(1, $month->viewData('records'));
+        $this->assertCount(1, $month->viewData('attRecords'));
 
         // مدى «اليوم» لا يلتقطه إلا إن كان اليوم أولَ الشهر
         $isFirstOfMonth = now('Asia/Muscat')->day === 1;
-        $this->assertCount($isFirstOfMonth ? 1 : 0, $day->viewData('records'));
+        $this->assertCount($isFirstOfMonth ? 1 : 0, $day->viewData('attRecords'));
     }
 
     /** من في إجازة معتمدة يُعدّ «في إجازة» لا «غائباً». */
@@ -161,7 +161,7 @@ class AttendanceBoardTest extends TestCase
             'status' => 'approved',
         ]);
 
-        $response = $this->actingAs($manager)->get(route('attendance.index'));
+        $response = $this->actingAs($manager)->get(route('hr.index', ['tab' => 'attendance_log']));
 
         $response->assertOk();
         $response->assertSee('إجازة');

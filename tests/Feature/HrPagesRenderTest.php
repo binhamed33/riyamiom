@@ -24,7 +24,7 @@ class HrPagesRenderTest extends TestCase
         $employee = User::factory()->create(['role' => 'staff', 'is_active' => true, 'name' => 'سالم الموظف']);
         HrSalary::create(['employee_id' => $employee->id, 'basic_salary' => 900, 'allowances' => 50]);
 
-        $r = $this->actingAs($manager)->get(route('salaries.index'));
+        $r = $this->actingAs($manager)->get(route('hr.index', ['tab' => 'salaries']));
 
         $r->assertOk();
         $r->assertSee('سالم الموظف');
@@ -62,8 +62,8 @@ class HrPagesRenderTest extends TestCase
         $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $employee = User::factory()->create(['role' => 'staff', 'is_active' => true]);
 
-        $this->actingAs($manager)->get(route('attendance.index'))->assertOk();
-        $this->actingAs($employee)->get(route('attendance.index'))->assertOk();
+        $this->actingAs($manager)->get(route('hr.index', ['tab' => 'attendance_log']))->assertOk();
+        $this->actingAs($employee)->get(route('hr.index', ['tab' => 'attendance_log']))->assertOk();
     }
 
     public function test_hr_page_shows_leave_types_panel_to_manager_only(): void

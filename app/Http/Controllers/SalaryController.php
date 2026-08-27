@@ -46,7 +46,18 @@ class SalaryController extends Controller
             ->get();
     }
 
-    public function index(Request $request): View
+    /** الصفحة صارت تبويباً — والمسار يحوّل بعد التحقّق من التفويض. */
+    public function index(Request $request)
+    {
+        $this->authorizeManager();
+
+        return redirect()->route('hr.index', array_merge(
+            ['tab' => 'salaries'],
+            $request->only(['period'])
+        ));
+    }
+
+    public function legacyIndex(Request $request): View
     {
         $this->authorizeManager();
 

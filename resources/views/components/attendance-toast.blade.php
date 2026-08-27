@@ -26,7 +26,7 @@
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-end="opacity-0 translate-y-2"
          class="mb-4 rounded-2xl px-5 py-4 flex items-center gap-4"
-         style="background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.35);">
+         style="background: rgba(16,185,129,.10); border: 1px solid rgba(16,185,129,.30);">
         <span class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
               style="background: rgba(16,185,129,.16);">
             <svg class="w-5 h-5" style="color:#10B981" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -34,10 +34,10 @@
             </svg>
         </span>
         <div class="flex-1 min-w-0">
-            <p class="font-semibold text-sm" style="color: var(--text-strong, #111827);">
+            <p class="font-semibold text-sm text-gray-700">
                 {{ $flash['created'] ? 'تم تسجيل حضورك بنجاح' : 'أنت مسجّل حضور اليوم' }}
             </p>
-            <p class="text-xs mt-0.5" style="color: var(--text-muted, #6B7280);">
+            <p class="text-xs mt-0.5 text-gray-400">
                 تم تسجيل حضورك اليوم الساعة <span dir="ltr">{{ $flash['at'] }}</span>
             </p>
         </div>
@@ -51,14 +51,14 @@
 
 @if($showPrompt)
     <div class="mb-4 rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4"
-         style="background: rgba(212,175,55,.07); border: 1px solid rgba(212,175,55,.35);">
+         style="background: rgba(212,175,55,.10); border: 1px solid rgba(212,175,55,.28);">
         <span class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
               style="background: rgba(212,175,55,.16);">
             <span class="w-3 h-3 rounded-full" style="background:#10B981; box-shadow:0 0 0 4px rgba(16,185,129,.2)"></span>
         </span>
         <div class="flex-1 min-w-0">
-            <p class="font-semibold text-sm" style="color: var(--text-strong, #111827);">أنت مسجّل حضور حاليًا.</p>
-            <p class="text-xs mt-0.5" style="color: var(--text-muted, #6B7280);">
+            <p class="font-semibold text-sm text-gray-700">أنت مسجّل حضور حاليًا.</p>
+            <p class="text-xs mt-0.5 text-gray-400">
                 تم تسجيل حضورك الساعة
                 <span dir="ltr">{{ $open->check_in_at->timezone('Asia/Muscat')->format('h:i A') }}</span>.
             </p>
@@ -67,16 +67,14 @@
             <form method="POST" action="{{ route('attendance.keep') }}">
                 @csrf
                 <button type="submit"
-                        class="px-4 py-2 rounded-xl text-sm font-semibold transition"
-                        style="background: transparent; border:1px solid rgba(212,175,55,.5); color:#B08D2E;">
+                        class="px-4 py-2 rounded-xl text-sm font-semibold transition border border-gold-dark text-gold-dark hover:bg-gold/5">
                     استمرار الحضور
                 </button>
             </form>
             <form method="POST" action="{{ route('hr.attendance.checkout') }}">
                 @csrf
                 <button type="submit"
-                        class="px-4 py-2 rounded-xl text-sm font-semibold text-white transition"
-                        style="background:#1F2937;">
+                        class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-primary hover:bg-primary-dark text-white">
                     تسجيل الانصراف
                 </button>
             </form>

@@ -467,6 +467,36 @@
         .content-area { transition: margin-inline-start 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 
         /* Sidebar width toggles (not reliant on Tailwind CDN JIT) */
+        /* ── أقسام الشريط الجانبي تُطوى بالنقر ──────────────────
+           الجسم يُقاس بارتفاعه الفعلي لا برقمٍ نكتبه: قسمٌ يُضاف إليه
+           رابطٌ غداً لا يُقصّ عند حدٍّ نسيناه. */
+        .sb-section-body {
+            overflow: hidden;
+            transition: max-height 0.28s cubic-bezier(.4, 0, .2, 1), opacity 0.18s ease;
+        }
+        .sb-section-body[data-collapsed="1"] { max-height: 0 !important; opacity: 0; }
+        .sb-section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; cursor: pointer; user-select: none;
+            border-radius: 0.5rem; transition: background 0.15s ease;
+        }
+        .sb-section-head:hover { background: rgba(148, 163, 184, 0.08); }
+        .sb-section-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .sb-section-chevron {
+            width: 0.85rem; height: 0.85rem; flex: none; margin-inline-end: 0.75rem;
+            opacity: 0.5; transition: transform 0.28s cubic-bezier(.4, 0, .2, 1);
+        }
+        .sb-section-head[aria-expanded="false"] .sb-section-chevron { transform: rotate(-90deg); }
+
+        /* الشريط مطويّاً: العناوين مخفيّة أصلاً، فلو بقي قسمٌ مطويّاً
+           اختفت أيقوناته بلا عنوانٍ يُعيدها. تُفتح كلها قسراً. */
+        .sb-closed .sb-section-body { max-height: none !important; opacity: 1 !important; }
+        .sb-closed .sb-section-head { pointer-events: none; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .sb-section-body, .sb-section-chevron { transition: none; }
+        }
+
         .sb-open { width: 16rem; }
         .sb-closed { width: 72px; }
         [dir="rtl"] .ct-open { margin-right: 16rem; }
@@ -982,24 +1012,6 @@
             <span>{{ __('app.hr') }}</span>
             </a>
 
-            <a href="{{ route('attendance.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('attendance.*') ? 'active' : '' }}">
-            <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <span>الحضور</span>
-            </a>
-
-            {{-- الرواتب: لا يُعرض الرابط إلا لمن يملك فتحه. وإخفاؤه
-                 زينةٌ لا حماية — الحماية في الوسيط والمتحكّم. --}}
-            @if(Auth::check() && (Auth::user()->isDeveloper() || Auth::user()->role === 'admin' || Auth::user()->hasPermission('salaries.manage')))
-            <a href="{{ route('salaries.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('salaries.*') ? 'active' : '' }}">
-            <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-7 8h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            <span>الرواتب</span>
-            </a>
-            @endif
-
             <a href="{{ route('finance.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('finance.*') ? 'active' : '' }}">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -1144,6 +1156,138 @@
                 </button>
             </form>
         </div>
+
+    {{-- أقسام الشريط الجانبي: تُطوى بالنقر، ويُحفظ اختيارك.
+
+         البناء هنا لا في القالب: الأقسام في هذا الملف إخوةٌ مسطّحة
+         تتخلّلها شرطياتُ صلاحيات، ولفّ كلٍّ منها بحاوية يدوياً يعني
+         تحريك عشرات الكتل — وكلُّ تحريكٍ فرصةُ خطأ. هنا نلفّها وقت
+         التحميل من الحقيقة التي في الصفحة نفسها.
+
+         والقياس بـscrollHeight لا برقمٍ ثابت: قسمٌ يُضاف إليه رابطٌ
+         غداً يفتح كاملاً بلا أن يتذكّر أحدٌ تعديل رقم. --}}
+    <script>
+    (function () {
+        var KEY = 'sbSections';
+
+        function load() {
+            try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
+            catch (e) { return {}; }
+        }
+        function save(state) {
+            try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+        }
+
+        function build(root) {
+            var titles = root.querySelectorAll('.sidebar-section-title');
+            var state = load();
+
+            Array.prototype.forEach.call(titles, function (title, i) {
+                // العنوان قد يكون داخل غلافٍ للتباعد — الغلاف هو الرأس حينئذ
+                var holder = (title.parentElement && title.parentElement !== root
+                              && title.parentElement.children.length === 1)
+                    ? title.parentElement : title;
+
+                if (holder.dataset.sbBuilt) return;
+                holder.dataset.sbBuilt = '1';
+
+                // اجمع كل ما يلي العنوان حتى العنوان التالي
+                var body = document.createElement('div');
+                body.className = 'sb-section-body';
+                var node = holder.nextElementSibling;
+
+                while (node && !node.classList.contains('sidebar-section-title')
+                            && !node.querySelector('.sidebar-section-title')) {
+                    var next = node.nextElementSibling;
+                    body.appendChild(node);
+                    node = next;
+                }
+
+                if (!body.children.length) return;   // عنوانٌ بلا روابط: اتركه
+
+                holder.parentNode.insertBefore(body, holder.nextSibling);
+
+                // العنوان يصير زرّاً — بعنصرٍ يقبل لوحة المفاتيح
+                var head = document.createElement('button');
+                head.type = 'button';
+                head.className = 'sb-section-head';
+                head.setAttribute('aria-expanded', 'true');
+
+                var chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                chevron.setAttribute('class', 'sb-section-chevron');
+                chevron.setAttribute('viewBox', '0 0 24 24');
+                chevron.setAttribute('fill', 'none');
+                chevron.setAttribute('stroke', 'currentColor');
+                chevron.setAttribute('stroke-width', '2.5');
+                var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('stroke-linecap', 'round');
+                path.setAttribute('stroke-linejoin', 'round');
+                path.setAttribute('d', 'M19 9l-7 7-7-7');
+                chevron.appendChild(path);
+
+                title.parentNode.insertBefore(head, title);
+                head.appendChild(title);
+                head.appendChild(chevron);
+
+                var id = 'sb-sec-' + i;
+                body.id = id + '-body';
+                head.setAttribute('aria-controls', body.id);
+
+                function apply(open, animate) {
+                    head.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    if (open) {
+                        body.removeAttribute('data-collapsed');
+                        body.style.maxHeight = animate ? body.scrollHeight + 'px' : 'none';
+                        if (animate) {
+                            // بعد انتهاء الحركة نرفع السقف: قسمٌ يكبر لاحقاً
+                            // لا يُقصّ عند ارتفاعٍ قيس لحظةَ الفتح
+                            setTimeout(function () {
+                                if (head.getAttribute('aria-expanded') === 'true') {
+                                    body.style.maxHeight = 'none';
+                                }
+                            }, 300);
+                        }
+                    } else {
+                        // من 'none' إلى صفر لا تُتحرّك: نثبّت الارتفاع أولاً
+                        body.style.maxHeight = body.scrollHeight + 'px';
+                        void body.offsetHeight;
+                        body.setAttribute('data-collapsed', '1');
+                    }
+                }
+
+                apply(state[id] !== false, false);
+
+                head.addEventListener('click', function () {
+                    var open = head.getAttribute('aria-expanded') !== 'true';
+                    apply(open, true);
+                    var s = load();
+                    s[id] = open;
+                    save(s);
+                });
+            });
+        }
+
+        function init() {
+            var aside = document.querySelector('aside');
+            if (!aside) return;
+            var nav = aside.querySelector('nav');
+            if (nav) build(nav);
+            // تذييل «المساعدة والتواصل» خارج nav — وله عنوانه أيضاً
+            Array.prototype.forEach.call(aside.children, function (child) {
+                if (child.tagName === 'DIV' && child.querySelector('.sidebar-section-title')) {
+                    build(child);
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+    </script>
+
     </aside>
 
     {{-- Main Content --}}

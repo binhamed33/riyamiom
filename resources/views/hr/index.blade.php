@@ -46,6 +46,13 @@
         <a href="{{ route('hr.index', ['tab' => 'bonuses']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'bonuses' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">المكافآت</a>
         <a href="{{ route('hr.index', ['tab' => 'penalties']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'penalties' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">الجزاءات</a>
         <a href="{{ route('hr.index', ['tab' => 'leaves']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'leaves' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">الإجازات</a>
+        {{-- سجلّ الحضور والرواتب هنا لا في صفحتين منفصلتين: كلاهما
+             شأنٌ من شؤون الموظف، وتفريقهما في الشريط الجانبي جعل
+             المستخدم يبحث عن راتبٍ في مكانٍ لا يخطر له. --}}
+        <a href="{{ route('hr.index', ['tab' => 'attendance_log']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'attendance_log' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">سجلّ الحضور</a>
+        @if($canManageSalaries)
+        <a href="{{ route('hr.index', ['tab' => 'salaries']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'salaries' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold' : 'text-gray-400 hover:text-gray-600' }}">الرواتب</a>
+        @endif
     </div>
 
     {{-- Tab Content --}}
@@ -356,6 +363,244 @@
                 </table>
             </div>
             <div class="px-4 py-3 border-t border-gray-200">{{ $leaves->appends(['tab' => 'leaves'])->links() }}</div>
+        </div>
+
+    @elseif($tab === 'attendance_log')
+        {{-- سجلّ الحضور: عدّادات اليوم، ثم حالة الفريق، ثم الجدول.
+             الألوان من النظام لا من رقمٍ أكتبه — الوضع الداكن يقلبها
+             معه، ولا يبقى اسمٌ أسودَ على أسود. --}}
+        @if($isManagerAtt)
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            @foreach([
+                ['حاضرون الآن', $attStats['present'], 'text-emerald-500'],
+                ['انصرفوا', $attStats['completed'], 'text-gray-500'],
+                ['في إجازة', $attStats['on_leave'], 'text-gold-dark'],
+                ['غائبون', $attStats['absent'], 'text-red-500'],
+            ] as [$label, $value, $tone])
+                <div class="bg-white rounded-xl border border-gold/15 p-5">
+                    <p class="text-xs text-gray-400 mb-1">{{ $label }}</p>
+                    <p class="text-2xl font-bold {{ $tone }}">{{ $value }}</p>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="bg-white rounded-xl border border-gold/15 overflow-hidden mb-6">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-sm font-bold text-gold-dark">حالة الفريق اليوم</h2>
+            </div>
+            <div class="p-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                @foreach($attBoard as $row)
+                    @php
+                        $tone = match ($row['status']) {
+                            'present'   => ['حاضر', 'bg-emerald-500', 'text-emerald-600'],
+                            'completed' => ['منتهٍ', 'bg-gray-400', 'text-gray-500'],
+                            'on_leave'  => ['إجازة', 'bg-gold', 'text-gold-dark'],
+                            default     => ['غائب', 'bg-gray-300', 'text-gray-400'],
+                        };
+                    @endphp
+                    <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 {{ $tone[1] }}"></span>
+                        <span class="text-sm font-medium text-gray-700 truncate flex-1">{{ $row['employee']->name }}</span>
+                        <span class="text-[11px] font-semibold flex-shrink-0 {{ $tone[2] }}">{{ $tone[0] }}</span>
+                        @if($row['record'])
+                            <span class="text-[11px] text-gray-400 flex-shrink-0" dir="ltr">
+                                {{ $row['record']->check_in_at->timezone('Asia/Muscat')->format('h:i A') }}@if($row['record']->check_out_at) — {{ $row['record']->check_out_at->timezone('Asia/Muscat')->format('h:i A') }}@endif
+                            </span>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        <form method="GET" class="bg-white rounded-xl border border-gold/15 p-4 mb-4 flex flex-wrap items-end gap-3">
+            <input type="hidden" name="tab" value="attendance_log">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">المدى</label>
+                <select name="range" class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm">
+                    <option value="day" @selected($attRange === 'day')>اليوم</option>
+                    <option value="week" @selected($attRange === 'week')>الأسبوع</option>
+                    <option value="month" @selected($attRange === 'month')>الشهر</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">التاريخ</label>
+                <input type="date" name="date" value="{{ $attDate->toDateString() }}"
+                       class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm">
+            </div>
+            @if($isManagerAtt)
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">الموظف</label>
+                <select name="employee_id" class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm">
+                    <option value="">الجميع</option>
+                    @foreach($employees as $e)
+                        <option value="{{ $e->id }}" @selected(request('employee_id') == $e->id)>{{ $e->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">الحالة</label>
+                <select name="status" class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm">
+                    <option value="">الكل</option>
+                    <option value="present" @selected(request('status') === 'present')>حاضر</option>
+                    <option value="completed" @selected(request('status') === 'completed')>منتهٍ</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-lg font-semibold text-sm transition-colors">تصفية</button>
+            <a href="{{ route('hr.index', ['tab' => 'attendance_log']) }}" class="text-gray-400 hover:text-gray-600 text-sm px-3 py-2">مسح</a>
+        </form>
+
+        <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            @foreach(['الموظف','التاريخ','الحضور','الانصراف','المدة','الحالة'] as $h)
+                                <th class="text-start px-4 py-3 font-semibold text-xs text-gold-dark">{{ $h }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($attRecords as $r)
+                            @php $isIn = $r->check_out_at === null; @endphp
+                            <tr class="border-t border-gray-200">
+                                <td class="px-4 py-3 text-gray-700">{{ $r->user->name ?? '—' }}</td>
+                                <td class="px-4 py-3 text-gray-500" dir="ltr">{{ $r->work_date->format('Y-m-d') }}</td>
+                                <td class="px-4 py-3 text-gray-700" dir="ltr">{{ $r->check_in_at->timezone('Asia/Muscat')->format('h:i A') }}</td>
+                                <td class="px-4 py-3 text-gray-700" dir="ltr">{{ $r->check_out_at ? $r->check_out_at->timezone('Asia/Muscat')->format('h:i A') : '—' }}</td>
+                                <td class="px-4 py-3 text-gray-500" dir="ltr">{{ $r->minutes === null ? '—' : intdiv($r->minutes, 60) . 'س ' . ($r->minutes % 60) . 'د' }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold {{ $isIn ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-500/10 text-gray-500' }}">
+                                        <span class="w-1.5 h-1.5 rounded-full {{ $isIn ? 'bg-emerald-500' : 'bg-gray-400' }}"></span>
+                                        {{ $isIn ? 'حاضر' : 'منتهٍ' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="px-4 py-12 text-center text-gray-400">لا سجلات في هذا المدى.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-4 py-3 border-t border-gray-200">{{ $attRecords->links() }}</div>
+        </div>
+
+    @elseif($tab === 'salaries' && $canManageSalaries)
+        <div class="bg-white rounded-xl border border-gold/15 p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-xs text-gray-400">
+                هذه الأرقام لإدارة المكتب وحدها — لا يراها الموظف ولا تصله.
+            </p>
+            <form method="GET" class="flex items-end gap-2">
+                <input type="hidden" name="tab" value="salaries">
+                <input type="month" name="period" value="{{ $payPeriod }}"
+                       class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm">
+                <button class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">عرض</button>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            @foreach([
+                ['الإجمالي قبل الخصم', number_format($payTotals['gross'], 2) . ' ر.ع', 'text-gray-700'],
+                ['الخصومات', number_format($payTotals['deductions'], 2) . ' ر.ع', 'text-red-500'],
+                ['الصافي', number_format($payTotals['net'], 2) . ' ر.ع', 'text-emerald-500'],
+                ['بلا راتب مُسجَّل', $payTotals['without_salary'], 'text-gold-dark'],
+            ] as [$label, $value, $tone])
+                <div class="bg-white rounded-xl border border-gold/15 p-5">
+                    <p class="text-xs text-gray-400 mb-1">{{ $label }}</p>
+                    <p class="text-xl font-bold {{ $tone }}" dir="ltr">{{ $value }}</p>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="bg-white rounded-xl border border-gold/15 overflow-hidden mb-6">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            @foreach(['الموظف','الأساسي','البدلات','أيام إجازة خاصمة','خصم الإجازة','خصومات أخرى','الصافي',''] as $h)
+                                <th class="text-start px-4 py-3 font-semibold text-xs text-gold-dark">{{ $h }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($payslips as $p)
+                            <tr class="border-t border-gray-200">
+                                <td class="px-4 py-3 font-medium text-gray-700">{{ $p['employee']->name }}</td>
+                                <td class="px-4 py-3 text-gray-700" dir="ltr">{{ $p['has_salary'] ? number_format($p['basic'], 2) : '—' }}</td>
+                                <td class="px-4 py-3 text-gray-700" dir="ltr">{{ number_format($p['allowances'], 2) }}</td>
+                                <td class="px-4 py-3 text-gray-500" dir="ltr">{{ $p['unpaid_days'] ?: '—' }}</td>
+                                <td class="px-4 py-3 {{ $p['leave_deduction'] > 0 ? 'text-red-500' : 'text-gray-500' }}" dir="ltr">
+                                    {{ $p['leave_deduction'] > 0 ? number_format($p['leave_deduction'], 2) : '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-gray-500" dir="ltr">{{ $p['other_deductions'] > 0 ? number_format($p['other_deductions'], 2) : '—' }}</td>
+                                <td class="px-4 py-3 font-bold text-gray-700" dir="ltr">{{ $p['has_salary'] ? number_format($p['net'], 2) : '—' }}</td>
+                                <td class="px-4 py-3">
+                                    <a href="{{ route('salaries.show', $p['employee']) }}?period={{ $payPeriod }}"
+                                       class="text-xs font-semibold text-gold-dark hover:underline">الكشف</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-4">
+            <div class="bg-white rounded-xl border border-gold/15 p-6">
+                <h2 class="text-sm font-bold text-gold-dark mb-4">تحديد راتب موظف</h2>
+                <form method="POST" action="{{ route('salaries.store') }}" class="space-y-3">
+                    @csrf
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1.5">الموظف</label>
+                        <select name="employee_id" required class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
+                            @foreach($employees as $e)
+                                <option value="{{ $e->id }}">{{ $e->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1.5">الراتب الأساسي (ر.ع)</label>
+                            <input type="number" step="0.01" min="0" name="basic_salary" required dir="ltr"
+                                   class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1.5">البدلات الثابتة</label>
+                            <input type="number" step="0.01" min="0" name="allowances" value="0" dir="ltr"
+                                   class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1.5">ملاحظة</label>
+                        <input type="text" name="note" maxlength="255"
+                               class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
+                    </div>
+                    <button class="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-lg font-semibold text-sm transition-colors">حفظ الراتب</button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gold/15 p-6">
+                <h2 class="text-sm font-bold text-gold-dark mb-4">طريقة حساب اليوم</h2>
+                <form method="POST" action="{{ route('salaries.settings') }}" class="space-y-3">
+                    @csrf
+                    <p class="text-xs text-gray-400 mb-2 leading-relaxed">
+                        قيمة اليوم = الراتب الأساسي ÷ عدد أيام الشهر. اختر ما يوافق سياسة مكتبك.
+                    </p>
+                    <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="radio" name="hr_month_days_mode" value="fixed30" @checked($monthDaysMode === 'fixed30')>
+                        <span class="text-sm text-gray-700">شهر ثابت — ٣٠ يومًا دائمًا</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="radio" name="hr_month_days_mode" value="actual" @checked($monthDaysMode === 'actual')>
+                        <span class="text-sm text-gray-700">أيام الشهر الفعلية (٢٨–٣١)</span>
+                    </label>
+                    <button class="w-full border border-gold-dark text-gold-dark py-2.5 rounded-lg font-semibold text-sm hover:bg-gold/5 transition-colors">حفظ الطريقة</button>
+                    <p class="text-[11px] text-gray-400 leading-relaxed pt-2">
+                        هذه الأرقام لإدارة المكتب داخليًا، ولا تُغني عن المتطلبات المحاسبية أو القانونية الرسمية.
+                    </p>
+                </form>
+            </div>
         </div>
     @endif
 </div>

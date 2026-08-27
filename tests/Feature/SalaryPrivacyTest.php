@@ -68,7 +68,12 @@ class SalaryPrivacyTest extends TestCase
         $this->giveSalary($employee);
 
         $this->actingAs($employee);
+        // المسار صار يحوّل إلى تبويب الرواتب — والتفويض يُفحص قبل التحويل
         $this->assertDenied(route('salaries.index'));
+        // وتبويب الرواتب نفسه لا يعرض رقماً لمن لا يملكه
+        $tab = $this->get(route('hr.index', ['tab' => 'salaries']));
+        $tab->assertOk();
+        $tab->assertDontSee('الرواتب</a>', false);
     }
 
     /** TEST 6 — الوصول المباشر لمسار الراتب: ممنوع. */
@@ -155,7 +160,7 @@ class SalaryPrivacyTest extends TestCase
         $employee = $this->employee();
         $this->giveSalary($employee, 4321.99);
 
-        foreach ([route('dashboard'), route('hr.index'), route('attendance.index')] as $url) {
+        foreach ([route('dashboard'), route('hr.index'), route('hr.index', ['tab' => 'attendance_log'])] as $url) {
             $response = $this->actingAs($employee)->get($url);
 
             if ($response->status() !== 200) {
@@ -194,7 +199,9 @@ class SalaryPrivacyTest extends TestCase
         $employee = $this->employee();
         $this->giveSalary($employee, 900);
 
-        $this->actingAs($manager)->get(route('salaries.index'))->assertOk();
+        $this->actingAs($manager)->get(route('salaries.index'))
+            ->assertRedirect(route('hr.index', ['tab' => 'salaries']));
+        $this->actingAs($manager)->get(route('hr.index', ['tab' => 'salaries']))->assertOk();
         $this->actingAs($manager)->get(route('salaries.show', $employee))->assertOk();
     }
 
@@ -204,7 +211,9 @@ class SalaryPrivacyTest extends TestCase
         $employee = $this->employee();
         $employee->givePermission('salaries.manage');
 
-        $this->actingAs($employee)->get(route('salaries.index'))->assertOk();
+        $this->actingAs($employee)->get(route('salaries.index'))
+            ->assertRedirect(route('hr.index', ['tab' => 'salaries']));
+        $this->actingAs($employee)->get(route('hr.index', ['tab' => 'salaries']))->assertOk();
     }
 
     /** تعديل الراتب يترك أثراً في سجل الحركات. */

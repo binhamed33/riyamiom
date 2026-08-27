@@ -97,17 +97,21 @@ class SidebarShellTest extends TestCase
 
         $html = $this->actingAs($employee)->get(route('dashboard'))->getContent();
 
+        // الرواتب والحضور صارا تبويبين داخل الموارد البشرية —
+        // فلا رابط منفصل لأيّهما في الشريط، ولا رابط رواتب لموظف.
         $this->assertStringNotContainsString(route('salaries.index'), $html);
-        $this->assertStringContainsString(route('attendance.index'), $html);
+        $this->assertStringContainsString(route('hr.index'), $html);
     }
 
     /** ويُرسَم للمدير. */
-    public function test_salary_link_present_for_manager(): void
+    public function test_salary_has_no_separate_sidebar_link(): void
     {
         $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
 
         $html = $this->actingAs($manager)->get(route('dashboard'))->getContent();
 
-        $this->assertStringContainsString(route('salaries.index'), $html);
+        // لا رابط منفصل — المدخل من الموارد البشرية
+        $this->assertStringNotContainsString(route('salaries.index'), $html);
+        $this->assertStringContainsString(route('hr.index'), $html);
     }
 }
