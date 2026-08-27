@@ -434,6 +434,26 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::post('/hr/leaves/{leave}/approve', [HrController::class, 'approveLeave'])->name('hr.leaves.approve');
         Route::post('/hr/leaves/{leave}/reject', [HrController::class, 'rejectLeave'])->name('hr.leaves.reject');
         Route::delete('/hr/leaves/{leave}', [HrController::class, 'destroyLeave'])->name('hr.leaves.destroy');
+
+        // ── الحضور ───────────────────────────────────────────────
+        // مفتوح لكل موظف: كلٌّ يرى سجلّه، والمدير يرى الفريق —
+        // والفصل في الاستعلام لا في الصفحة.
+        Route::get('/attendance', [App\Http\Controllers\AttendanceController::class, 'index'])->name('attendance.index');
+        Route::post('/attendance/keep-present', [App\Http\Controllers\AttendanceController::class, 'keepPresent'])->name('attendance.keep');
+
+        // ── الرواتب: إدارة المكتب وحدها ──────────────────────────
+        // الوسيط يحجب lawyer وstaff ما لم تُمنح لهما الصلاحية صراحةً،
+        // والمتحكّم يفحص التفويض مرّة أخرى في كل دالّة.
+        Route::middleware('role:developer,admin,permission:salaries.manage')->group(function () {
+            Route::get('/salaries', [App\Http\Controllers\SalaryController::class, 'index'])->name('salaries.index');
+            Route::post('/salaries', [App\Http\Controllers\SalaryController::class, 'store'])->name('salaries.store');
+            Route::get('/salaries/{employee}', [App\Http\Controllers\SalaryController::class, 'show'])->name('salaries.show');
+            Route::post('/salaries/adjustments', [App\Http\Controllers\SalaryController::class, 'storeAdjustment'])->name('salaries.adjustments.store');
+            Route::delete('/salaries/adjustments/{adjustment}', [App\Http\Controllers\SalaryController::class, 'destroyAdjustment'])->name('salaries.adjustments.destroy');
+            Route::post('/salaries/settings', [App\Http\Controllers\SalaryController::class, 'updateSettings'])->name('salaries.settings');
+            Route::post('/leave-types', [App\Http\Controllers\LeaveTypeController::class, 'store'])->name('leave-types.store');
+            Route::put('/leave-types/{leaveType}', [App\Http\Controllers\LeaveTypeController::class, 'update'])->name('leave-types.update');
+        });
     });
 
     // Finance - all authenticated non-client users (controller handles per-role logic)

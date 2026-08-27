@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\HrAttendance;
 use App\Models\HrBonus;
 use App\Models\HrLeave;
+use App\Models\HrLeaveType;
 use App\Models\HrPenalty;
 use App\Models\HrPerformance;
 use App\Models\Notification;
 use App\Models\User;
 use App\Models\LegalCase;
 use App\Models\Task;
+use App\Support\Payroll;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -123,17 +125,29 @@ class HrController extends Controller
         return view('hr.index', compact('tab', 'employees', 'performances', 'bonuses', 'penalties', 'leaves', 'stats', 'chartData', 'ratingDistribution', 'attendanceToday', 'attendanceMonth', 'teamAttendance'));
     }
 
-    /** تسجيل الحضور — النقر المزدوج والطلبان المتزامنان يثمران سجلاً واحداً. */
+    /**
+     * تسجيل الحضور اليدوي.
+     *
+     * الزرّ والدخول التلقائي يمرّان من الباب نفسه: كتابة الحالة في
+     * موضعين جعلت الزرّ يترك status على «حاضر» بعد الانصراف —
+     * أمسكه اختبار، ومصدرٌ واحد يمنع عودته.
+     */
     public function checkIn()
     {
         $user = auth()->user();
 
         try {
-            HrAttendance::create([
-                'user_id' => $user->id,
-                'work_date' => HrAttendance::today(),
-                'check_in_at' => now(),
-            ]);
+            $existing = HrAttendance::todayFor($user->id);
+
+            if (! $existing) {
+                HrAttendance::create([
+                    'user_id' => $user->id,
+                    'work_date' => HrAttendance::today(),
+                    'check_in_at' => now(),
+                    'status' => 'present',
+                    'source' => 'manual',
+                ]);
+            }
         } catch (\Illuminate\Database\UniqueConstraintViolationException) {
             // سجّل حضوره من جهاز آخر في نفس اللحظة — الموجود يكفي
         }
@@ -144,20 +158,15 @@ class HrController extends Controller
 
     public function checkOut()
     {
-        // سجلّ اليوم أولاً، فإن لم يوجد فالسجلّ المفتوح من دوام امتدّ
-        // إلى ما بعد منتصف الليل — فلا يبقى يومٌ بلا انصراف
-        $record = HrAttendance::todayFor(auth()->id()) ?? HrAttendance::openFor(auth()->id());
+        $user = auth()->user();
 
-        if (!$record) {
+        // نفس الدالّة التي يستعملها الخروج من النظام: وقتٌ واحد،
+        // ومدّةٌ واحدة، وحالةٌ واحدة — أياً كان الزرّ الذي ضُغط.
+        $record = \App\Support\AttendanceGuard::checkOutOnLogout($user);
+
+        if (! $record && ! HrAttendance::todayFor($user->id) && ! HrAttendance::openFor($user->id)) {
             return redirect()->route('hr.index', ['tab' => 'attendance'])
                 ->withErrors(['attendance' => 'لم تسجّل حضوراً اليوم بعد.']);
-        }
-
-        if ($record->check_out_at === null) {
-            $record->update([
-                'check_out_at' => now(),
-                'minutes' => (int) $record->check_in_at->diffInMinutes(now()),
-            ]);
         }
 
         return redirect()->route('hr.index', ['tab' => 'attendance'])
@@ -213,7 +222,8 @@ class HrController extends Controller
 
         $data = $request->validate([
             'employee_id' => $canAssign ? 'required|exists:users,id' : 'nullable',
-            'type' => 'required|in:annual,sick,emergency,maternity,unpaid,other',
+            'leave_type_id' => 'nullable|exists:hr_leave_types,id',
+            'type' => 'nullable|in:annual,sick,emergency,maternity,unpaid,other',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'reason' => 'nullable|string',
@@ -221,6 +231,27 @@ class HrController extends Controller
 
         $data['employee_id'] = $canAssign ? $data['employee_id'] : $user->id;
         $data['status'] = 'pending';
+
+        // النموذج الجديد يرسل leave_type_id، والقديم يرسل type. نقبل
+        // الاثنين ونملأ الناقص من الموجود، فلا تنكسر صفحةٌ لم تُحدَّث
+        // بعدُ ولا يبقى صفٌّ بلا نوع.
+        $type = null;
+
+        if (! empty($data['leave_type_id'])) {
+            $type = HrLeaveType::find($data['leave_type_id']);
+            $data['type'] = $type?->code && in_array($type->code, ['annual','sick','emergency','maternity','unpaid','other'], true)
+                ? $type->code
+                : 'other';
+        } elseif (! empty($data['type'])) {
+            $type = HrLeaveType::where('code', $data['type'])->first();
+            $data['leave_type_id'] = $type?->id;
+        } else {
+            return back()->withErrors(['leave_type_id' => 'اختر نوع الإجازة.'])->withInput();
+        }
+
+        $data['days'] = (int) \Carbon\CarbonImmutable::parse($data['start_date'])
+            ->diffInDays(\Carbon\CarbonImmutable::parse($data['end_date'])) + 1;
+
         $leave = HrLeave::create($data);
 
         // Reload to get employee relationship
@@ -233,7 +264,7 @@ class HrController extends Controller
                 userId: $admin->id,
                 titleKey: 'app.notif_leave_new_title',
                 messageKey: 'app.notif_leave_new_body',
-                params: ['employee' => $leave->employee->name ?? __('app.employee'), 'type' => __('hr_leave_type_' . $leave->type)],
+                params: ['employee' => $leave->employee->name ?? __('app.employee'), 'type' => $leave->typeName()],
                 type: Notification::TYPE_INFO,
                 notifiableType: 'App\\Models\\HrLeave',
                 notifiableId: $leave->id,
@@ -246,17 +277,54 @@ class HrController extends Controller
     public function approveLeave(HrLeave $leave)
     {
         abort_unless($this->isAdmin(), 403);
-        $leave->update(['status' => 'approved', 'approved_by' => auth()->id()]);
 
+        $leave->loadMissing('leaveType', 'employee');
+
+        // الخصم يُحسب عند الاعتماد ويُخزَّن: تعديل الراتب بعد شهرين
+        // لا يجوز أن يُغيّر خصم إجازةٍ اعتُمدت على راتب ذلك الحين.
+        $deduction = Payroll::deductionForLeave($leave);
+
+        $leave->update([
+            'status' => 'approved',
+            'approved_by' => auth()->id(),
+            'days' => $leave->days ?: $deduction['days'],
+            'deduction_amount' => $deduction['amount'] > 0 ? $deduction['amount'] : null,
+        ]);
+
+        // للموظف: خبر الاعتماد وحده — بلا رقم ولا خصم
         \App\Support\Notify::send(
             userId: $leave->employee_id,
             titleKey: 'app.notif_leave_approved_title',
             messageKey: 'app.notif_leave_approved_body',
-            params: ['type' => __('hr_leave_type_' . $leave->type)],
+            params: ['type' => $leave->typeName()],
             type: Notification::TYPE_SUCCESS,
             notifiableType: 'App\\Models\\HrLeave',
             notifiableId: $leave->id,
         );
+
+        // للمدير وحده: الأيام والمبلغ. لا تُرسَل لمحامٍ ولا لموظف،
+        // ولا لصاحب الإجازة نفسه ولو كان مديراً لغيره.
+        if ($deduction['amount'] > 0) {
+            $managers = User::whereIn('role', ['developer', 'admin'])
+                ->where('id', '!=', $leave->employee_id)
+                ->get();
+
+            foreach ($managers as $manager) {
+                \App\Support\Notify::send(
+                    userId: $manager->id,
+                    titleKey: 'app.notif_leave_deduction_title',
+                    messageKey: 'app.notif_leave_deduction_body',
+                    params: [
+                        'employee' => $leave->employee->name ?? '—',
+                        'days' => $deduction['days'],
+                        'amount' => number_format($deduction['amount'], 2),
+                    ],
+                    type: Notification::TYPE_WARNING,
+                    notifiableType: 'App\\Models\\HrLeave',
+                    notifiableId: $leave->id,
+                );
+            }
+        }
 
         return redirect()->route('hr.index', ['tab' => 'leaves'])->with('success', 'تم الموافقة على الإجازة');
     }
@@ -264,13 +332,14 @@ class HrController extends Controller
     public function rejectLeave(HrLeave $leave)
     {
         abort_unless($this->isAdmin(), 403);
-        $leave->update(['status' => 'rejected', 'approved_by' => auth()->id()]);
+        // الرفض يمحو أي خصمٍ محسوب: طلبٌ مرفوض لا يكلّف صاحبه ريالاً
+        $leave->update(['status' => 'rejected', 'approved_by' => auth()->id(), 'deduction_amount' => null]);
 
         \App\Support\Notify::send(
             userId: $leave->employee_id,
             titleKey: 'app.notif_leave_rejected_title',
             messageKey: 'app.notif_leave_rejected_body',
-            params: ['type' => __('hr_leave_type_' . $leave->type)],
+            params: ['type' => $leave->typeName()],
             type: Notification::TYPE_WARNING,
             notifiableType: 'App\\Models\\HrLeave',
             notifiableId: $leave->id,

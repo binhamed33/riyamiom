@@ -820,6 +820,8 @@ return [
     'notif_case_status_body' => 'Case “:case” moved from :from to :to',
     'notif_leave_new_title' => 'New leave request',
     'notif_leave_new_body' => ':employee requested :type leave',
+    'notif_leave_deduction_title' => 'Approved leave with deduction',
+    'notif_leave_deduction_body' => ':employee · :days day(s) · expected deduction :amount OMR',
     'notif_leave_approved_title' => 'Leave approved',
     'notif_leave_approved_body' => 'Your :type leave request was approved',
     'notif_leave_rejected_title' => 'Leave rejected',

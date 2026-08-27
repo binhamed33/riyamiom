@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Services\StaffDiscordService;
+use App\Support\AttendanceGuard;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -134,6 +135,18 @@ class LoginController extends Controller
             $request->userAgent()
         );
 
+        // الحضور يُسجَّل هنا لا في وسيط: الوسيط يمرّ على كل طلب فيعيد
+        // المحاولة مئة مرة في اليوم، والدخول يقع مرة. والفشل لا يمنع
+        // الدخول — AttendanceGuard يبتلع عطله ويُرجع null.
+        $attendance = AttendanceGuard::checkInOnLogin(auth()->user());
+
+        if ($attendance) {
+            $request->session()->put('attendance_flash', [
+                'created' => $attendance['created'],
+                'at' => $attendance['record']->check_in_at->timezone('Asia/Muscat')->format('h:i A'),
+            ]);
+        }
+
         return redirect()->intended(route('dashboard'));
     }
 
@@ -174,6 +187,9 @@ class LoginController extends Controller
         $ip = $request->ip();
 
         app(StaffDiscordService::class)->reportLogout($user, $ip);
+
+        // قبل إبطال الجلسة: بعدها لا يبقى مستخدمٌ نَنسب إليه الانصراف
+        AttendanceGuard::checkOutOnLogout($user);
 
         auth()->logout();
         $request->session()->invalidate();

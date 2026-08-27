@@ -15,7 +15,7 @@ class HrAttendance extends Model
 {
     protected $table = 'hr_attendance';
 
-    protected $fillable = ['user_id', 'work_date', 'check_in_at', 'check_out_at', 'minutes', 'note'];
+    protected $fillable = ['user_id', 'work_date', 'check_in_at', 'check_out_at', 'minutes', 'note', 'status', 'source'];
 
     protected function casts(): array
     {

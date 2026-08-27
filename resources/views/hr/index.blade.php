@@ -268,6 +268,58 @@
         </div>
 
     @elseif($tab === 'leaves')
+        @php $canManageTypes = auth()->user()->isDeveloper() || auth()->user()->role === 'admin' || auth()->user()->hasPermission('salaries.manage'); @endphp
+
+        @if($canManageTypes)
+        {{-- أنواع الإجازات: حكمُ كل نوع في الراتب يضبطه المدير هنا.
+             لا حذف — نوعٌ يُحذف يُغيّر كشوف الشهور الماضية بأثر رجعي،
+             والتعطيل يُخرجه من الاختيار ويُبقي ما بُني عليه سليماً. --}}
+        <div class="bg-white rounded-xl border border-gold/15 overflow-hidden mb-4"
+             x-data="{ open: false }">
+            <button @click="open = !open" type="button"
+                    class="w-full p-4 flex items-center justify-between text-start">
+                <h2 class="text-sm font-bold text-gold-dark">أنواع الإجازات وأثرها في الراتب</h2>
+                <svg class="w-4 h-4 text-gray-400 transition-transform" :class="open && 'rotate-180'"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="open" x-collapse class="border-t border-gray-200 p-4 space-y-3">
+                @foreach(\App\Models\HrLeaveType::orderBy('sort')->orderBy('id')->get() as $lt)
+                    <form method="POST" action="{{ route('leave-types.update', $lt) }}"
+                          class="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-gray-50">
+                        @csrf @method('PUT')
+                        <input type="text" name="name" value="{{ $lt->name }}" required maxlength="120"
+                               class="flex-1 min-w-[140px] rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                        <label class="flex items-center gap-2 text-xs text-gray-600 whitespace-nowrap">
+                            <input type="checkbox" name="affects_salary" value="1" @checked($lt->affects_salary)>
+                            يخصم من الراتب
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-gray-600 whitespace-nowrap">
+                            <input type="checkbox" name="is_active" value="1" @checked($lt->is_active)>
+                            متاح للاختيار
+                        </label>
+                        <button class="px-4 py-2 rounded-lg text-xs font-semibold bg-primary text-white">حفظ</button>
+                    </form>
+                @endforeach
+
+                <form method="POST" action="{{ route('leave-types.store') }}"
+                      class="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-dashed border-gray-300">
+                    @csrf
+                    <input type="text" name="name" required maxlength="120" placeholder="اسم النوع الجديد"
+                           class="flex-1 min-w-[140px] rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                    <input type="text" name="code" required maxlength="40" placeholder="رمز لاتيني (hajj)" dir="ltr"
+                           class="w-40 rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                    <label class="flex items-center gap-2 text-xs text-gray-600 whitespace-nowrap">
+                        <input type="checkbox" name="affects_salary" value="1">
+                        يخصم من الراتب
+                    </label>
+                    <button class="px-4 py-2 rounded-lg text-xs font-semibold border border-gold-dark text-gold-dark">إضافة</button>
+                </form>
+            </div>
+        </div>
+        @endif
+
         <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-gold-dark">الإجازات</h2>
@@ -442,7 +494,13 @@
             @endif
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">النوع <span class="text-red-700">*</span></label>
-                <select name="type" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option><option value="annual">سنوية</option><option value="sick">مرضية</option><option value="emergency">طارئة</option><option value="maternity">أمومة</option><option value="unpaid">بدون راتب</option><option value="other">أخرى</option></select>
+                <select name="leave_type_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required>
+                    <option value="">اختر</option>
+                    {{-- الأنواع من الجدول: مكتبٌ أضاف نوعاً يجده هنا بلا لمس كود --}}
+                    @foreach(\App\Models\HrLeaveType::selectable() as $lt)
+                        <option value="{{ $lt->id }}">{{ $lt->name }}</option>
+                    @endforeach
+                </select>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>

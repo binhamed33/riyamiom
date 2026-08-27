@@ -820,6 +820,8 @@ return [
     'notif_case_status_body' => 'تغيّرت حالة قضية «:case» من :from إلى :to',
     'notif_leave_new_title' => 'طلب إجازة جديد',
     'notif_leave_new_body' => 'قدّم :employee طلب إجازة :type',
+    'notif_leave_deduction_title' => 'اعتُمدت إجازة بخصم',
+    'notif_leave_deduction_body' => 'الموظف :employee · :days يوم · الخصم المتوقّع :amount ر.ع',
     'notif_leave_approved_title' => 'تمت الموافقة على الإجازة',
     'notif_leave_approved_body' => 'تمت الموافقة على طلب إجازتك (:type)',
     'notif_leave_rejected_title' => 'رُفض طلب الإجازة',

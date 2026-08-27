@@ -29,6 +29,10 @@
             try {
                 // الخادم رسم الوضع المحفوظ للمستخدم؛ نُبقي النسخة المحلية متطابقة
                 localStorage.setItem('theme', '{{ $appearanceMode }}');
+                /* حالة الشريط تُقرأ قبل أول إطار: قراءتها داخل Alpine
+                   وحده تجعله يُرسم مفتوحاً ثم ينطوي أمام العين. */
+                try { window.__sbOpen = localStorage.getItem('sidebarOpen') !== '0'; }
+                catch (e) { window.__sbOpen = true; }
                 var fs = parseInt(localStorage.getItem('fontSize') || '100', 10);
                 if (fs !== 100 && [100, 110, 125].indexOf(fs) !== -1) {
                     document.documentElement.style.fontSize = (16 * fs / 100) + 'px';
@@ -803,7 +807,7 @@
 </style>
     @stack('styles')
 </head>
-<body class="font-body min-h-screen" style="background-color: #F3EFE7; color: #111827;" x-data="{ sidebarOpen: true, mobileOpen: false, profileOpen: false, theme: '{{ $appearanceMode }}', fontSize: parseInt(localStorage.getItem('fontSize') || '100', 10) || 100, fontStep(step) { const levels = [100, 110, 125]; let i = levels.indexOf(this.fontSize); if (i === -1) i = 0; const ni = Math.max(0, Math.min(levels.length - 1, i + step)); this.fontSize = levels[ni]; localStorage.setItem('fontSize', this.fontSize); document.documentElement.style.fontSize = (16 * this.fontSize / 100) + 'px'; } }" x-init="$el.closest('html').setAttribute('data-theme', theme)">
+<body class="font-body min-h-screen" style="background-color: #F3EFE7; color: #111827;" x-data="{ sidebarOpen: window.__sbOpen, mobileOpen: false, profileOpen: false, theme: '{{ $appearanceMode }}', fontSize: parseInt(localStorage.getItem('fontSize') || '100', 10) || 100, fontStep(step) { const levels = [100, 110, 125]; let i = levels.indexOf(this.fontSize); if (i === -1) i = 0; const ni = Math.max(0, Math.min(levels.length - 1, i + step)); this.fontSize = levels[ni]; localStorage.setItem('fontSize', this.fontSize); document.documentElement.style.fontSize = (16 * this.fontSize / 100) + 'px'; } }" x-init="$el.closest('html').setAttribute('data-theme', theme); $watch('sidebarOpen', v => { try { localStorage.setItem('sidebarOpen', v ? '1' : '0'); } catch (e) {} })">
 
     {{-- Mobile Overlay --}}
     {{-- x-cloak واجب هنا: قبل أن يستيقظ Alpine كانت هذه الطبقة السوداء
@@ -977,6 +981,24 @@
             </svg>
             <span>{{ __('app.hr') }}</span>
             </a>
+
+            <a href="{{ route('attendance.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('attendance.*') ? 'active' : '' }}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>الحضور</span>
+            </a>
+
+            {{-- الرواتب: لا يُعرض الرابط إلا لمن يملك فتحه. وإخفاؤه
+                 زينةٌ لا حماية — الحماية في الوسيط والمتحكّم. --}}
+            @if(Auth::check() && (Auth::user()->isDeveloper() || Auth::user()->role === 'admin' || Auth::user()->hasPermission('salaries.manage')))
+            <a href="{{ route('salaries.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('salaries.*') ? 'active' : '' }}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-7 8h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>الرواتب</span>
+            </a>
+            @endif
 
             <a href="{{ route('finance.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('finance.*') ? 'active' : '' }}">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -1418,6 +1440,7 @@
         {{-- Page Content --}}
         <main class="p-4 sm:p-6 lg:p-8 page-enter pb-20 md:pb-8">
             {{-- بلوغُ حدّ الباقة: يُعرض قبل غيره — هو سببُ عدم وقوع ما طُلب --}}
+            <x-attendance-toast :attendance-open="\App\Support\AttendanceGuard::openRecord(auth()->user())" />
             <x-limit-notice />
 
             @if(session('success'))
