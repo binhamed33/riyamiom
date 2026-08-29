@@ -12,4 +12,7 @@ return [
 
     'url' => rtrim((string) env('MUDAWALA_URL', 'https://mudawala.riyami.om'), '/') . '/',
 
+    // هاتف مطوّر مُداوَلة — يظهر في ردّ المساعد عند سؤال خارج اختصاصه
+    'support_phone' => env('MUDAWALA_SUPPORT_PHONE', '+968 7173 0036'),
+
 ];

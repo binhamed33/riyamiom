@@ -40,27 +40,31 @@ class AiLatencyTest extends TestCase
         });
     }
 
-    public function test_a_model_that_rejects_the_field_is_retried_without_it(): void
+    public function test_the_thinking_ladder_descends_on_each_rejection(): void
     {
-        $calls = 0;
-        Http::fake(function () use (&$calls) {
-            $calls++;
+        // جيل 3.x يرفض thinkingBudget ثم قد يرفض thinkingLevel — كل رفض
+        // ينزل درجة في نفس الطلب حتى بلا حقل، والسؤال لا يضيع
+        $sent = [];
+        Http::fake(function ($request) use (&$sent) {
+            $sent[] = $request->data()['generationConfig']['thinkingConfig'] ?? null;
 
-            if ($calls === 1) {
-                return Http::response(['error' => [
+            return count($sent) <= 2
+                ? Http::response(['error' => [
                     'code' => 400,
-                    'message' => 'Invalid JSON payload received. Unknown name "thinkingConfig": thinking is not supported.',
+                    'message' => 'Unknown name "thinkingConfig": thinking is not supported.',
                     'status' => 'INVALID_ARGUMENT',
-                ]], 400);
-            }
-
-            return Http::response(self::OK, 200);
+                ]], 400)
+                : Http::response(self::OK, 200);
         });
 
         $answer = (new GeminiProvider())->chat([['role' => 'user', 'content' => 'اهلا']], 'نظام');
 
-        $this->assertSame('جواب', $answer, 'الرفض يُستدرك في نفس الطلب لا يُفشله');
-        $this->assertSame(2, $calls);
+        $this->assertSame('جواب', $answer);
+        $this->assertSame([
+            ['thinkingBudget' => 0],
+            ['thinkingLevel' => 'low'],
+            null,
+        ], $sent, 'الدرجات الثلاث بالترتيب');
     }
 
     public function test_health_snapshot_exposes_response_times(): void

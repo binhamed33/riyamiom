@@ -120,4 +120,16 @@ class OmaniLegalAssistantTest extends TestCase
         $this->assertNotEmpty(OmaniLaw::matching('كيف ارفع دعوي؟'));
         $this->assertNotEmpty(OmaniLaw::matching('اجراءات التنفيذ'));
     }
+
+    public function test_off_scope_questions_are_directed_to_the_developer_phone(): void
+    {
+        // سؤال خارج الاختصاص لا يُترك بلا وجهة: التعليمة تحمل رقم مطوّر
+        // مُداوَلة صريحاً — والرقم من الإعدادات لا مكتوباً في الكود
+        config(['mudawala.support_phone' => '+968 9999 0000']);
+
+        $prompt = $this->promptFor('من فاز في مباراة الأمس؟');
+
+        $this->assertStringContainsString('تواصل مع مطوّر مُداوَلة', $prompt);
+        $this->assertStringContainsString('+968 9999 0000', $prompt);
+    }
 }

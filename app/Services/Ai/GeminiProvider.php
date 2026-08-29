@@ -225,11 +225,18 @@ class GeminiProvider implements AiProvider
 
     /**
      * نماذج 2.5/3.x «تفكّر» قبل أن تجيب افتراضياً — ثوانٍ صامتة تُحرق
-     * قبل أول حرف، والمستخدم يراها تجمّداً. يُطفأ التفكير لطلبات المكتب
-     * (إجاباتنا استرجاعية لا برهانية)، ومن يرفض الحقل من النماذج يُعاد
-     * نداؤه بدونه في نفس الطلب — فلا نموذج ينكسر ولا سرعة تضيع.
+     * قبل أول حرف، والمستخدم يراها تجمّداً. سُلَّم إطفاء ثلاثي:
+     * thinkingBudget=0 (جيل 2.5) ← thinkingLevel=low (جيل 3.x الذي
+     * يرفض budget فيبقى تفكيره شغالاً بأدنى درجة) ← بلا حقل إطلاقاً.
+     * كل رفض بـ400 يسمّي «thinking» ينزل درجةً في نفس الطلب.
      */
-    protected bool $thinkingFieldRejected = false;
+    protected int $thinkingStep = 0;
+
+    protected const THINKING_LADDER = [
+        ['thinkingBudget' => 0],
+        ['thinkingLevel' => 'low'],
+        null,
+    ];
 
     protected function callModel(string $model, array $payload): string
     {
@@ -238,19 +245,27 @@ class GeminiProvider implements AiProvider
                 'temperature' => 0.4,
                 'maxOutputTokens' => 8192,
             ];
-            if (!$this->thinkingFieldRejected) {
-                $config['thinkingConfig'] = ['thinkingBudget' => 0];
-            }
 
-            $response = $this->post($model, array_merge($payload, ['generationConfig' => $config]));
+            $response = null;
+            while (true) {
+                $thinking = self::THINKING_LADDER[$this->thinkingStep];
+                if ($thinking !== null) {
+                    $config['thinkingConfig'] = $thinking;
+                } else {
+                    unset($config['thinkingConfig']);
+                }
 
-            // نموذج لا يعرف حقل التفكير يردّ 400 يسمّيه — يُحذف ويُعاد
-            if ($response->status() === 400
-                && !$this->thinkingFieldRejected
-                && stripos((string) $response->body(), 'thinking') !== false) {
-                $this->thinkingFieldRejected = true;
-                unset($config['thinkingConfig']);
                 $response = $this->post($model, array_merge($payload, ['generationConfig' => $config]));
+
+                if ($response->status() === 400
+                    && $this->thinkingStep < count(self::THINKING_LADDER) - 1
+                    && stripos((string) $response->body(), 'thinking') !== false) {
+                    $this->thinkingStep++;
+
+                    continue;
+                }
+
+                break;
             }
 
             $this->lastStatus = $response->status();
