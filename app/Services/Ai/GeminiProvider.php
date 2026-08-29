@@ -223,20 +223,35 @@ class GeminiProvider implements AiProvider
             ?? new \RuntimeException('Gemini API error — tried models: ' . implode(', ', $tried));
     }
 
+    /**
+     * نماذج 2.5/3.x «تفكّر» قبل أن تجيب افتراضياً — ثوانٍ صامتة تُحرق
+     * قبل أول حرف، والمستخدم يراها تجمّداً. يُطفأ التفكير لطلبات المكتب
+     * (إجاباتنا استرجاعية لا برهانية)، ومن يرفض الحقل من النماذج يُعاد
+     * نداؤه بدونه في نفس الطلب — فلا نموذج ينكسر ولا سرعة تضيع.
+     */
+    protected bool $thinkingFieldRejected = false;
+
     protected function callModel(string $model, array $payload): string
     {
         try {
-            $response = Http::timeout(120)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'X-goog-api-key' => $this->apiKey,
-                ])
-                ->post('https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent', array_merge($payload, [
-                    'generationConfig' => [
-                        'temperature' => 0.4,
-                        'maxOutputTokens' => 8192,
-                    ],
-                ]));
+            $config = [
+                'temperature' => 0.4,
+                'maxOutputTokens' => 8192,
+            ];
+            if (!$this->thinkingFieldRejected) {
+                $config['thinkingConfig'] = ['thinkingBudget' => 0];
+            }
+
+            $response = $this->post($model, array_merge($payload, ['generationConfig' => $config]));
+
+            // نموذج لا يعرف حقل التفكير يردّ 400 يسمّيه — يُحذف ويُعاد
+            if ($response->status() === 400
+                && !$this->thinkingFieldRejected
+                && stripos((string) $response->body(), 'thinking') !== false) {
+                $this->thinkingFieldRejected = true;
+                unset($config['thinkingConfig']);
+                $response = $this->post($model, array_merge($payload, ['generationConfig' => $config]));
+            }
 
             $this->lastStatus = $response->status();
 
@@ -279,5 +294,15 @@ class GeminiProvider implements AiProvider
             Log::error('Gemini API exception (' . $model . '): ' . $e->getMessage());
             throw new \RuntimeException('تعذّر الاتصال بخدمة الذكاء الاصطناعي.');
         }
+    }
+
+    protected function post(string $model, array $body): \Illuminate\Http\Client\Response
+    {
+        return Http::timeout(120)
+            ->withHeaders([
+                'Content-Type' => 'application/json',
+                'X-goog-api-key' => $this->apiKey,
+            ])
+            ->post('https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent', $body);
     }
 }

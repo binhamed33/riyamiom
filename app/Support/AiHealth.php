@@ -70,6 +70,17 @@ class AiHealth
             };
         }
 
+        // زمن الرد رقماً لا إحساساً: متوسط آخر أسبوع وآخر طلب ناجح —
+        // «بطيء» بلا رقم شكوى، وبرقمٍ تشخيص
+        $avgMs = DB::table('ai_requests')
+            ->where('status', 'ok')
+            ->where('created_at', '>=', now()->subDays(7))
+            ->avg('duration_ms');
+        $lastMs = DB::table('ai_requests')
+            ->where('status', 'ok')
+            ->orderByDesc('id')
+            ->value('duration_ms');
+
         return [
             'status' => $status,
             'provider' => AiSettings::provider(),
@@ -77,6 +88,8 @@ class AiHealth
             'last_success_at' => $lastSuccess,
             'last_error' => $lastError,
             'counts' => $counts,
+            'avg_ms' => $avgMs !== null ? (int) round((float) $avgMs) : null,
+            'last_ms' => $lastMs !== null ? (int) $lastMs : null,
         ];
     }
 }

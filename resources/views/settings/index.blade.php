@@ -214,6 +214,12 @@
                 @if($aiHealth['counts']['today_errors'] > 0)<b class="text-red-600">({{ $aiHealth['counts']['today_errors'] }} خطأ)</b>@endif
             </span>
             <span class="text-gray-500">هذا الشهر: <b class="text-gray-700">{{ $aiHealth['counts']['month'] }}</b></span>
+            @if($aiHealth['avg_ms'] !== null)
+                <span class="text-gray-500">متوسط الرد:
+                    <b class="{{ $aiHealth['avg_ms'] > 15000 ? 'text-red-600' : ($aiHealth['avg_ms'] > 8000 ? 'text-amber-600' : 'text-gray-700') }}">{{ number_format($aiHealth['avg_ms'] / 1000, 1) }} ث</b>
+                    @if($aiHealth['last_ms'] !== null)<span class="text-gray-400">(آخر طلب {{ number_format($aiHealth['last_ms'] / 1000, 1) }} ث)</span>@endif
+                </span>
+            @endif
         </div>
 
         <div class="flex items-center gap-3 mb-1">
