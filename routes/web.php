@@ -389,6 +389,8 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         // Subscription configuration - developer only (site-level subscription)
         Route::get('/subscription', [App\Http\Controllers\DeveloperSubscriptionController::class, 'config'])->name('developer.subscription.config');
         Route::post('/subscription/activate', [App\Http\Controllers\DeveloperSubscriptionController::class, 'activate'])->name('developer.subscription.activate');
+        Route::post('/subscription/extend', [App\Http\Controllers\DeveloperSubscriptionController::class, 'extend'])->name('developer.subscription.extend');
+        Route::post('/subscription/expire', [App\Http\Controllers\DeveloperSubscriptionController::class, 'expire'])->name('developer.subscription.expire');
         Route::post('/subscription/suspend', [App\Http\Controllers\DeveloperSubscriptionController::class, 'suspend'])->name('developer.subscription.suspend');
         Route::post('/subscription/reactivate', [App\Http\Controllers\DeveloperSubscriptionController::class, 'reactivate'])->name('developer.subscription.reactivate');
     });

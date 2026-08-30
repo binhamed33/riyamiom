@@ -135,6 +135,10 @@
                 </div>
 
                 <div class="mt-8 pt-6 border-t border-gray-100 flex flex-wrap items-center gap-3">
+                    <button @click="openModal('extendModal')" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-sm">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        تمديد الاشتراك
+                    </button>
                     <button @click="openModal('changeModal')" class="inline-flex items-center gap-2 bg-gold hover:bg-gold-dark text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-sm">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"/></svg>
                         تغيير الاشتراك
@@ -142,6 +146,10 @@
                     <button @click="confirmAction('suspendForm', 'إيقاف اشتراك النظام؟ سيتوقف وصول جميع المستخدمين حتى إعادة التفعيل.')" class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-bold text-sm transition-colors">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                         إيقاف الاشتراك
+                    </button>
+                    <button @click="confirmAction('expireForm', 'إنهاء الاشتراك فورًا؟ سيُقفل النظام على جميع المستخدمين غير المطوّرين حالًا، ولا يمكن التراجع إلا بتفعيل اشتراك جديد.')" class="inline-flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-6 py-2.5 rounded-xl font-bold text-sm transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>
+                        إنهاء فوري
                     </button>
                     @if($statusKey === 'expiring_soon')
                         <span class="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full font-medium">تبقى {{ $info['remaining_days'] }} يوم فقط — تواصل مع العميل للتجديد</span>
@@ -159,6 +167,7 @@
 
     {{-- Suspend form (hidden) --}}
     <form id="suspendForm" method="POST" action="{{ route('developer.subscription.suspend') }}" class="hidden">@csrf</form>
+    <form id="expireForm" method="POST" action="{{ route('developer.subscription.expire') }}" class="hidden">@csrf</form>
 
     {{-- Activate modal --}}
     <div id="activateModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -174,11 +183,16 @@
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
                         @foreach($durations as $d)
                             <label class="cursor-pointer duration-option">
-                                <input type="radio" name="duration" value="{{ $d }}" {{ $d === 3 ? 'checked' : '' }} class="sr-only" required>
+                                <input type="radio" name="duration" value="{{ $d }}" {{ $d === 3 ? 'checked' : '' }} class="sr-only">
                                 <span class="block text-center text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-3 transition-colors">{{ \App\Services\SubscriptionService::durationLabel($d) }}</span>
                             </label>
                         @endforeach
                     </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">أو تاريخ انتهاء مخصص</label>
+                    <input type="date" name="custom_end" min="{{ now()->addDay()->format('Y-m-d') }}" dir="ltr" class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-gold/40 focus:outline-none">
+                    <p class="text-[11px] text-gray-400 mt-1.5">إذا حدّدت تاريخًا فسيُعتمد بدل المدة أعلاه، وينتهي الاشتراك في نهاية ذلك اليوم.</p>
                 </div>
                 <div class="bg-gold/10 border border-gold/20 rounded-xl px-4 py-3 text-xs text-gray-600 leading-relaxed">
                     سيبدأ الاشتراك من وقت السيرفر الحالي: <span class="font-semibold" dir="ltr">{{ now()->format('d M Y H:i') }}</span>
@@ -207,17 +221,57 @@
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
                         @foreach($durations as $d)
                             <label class="cursor-pointer duration-option">
-                                <input type="radio" name="duration" value="{{ $d }}" {{ $d === 3 ? 'checked' : '' }} class="sr-only" required>
+                                <input type="radio" name="duration" value="{{ $d }}" {{ $d === 3 ? 'checked' : '' }} class="sr-only">
                                 <span class="block text-center text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-3 transition-colors">{{ \App\Services\SubscriptionService::durationLabel($d) }}</span>
                             </label>
                         @endforeach
                     </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">أو تاريخ انتهاء مخصص</label>
+                    <input type="date" name="custom_end" min="{{ now()->addDay()->format('Y-m-d') }}" dir="ltr" class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-gold/40 focus:outline-none">
+                    <p class="text-[11px] text-gray-400 mt-1.5">إذا حدّدت تاريخًا فسيُعتمد بدل المدة أعلاه، وينتهي الاشتراك في نهاية ذلك اليوم.</p>
                 </div>
                 <label class="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 cursor-pointer">
                     <input type="checkbox" name="confirm" value="1" required class="mt-0.5 w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
                     <span class="text-xs text-amber-800 leading-relaxed">أؤكد أنني أريد استبدال الاشتراك الحالي وفقدان الوقت المتبقي (<b>{{ $info['remaining_days'] }} يوم</b>).</span>
                 </label>
                 <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white px-5 py-3 rounded-xl font-bold transition-colors">حفظ الاشتراك الجديد</button>
+            </form>
+        </div>
+    </div>
+
+    {{-- Extend modal --}}
+    <div id="extendModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800">تمديد الاشتراك</h3>
+                <button type="button" @click="closeModal('extendModal')" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">
+                المدة المضافة تُحتسب فوق الوقت المتبقي ولا تلغيه — ينتهي الاشتراك حاليًا
+                <span dir="ltr" class="font-semibold">{{ $info['end_at']?->format('d M Y') }}</span>
+                (متبقٍ <span class="font-semibold">{{ $info['remaining_days'] }} يوم</span>).
+            </p>
+            <form method="POST" action="{{ route('developer.subscription.extend') }}" class="space-y-5">
+                @csrf
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">مدة التمديد</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        @foreach($durations as $d)
+                            <label class="cursor-pointer duration-option">
+                                <input type="radio" name="duration" value="{{ $d }}" {{ $d === 1 ? 'checked' : '' }} class="sr-only">
+                                <span class="block text-center text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-3 transition-colors">{{ \App\Services\SubscriptionService::durationLabel($d) }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">أو تاريخ انتهاء مخصص</label>
+                    <input type="date" name="custom_end" min="{{ now()->addDay()->format('Y-m-d') }}" dir="ltr" class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-gold/40 focus:outline-none">
+                    <p class="text-[11px] text-gray-400 mt-1.5">إذا حدّدت تاريخًا فسيُعتمد بدل المدة أعلاه، وينتهي الاشتراك في نهاية ذلك اليوم.</p>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-bold transition-colors">تمديد الاشتراك</button>
             </form>
         </div>
     </div>

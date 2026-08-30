@@ -103,6 +103,7 @@ class SubscriptionService
             },
             'allowed' => in_array($status, [self::STATUS_ACTIVE, self::STATUS_EXPIRING], true),
             'duration_months' => $duration ? (int) $duration : null,
+            'is_custom_period' => !$duration && $end !== null,
             'start_at' => $start,
             'end_at' => $end,
             'created_at' => $created ? Carbon::parse($created) : null,
@@ -122,19 +123,80 @@ class SubscriptionService
         return (int) now()->startOfDay()->diffInDays($end->copy()->endOfDay());
     }
 
-    public function activate(int $months): array
+    /**
+     * Starts a fresh period from now. A custom end date replaces the month count.
+     */
+    public function activate(int $months, ?Carbon $customEnd = null): array
     {
         $start = now();
-        $end = (clone $start)->addMonthsNoOverflow($months);
+        $end = $customEnd ? $customEnd->copy() : $start->copy()->addMonthsNoOverflow($months);
 
-        Setting::set('subscription_status', self::STATUS_ACTIVE, 'subscription');
-        Setting::set('subscription_duration', $months, 'subscription');
-        Setting::set('subscription_start_at', $start, 'subscription');
-        Setting::set('subscription_end_at', $end, 'subscription');
+        $this->writePeriod(self::STATUS_ACTIVE, $start, $end);
         Setting::set('subscription_created_at', now(), 'subscription');
-        Setting::set('subscription_updated_at', now(), 'subscription');
 
         return ['start' => $start, 'end' => $end];
+    }
+
+    /**
+     * Adds onto whatever time is left rather than discarding it; a period that has
+     * already run out is extended from now instead. The start date is preserved.
+     */
+    public function extend(int $months, ?Carbon $customEnd = null): array
+    {
+        $now = now();
+        $currentEnd = $this->endAt();
+        $base = ($currentEnd && $currentEnd->greaterThan($now)) ? $currentEnd->copy() : $now->copy();
+
+        $start = $this->startAt() ?? $now->copy();
+        $end = $customEnd ? $customEnd->copy() : $base->addMonthsNoOverflow($months);
+
+        $this->writePeriod(self::STATUS_ACTIVE, $start, $end);
+
+        return ['start' => $start, 'end' => $end, 'added_months' => $customEnd ? null : $months];
+    }
+
+    /**
+     * Ends the subscription immediately. end_at has to move into the past because
+     * status() recomputes from server time and ignores the stored status while the
+     * period is still live.
+     */
+    public function expire(): void
+    {
+        Setting::set('subscription_status', self::STATUS_EXPIRED, 'subscription');
+        Setting::set('subscription_end_at', now()->subMinute(), 'subscription');
+        Setting::set('subscription_updated_at', now(), 'subscription');
+    }
+
+    /**
+     * Stores a period and the duration that actually describes it, so the label
+     * stays true after an extension (3 months extended by 2 reads as 5, not 2).
+     * A span that is not a whole number of months is stored as a custom period.
+     */
+    private function writePeriod(string $status, Carbon $start, Carbon $end): void
+    {
+        Setting::set('subscription_status', $status, 'subscription');
+        Setting::set('subscription_duration', self::wholeMonthsBetween($start, $end), 'subscription');
+        Setting::set('subscription_start_at', $start, 'subscription');
+        Setting::set('subscription_end_at', $end, 'subscription');
+        Setting::set('subscription_updated_at', now(), 'subscription');
+    }
+
+    /**
+     * Whole months from $start to $end, or null when the span does not land on a
+     * month boundary (a custom end date usually will not).
+     */
+    public static function wholeMonthsBetween(Carbon $start, Carbon $end): ?int
+    {
+        $approx = ($end->year - $start->year) * 12 + ($end->month - $start->month);
+
+        foreach ([$approx, $approx - 1, $approx + 1] as $months) {
+            if ($months >= 1 && $months <= 120
+                && $start->copy()->addMonthsNoOverflow($months)->equalTo($end)) {
+                return $months;
+            }
+        }
+
+        return null;
     }
 
     public function suspend(): void
@@ -149,8 +211,12 @@ class SubscriptionService
         Setting::set('subscription_updated_at', now(), 'subscription');
     }
 
-    public static function durationLabel(int $months): string
+    public static function durationLabel(?int $months): string
     {
+        if (!$months) {
+            return 'مدة مخصصة';
+        }
+
         return match ($months) {
             1 => 'شهر واحد',
             2 => 'شهران',

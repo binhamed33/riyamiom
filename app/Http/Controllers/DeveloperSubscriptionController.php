@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Setting;
 use App\Services\SubscriptionService;
 use App\Traits\AuditLoggable;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -25,8 +26,17 @@ class DeveloperSubscriptionController extends Controller
     public function activate(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'duration' => 'required|integer|in:1,2,3,6,12',
+            'duration' => 'nullable|integer|in:1,2,3,6,12',
+            'custom_end' => 'nullable|date|after:today',
         ]);
+
+        $months = $validated['duration'] ?? null;
+        $customEnd = isset($validated['custom_end']) ? Carbon::parse($validated['custom_end'])->endOfDay() : null;
+
+        if (!$months && !$customEnd) {
+            return redirect()->route('developer.subscription.config')
+                ->with('error', 'اختر مدة الاشتراك أو حدّد تاريخ انتهاء مخصصًا.');
+        }
 
         $service = app(SubscriptionService::class);
         $current = $service->status();
@@ -38,7 +48,7 @@ class DeveloperSubscriptionController extends Controller
         }
 
         $old = $service->info();
-        $result = $service->activate((int) $validated['duration']);
+        $result = $service->activate((int) ($months ?? 0), $customEnd);
 
         $this->logAudit(
             AuditLog::ACTION_CREATE,
@@ -47,7 +57,8 @@ class DeveloperSubscriptionController extends Controller
             $old,
             [
                 'action' => 'activate_subscription',
-                'duration' => $validated['duration'],
+                'duration' => $months,
+                'custom_end' => $customEnd?->toDateTimeString(),
                 'start_at' => $result['start']->toDateTimeString(),
                 'end_at' => $result['end']->toDateTimeString(),
             ]
@@ -55,6 +66,72 @@ class DeveloperSubscriptionController extends Controller
 
         return redirect()->route('developer.subscription.config')
             ->with('success', 'تم تفعيل اشتراك النظام حتى ' . $result['end']->format('d/m/Y'));
+    }
+
+    public function extend(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'duration' => 'nullable|integer|in:1,2,3,6,12',
+            'custom_end' => 'nullable|date|after:today',
+        ]);
+
+        $service = app(SubscriptionService::class);
+
+        if ($service->status() === SubscriptionService::STATUS_NONE) {
+            return redirect()->route('developer.subscription.config')
+                ->with('error', 'لا يوجد اشتراك لتمديده — فعّل اشتراكًا أولًا.');
+        }
+
+        $months = $validated['duration'] ?? null;
+        $customEnd = isset($validated['custom_end']) ? Carbon::parse($validated['custom_end'])->endOfDay() : null;
+
+        if (!$months && !$customEnd) {
+            return redirect()->route('developer.subscription.config')
+                ->with('error', 'اختر مدة التمديد أو حدّد تاريخ انتهاء مخصصًا.');
+        }
+
+        $old = $service->info();
+        $result = $service->extend((int) ($months ?? 0), $customEnd);
+
+        $this->logAudit(
+            AuditLog::ACTION_UPDATE,
+            Setting::class,
+            null,
+            $old,
+            [
+                'action' => 'extend_subscription',
+                'added_months' => $months,
+                'custom_end' => $customEnd?->toDateTimeString(),
+                'end_at' => $result['end']->toDateTimeString(),
+            ]
+        );
+
+        return redirect()->route('developer.subscription.config')
+            ->with('success', 'تم تمديد الاشتراك حتى ' . $result['end']->format('d/m/Y'));
+    }
+
+    public function expire(): RedirectResponse
+    {
+        $service = app(SubscriptionService::class);
+
+        if (in_array($service->status(), [SubscriptionService::STATUS_NONE, SubscriptionService::STATUS_EXPIRED], true)) {
+            return redirect()->route('developer.subscription.config')
+                ->with('error', 'لا يوجد اشتراك سارٍ لإنهائه.');
+        }
+
+        $old = $service->info();
+        $service->expire();
+
+        $this->logAudit(
+            AuditLog::ACTION_UPDATE,
+            Setting::class,
+            null,
+            $old,
+            ['action' => 'expire_subscription', 'status' => SubscriptionService::STATUS_EXPIRED]
+        );
+
+        return redirect()->route('developer.subscription.config')
+            ->with('success', 'تم إنهاء الاشتراك فورًا — النظام مقفل الآن على غير المطوّرين.');
     }
 
     public function suspend(): RedirectResponse
