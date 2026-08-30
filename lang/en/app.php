@@ -32,6 +32,7 @@ return [
     'no_folders_yet' => 'No folders yet',
     'manage_folders' => 'Manage folders',
     'done_managing' => 'Done',
+    'new_folder' => 'New folder',
     'new_folder_name' => 'New folder name',
     'rename' => 'Rename',
     'delete_folder_confirm' => 'Delete this folder? Its documents move to General; nothing is deleted.',

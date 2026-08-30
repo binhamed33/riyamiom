@@ -186,4 +186,93 @@ class DocumentFoldersTest extends TestCase
             ->assertSee("view = 'tiles'", false)
             ->assertSee('عقد إيجار');
     }
+
+    /* ──────────────────── المجلدات في صفحة المستندات ──────────────────── */
+
+    /**
+     * ═══ العطل الذي وُضع له ═══
+     *
+     * المجلدات كانت كاملةً في الخلفية — إنشاءً وتسميةً ونقلاً وحذفاً آمناً،
+     * وكلُّ ذلك مختبَرٌ أعلاه — ولا تظهر إلا داخل صفحة القضية، خلف زرٍّ
+     * رماديٍّ بحجم أحدَ عشرَ بكسلاً يشبه نصّاً لا زراً. فمن جاء يبحث عن
+     * ملفاته حيث يتوقّعها — صفحة المستندات — لم يعرف أن للنظام مجلدات.
+     *
+     * وهذا صنفٌ لا يمسكه اختبار خلفية: المسار موجود والمتحكّم يعمل. ما
+     * ينقص أن يجدها إنسان.
+     */
+    public function test_the_documents_page_shows_the_folders_of_the_selected_case(): void
+    {
+        $case = $this->makeCase();
+        CaseFolder::create(['case_id' => $case->id, 'name' => 'مذكرات القضية', 'sort' => 1]);
+
+        $this->actingAs($this->lawyer)
+            ->get(route('documents.index', ['case_id' => $case->id]))
+            ->assertOk()
+            ->assertSee('مذكرات القضية')
+            ->assertSee(__('app.new_folder'));
+    }
+
+    /** وبلا قضيةٍ مختارة لا شريط: المجلد ينتمي إلى قضية فلا وجهة له. */
+    public function test_no_folder_bar_is_shown_without_a_selected_case(): void
+    {
+        $case = $this->makeCase();
+        CaseFolder::create(['case_id' => $case->id, 'name' => 'سندات القضية', 'sort' => 1]);
+
+        $this->actingAs($this->lawyer)
+            ->get(route('documents.index'))
+            ->assertOk()
+            ->assertDontSee('سندات القضية');
+    }
+
+    public function test_a_folder_can_be_created_from_the_documents_page(): void
+    {
+        $case = $this->makeCase();
+        $from = route('documents.index', ['case_id' => $case->id]);
+
+        $this->actingAs($this->lawyer)
+            ->from($from)
+            ->post(route('case-folders.store', $case), ['name' => 'ملف القضية 123'])
+            ->assertRedirect($from)
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('case_folders', [
+            'case_id' => $case->id,
+            'name' => 'ملف القضية 123',
+        ]);
+    }
+
+    public function test_filtering_by_folder_narrows_the_listing(): void
+    {
+        $case = $this->makeCase();
+        $folder = CaseFolder::create(['case_id' => $case->id, 'name' => 'أحكام', 'sort' => 1]);
+        $this->makeDoc($case, $folder->id, 'حكم ابتدائي');
+        $this->makeDoc($case, null, 'ورقة غير مصنفة');
+
+        $this->actingAs($this->lawyer)
+            ->get(route('documents.index', ['case_id' => $case->id, 'folder_id' => $folder->id]))
+            ->assertOk()
+            ->assertSee('حكم ابتدائي')
+            ->assertDontSee('ورقة غير مصنفة');
+    }
+
+    /**
+     * و«عام» تعني ما لا مجلد له.
+     *
+     * تُمرَّر صفراً، وهي قيمةٌ مقصودة لا غياب — فلو قُرئت بـ`filled` لسقط
+     * الشرط وعُرض كلُّ شيء، وذلك أسوأ من ألا تعمل: يظنّ المستخدم أنه ينظر
+     * إلى غير المصنَّف وهو ينظر إلى الكلّ.
+     */
+    public function test_the_general_folder_shows_only_unfiled_documents(): void
+    {
+        $case = $this->makeCase();
+        $folder = CaseFolder::create(['case_id' => $case->id, 'name' => 'عقود', 'sort' => 1]);
+        $this->makeDoc($case, $folder->id, 'عقد إيجار مصنف');
+        $this->makeDoc($case, null, 'ورقة بلا مجلد');
+
+        $this->actingAs($this->lawyer)
+            ->get(route('documents.index', ['case_id' => $case->id, 'folder_id' => 0]))
+            ->assertOk()
+            ->assertSee('ورقة بلا مجلد')
+            ->assertDontSee('عقد إيجار مصنف');
+    }
 }

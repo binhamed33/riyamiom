@@ -32,6 +32,7 @@ return [
     'no_folders_yet' => 'لا مجلدات بعد',
     'manage_folders' => 'إدارة المجلدات',
     'done_managing' => 'تمّ',
+    'new_folder' => 'مجلد جديد',
     'new_folder_name' => 'اسم مجلد جديد',
     'rename' => 'إعادة تسمية',
     'delete_folder_confirm' => 'حذف المجلد؟ مستنداته تعود إلى «عام» ولا يُحذف منها شيء.',

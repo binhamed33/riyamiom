@@ -163,6 +163,65 @@
         </a>
     </div>
 
+    {{-- مجلدات القضية المختارة.
+         كانت المجلدات لا تُرى إلا داخل صفحة القضية، فمن جاء يبحث عن ملفاته
+         حيث يتوقّعها — صفحة المستندات — لم يعرف أن للنظام مجلدات أصلاً. --}}
+    @if(($selectedCaseId ?? 0) > 0)
+        @php $folderBase = request()->except(['folder_id', 'page']); @endphp
+        <div class="mb-4 p-3 rounded-xl bg-gray-100 border border-gray-200" x-data="{ adding: false }">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-[11px] font-bold text-gray-400 shrink-0">🗂 {{ __('app.folders') }}:</span>
+
+                    <a href="{{ route('documents.index', $folderBase) }}"
+                       class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition {{ ($selectedFolderId ?? null) === null ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700' }}">
+                        {{ __('app.all') }}
+                    </a>
+
+                    <a href="{{ route('documents.index', $folderBase + ['folder_id' => 0]) }}"
+                       class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition {{ ($selectedFolderId ?? null) === 0 ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700' }}">
+                        {{ __('app.general') }} ({{ $unfiledCount ?? 0 }})
+                    </a>
+
+                    @foreach($folders ?? [] as $folder)
+                        <a href="{{ route('documents.index', $folderBase + ['folder_id' => $folder->id]) }}"
+                           class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition {{ ($selectedFolderId ?? null) === $folder->id ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700' }}">
+                            {{ $folder->name }} ({{ $folder->documents_count }})
+                        </a>
+                    @endforeach
+                </div>
+
+                @if(in_array(auth()->user()->role, ['developer', 'admin', 'lawyer', 'staff'], true))
+                    <button type="button" x-on:click="adding = !adding"
+                            class="inline-flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-lg border text-xs font-bold transition bg-gold/12 text-gold-dark border-gold/25 hover:bg-gold/20">
+                        <svg x-show="!adding" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+                        </svg>
+                        <svg x-show="adding" x-cloak class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        <span x-show="!adding">{{ __('app.new_folder') }}</span>
+                        <span x-show="adding" x-cloak>{{ __('app.cancel') }}</span>
+                    </button>
+                @endif
+            </div>
+
+            @if(in_array(auth()->user()->role, ['developer', 'admin', 'lawyer', 'staff'], true))
+                <form x-show="adding" x-cloak method="POST"
+                      action="{{ route('case-folders.store', $selectedCaseId) }}"
+                      class="mt-3 flex gap-2">
+                    @csrf
+                    <input type="text" name="name" required maxlength="80"
+                           placeholder="{{ __('app.new_folder_name') }}"
+                           class="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-900 focus:border-gold/40 focus:outline-none">
+                    <button class="px-4 py-1.5 rounded-lg bg-gold/12 text-gold-dark border border-gold/25 text-xs font-bold hover:bg-gold/20 transition">
+                        {{ __('app.add') }}
+                    </button>
+                </form>
+            @endif
+        </div>
+    @endif
+
     {{-- §9: مستكشف الملفات — تفصيلي أو مصغّرات، والاختيار يُحفظ للمستخدم --}}
     <div x-data="{
             view: 'details',

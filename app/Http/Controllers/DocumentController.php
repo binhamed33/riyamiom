@@ -53,6 +53,15 @@ class DocumentController extends Controller
             $query->where('case_id', $request->case_id);
         }
 
+        // فلترة بمجلد القضية. «0» تعني «عام» — ما لا مجلد له — وهي قيمة
+        // مقصودة لا غياباً، فتُقرأ بـhas لا بـfilled.
+        if ($request->has('folder_id') && $request->input('folder_id') !== '') {
+            $folderId = (int) $request->input('folder_id');
+            $folderId > 0
+                ? $query->where('case_folder_id', $folderId)
+                : $query->whereNull('case_folder_id');
+        }
+
         if ($request->filled('access_level')) {
             $query->where('access_level', $request->access_level);
         }
@@ -98,9 +107,28 @@ class DocumentController extends Controller
         $documentTypes = \App\Models\DocumentType::active()->pluck('name');
         $untypedCount = Document::where(fn ($q) => $q->whereNull('doc_type')->orWhere('doc_type', ''))->count();
 
+        // مجلدات القضية المختارة وحدها: المجلد ينتمي إلى قضية، فعرضُ مجلدات
+        // كل القضايا معاً يخلط تنظيم قضيةٍ بأخرى ويجعل «مجلد جديد» بلا وجهة.
+        // و`withCount` يمنع استعلاماً لكل مجلد عند عرض عدده.
+        $folders = $selectedCaseId > 0
+            ? \App\Models\CaseFolder::where('case_id', $selectedCaseId)
+                ->withCount('documents')
+                ->orderBy('sort')->orderBy('name')->get()
+            : collect();
+
+        $selectedFolderId = $request->has('folder_id') && $request->input('folder_id') !== ''
+            ? (int) $request->input('folder_id')
+            : null;
+
+        // عدد ما لا مجلد له داخل القضية — ليُعرض بجانب «عام»
+        $unfiledCount = $selectedCaseId > 0
+            ? Document::where('case_id', $selectedCaseId)->whereNull('case_folder_id')->count()
+            : 0;
+
         return view('documents.index', compact(
-            'documents', 'cases', 'selectedCaseId', 'documentTypes', 'untypedCount'
-        , 'done', 'doneCount'));
+            'documents', 'cases', 'selectedCaseId', 'documentTypes', 'untypedCount',
+            'done', 'doneCount', 'folders', 'selectedFolderId', 'unfiledCount'
+        ));
     }
 
     public function store(Request $request): RedirectResponse

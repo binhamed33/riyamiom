@@ -838,7 +838,18 @@ document.addEventListener('alpine:init', () => {
                             <span class="text-[11px] text-gray-400">{{ __('app.no_folders_yet') }}</span>
                         @endforelse
                     </div>
-                    <button type="button" x-on:click="manage = !manage" class="text-[11px] font-bold text-gray-400 hover:text-gold-dark transition">
+                    {{-- زرٌّ يُرى: كان نصّاً رمادياً بحجم ١١ بكسل بلون الخافت،
+                         فلم يعرف أحدٌ أن للقضية مجلدات أصلاً — الميزةُ كاملةٌ
+                         خلفه ولا شيء يدلّ عليها. --}}
+                    <button type="button" x-on:click="manage = !manage"
+                            class="inline-flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-lg border text-xs font-bold transition
+                                   bg-gold/12 text-gold-dark border-gold/25 hover:bg-gold/20">
+                        <svg x-show="!manage" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+                        </svg>
+                        <svg x-show="manage" x-cloak class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
                         <span x-show="!manage">{{ __('app.manage_folders') }}</span>
                         <span x-show="manage" x-cloak>{{ __('app.done_managing') }}</span>
                     </button>
