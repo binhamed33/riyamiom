@@ -514,7 +514,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const colors = top.map((_, i) => MdChart.series(i));
 
         if (restTotal > 0) {
-            labels.push('{{ __("app.other") ?? "أخرى" }}');
+            labels.push(@json(__('app.other')));
             values.push(restTotal);
             colors.push(MdChart.status('idle'));
         }

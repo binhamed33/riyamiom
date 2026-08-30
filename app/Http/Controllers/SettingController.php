@@ -34,6 +34,13 @@ class SettingController extends Controller
 
             // بوابة العملاء
             'client_portal_welcome' => 'nullable|string|max:300',
+
+            // الموارد البشرية والصيانة: كان الأول يُقرأ في AttendanceGuard
+            // والثاني في صفحة الصيانة، ولا واجهةَ تكتب أياً منهما — فبقي
+            // الحضور التلقائي مفروضاً بلا مفتاح إطفاء، وملاحظةُ الصيانة
+            // لا تظهر أبداً.
+            'hr_auto_checkin'    => 'nullable',
+            'maintenance_note'   => 'nullable|string|max:300',
         ]);
 
         // مفاتيح البوابة الثنائية: خانة غير مؤشَّرة تعني «لا»، والغياب
@@ -52,6 +59,12 @@ class SettingController extends Controller
             foreach ($portalFlags as $flag) {
                 Setting::set($flag, $request->boolean($flag) ? '1' : '0', 'client_portal');
             }
+        }
+
+        // الحضور التلقائي خانةٌ ثنائية مثلها: غيابُ التأشير «لا» لا «لم
+        // يُرسَل». وبلا هذا يبقى مفروضاً على المكتب بلا مفتاح إطفاء.
+        if ($request->has('hr_section')) {
+            Setting::set('hr_auto_checkin', $request->boolean('hr_auto_checkin') ? '1' : '0', 'hr');
         }
 
         // أنواع البريد: يقرّر المكتب ما يصل موكّليه. تُقرأ من التعداد
@@ -77,6 +90,8 @@ class SettingController extends Controller
             'date_format'        => 'system',
             'items_per_page'     => 'system',
             'client_portal_welcome' => 'client_portal',
+            'hr_auto_checkin'    => 'hr',
+            'maintenance_note'   => 'system',
         ];
 
         foreach ($validated as $key => $value) {

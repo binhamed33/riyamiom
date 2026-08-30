@@ -131,8 +131,14 @@ class FeasibilityController extends Controller
             $completedOnTime = $s['completedOnTime'] ?? 0;
             $deadlineCompliance = $tasksWithDue > 0 ? round(($completedOnTime / $tasksWithDue) * 100, 1) : 0.0;
 
+            // Carbon 3 يُرجع من `diffInDays` كسراً عشرياً لا عدداً صحيحاً،
+            // فكان يُعرض على الشاشة «26.28906799515 يوم» ويدخل قسمة
+            // الإنتاجية بكسوره. واليومُ المبدوء يُعدّ يوماً كاملاً: من بدأ
+            // صباحاً عمل يوماً لا ثُلثه.
             $firstTaskDate = $s['firstTaskDate'] ?? null;
-            $activeDays = $firstTaskDate ? max(\Carbon\Carbon::parse($firstTaskDate)->diffInDays(now()), 1) : 1;
+            $activeDays = $firstTaskDate
+                ? max((int) ceil(\Carbon\Carbon::parse($firstTaskDate)->diffInDays(now())), 1)
+                : 1;
 
             // الإنتاجية مهامٌ في اليوم، لا نسبة مئوية. كانت تُضرب في مئة
             // وتُعرض بعلامة % وتدخل «الكفاءة» بوزن 15% — فمن أنجز ثلاث

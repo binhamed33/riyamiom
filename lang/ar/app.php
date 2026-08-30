@@ -286,6 +286,7 @@ return [
     'creation_date' => 'تاريخ الإنشاء',
     'completion_date' => 'تاريخ الإكمال',
     'overdue' => 'متأخرة',
+    'other' => 'أخرى',
     'linked_case' => 'القضية المرتبطة',
     'change_status' => 'تغيير الحالة',
     'start_progress' => 'بدء التنفيذ',

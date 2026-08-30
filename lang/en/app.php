@@ -286,6 +286,7 @@ return [
     'creation_date' => 'Creation Date',
     'completion_date' => 'Completion Date',
     'overdue' => 'Overdue',
+    'other' => 'Other',
     'linked_case' => 'Linked Case',
     'change_status' => 'Change Status',
     'start_progress' => 'Start Progress',

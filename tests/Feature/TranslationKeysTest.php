@@ -35,7 +35,18 @@ class TranslationKeysTest extends TestCase
         foreach ($files as $file) {
             $code = (string) file_get_contents($file);
 
-            foreach (["/__\(\s*'([a-z_]+)\.([a-z0-9_.]+)'/", "/@lang\(\s*'([a-z_]+)\.([a-z0-9_.]+)'/"] as $pattern) {
+            // الاقتباسان معاً: كان النمط يقرأ المفرد وحده، فمرّ
+            // `__("app.other")` سنةً كاملة يُقرأ نصّاً خاماً على الشاشة.
+            $patterns = [
+                '/__\(\s*\'([a-z_]+)\.([a-z0-9_.]+)\'/',
+                '/__\(\s*"([a-z_]+)\.([a-z0-9_.]+)"/',
+                '/@lang\(\s*\'([a-z_]+)\.([a-z0-9_.]+)\'/',
+                '/@lang\(\s*"([a-z_]+)\.([a-z0-9_.]+)"/',
+                '/trans\(\s*\'([a-z_]+)\.([a-z0-9_.]+)\'/',
+                '/trans\(\s*"([a-z_]+)\.([a-z0-9_.]+)"/',
+            ];
+
+            foreach ($patterns as $pattern) {
                 preg_match_all($pattern, $code, $matches, PREG_SET_ORDER);
 
                 foreach ($matches as $match) {

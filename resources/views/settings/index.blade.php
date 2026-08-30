@@ -559,6 +559,39 @@
             </div>
         </div>
 
+        {{-- الحضور والصيانة: إعدادان كانا يُقرآن ولا تكتبهما واجهة — فبقي
+             الحضور التلقائي مفروضاً بلا مفتاح إطفاء، وملاحظةُ الصيانة لا
+             تظهر أبداً مهما احتاجها المكتب. --}}
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <input type="hidden" name="hr_section" value="1">
+
+            <h2 class="text-lg font-bold text-gray-900 mb-1">الحضور والصيانة</h2>
+            <p class="text-sm text-gray-500 mb-5">ضبط تسجيل الحضور التلقائي ونصّ صفحة الصيانة.</p>
+
+            <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer mb-5">
+                <input type="checkbox" name="hr_auto_checkin" value="1"
+                       @checked(\App\Support\AttendanceGuard::autoEnabled())
+                       class="mt-0.5 w-4 h-4 rounded text-gold focus:ring-gold/40 border-gray-300">
+                <span>
+                    <span class="block text-sm font-semibold text-gray-800">تسجيل الحضور تلقائياً عند الدخول</span>
+                    <span class="block text-xs text-gray-500 mt-0.5">
+                        يُسجَّل مرّةً واحدة في اليوم مهما تكرّر الدخول. أطفئه إن كان المكتب
+                        يسجّل الحضور بوسيلةٍ أخرى.
+                    </span>
+                </span>
+            </label>
+
+            <div>
+                <label for="maintenance_note" class="block text-sm font-semibold text-gray-800 mb-1.5">ملاحظة صفحة الصيانة</label>
+                <textarea id="maintenance_note" name="maintenance_note" rows="2" maxlength="300"
+                          placeholder="نصٌّ يظهر أثناء الصيانة — اتركه فارغاً لإخفائه"
+                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-gold/40 focus:border-gold outline-none">{{ \App\Models\Setting::get('maintenance_note') }}</textarea>
+                @error('maintenance_note')
+                    <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+
         {{-- بوابة العملاء --}}
         @php $cp = \App\Support\ClientPortal::class; @endphp
         <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">

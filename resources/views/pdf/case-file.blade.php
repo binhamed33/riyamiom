@@ -11,7 +11,12 @@
                         <img src="{{ $officeLogoData }}" alt="" style="max-height:46px;max-width:150px;margin-bottom:4px;">
                     @endif
                     <div class="office-name">{{ \App\Models\Setting::get('office_name', config('app.name', 'مُداوَلة')) }}</div>
-                    <div class="office-sub">هاتف: {{ \App\Models\Setting::get('phone', '99331700') }} | بريد: {{ \App\Models\Setting::get('email', 'info@riyami.om') }}</div>
+                    {{-- المفتاحان `office_*` كما زرعهما `SettingsSeeder` وكما
+                         تكتبهما صفحة الإعدادات. كانا هنا `phone` و`email`
+                         مجرّدَين، وهما مفتاحان لا وجود لهما — فيسقط الرأس على
+                         القيمتين الثابتتين مهما غيّر المكتب بياناته، ويخرج في
+                         كل ملف قضية مطبوع هاتفٌ وبريدٌ ليسا له. --}}
+                    <div class="office-sub">هاتف: {{ \App\Models\Setting::get('office_phone', '99331700') }} | بريد: {{ \App\Models\Setting::get('office_email', 'info@riyami.om') }}</div>
                 </td>
                 <td style="text-align: left;">
                     <div class="print-date">تاريخ الطباعة: {{ date('Y/m/d') }}</div>
