@@ -187,6 +187,65 @@ class DocumentFoldersTest extends TestCase
             ->assertSee('عقد إيجار');
     }
 
+    /* ───────────────────────── معاينة الـPDF ───────────────────────── */
+
+    /**
+     * ملفّ الـPDF يُعاين في بطاقته كما تُعاين الصورة.
+     *
+     * كانت الصور وحدها تُعرض، والـPDF أيقونةً حمراء — فصفحةُ مكتبٍ أكثرُ
+     * ملفاته PDF تصير شبكةَ أيقوناتٍ متطابقة لا يميّز بينها إلا العنوان.
+     */
+    public function test_a_pdf_card_carries_a_preview_not_just_an_icon(): void
+    {
+        $case = $this->makeCase();
+        $doc = $this->makeDoc($case, null, 'حكم الاستئناف');
+
+        $html = $this->actingAs($this->lawyer)->get('/documents')->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/data-pdf-src="[^"]*' . preg_quote((string) $doc->id, '/') . '/',
+            $html,
+            'بطاقة الـPDF بلا معاينة — عادت أيقونةً حمراء',
+        );
+        $this->assertStringContainsString(
+            route('documents.preview', $doc),
+            $html,
+            'المعاينة لا تشير إلى مسار البثّ المفوَّض',
+        );
+    }
+
+    /**
+     * والمعاينة تمرّ بالصلاحية نفسها — لا بابَ خلفياً.
+     *
+     * لو بثّت المعاينةُ الملفَّ بلا فحص لكان إظهارها أسوأ من إخفائها:
+     * مستندٌ خاصٌّ يُقرأ من شبكة البطاقات دون فتحه.
+     */
+    public function test_the_preview_route_still_enforces_access(): void
+    {
+        $case = $this->makeCase();
+        $owner = User::factory()->create(['role' => 'lawyer', 'is_active' => true]);
+
+        $private = Document::create([
+            'case_id' => $case->id,
+            'title' => 'مذكرة خاصة',
+            'file_path' => 'docs/private-' . fake()->unique()->numberBetween(1, 99999) . '.pdf',
+            'file_type' => 'pdf',
+            'file_size' => 1024,
+            'uploaded_by' => $owner->id,
+            'access_level' => 'private',
+        ]);
+
+        $intruder = User::factory()->create(['role' => 'lawyer', 'is_active' => true]);
+
+        // معالج الأخطاء العام يحوّل abort(403) إلى تحويلٍ للوحة التحكم في
+        // طلبات المتصفّح — فالمهمّ أن يُمنع لا كيف يُمنع.
+        $status = $this->actingAs($intruder)
+            ->get(route('documents.preview', $private))
+            ->getStatusCode();
+
+        $this->assertContains($status, [403, 302], 'المعاينة بثّت مستنداً خاصاً لغير صاحبه');
+    }
+
     /* ──────────────────── المجلدات في صفحة المستندات ──────────────────── */
 
     /**

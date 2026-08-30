@@ -252,12 +252,28 @@
             @php
                 $ext = strtolower($document->file_type ?? '');
                 $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                $isPdf = $ext === 'pdf';
                 $previewable = in_array($ext, ['pdf', 'jpg', 'jpeg', 'png']);
             @endphp
             <div class="bg-white rounded-xl border border-gray-200 hover:border-gold/25 transition-colors overflow-hidden">
-                <div class="aspect-[4/3] bg-gray-100 flex items-center justify-center overflow-hidden">
+                <div class="aspect-[4/3] bg-gray-100 flex items-center justify-center overflow-hidden relative">
                     @if($isImage)
                         <img src="{{ route('documents.preview', $document) }}" alt="{{ $document->title }}" loading="lazy" class="w-full h-full object-cover">
+                    @elseif($isPdf)
+                        {{-- صفحةُ الـPDF الأولى معاينةً، لا أيقونةً حمراء.
+                             المتصفّح يرسم الـPDF بنفسه فلا تلزم مكتبة، والمسار
+                             هو `preview` نفسه الذي يفحص الصلاحية قبل البثّ.
+
+                             ولا تُحمَّل إلا حين تدخل الشاشة: خمسةَ عشرَ ملفاً
+                             تُحمَّل كاملةً عند فتح الصفحة تُثقلها ثقلاً بيّناً،
+                             وأكثرها لا يراه أحد. و`pointer-events` مقفلة فالنقر
+                             يفتح العارض لا يتصفّح داخل المربّع الصغير. --}}
+                        <div class="absolute inset-0 md-pdf-thumb bg-white"
+                             data-pdf-src="{{ route('documents.preview', $document) }}#page=1&view=FitH&toolbar=0&navpanes=0&scrollbar=0"
+                             aria-hidden="true"></div>
+                        <svg class="w-10 h-10 text-red-300 md-pdf-fallback" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
                     @else
                         <svg class="w-10 h-10 {{ $ext === 'pdf' ? 'text-red-400' : (str_contains($ext, 'doc') ? 'text-blue-400' : (str_contains($ext, 'xls') ? 'text-green-500' : 'text-gray-300')) }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
@@ -393,3 +409,52 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script nonce="{{ $cspNonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+    var boxes = document.querySelectorAll('.md-pdf-thumb[data-pdf-src]');
+    if (!boxes.length) return;
+
+    // الإطار يُنشأ حين تدخل البطاقةُ الشاشة لا قبلها: خمسةَ عشرَ ملفاً
+    // تُحمَّل كاملةً عند فتح الصفحة تُثقلها ثقلاً بيّناً، وأكثرها لا يراه أحد.
+    function mount(box) {
+        if (box.dataset.mounted) return;
+        box.dataset.mounted = '1';
+
+        var frame = document.createElement('iframe');
+        frame.src = box.dataset.pdfSrc;
+        frame.loading = 'lazy';
+        frame.tabIndex = -1;
+        frame.setAttribute('aria-hidden', 'true');
+        frame.style.cssText = 'width:100%;height:100%;border:0;pointer-events:none;background:#fff';
+
+        // متصفّحٌ لا يعرض PDF داخلياً يُبقي الأيقونة بدل مربّعٍ أبيض فارغ
+        frame.addEventListener('error', function () {
+            box.remove();
+        });
+
+        box.appendChild(frame);
+
+        var icon = box.parentElement && box.parentElement.querySelector('.md-pdf-fallback');
+        if (icon) icon.style.display = 'none';
+    }
+
+    if (!('IntersectionObserver' in window)) {
+        boxes.forEach(mount);
+        return;
+    }
+
+    var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+                mount(entry.target);
+                io.unobserve(entry.target);
+            }
+        });
+    }, { rootMargin: '200px' });
+
+    boxes.forEach(function (b) { io.observe(b); });
+});
+</script>
+@endpush
