@@ -25,11 +25,19 @@ return [
     | الانتظار — تستعمله الاختبارات وحدها.
     */
     'retry' => [
+        // الطلب التفاعليّ لا يصبر صبر المهمّة الخلفيّة: محامٍ أمام
+        // نافذة محادثةٍ ينتظر — فإن لم يُفلح النظام في ~٢٠ ثانية قال
+        // «سؤالك محفوظ» وأكمل في الخلفيّة بميزانيّتها الطويلة. القيمة
+        // تُفعَّل من المتحكّمات التفاعليّة وحدها.
+        'interactive_budget_ms' => (int) env('AI_INTERACTIVE_BUDGET_MS', 20000),
         'attempts_per_model' => (int) env('AI_RETRY_ATTEMPTS', 3),
         'base_delay_ms' => (int) env('AI_RETRY_BASE_MS', 1500),
         'max_delay_ms' => (int) env('AI_RETRY_MAX_MS', 8000),
         'budget_ms' => (int) env('AI_RETRY_BUDGET_MS', 100000),
     ],
+
+    // مهلة قراءة الطلب الواحد إلى المزوّد بالثواني — تُخفَّض تفاعلياً
+    'http_timeout_s' => (int) env('AI_HTTP_TIMEOUT_S', 90),
 
     'providers' => [
 

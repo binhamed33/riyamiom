@@ -21,6 +21,7 @@ class AssistantController extends Controller
             'retry_of' => 'nullable|integer',
         ]);
 
+        \App\Support\AiSettings::interactive();
         $service = new GeminiService();
 
         if (!$service->isConfigured()) {

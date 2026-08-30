@@ -411,7 +411,12 @@ class GeminiProvider implements AiProvider
 
     protected function post(string $model, array $body): \Illuminate\Http\Client\Response
     {
-        return Http::timeout(120)
+        // مهلة الاتصال منفصلة عن مهلة القراءة: خادمٌ لا يُجيب المصافحة
+        // أصلاً يُكتشف في ثوانٍ، ولا يُحجز المحامي ١٢٠ ثانية على TCP
+        // معلّق. ومهلة القراءة من الإعدادات — فالطلب التفاعليّ يستعجل
+        // والمهمّة الخلفيّة تصبر.
+        return Http::connectTimeout(10)
+            ->timeout((int) config('ai.http_timeout_s', 90))
             ->withHeaders([
                 'Content-Type' => 'application/json',
                 'X-goog-api-key' => $this->apiKey,

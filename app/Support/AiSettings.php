@@ -191,4 +191,20 @@ class AiSettings
         Setting::where('key', self::KEY_HINT)->delete();
         Setting::where('key', self::KEY_UPDATED)->delete();
     }
+
+    /**
+     * يضبط مهلات هذا الطلب على العجلة التفاعليّة.
+     *
+     * محامٍ أمام نافذة محادثة لا ينتظر ميزانيّة المئة ثانية التي تليق
+     * بمهمّةٍ خلفيّة: كانت رسالة «سؤالك محفوظ» تتأخّر نصف دقيقةٍ وأكثر
+     * قبل أن تظهر — فبدا التأجيلُ نفسُه عطلاً. التغيير في config
+     * المحفوظ في الذاكرة، فيخصّ هذا الطلب وحده ولا يمسّ المهامّ.
+     */
+    public static function interactive(): void
+    {
+        config([
+            'ai.retry.budget_ms' => (int) config('ai.retry.interactive_budget_ms', 20000),
+            'ai.http_timeout_s' => 45,
+        ]);
+    }
 }

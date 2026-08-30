@@ -106,6 +106,7 @@ class CaseTemplateController extends Controller
         $wish = (string) $request->validate(['prompt' => 'required|string|min:10|max:500'])['prompt'];
 
         try {
+        \App\Support\AiSettings::interactive();
             $draft = app(\App\Services\Ai\DraftGenerator::class)->templateDraft($wish);
 
             return response()->json(['ok' => true, 'draft' => $draft]);
