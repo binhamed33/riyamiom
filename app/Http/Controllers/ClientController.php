@@ -54,7 +54,13 @@ class ClientController extends Controller
             default => null,
         };
 
-        $clients = $query->latest()->paginate(15)->withQueryString();
+        // §4: ترتيب — الاسم، الأحدث، عدد القضايا
+        $sortMap = ['created' => 'created_at', 'name' => 'name', 'cases' => 'cases_count'];
+        $sort = (string) $request->get('sort', 'created');
+        $sort = array_key_exists($sort, $sortMap) ? $sort : 'created';
+        $dir = strtolower($request->get('dir', $sort === 'name' ? 'asc' : 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $clients = $query->orderBy($sortMap[$sort], $dir)->orderBy('id', 'desc')->paginate(15)->withQueryString();
 
         $filterLawyers = \App\Models\User::whereIn('role', ['lawyer', 'admin'])
             ->where('is_active', true)->orderBy('name')->get(['id', 'name']);

@@ -20,7 +20,9 @@ class LegalCaseFactory extends Factory
             'type' => fake()->randomElement(['civil', 'criminal', 'family', 'corporate']),
             'court' => fake()->randomElement(['High Court', 'Supreme Court', 'District Court']),
             'opponent' => fake()->name(),
-            'status' => fake()->randomElement(['active', 'pending', 'overdue', 'closed', 'won', 'lost']),
+            // الافتراضي حالة جارية: المنجز (closed/won/lost) يُطوى من القوائم
+            // افتراضياً، فمصنع يرمي به عشوائياً يجعل الاختبارات قلابة
+            'status' => fake()->randomElement(['active', 'pending', 'overdue']),
             'priority' => fake()->randomElement(['low', 'medium', 'high', 'urgent']),
             'opened_at' => fake()->date(),
             'next_date' => fake()->optional()->date(),

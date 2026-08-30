@@ -34,6 +34,9 @@ class LegalCase extends Model
     const STATUS_ADJUDICATED = 'adjudicated';
     const STATUS_FEES_PENDING = 'fees_pending';
 
+    /** القضية المنجزة: انتهى عملها فتُطوى من القوائم اليومية (خلف زر «المنجزة») */
+    public const DONE_STATUSES = [self::STATUS_CLOSED, self::STATUS_WON, self::STATUS_LOST];
+
     /**
      * صفة الخصم في الدعوى ونوعه.
      *

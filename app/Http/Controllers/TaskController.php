@@ -24,8 +24,22 @@ class TaskController extends Controller
             $query->where('assigned_to', auth()->id());
         }
 
+        // المنجز يُطوى: مهمة مكتملة أو مهمة قضيةٍ منجزة تبقى خلف زر
+        // «المنجزة» — إلا حين يسمّي المرشِّح حالة بعينها
+        $done = $request->boolean('done');
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        } elseif ($done) {
+            $query->where(function ($q) {
+                $q->where('status', 'completed')
+                    ->orWhereHas('case', fn ($c) => $c->whereIn('status', \App\Models\LegalCase::DONE_STATUSES));
+            });
+        } else {
+            $query->where('status', '!=', 'completed')
+                ->where(function ($q) {
+                    $q->whereNull('case_id')
+                        ->orWhereHas('case', fn ($c) => $c->whereNotIn('status', \App\Models\LegalCase::DONE_STATUSES));
+                });
         }
 
         if ($request->filled('priority')) {
@@ -62,14 +76,30 @@ class TaskController extends Controller
                 ->orWhere('description', 'like', "%{$search}%"));
         }
 
-        $tasks = $query->latest()->paginate(15)->withQueryString();
+        // §4: ترتيب بمفاتيح معلومة فقط
+        $sortMap = [
+            'created' => 'created_at',
+            'due' => 'due_date',
+            'priority' => 'priority',
+            'status' => 'status',
+            'title' => 'title',
+        ];
+        $sort = (string) $request->get('sort', 'created');
+        $sort = array_key_exists($sort, $sortMap) ? $sort : 'created';
+        $dir = strtolower($request->get('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $tasks = $query->orderBy($sortMap[$sort], $dir)->orderBy('id', 'desc')->paginate(15)->withQueryString();
+
+        $doneCount = Task::where('status', 'completed')
+            ->orWhereHas('case', fn ($c) => $c->whereIn('status', \App\Models\LegalCase::DONE_STATUSES))
+            ->count();
         $users = User::where('role', '!=', 'client')->orderBy('name')->get();
 
         $filterCases = \App\Models\LegalCase::orderByDesc('id')
             ->limit(300)
             ->get(['id', 'office_case_number', 'title']);
 
-        return view('tasks.index', compact('tasks', 'users', 'filterCases'));
+        return view('tasks.index', compact('tasks', 'users', 'filterCases', 'done', 'doneCount'));
     }
 
     public function create(Request $request): View

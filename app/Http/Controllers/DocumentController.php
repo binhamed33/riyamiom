@@ -38,6 +38,17 @@ class DocumentController extends Controller
             });
         });
 
+        // مستندات القضايا المنجزة تُطوى خلف زر «المنجزة» — وما لا قضية له يبقى
+        $done = $request->boolean('done');
+        if ($done) {
+            $query->whereHas('case', fn ($q) => $q->whereIn('status', \App\Models\LegalCase::DONE_STATUSES));
+        } elseif (!$request->filled('case_id')) {
+            $query->where(function ($q) {
+                $q->whereNull('case_id')
+                    ->orWhereHas('case', fn ($c) => $c->whereNotIn('status', \App\Models\LegalCase::DONE_STATUSES));
+            });
+        }
+
         if ($request->filled('case_id')) {
             $query->where('case_id', $request->case_id);
         }
@@ -71,7 +82,15 @@ class DocumentController extends Controller
             });
         }
 
-        $documents = $query->latest()->paginate(15)->withQueryString();
+        // §4: ترتيب — اسم، تاريخ، نوع، حجم
+        $sortMap = ['created' => 'created_at', 'name' => 'title', 'type' => 'file_type', 'size' => 'file_size'];
+        $sort = (string) $request->get('sort', 'created');
+        $sort = array_key_exists($sort, $sortMap) ? $sort : 'created';
+        $dir = strtolower($request->get('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $documents = $query->orderBy($sortMap[$sort], $dir)->orderBy('id', 'desc')->paginate(15)->withQueryString();
+
+        $doneCount = Document::whereHas('case', fn ($q) => $q->whereIn('status', \App\Models\LegalCase::DONE_STATUSES))->count();
         $cases = LegalCase::with('client')->orderBy('office_case_number')->get();
         $selectedCaseId = (int) $request->query('case_id', 0);
 
@@ -81,7 +100,7 @@ class DocumentController extends Controller
 
         return view('documents.index', compact(
             'documents', 'cases', 'selectedCaseId', 'documentTypes', 'untypedCount'
-        ));
+        , 'done', 'doneCount'));
     }
 
     public function store(Request $request): RedirectResponse

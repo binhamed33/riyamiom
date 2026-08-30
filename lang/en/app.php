@@ -1,6 +1,15 @@
 <?php
 
 return [
+    'sort_newest' => 'Newest',
+    'file_type' => 'Type',
+    'file_size' => 'Size',
+    'action' => 'Action',
+    'user' => 'User',
+    'sort_by' => 'Sort by',
+    'show_done' => 'Completed',
+    'show_active' => 'Show active',
+    'done_cases_btn' => 'Completed cases',
     'of_total' => 'of total',
     'won_cases' => 'won',
     'lost_cases' => 'lost',

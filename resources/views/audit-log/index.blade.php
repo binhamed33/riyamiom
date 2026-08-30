@@ -69,6 +69,16 @@
         </div>
     </form>
 
+    @php
+        $__sortOptions = ['created' => __('app.sort_newest'), 'action' => __('app.action'), 'user' => __('app.user')];
+        $__sortDefault = 'created';
+    @endphp
+
+    {{-- §4: الترتيب --}}
+    <div class="flex items-center gap-3 flex-wrap">
+        <x-sort-bar :options="$__sortOptions" :default="$__sortDefault" :default-dir="$__sortDefaultDir ?? 'desc'" />
+    </div>
+
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">

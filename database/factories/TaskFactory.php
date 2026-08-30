@@ -19,7 +19,8 @@ class TaskFactory extends Factory
             'case_id' => LegalCase::factory(),
             'assigned_to' => User::factory()->create(['role' => 'lawyer'])->id,
             'created_by' => User::factory()->create(['role' => 'developer'])->id,
-            'status' => fake()->randomElement(['pending', 'in_progress', 'completed']),
+            // المكتملة تُطوى من القائمة افتراضياً — من أرادها في اختبارٍ سمّاها
+            'status' => fake()->randomElement(['pending', 'in_progress']),
             'priority' => fake()->randomElement(['low', 'medium', 'high', 'urgent']),
             'due_date' => fake()->optional()->date(),
             'completed_at' => null,

@@ -25,9 +25,21 @@ class CourtSessionController extends Controller
     {
         $query = $this->filtered($request);
 
-        $sessions = $query->orderBy('date', 'asc')->orderBy('id', 'asc')->paginate(15)->withQueryString();
+        // §4: ترتيب بمفاتيح معلومة — والافتراضي كما كان: الأقرب موعداً أولاً
+        $sortMap = ['date' => 'date', 'created' => 'created_at', 'status' => 'status', 'location' => 'location'];
+        $sort = (string) $request->get('sort', 'date');
+        $sort = array_key_exists($sort, $sortMap) ? $sort : 'date';
+        $dir = strtolower($request->get('dir', $sort === 'date' ? 'asc' : 'desc')) === 'desc' ? 'desc' : 'asc';
 
-        return view('sessions.index', ['sessions' => $sessions] + $this->filterLists());
+        $sessions = $query->orderBy($sortMap[$sort], $dir)->orderBy('id', 'asc')->paginate(15)->withQueryString();
+
+        $doneCount = Session::whereHas('case', fn ($q) => $q->whereIn('status', \App\Models\LegalCase::DONE_STATUSES))->count();
+
+        return view('sessions.index', [
+            'sessions' => $sessions,
+            'done' => $request->boolean('done'),
+            'doneCount' => $doneCount,
+        ] + $this->filterLists());
     }
 
     /**
@@ -69,6 +81,16 @@ class CourtSessionController extends Controller
         // فلا يفقد أحد العرض الذي اعتاده.
         if ($request->boolean('mine')) {
             $query->whereHas('case', fn ($q) => $q->where('lawyer_id', auth()->id()));
+        }
+
+        // جلسات القضايا المنجزة تُطوى خلف زر «المنجزة» — والجلسة بلا قضية تبقى ظاهرة
+        if ($request->boolean('done')) {
+            $query->whereHas('case', fn ($q) => $q->whereIn('status', \App\Models\LegalCase::DONE_STATUSES));
+        } else {
+            $query->where(function ($q) {
+                $q->whereNull('case_id')
+                    ->orWhereHas('case', fn ($c) => $c->whereNotIn('status', \App\Models\LegalCase::DONE_STATUSES));
+            });
         }
 
         if ($request->filled('status')) {

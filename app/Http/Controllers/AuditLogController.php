@@ -34,7 +34,13 @@ class AuditLogController extends Controller
             $query->where('created_at', '<=', $request->date_to . ' 23:59:59');
         }
 
-        $logs = $query->latest()->paginate(25)->withQueryString();
+        // §4: ترتيب — الأحدث/الأقدم والإجراء والمستخدم
+        $sortMap = ['created' => 'created_at', 'action' => 'action', 'user' => 'user_id'];
+        $sort = (string) $request->get('sort', 'created');
+        $sort = array_key_exists($sort, $sortMap) ? $sort : 'created';
+        $dir = strtolower($request->get('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $logs = $query->orderBy($sortMap[$sort], $dir)->orderBy('id', 'desc')->paginate(25)->withQueryString();
         $users = User::orderBy('name')->get();
 
         return view('audit-log.index', compact('logs', 'users'));

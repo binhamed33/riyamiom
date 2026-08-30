@@ -62,6 +62,15 @@
             </div>
         </div>
     </x-filter-panel>
+    @php
+        $__sortOptions = ['created' => __('app.sort_newest'), 'name' => __('app.name'), 'cases' => __('app.cases')];
+        $__sortDefault = 'created';
+    @endphp
+    {{-- §4: الترتيب --}}
+    <div class="flex items-center gap-3 flex-wrap">
+        <x-sort-bar :options="$__sortOptions" :default="$__sortDefault" :default-dir="$__sortDefaultDir ?? 'desc'" />
+    </div>
+
 
     {{-- الهاتف: بطاقات بدل جدول يُسحب أفقياً --}}
     <div class="md:hidden bg-white rounded-xl border border-gray-200 overflow-hidden">

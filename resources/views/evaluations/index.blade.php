@@ -62,6 +62,16 @@
                 <p class="text-gray-400 text-xs mt-1.5 max-w-md mx-auto leading-relaxed">{{ __('app.empty_evaluations_body') }}</p>
             </div>
         @else
+            @php
+                $__sortOptions = ['score' => __('app.evaluation_rank'), 'name' => __('app.name'), 'cases' => __('app.cases'), 'tasks' => __('app.tasks')];
+                $__sortDefault = 'score';
+            @endphp
+
+            {{-- §4: الترتيب --}}
+            <div class="flex items-center gap-3 flex-wrap">
+                <x-sort-bar :options="$__sortOptions" :default="$__sortDefault" :default-dir="$__sortDefaultDir ?? 'desc'" />
+            </div>
+
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-right">
                     <thead>

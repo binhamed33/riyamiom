@@ -60,8 +60,15 @@ class CaseController extends Controller
             ->leftJoin('users', 'cases.lawyer_id', '=', 'users.id')
             ->select('cases.*');
 
+        // المنجزة تُطوى من القائمة اليومية وتبقى خلف زرها — إلا حين
+        // يسمّي المرشِّح حالةً بعينها فيُحترم اختياره حرفياً
+        $done = $request->boolean('done');
         if ($request->filled('status')) {
             $query->where('cases.status', $request->status);
+        } elseif ($done) {
+            $query->whereIn('cases.status', LegalCase::DONE_STATUSES);
+        } else {
+            $query->whereNotIn('cases.status', LegalCase::DONE_STATUSES);
         }
 
         if ($request->filled('priority')) {
@@ -112,7 +119,9 @@ class CaseController extends Controller
         $filterCourts = LegalCase::whereNotNull('court')->where('court', '!=', '')->distinct()->orderBy('court')->pluck('court');
         $filterTypes = LegalCase::whereNotNull('case_type')->where('case_type', '!=', '')->distinct()->orderBy('case_type')->pluck('case_type');
 
-        return view('cases.index', compact('cases', 'users', 'sort', 'dir', 'filterCourts', 'filterTypes'));
+        $doneCount = LegalCase::whereIn('status', LegalCase::DONE_STATUSES)->count();
+
+        return view('cases.index', compact('cases', 'users', 'sort', 'dir', 'filterCourts', 'filterTypes', 'done', 'doneCount'));
     }
 
     public function create(): View

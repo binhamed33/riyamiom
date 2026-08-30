@@ -1,6 +1,15 @@
 <?php
 
 return [
+    'sort_newest' => 'الأحدث',
+    'file_type' => 'النوع',
+    'file_size' => 'الحجم',
+    'action' => 'الإجراء',
+    'user' => 'المستخدم',
+    'sort_by' => 'ترتيب حسب',
+    'show_done' => 'المنجزة',
+    'show_active' => 'عرض النشطة',
+    'done_cases_btn' => 'القضايا المنجزة',
     'of_total' => 'من الإجمالي',
     'won_cases' => 'كسب',
     'lost_cases' => 'خسارة',
