@@ -39,7 +39,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case_lawyer') }}</label>
-                <select name="lawyer_id" class="{{ $selCls }}">
+                <select data-no-create name="lawyer_id" class="ts {{ $selCls }}">
                     <option value="">{{ __('app.all_lawyers') }}</option>
                     @foreach($filterLawyers as $fl)
                         <option value="{{ $fl->id }}" {{ request('lawyer_id') == $fl->id ? 'selected' : '' }}>{{ $fl->name }}</option>

@@ -56,7 +56,7 @@
 
                 <div>
                     <label for="assigned_to" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.task_assigned_to') }} <span class="text-red-500">*</span></label>
-                    <select id="assigned_to" name="assigned_to" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('assigned_to') border-red-500 @enderror" required>
+                    <select data-no-create id="assigned_to" name="assigned_to" class="ts w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('assigned_to') border-red-500 @enderror" required>
                         <option value="">{{ __('app.choose_assignee') }}</option>
                         @foreach($users as $user)
                             <option value="{{ $user->id }}" @selected(old('assigned_to', $task->assigned_to) == $user->id)>

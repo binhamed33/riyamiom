@@ -432,7 +432,7 @@
             @if($isManagerAtt)
             <div>
                 <label class="block text-xs text-gray-400 mb-1">الموظف</label>
-                <select name="employee_id" class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm">
+                <select data-no-create name="employee_id" class="ts rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm">
                     <option value="">الجميع</option>
                     @foreach($employees as $e)
                         <option value="{{ $e->id }}" @selected(request('employee_id') == $e->id)>{{ $e->name }}</option>
@@ -554,7 +554,7 @@
                     @csrf
                     <div>
                         <label class="block text-xs text-gray-400 mb-1.5">الموظف</label>
-                        <select name="employee_id" required class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
+                        <select data-no-create name="employee_id" required class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
                             @foreach($employees as $e)
                                 <option value="{{ $e->id }}">{{ $e->name }}</option>
                             @endforeach
@@ -620,7 +620,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">الموظف <span class="text-red-700">*</span></label>
-                    <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
+                    <select data-no-create name="employee_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">التاريخ <span class="text-red-700">*</span></label>
@@ -656,7 +656,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">الموظف <span class="text-red-700">*</span></label>
-                    <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
+                    <select data-no-create name="employee_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">المبلغ <span class="text-red-700">*</span></label>
@@ -692,7 +692,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">الموظف <span class="text-red-700">*</span></label>
-                    <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
+                    <select data-no-create name="employee_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">المبلغ</label>
@@ -729,7 +729,7 @@
             @if(auth()->user()->isAdmin() || auth()->user()->isDeveloper())
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">الموظف <span class="text-red-700">*</span></label>
-                <select name="employee_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
+                <select data-no-create name="employee_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="">اختر</option>@foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach</select>
             </div>
             @else
             <input type="hidden" name="employee_id" value="{{ auth()->id() }}">

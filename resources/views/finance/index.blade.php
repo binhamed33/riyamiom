@@ -271,7 +271,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">العميل</label>
-                    <select name="client_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="">اختر</option>@foreach($clients as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select>
+                    <select data-no-create name="client_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="">اختر</option>@foreach($clients as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">المبلغ <span class="text-red-700">*</span></label>
@@ -416,7 +416,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">القضية</label>
-                    <select name="case_id" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="">اختر</option>@foreach($cases as $case)<option value="{{ $case->id }}" x-bind:selected="fee.case_id == {{ $case->id }}">#{{ $case->office_case_number }} - {{ $case->case_number ?? '' }} - {{ $case->client?->phone ?? '' }} - {{ $case->client?->name ?? '' }}</option>@endforeach</select>
+                    <select data-no-create name="case_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="">اختر</option>@foreach($cases as $case)<option value="{{ $case->id }}" x-bind:selected="fee.case_id == {{ $case->id }}">#{{ $case->office_case_number }} - {{ $case->case_number ?? '' }} - {{ $case->client?->phone ?? '' }} - {{ $case->client?->name ?? '' }}</option>@endforeach</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">نوع الرسم</label>

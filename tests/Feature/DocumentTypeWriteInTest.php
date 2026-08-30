@@ -110,13 +110,31 @@ class DocumentTypeWriteInTest extends TestCase
         $this->assertStringContainsString('لائحة تظلّم', $html);
     }
 
+    /**
+     * الحقل يقبل نوعاً لم يُدرج من قبل.
+     *
+     * كان هذا الفحص يشترط `<input list>` و`<datalist>` بأعيانهما — أي
+     * يقيّد الوسم لا الغرض. فلمّا استُبدلت `datalist` بقائمةٍ ذات بحث
+     * (لأن المتصفّح يرسم قائمتها بنفسه فتغطّي الشاشة بلا ضبط) سقط الفحص
+     * وما تغيّر السلوك. والغرضُ وحده يستحقّ الحراسة: أن يبقى الحقل
+     * مفتوحاً للكتابة لا قائمةً مغلقة.
+     *
+     * والسلوك نفسه محروسٌ في `test_a_new_type_is_accepted_and_remembered`؛
+     * هنا نتحقّق أن الواجهة لا تمنعه.
+     */
     public function test_the_field_is_writable_not_a_closed_list()
     {
         $html = $this->actingAs($this->developer())->get('/documents')->getContent();
 
-        // خانة نصّ مع قائمة اقتراحات، لا select مغلق
-        $this->assertMatchesRegularExpression('/<input[^>]+name="doc_type"[^>]+list="/', $html);
-        $this->assertStringContainsString('<datalist', $html);
+        $this->assertMatchesRegularExpression('/name="doc_type"/', $html);
+
+        preg_match('/<(?:input|select)[^>]+name="doc_type"[^>]*>/', $html, $m);
+        $this->assertNotEmpty($m, 'لا حقل باسم doc_type في الصفحة');
+        $this->assertStringNotContainsString(
+            'data-no-create',
+            $m[0],
+            'صار الحقل قائمةً مغلقة — فمن يرفع نوعاً جديداً يتركه فارغاً ويضيع التصنيف',
+        );
     }
 
     public function test_markup_is_not_a_document_type()
@@ -143,7 +161,8 @@ class DocumentTypeWriteInTest extends TestCase
     {
         $html = $this->actingAs($this->developer())->get('/cases/create')->getContent();
 
-        $this->assertMatchesRegularExpression('/<input[^>]+name="doc_type"/', $html);
+        // أيُّ وسمٍ كان — المهمّ أن الصفحة تسأل عن النوع
+        $this->assertMatchesRegularExpression('/<(?:input|select)[^>]+name="doc_type"/', $html);
     }
 
     public function test_a_type_written_on_the_case_page_reaches_the_document()

@@ -43,8 +43,8 @@
                 {{-- Client --}}
                 <div>
                     <label for="client_id" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.case_client') }} <span class="text-red-700">*</span></label>
-                    <select name="client_id" id="client_id" required
-                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('client_id') border-red-500/50 @enderror">
+                    <select data-no-create name="client_id" id="client_id" required
+                        class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('client_id') border-red-500/50 @enderror">
                         <option value="">{{ __('app.choose_client') }}</option>
                         @foreach($clients ?? [] as $client)
                             <option value="{{ $client->id }}" {{ old('client_id', $case->client_id) == $client->id ? 'selected' : '' }}>{{ $client->name }}</option>
@@ -58,8 +58,8 @@
                 {{-- Lawyer --}}
                 <div>
                     <label for="lawyer_id" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.case_lawyer') }}</label>
-                    <select name="lawyer_id" id="lawyer_id"
-                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('lawyer_id') border-red-500/50 @enderror">
+                    <select data-no-create name="lawyer_id" id="lawyer_id"
+                        class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('lawyer_id') border-red-500/50 @enderror">
                         <option value="">اختر محامي القضية</option>
                         @foreach($users ?? [] as $user)
                             <option value="{{ $user->id }}" {{ old('lawyer_id', $case->lawyer_id) == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>

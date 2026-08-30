@@ -61,7 +61,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.task_assigned_to') }}</label>
-                <select name="assigned_to" class="{{ $selCls }}">
+                <select data-no-create name="assigned_to" class="ts {{ $selCls }}">
                     <option value="">{{ __('app.all') }}</option>
                     @foreach ($users as $user)
                         <option value="{{ $user->id }}" {{ request('assigned_to') == $user->id ? 'selected' : '' }}>
@@ -82,7 +82,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case') }}</label>
-                <select name="case_id" class="{{ $selCls }}">
+                <select data-no-create name="case_id" class="ts {{ $selCls }}">
                     <option value="">{{ __('app.all_cases') }}</option>
                     @foreach($filterCases as $fc)
                         <option value="{{ $fc->id }}" {{ request('case_id') == $fc->id ? 'selected' : '' }}>{{ $fc->office_case_number }} — {{ \Illuminate\Support\Str::limit($fc->title, 35) }}</option>

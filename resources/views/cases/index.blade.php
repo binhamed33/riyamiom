@@ -131,7 +131,7 @@ document.addEventListener('alpine:init', () => {
 
             {{-- Lawyer --}}
             <div>
-                <select name="lawyer_id" class="{{ $selCls }}">
+                <select data-no-create name="lawyer_id" class="ts {{ $selCls }}">
                     <option value="">{{ __('app.all_lawyers') }}</option>
                     @foreach($users as $u)
                         <option value="{{ $u->id }}" {{ request('lawyer_id') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>

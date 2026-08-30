@@ -44,7 +44,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case') }}</label>
-                <select name="case_id" class="{{ $selCls }}">
+                <select data-no-create name="case_id" class="ts {{ $selCls }}">
                     <option value="">{{ __('app.all_cases') }}</option>
                     @foreach($filterCases as $fc)
                         <option value="{{ $fc->id }}" {{ request('case_id') == $fc->id ? 'selected' : '' }}>{{ $fc->office_case_number }} — {{ \Illuminate\Support\Str::limit($fc->title, 35) }}</option>
@@ -60,7 +60,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.case_lawyer') }}</label>
-                <select name="lawyer_id" class="{{ $selCls }}">
+                <select data-no-create name="lawyer_id" class="ts {{ $selCls }}">
                     <option value="">{{ __('app.all_lawyers') }}</option>
                     @foreach($filterLawyers as $fl)
                         <option value="{{ $fl->id }}" {{ request('lawyer_id') == $fl->id ? 'selected' : '' }}>{{ $fl->name }}</option>
