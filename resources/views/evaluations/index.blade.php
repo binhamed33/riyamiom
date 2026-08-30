@@ -3,6 +3,12 @@
 @section('title', __('app.evaluations'))
 
 @section('content')
+    {{-- تقييم الأداء جزء من الموارد البشرية — رابط الرجوع يثبّت الانتماء --}}
+    <a href="{{ route('hr.index') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-gold-dark transition mb-3">
+        <svg class="w-3.5 h-3.5 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        الموارد البشرية
+    </a>
+
 <div class="max-w-6xl mx-auto space-y-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
     {{-- Header --}}

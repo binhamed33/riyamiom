@@ -45,7 +45,7 @@ class PlanController extends Controller
             ? back()->with('success', 'وصل طلبك إلى فريق مُداوَلة، وسنتواصل معك قريباً.')
             : back()->withErrors([
                 'upgrade' => 'تعذّر إرسال الطلب آلياً. راسلنا مباشرة على '
-                    . config('mail.from.address', 'binhamed333@gmail.com') . ' وسنرفع باقتك.',
+                    . config('mail.from.address', 'mudawalah@gmail.com') . ' وسنرفع باقتك.',
             ]);
     }
 }

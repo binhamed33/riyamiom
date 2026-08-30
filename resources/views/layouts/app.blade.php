@@ -975,12 +975,6 @@
                 </svg>
                 <span>{{ __('app.reports') }}</span>
                 </a>
-                <a href="{{ route('evaluations.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('evaluations.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8m-4-4v4m-7-4h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
-                <span>{{ __('app.evaluations') }}</span>
-                </a>
                 @endif
                 @if(Auth::user()->hasPermission('feasibility.view') || in_array(Auth::user()->role, ['admin', 'developer']))
                 <a href="{{ route('feasibility.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('feasibility.*') ? 'active' : '' }}">
@@ -1078,13 +1072,7 @@
                 <span>{{ __('app.settings') }}</span>
                 </a>
 
-                <a href="{{ route('document-types.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('document-types.*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2 2h12v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7zM9 13h6" />
-                </svg>
-                <span>أنواع المستندات</span>
-                </a>
-                @endif
+                                @endif
             @endif
 
             @if(Auth::user()->role === 'developer')

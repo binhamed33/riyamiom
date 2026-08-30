@@ -204,7 +204,11 @@ class SuggestionsTest extends TestCase
 
         $this->actingAs($lawyer)->get('/dashboard')
             ->assertOk()
-            ->assertSee(route('reports.index'), false)
+            ->assertSee(route('reports.index'), false);
+
+        // تقييم الأداء انتقل من الشريط الجانبي إلى تبويب داخل الموارد البشرية
+        $this->actingAs($lawyer)->get(route('hr.index'))
+            ->assertOk()
             ->assertSee(route('evaluations.index'), false);
     }
 

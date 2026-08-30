@@ -2,6 +2,13 @@
 
 return [
 
+    // مفاتيح كانت تظهر خاماً في الواجهة (app.total وأخواتها)
+    'total' => 'Total',
+    'open' => 'Open',
+    'calendar' => 'Calendar',
+    'session' => 'Session',
+
+
     // General
     'dashboard' => 'Dashboard',
     'cases' => 'Cases',

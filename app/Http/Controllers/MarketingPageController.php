@@ -33,13 +33,13 @@ class MarketingPageController extends Controller
         RegistrationRequest::create($validated + ['status' => RegistrationRequest::STATUS_NEW]);
 
         # إرسال الإيميل مباشرة عبر دالة mail() في السيرفر (بما أنه يعمل بالفعل)
-        $headers = "From: binhamed333@gmail.com\r\n" .
+        $headers = "From: mudawalah@gmail.com\r\n" .
                    "Content-type: text/html; charset=utf-8\r\n";
         $message = "اسم المكتب: " . $validated['office_name'] . "\n" .
                    "اسم المسؤول: " . $validated['contact_name'] . "\n" .
                    "البريد الإلكتروني: " . $validated['email'] . "\n" .
                    "الرسالة: " . $validated['notes'] . "\n";
-        mail('binhamed333@gmail.com', 'طلب تسجيل من مُداوَلة', $message, $headers);
+        mail('mudawalah@gmail.com', 'طلب تسجيل من مُداوَلة', $message, $headers);
 
         return back()->with('success', ' تم استلام طلبك بنجاح! سنتواصل معك خلال ٢٤–٤٨ ساعة.');
     }
