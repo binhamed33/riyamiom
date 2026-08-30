@@ -2289,6 +2289,12 @@
                     </div>
                 </div>
 
+                {{-- سؤالٌ أُجِّل جوابه: لا عطلَ هنا، بل انتظارٌ معلوم --}}
+                <div x-show="pending" x-cloak class="text-xs text-gold-dark bg-gold/10 border border-gold/20 rounded-lg p-3 flex items-start gap-2">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span x-text="pending"></span>
+                </div>
+
                 {{-- أثناء الإعادة التلقائيّة يُطمأن المحامي، ولا يُعرض عطل --}}
                 <div x-show="retrying > 0" x-cloak class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3">
                     {{ __('app.ai_chat_retrying') }}
@@ -2344,6 +2350,9 @@
             lastAskedId: null,
             // رقم المحاولة الجارية: يُعرض «يُعيد المحاولة» بدل رسالة عطل
             retrying: 0,
+            // إشعارُ سؤالٍ مؤجَّل، ومؤقّتُ ترقّب جوابه
+            pending: null,
+            watching: null,
             copied: null,
             starters: @js([
                 __('app.ai_starter_1'),
@@ -2434,8 +2443,13 @@
             // المتصفّح يُعيد تلقائياً بفاصلٍ متضاعف، ويُظهر أنّه يُعيد
             // بدل أن يُظهر عطلاً. ولا تُعاد إلا الأخطاء العابرة:
             // مفتاحٌ باطلٌ أو حدُّ طلباتٍ لا تُصلحه إعادة.
-            RETRYABLE: [425, 429, 500, 502, 503, 504],
+            // ٤٢٩ ليست هنا عمداً: الخادم يحوّل ازدحام المزوّد إلى ٥٠٣،
+            // فـ٤٢٩ لا تأتي إلا من حدّ المعدّل عندنا — «أبطئ». وإعادتها
+            // فوراً ثلاثاً تُغرق الحدّ وتضمن الإخفاق بدل أن تتجنّبه.
+            RETRYABLE: [425, 500, 502, 503, 504],
             MAX_TRIES: 3,
+            POLL_EVERY: 15000,
+            POLL_TIMES: 40,
 
             async send() {
                 const text = this.input.trim();
@@ -2467,12 +2481,30 @@
                         // السؤال حُفظ في الخادم، فيأخذ معرّفه لا معرّفاً محلياً
                         if (data?.question_id) { questionId = data.question_id; local.id = questionId; this.lastAskedId = questionId; }
 
+                        if (res.ok && data?.queued) {
+                            // لم يُجب الآن؛ الجواب يأتي في الخلفيّة
+                            this.lastAsked = null;
+                            this.lastAskedId = null;
+                            this.error = null;
+                            local.failed = false;
+                            this.pending = data.notice || '{{ __("app.ai_chat_queued") }}';
+                            this.watchForAnswer(data.question_id);
+                            break;
+                        }
+
                         if (res.ok) {
                             this.messages.push({ id: data.id ?? ('ai-' + Date.now()), role: 'assistant', content: data.reply, at: data.at });
                             this.lastAsked = null;
                             this.lastAskedId = null;
                             this.error = null;
                             local.failed = false;
+                            break;
+                        }
+
+                        if (status === 429) {
+                            // حدّ المعدّل عندنا: انتظارٌ لا إعادة
+                            local.failed = true;
+                            this.error = '{{ __("app.ai_chat_too_fast") }}';
                             break;
                         }
                     } catch (e) {
@@ -2496,6 +2528,41 @@
                 this.sending = false;
                 this.$nextTick(() => this.scrollChat());
             },
+            /*
+             * يترقّب جواباً مؤجَّلاً ويعرضه حين يصل.
+             *
+             * الجواب يُكتب في قاعدة البيانات من عاملِ الطابور، ولا سبيل
+             * إلى إبلاغ المتصفّح به إلا بالسؤال — فيُسأل كلّ ربع دقيقة
+             * عشر دقائق. والحدّ مقصود: ترقّبٌ بلا نهاية يستهلك الجهاز
+             * ما دام اللسان مفتوحاً، والمحادثة تُحمَّل كاملةً عند فتحها
+             * على كل حال.
+             */
+            watchForAnswer(questionId) {
+                if (this.watching) clearInterval(this.watching);
+                var left = this.POLL_TIMES;
+
+                this.watching = setInterval(async () => {
+                    if (--left < 0) { this.stopWatching(); return; }
+                    try {
+                        const res = await fetch('{{ route("assistant.history") }}', { headers: { 'Accept': 'application/json' } });
+                        const data = await res.json().catch(() => null);
+                        if (!data || !data.messages) return;
+
+                        const answered = data.messages.some(m => m.role === 'assistant' && m.id > questionId);
+                        if (answered) {
+                            this.messages = data.messages;
+                            this.stopWatching();
+                            this.$nextTick(() => this.scrollChat());
+                        }
+                    } catch (e) { /* الشبكة ذهبت — تُعاد الدورة التالية */ }
+                }, this.POLL_EVERY);
+            },
+            stopWatching() {
+                if (this.watching) clearInterval(this.watching);
+                this.watching = null;
+                this.pending = null;
+            },
+
             async clearChat() {
                 if (this.messages.length && !confirm('{{ __('app.ai_chat_clear_confirm') }}')) return;
                 this.messages = [];

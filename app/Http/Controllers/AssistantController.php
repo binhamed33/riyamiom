@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\AnswerAssistantQuestion;
 use App\Models\AssistantMessage;
 use App\Models\LegalCase;
 use App\Services\GeminiService;
@@ -42,16 +43,13 @@ class AssistantController extends Controller
             ?? AssistantMessage::write($userId, 'user', $userMessage);
 
         $history = AssistantMessage::contextFor($userId);
-        $systemPrompt = $this->buildSystemPrompt($userMessage);
+        $systemPrompt = self::buildSystemPrompt($userMessage);
 
         try {
             $reply = $service->chat($history, $systemPrompt);
 
             if (!$reply) {
-                return response()->json([
-                    'question_id' => $asked->id,
-                    'error' => 'تعذر الحصول على رد من الذكاء الاصطناعي، حاول مرة أخرى لاحقاً',
-                ], 500);
+                return $this->defer($asked);
             }
 
             $answer = AssistantMessage::write($userId, 'assistant', $reply);
@@ -65,11 +63,51 @@ class AssistantController extends Controller
         } catch (\Throwable $e) {
             Log::error('Assistant chat failed: ' . $e->getMessage());
 
+            return $this->defer($asked);
+        }
+    }
+
+    /**
+     * لم يُجَب الآن: يُجدوَل الجواب ويُطمأن السائل.
+     *
+     * كان الردّ رسالةَ عطلٍ وزرَّ «أعد المحاولة» — أي أنّ التذكّر يقع
+     * على المحامي: إن نسي ضاع سؤاله. والانقطاع قد يطول دقائق لا
+     * تُصلحها إعادةٌ في ثوانٍ.
+     *
+     * فالسؤال محفوظٌ أصلاً قبل الطلب، ويكفي أن يُطلب جوابه في الخلفيّة:
+     * العامل يُصرَّف كلَّ دقيقة، والمهمّة تُعيد بفواصلَ متّسعة حتى ستّ
+     * ساعات. والحالة ٢٠٠ لا ٥٠٣ — فلا شيء أخفق، بل أُجّل.
+     */
+    private function defer(AssistantMessage $question): JsonResponse
+    {
+        // على اتّصالٍ متزامن لا طابورَ أصلاً: المهمّة تُشغَّل داخل هذا
+        // الطلب، فتُنادي الخدمةَ الميّتة ثانيةً وترمي — فيتحوّل التأجيل
+        // اللطيف إلى خطأ خادم، وهو نقيض الغرض.
+        $canDefer = config('queue.default') !== 'sync';
+
+        if ($canDefer) {
+            try {
+                AnswerAssistantQuestion::dispatch(auth()->id(), $question->id);
+            } catch (\Throwable $e) {
+                // طابورٌ معطّل لا يُسقط الطلب: يبقى السؤال محفوظاً
+                // ويُقال للمحامي الحقّ بدل صفحة خطأ.
+                Log::warning('تعذّر جدولة جواب المساعد — ' . $e->getMessage());
+                $canDefer = false;
+            }
+        }
+
+        if (!$canDefer) {
             return response()->json([
-                'question_id' => $asked->id,
-                'error' => $service->getLastError() ?: 'المساعد القانوني مزدحم حاليًا، حاول مرة أخرى بعد لحظات.',
+                'question_id' => $question->id,
+                'error' => 'خدمة الذكاء الاصطناعي لا تستجيب الآن. سؤالك محفوظ — أعد المحاولة بعد قليل.',
             ], 503);
         }
+
+        return response()->json([
+            'question_id' => $question->id,
+            'queued' => true,
+            'notice' => 'خدمة الذكاء الاصطناعي لا تستجيب الآن. سؤالك محفوظ، وسيظهر الجواب هنا حال عودتها.',
+        ]);
     }
 
     /**
@@ -120,7 +158,7 @@ class AssistantController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    protected function buildSystemPrompt(string $question = ''): string
+    public static function buildSystemPrompt(string $question = ''): string
     {
         $cases = LegalCase::with('client')
             ->orderBy('updated_at', 'desc')

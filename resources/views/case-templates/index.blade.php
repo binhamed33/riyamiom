@@ -266,22 +266,43 @@ document.addEventListener('alpine:init', () => {
         openModal: false,
         editingId: null,
         tpl: { name: '', description: '', default_status: '', items: [], checklist: [], folders: [], reminders: [] },
-        aiOpen: false, aiPrompt: '', aiBusy: false, aiError: '',
+        aiOpen: false, aiPrompt: '', aiBusy: false, aiRetrying: 0, aiError: '',
 
         // §2: المولد يملأ المحرِّر — [مراجعة القالب] ثم [حفظ القالب] بيد المدير
         async aiGenerate() {
             if (this.aiBusy || this.aiPrompt.trim().length < 10) { this.aiError = 'اكتب وصفاً أوضح (١٠ أحرف على الأقل).'; return; }
             this.aiBusy = true; this.aiError = '';
             try {
-                const r = await fetch('{{ route('case-templates.ai-draft') }}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json',
-                               'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ prompt: this.aiPrompt }),
-                });
-                const d = await r.json();
-                if (!d.ok) { this.aiError = d.error || 'تعذّر التوليد — أعد المحاولة.'; return; }
+
+                // تعثّرٌ عابرٌ لا يُعرض: يُعاد عليه بفاصلٍ متضاعف أوّلاً.
+                // ٤٢٩ ليست منه — حدُّ معدّلٍ عندنا، إعادتُه تُغرقه.
+                let d = null, status = 0;
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    try {
+                        const r = await fetch('{{ route('case-templates.ai-draft') }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json',
+                                       'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                            credentials: 'same-origin',
+                            body: JSON.stringify({ prompt: this.aiPrompt }),
+                        });
+                        status = r.status;
+                        d = await r.json().catch(() => null);
+                        if (r.ok && d && d.ok) break;
+                    } catch (e) { status = 0; d = null; }
+
+                    const transient = status === 0 || [425, 500, 502, 503, 504].includes(status);
+                    if (!transient || attempt === 3) break;
+                    this.aiRetrying = attempt;
+                    await new Promise(r => setTimeout(r, 1200 * attempt + Math.random() * 400));
+                }
+                this.aiRetrying = 0;
+                if (!d || !d.ok) {
+                    this.aiError = (d && d.error)
+                        || (status === 429 ? 'طلباتٌ كثيرة في وقتٍ قصير. انتظر قليلاً ثم أعد المحاولة.'
+                                           : 'تعذّر التوليد — أعد المحاولة.');
+                    return;
+                }
                 this.editingId = null;
                 this.tpl = {
                     name: d.draft.name, description: d.draft.description || '', default_status: d.draft.default_status || '',

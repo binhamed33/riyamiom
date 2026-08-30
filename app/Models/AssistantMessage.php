@@ -55,6 +55,28 @@ class AssistantMessage extends Model
     }
 
     /** آخر ما قيل، بالشكل الذي يفهمه النموذج. */
+    /**
+     * السياق كما كان عند سؤالٍ بعينه — لا كما صار بعده.
+     *
+     * المهمّة المؤجَّلة تُجيب سؤالاً قديماً، وقد كتب المحامي بعده
+     * أسئلةً أخرى. فلو أُخذ السياق كاملاً لأجاب المساعد عن آخر سؤالٍ
+     * في المحادثة لا عن المجدول — فيصل المحامي جوابٌ عن غير ما سأل.
+     *
+     * @return array<int, array{role: string, content: string}>
+     */
+    public static function contextUpTo(int $userId, int $messageId): array
+    {
+        return static::where('user_id', $userId)
+            ->where('id', '<=', $messageId)
+            ->orderByDesc('id')
+            ->take(self::CONTEXT)
+            ->get()
+            ->reverse()
+            ->map(fn (self $m) => ['role' => $m->role, 'content' => $m->content])
+            ->values()
+            ->all();
+    }
+
     public static function contextFor(int $userId): array
     {
         // لا تُبنَ على of(): ترتيبُها تصاعدي، فيصير latest ترتيباً
