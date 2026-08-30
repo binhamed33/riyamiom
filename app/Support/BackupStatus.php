@@ -113,6 +113,13 @@ class BackupStatus
             'oldest_at' => $oldest ? self::iso(filemtime($oldest)) : null,
             'error' => $error !== '' ? $error : null,
             'tables' => ($t = self::setting(self::KEY_LAST_TABLES)) !== '' ? (int) $t : null,
+
+            // §14: كم يملك المكتب من كل مستوى — اللوحة تعرضه فيُرى أن
+            // التاريخ محفوظ فعلاً لا سبع ليالٍ فقط
+            'levels' => array_map(
+                'count',
+                \App\Support\BackupRotation::inventory(storage_path('app/backups'))
+            ),
         ];
     }
 

@@ -101,9 +101,12 @@ class SummarySheet implements FromArray, WithHeadings, ShouldAutoSize, WithEvent
                 $titleCell->getFont()->setBold(true)->setSize(16);
                 $titleCell->getFont()->getColor()->setARGB('D4AF37');
 
+                // حبر داكن على أرضية فاتحة — كان أبيض على أبيض في الصفوف الفردية
+                $sheet->getStyle('A4:B20')->getFont()->setSize(11)->getColor()->setARGB('1F2937');
+
                 $headerStyle = $sheet->getStyle('A4:B4');
                 $headerStyle->getFont()->setBold(true)->setSize(12);
-                $headerStyle->getFont()->getColor()->setARGB('FFFFFF');
+                $headerStyle->getFont()->getColor()->setARGB('0A1628');
                 $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('D4AF37');
                 $headerStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $sheet->getRowDimension(4)->setRowHeight(28);
@@ -111,13 +114,11 @@ class SummarySheet implements FromArray, WithHeadings, ShouldAutoSize, WithEvent
                 for ($row = 5; $row <= 20; $row++) {
                     $range = "A{$row}:B{$row}";
                     if ($row % 2 === 0) {
-                        $sheet->getStyle($range)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('1A2D4A');
+                        $sheet->getStyle($range)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FAF7F0');
                     }
                     $sheet->getStyle($range)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                    $sheet->getStyle($range)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('2A3D5A');
+                    $sheet->getStyle($range)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('E5E1D8');
                 }
-
-                $sheet->getStyle('A5:B20')->getFont()->setSize(11)->getColor()->setARGB('FFFFFF');
                 $sheet->getColumnDimension('A')->setAutoSize(true);
                 $sheet->getColumnDimension('B')->setAutoSize(true);
             },
@@ -129,6 +130,8 @@ class SummarySheet implements FromArray, WithHeadings, ShouldAutoSize, WithEvent
 
 class CasesSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, ShouldAutoSize, WithEvents, WithMapping
 {
+    use \App\Exports\Concerns\StylesSheet;
+
     private $user;
     public function __construct($user) { $this->user = $user; }
 
@@ -155,21 +158,9 @@ class CasesSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHead
 
     public function registerEvents(): array
     {
-        return [AfterSheet::class => function (AfterSheet $event) {
-            $s = $event->sheet->getDelegate(); $c = $s->getHighestColumn(); $r = $s->getHighestRow();
-            $s->setRightToLeft(true); $s->freezePane('A2');
-            $h = "A1:{$c}1";
-            $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
-            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('D4AF37');
-            $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $s->getRowDimension(1)->setRowHeight(32);
-            $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');
-            for ($i = 2; $i <= $r; $i++) { $rg = "A{$i}:{$c}{$i}";
-                if ($i % 2 === 0) $s->getStyle($rg)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('1A2D4A');
-                $s->getStyle($rg)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                $s->getStyle($rg)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('2A3D5A'); }
-            $s->getStyle("A1:{$c}{$r}")->getFont()->setSize(11)->getColor()->setARGB('FFFFFF');
-        },];
+        return [
+            AfterSheet::class => fn (AfterSheet $event) => $this->styleSheet($event->sheet->getDelegate()),
+        ];
     }
 }
 
@@ -177,6 +168,8 @@ class CasesSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHead
 
 class SessionsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, ShouldAutoSize, WithEvents, WithMapping
 {
+    use \App\Exports\Concerns\StylesSheet;
+
     private $user;
     public function __construct($user) { $this->user = $user; }
 
@@ -201,21 +194,9 @@ class SessionsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithH
 
     public function registerEvents(): array
     {
-        return [AfterSheet::class => function (AfterSheet $event) {
-            $s = $event->sheet->getDelegate(); $c = $s->getHighestColumn(); $r = $s->getHighestRow();
-            $s->setRightToLeft(true); $s->freezePane('A2');
-            $h = "A1:{$c}1";
-            $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
-            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('D4AF37');
-            $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $s->getRowDimension(1)->setRowHeight(32);
-            $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');
-            for ($i = 2; $i <= $r; $i++) { $rg = "A{$i}:{$c}{$i}";
-                if ($i % 2 === 0) $s->getStyle($rg)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('1A2D4A');
-                $s->getStyle($rg)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                $s->getStyle($rg)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('2A3D5A'); }
-            $s->getStyle("A1:{$c}{$r}")->getFont()->setSize(11)->getColor()->setARGB('FFFFFF');
-        },];
+        return [
+            AfterSheet::class => fn (AfterSheet $event) => $this->styleSheet($event->sheet->getDelegate()),
+        ];
     }
 }
 
@@ -223,6 +204,8 @@ class SessionsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithH
 
 class TasksSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, ShouldAutoSize, WithEvents, WithMapping
 {
+    use \App\Exports\Concerns\StylesSheet;
+
     private $user;
     public function __construct($user) { $this->user = $user; }
 
@@ -247,21 +230,9 @@ class TasksSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHead
 
     public function registerEvents(): array
     {
-        return [AfterSheet::class => function (AfterSheet $event) {
-            $s = $event->sheet->getDelegate(); $c = $s->getHighestColumn(); $r = $s->getHighestRow();
-            $s->setRightToLeft(true); $s->freezePane('A2');
-            $h = "A1:{$c}1";
-            $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
-            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('D4AF37');
-            $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $s->getRowDimension(1)->setRowHeight(32);
-            $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');
-            for ($i = 2; $i <= $r; $i++) { $rg = "A{$i}:{$c}{$i}";
-                if ($i % 2 === 0) $s->getStyle($rg)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('1A2D4A');
-                $s->getStyle($rg)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                $s->getStyle($rg)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('2A3D5A'); }
-            $s->getStyle("A1:{$c}{$r}")->getFont()->setSize(11)->getColor()->setARGB('FFFFFF');
-        },];
+        return [
+            AfterSheet::class => fn (AfterSheet $event) => $this->styleSheet($event->sheet->getDelegate()),
+        ];
     }
 }
 
@@ -269,6 +240,8 @@ class TasksSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHead
 
 class ClientsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHeadings, ShouldAutoSize, WithEvents, WithMapping
 {
+    use \App\Exports\Concerns\StylesSheet;
+
     private $user;
     public function __construct($user) { $this->user = $user; }
 
@@ -298,20 +271,8 @@ class ClientsSheet implements \Maatwebsite\Excel\Concerns\FromCollection, WithHe
 
     public function registerEvents(): array
     {
-        return [AfterSheet::class => function (AfterSheet $event) {
-            $s = $event->sheet->getDelegate(); $c = $s->getHighestColumn(); $r = $s->getHighestRow();
-            $s->setRightToLeft(true); $s->freezePane('A2');
-            $h = "A1:{$c}1";
-            $s->getStyle($h)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
-            $s->getStyle($h)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('D4AF37');
-            $s->getStyle($h)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $s->getRowDimension(1)->setRowHeight(32);
-            $s->getStyle($h)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB('0A1628');
-            for ($i = 2; $i <= $r; $i++) { $rg = "A{$i}:{$c}{$i}";
-                if ($i % 2 === 0) $s->getStyle($rg)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('1A2D4A');
-                $s->getStyle($rg)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                $s->getStyle($rg)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('2A3D5A'); }
-            $s->getStyle("A1:{$c}{$r}")->getFont()->setSize(11)->getColor()->setARGB('FFFFFF');
-        },];
+        return [
+            AfterSheet::class => fn (AfterSheet $event) => $this->styleSheet($event->sheet->getDelegate()),
+        ];
     }
 }

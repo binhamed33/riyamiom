@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'efficiency_comparison_help' => 'Three measures per member side by side: overall efficiency, share of decided cases won, and share of tasks completed. Taller is better.',
+    'monthly_case_trends_help' => 'Office movement across recent months: cases opened, won and lost — read the trend, not a single figure.',
+    'cases_by_type_help' => 'Where the work actually concentrates: the top three case types, the rest grouped as Other.',
+    'team_comparison_help' => 'The same measures drawn as a web per member — a wider shape means balanced performance; a narrow axis points to where support is needed.',
+    'show_numbers' => 'Show the numbers',
+    'no_data_yet' => 'Not enough data yet — this panel fills in as cases progress.',
     'details' => 'Details',
     'thumbnails' => 'Thumbnails',
     'folders' => 'Folders',

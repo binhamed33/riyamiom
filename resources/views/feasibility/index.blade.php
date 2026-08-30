@@ -180,30 +180,119 @@
         @endif
     </div>
 
-    {{-- Charts Row --}}
+    {{-- الرسوم: لكلٍّ سؤالٌ يجيب عنه بالعربية الواضحة، وجدولُ أرقامه تحته --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {{-- Efficiency Comparison (Bar) --}}
+        {{-- مقارنة الكفاءة --}}
         <div class="bg-white rounded-xl border border-gold/15 p-6">
-            <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.efficiency_comparison') }}</h2>
-            <div style="height: 260px;">
-                <canvas id="efficiencyChart"></canvas>
-            </div>
+            <h2 class="text-sm font-bold text-gold-dark">{{ __('app.efficiency_comparison') }}</h2>
+            <p class="text-[11px] text-gray-400 mt-1 mb-4 leading-relaxed">{{ __('app.efficiency_comparison_help') }}</p>
+            @php
+                // عضوٌ بلا قضايا ولا مهام لا يصنع مقارنة — الصفر ليس بياناً
+                $effHasData = collect($efficiencyData ?? [])
+                    ->contains(fn ($r) => ($r['overall'] ?? 0) + ($r['success_rate'] ?? 0) + ($r['task_completion'] ?? 0) > 0);
+            @endphp
+            @if($effHasData)
+                <div style="height: 260px;">
+                    <canvas id="efficiencyChart"></canvas>
+                </div>
+                <details class="mt-3">
+                    <summary class="text-[11px] font-bold text-gray-400 cursor-pointer select-none hover:text-gold-dark transition">{{ __('app.show_numbers') }}</summary>
+                    <div class="overflow-x-auto mt-2">
+                        <table class="w-full text-[11px]">
+                            <thead>
+                                <tr class="text-gray-400 border-b border-gray-200">
+                                    <th class="py-1.5 text-right font-bold">{{ __('app.name') }}</th>
+                                    <th class="py-1.5 text-right font-bold">{{ __('app.efficiency_rate') }}</th>
+                                    <th class="py-1.5 text-right font-bold">{{ __('app.success_rate') }}</th>
+                                    <th class="py-1.5 text-right font-bold">{{ __('app.task_completion') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100" style="font-variant-numeric: tabular-nums">
+                                @foreach($efficiencyData as $row)
+                                    <tr>
+                                        <td class="py-1.5 text-gray-700">{{ $row['user']['name'] ?? '—' }}</td>
+                                        <td class="py-1.5 text-gray-600">{{ $row['overall'] }}٪</td>
+                                        <td class="py-1.5 text-gray-600">{{ $row['success_rate'] }}٪</td>
+                                        <td class="py-1.5 text-gray-600">{{ $row['task_completion'] }}٪</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            @else
+                <p class="text-xs text-gray-400 text-center py-12">{{ __('app.no_data_yet') }}</p>
+            @endif
         </div>
 
-        {{-- Cases Trend (Line) --}}
+        {{-- اتجاهات القضايا الشهرية --}}
         <div class="bg-white rounded-xl border border-gold/15 p-6">
-            <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.monthly_case_trends') }}</h2>
-            <div style="height: 260px;">
-                <canvas id="casesTrendChart"></canvas>
-            </div>
+            <h2 class="text-sm font-bold text-gold-dark">{{ __('app.monthly_case_trends') }}</h2>
+            <p class="text-[11px] text-gray-400 mt-1 mb-4 leading-relaxed">{{ __('app.monthly_case_trends_help') }}</p>
+            @php
+                // ستة أشهر تُعاد دائماً ولو بأصفار — فالفراغ أن تخلو من أي حركة
+                $trendHasData = collect($monthlyTrend ?? [])
+                    ->contains(fn ($m) => ($m['new'] ?? 0) + ($m['won'] ?? 0) + ($m['lost'] ?? 0) > 0);
+            @endphp
+            @if($trendHasData)
+                <div style="height: 260px;">
+                    <canvas id="casesTrendChart"></canvas>
+                </div>
+                <details class="mt-3">
+                    <summary class="text-[11px] font-bold text-gray-400 cursor-pointer select-none hover:text-gold-dark transition">{{ __('app.show_numbers') }}</summary>
+                    <div class="overflow-x-auto mt-2">
+                        <table class="w-full text-[11px]">
+                            <thead>
+                                <tr class="text-gray-400 border-b border-gray-200">
+                                    <th class="py-1.5 text-right font-bold">{{ __('app.month') }}</th>
+                                    <th class="py-1.5 text-right font-bold">{{ __('app.new_cases') }}</th>
+                                    <th class="py-1.5 text-right font-bold">{{ __('app.won') }}</th>
+                                    <th class="py-1.5 text-right font-bold">{{ __('app.lost') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100" style="font-variant-numeric: tabular-nums">
+                                @foreach($monthlyTrend as $m)
+                                    <tr>
+                                        <td class="py-1.5 text-gray-700">{{ $m['label'] }}</td>
+                                        <td class="py-1.5 text-gray-600">{{ $m['new'] }}</td>
+                                        <td class="py-1.5 text-gray-600">{{ $m['won'] }}</td>
+                                        <td class="py-1.5 text-gray-600">{{ $m['lost'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            @else
+                <p class="text-xs text-gray-400 text-center py-12">{{ __('app.no_data_yet') }}</p>
+            @endif
         </div>
 
-        {{-- Cases by Type (Pie) --}}
+        {{-- القضايا حسب النوع --}}
         <div class="bg-white rounded-xl border border-gold/15 p-6">
-            <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.cases_by_type') }}</h2>
-            <div class="flex justify-center" style="height: 260px;">
-                <canvas id="casesTypeChart"></canvas>
-            </div>
+            <h2 class="text-sm font-bold text-gold-dark">{{ __('app.cases_by_type') }}</h2>
+            <p class="text-[11px] text-gray-400 mt-1 mb-4 leading-relaxed">{{ __('app.cases_by_type_help') }}</p>
+            @php $typeTotal = array_sum($casesByType ?? []); @endphp
+            @if($typeTotal > 0)
+                <div class="flex justify-center" style="height: 260px;">
+                    <canvas id="casesTypeChart"></canvas>
+                </div>
+                <details class="mt-3">
+                    <summary class="text-[11px] font-bold text-gray-400 cursor-pointer select-none hover:text-gold-dark transition">{{ __('app.show_numbers') }}</summary>
+                    <table class="w-full text-[11px] mt-2">
+                        <tbody class="divide-y divide-gray-100" style="font-variant-numeric: tabular-nums">
+                            @foreach(collect($casesByType)->filter()->sortDesc() as $type => $count)
+                                <tr>
+                                    <td class="py-1.5 text-gray-700">{{ $type }}</td>
+                                    <td class="py-1.5 text-gray-600 text-left">{{ $count }} <span class="text-gray-400">({{ round(($count / $typeTotal) * 100) }}٪)</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </details>
+            @else
+                <p class="text-xs text-gray-400 text-center py-12">{{ __('app.no_data_yet') }}</p>
+            @endif
         </div>
     </div>
 
@@ -211,10 +300,15 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {{-- Radar Chart --}}
         <div class="bg-white rounded-xl border border-gold/15 p-6">
-            <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.team_comparison') }}</h2>
-            <div class="flex justify-center" style="height: 300px;">
-                <canvas id="radarChart"></canvas>
-            </div>
+            <h2 class="text-sm font-bold text-gold-dark">{{ __('app.team_comparison') }}</h2>
+            <p class="text-[11px] text-gray-400 mt-1 mb-4 leading-relaxed">{{ __('app.team_comparison_help') }}</p>
+            @if($effHasData ?? false)
+                <div class="flex justify-center" style="height: 300px;">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            @else
+                <p class="text-xs text-gray-400 text-center py-16">{{ __('app.no_data_yet') }}</p>
+            @endif
         </div>
 
         {{-- Office Averages Breakdown --}}

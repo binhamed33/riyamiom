@@ -225,9 +225,17 @@ class BackupPulseTest extends TestCase
         $summary = BackupStatus::summary();
 
         $this->assertSame(
-            ['last_at', 'last_ok_at', 'last_run_at', 'count', 'size_bytes', 'total_bytes', 'oldest_at', 'error', 'tables'],
+            ['last_at', 'last_ok_at', 'last_run_at', 'count', 'size_bytes', 'total_bytes', 'oldest_at', 'error', 'tables', 'levels'],
             array_keys($summary),
         );
+
+        // §14: المستويات أعدادٌ لا أسماء — اللوحة تعرف أن التاريخ محفوظ
+        // ولا تعرف اسم ملفٍ واحد
+        $this->assertSame(['daily', 'weekly', 'monthly', 'yearly'], array_keys($summary['levels']));
+        foreach ($summary['levels'] as $level => $count) {
+            $this->assertIsInt($count, "المستوى {$level} عددٌ صحيح");
+        }
+
         $this->assertStringNotContainsString('backup-2026', json_encode($summary, JSON_UNESCAPED_UNICODE));
     }
 }

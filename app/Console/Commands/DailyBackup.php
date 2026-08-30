@@ -150,9 +150,21 @@ class DailyBackup extends Command
             'user_agent' => 'System',
         ]);
 
-        // الاحتفاظ بسبع نسخ لا واحدة: نسخة الليلة قد تكون معطوبة بعطل
-        // لم يكشفه الفحص، وسبع ليالٍ تاريخ يُرجَع إليه.
-        foreach (\App\Support\BackupVerifier::prune($backupDir, 'backup-*.zip', keep: 7) as $removed) {
+        // §14: الترقية قبل الحذف — أولى نسخِ الأسبوع تصير أسبوعية، وأولى
+        // نسخِ الشهر شهرية، وأولى نسخِ السنة سنوية. الترقية تسبق حذف
+        // اليوميات كي لا تُحذف نسخةٌ كان يجب أن تُرقّى.
+        $rotation = \App\Support\BackupRotation::rotate($backupDir, $filepath);
+
+        foreach ($rotation['promoted'] as $copy) {
+            $this->info('نسخة مُرقّاة: ' . $copy);
+        }
+        foreach ($rotation['removed'] as $gone) {
+            $this->info('نسخة منتهية حُذفت: ' . $gone);
+        }
+
+        // الاحتفاظ بسبع نسخ يومية لا واحدة: نسخة الليلة قد تكون معطوبة
+        // بعطل لم يكشفه الفحص، وسبع ليالٍ تاريخ يُرجَع إليه.
+        foreach (\App\Support\BackupVerifier::prune($backupDir, 'backup-*.zip', keep: \App\Support\BackupRotation::KEEP['daily']) as $removed) {
             $this->info('Old backup removed: ' . $removed);
         }
 

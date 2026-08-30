@@ -16,6 +16,8 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 
 class CasesExport implements FromCollection, WithHeadings, ShouldAutoSize, WithEvents, WithMapping
 {
+    use \App\Exports\Concerns\StylesSheet;
+
     private $user;
 
     public function __construct($user)
@@ -57,47 +59,8 @@ class CasesExport implements FromCollection, WithHeadings, ShouldAutoSize, WithE
 
     public function registerEvents(): array
     {
-        $gold = 'D4AF37';
-        $navy = '0A1628';
-        $lightGold = 'F5E6C8';
-        $white = 'FFFFFF';
-        $altRow = '1A2D4A';
-
         return [
-            AfterSheet::class => function (AfterSheet $event) use ($gold, $navy, $lightGold, $white, $altRow) {
-                $sheet = $event->sheet->getDelegate();
-                $highestCol = $sheet->getHighestColumn();
-                $highestRow = $sheet->getHighestRow();
-
-                $sheet->setRightToLeft(true);
-                $sheet->freezePane('A2');
-
-                $headerRange = "A1:{$highestCol}1";
-                $sheet->getStyle($headerRange)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB($white);
-                $sheet->getStyle($headerRange)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB($gold);
-                $sheet->getStyle($headerRange)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                $sheet->getRowDimension(1)->setRowHeight(32);
-
-                $sheet->getStyle($headerRange)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setARGB($navy);
-
-                for ($row = 2; $row <= $highestRow; $row++) {
-                    $range = "A{$row}:{$highestCol}{$row}";
-                    if ($row % 2 === 0) {
-                        $sheet->getStyle($range)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB($altRow);
-                    }
-                    $sheet->getStyle($range)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                    $sheet->getStyle($range)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('2A3D5A');
-                }
-
-                $fullRange = "A1:{$highestCol}{$highestRow}";
-                $sheet->getStyle($fullRange)->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB($gold);
-                $sheet->getStyle($fullRange)->getFont()->setSize(11);
-                $sheet->getStyle($fullRange)->getFont()->getColor()->setARGB($white);
-
-                foreach (range('A', $highestCol) as $col) {
-                    $sheet->getColumnDimension($col)->setAutoSize(true);
-                }
-            },
+            AfterSheet::class => fn (AfterSheet $event) => $this->styleSheet($event->sheet->getDelegate()),
         ];
     }
 }
