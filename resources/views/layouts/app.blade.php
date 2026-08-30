@@ -2228,7 +2228,12 @@
                     </div>
                 </div>
 
-                <div x-show="error" x-cloak class="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+                {{-- أثناء الإعادة التلقائيّة يُطمأن المحامي، ولا يُعرض عطل --}}
+                <div x-show="retrying > 0" x-cloak class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    {{ __('app.ai_chat_retrying') }}
+                </div>
+
+                <div x-show="error && !retrying" x-cloak class="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
                     <p x-text="error"></p>
                     {{-- السؤال محفوظ في الخادم؛ إعادة المحاولة لا تعني
                          إعادة الكتابة. --}}
@@ -2274,6 +2279,10 @@
             error: null,
             // آخر سؤال أخفق: يُعاد إرساله بضغطة بدل إعادة كتابته
             lastAsked: null,
+            // معرّفه في الخادم — تُعاد المحاولة عليه فلا يتكرّر السؤال
+            lastAskedId: null,
+            // رقم المحاولة الجارية: يُعرض «يُعيد المحاولة» بدل رسالة عطل
+            retrying: 0,
             copied: null,
             starters: @js([
                 __('app.ai_starter_1'),
@@ -2357,6 +2366,16 @@
                 this.loaded = true;
                 this.$nextTick(() => this.scrollChat());
             },
+            // تعثّرٌ عابرٌ لا يُعرض على المحامي — يُعاد عليه أوّلاً.
+            //
+            // كان أيُّ إخفاقٍ واحد يُظهر رسالة عطلٍ وزرَّ إعادةٍ يدويّ،
+            // وأكثرُ ما يُخفق ازدحامٌ لحظيّ يزول في ثوانٍ. فصار
+            // المتصفّح يُعيد تلقائياً بفاصلٍ متضاعف، ويُظهر أنّه يُعيد
+            // بدل أن يُظهر عطلاً. ولا تُعاد إلا الأخطاء العابرة:
+            // مفتاحٌ باطلٌ أو حدُّ طلباتٍ لا تُصلحه إعادة.
+            RETRYABLE: [425, 429, 500, 502, 503, 504],
+            MAX_TRIES: 3,
+
             async send() {
                 const text = this.input.trim();
                 if (!text || this.sending) return;
@@ -2366,28 +2385,53 @@
                 this.input = '';
                 this.$nextTick(() => this.grow(this.$refs.input));
                 this.error = null;
+                this.retrying = 0;
                 this.sending = true;
                 this.$nextTick(() => this.scrollChat());
-                try {
-                    const res = await fetch('{{ route("assistant.chat") }}', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                        body: JSON.stringify({ message: text })
-                    });
-                    const data = await res.json().catch(() => null);
-                    // السؤال حُفظ في الخادم، فيأخذ معرّفه لا معرّفاً محلياً
-                    if (data?.question_id) local.id = data.question_id;
-                    if (!res.ok) {
-                        local.failed = true;
-                        this.error = data?.error || '{{ __("app.save_error") }}';
-                    } else {
-                        this.messages.push({ id: data.id ?? ('ai-' + Date.now()), role: 'assistant', content: data.reply, at: data.at });
-                        this.lastAsked = null;
+
+                // إن كانت هذه إعادةً لسؤالٍ محفوظ، بُدئ بمعرّفه فلا يتكرّر
+                let questionId = this.lastAskedId;
+
+                for (let attempt = 1; attempt <= this.MAX_TRIES; attempt++) {
+                    let status = 0, data = null;
+                    try {
+                        const res = await fetch('{{ route("assistant.chat") }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                            // معرّف السؤال المحفوظ يمنع تكراره في المحادثة
+                            body: JSON.stringify(questionId ? { message: text, retry_of: questionId } : { message: text })
+                        });
+                        status = res.status;
+                        data = await res.json().catch(() => null);
+                        // السؤال حُفظ في الخادم، فيأخذ معرّفه لا معرّفاً محلياً
+                        if (data?.question_id) { questionId = data.question_id; local.id = questionId; this.lastAskedId = questionId; }
+
+                        if (res.ok) {
+                            this.messages.push({ id: data.id ?? ('ai-' + Date.now()), role: 'assistant', content: data.reply, at: data.at });
+                            this.lastAsked = null;
+                            this.lastAskedId = null;
+                            this.error = null;
+                            local.failed = false;
+                            break;
+                        }
+                    } catch (e) {
+                        status = 0;   // انقطاعُ شبكةٍ — عابرٌ يُعاد عليه
                     }
-                } catch(e) {
-                    local.failed = true;
-                    this.error = '{{ __("app.connection_error") }}';
+
+                    const transient = status === 0 || this.RETRYABLE.includes(status);
+                    if (!transient || attempt === this.MAX_TRIES) {
+                        local.failed = true;
+                        this.error = data?.error
+                            || (status === 0 ? '{{ __("app.connection_error") }}' : '{{ __("app.save_error") }}');
+                        break;
+                    }
+
+                    this.retrying = attempt;
+                    this.$nextTick(() => this.scrollChat());
+                    await new Promise(r => setTimeout(r, 1200 * attempt + Math.random() * 400));
                 }
+
+                this.retrying = 0;
                 this.sending = false;
                 this.$nextTick(() => this.scrollChat());
             },

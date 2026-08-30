@@ -17,6 +17,7 @@ class AssistantController extends Controller
 
         $request->validate([
             'message' => 'required|string|max:4000',
+            'retry_of' => 'nullable|integer',
         ]);
 
         $service = new GeminiService();
@@ -32,7 +33,13 @@ class AssistantController extends Controller
 
         // السؤال يُحفظ قبل الطلب لا بعده: إن سقط الاتصال بقي سؤال
         // الموظّف مكتوباً أمامه بدل أن يضيع ويُعاد كتابته.
-        $asked = AssistantMessage::write($userId, 'user', $userMessage);
+        //
+        // وإن كانت هذه إعادةَ محاولةٍ لسؤالٍ محفوظ، أُعيد استعماله ولم
+        // يُكتب ثانية: المتصفّح يُعيد الإرسال تلقائياً بعد تعثّرٍ عابر،
+        // فكان السؤال يتضاعف في المحادثة ويُرسَل مكرّراً في السياق.
+        // ولا يُقبل المعرّف إلا لصاحبه ولنصّ سؤاله نفسه.
+        $asked = $this->reusableQuestion($request->integer('retry_of'), $userId, $userMessage)
+            ?? AssistantMessage::write($userId, 'user', $userMessage);
 
         $history = AssistantMessage::contextFor($userId);
         $systemPrompt = $this->buildSystemPrompt($userMessage);
@@ -63,6 +70,25 @@ class AssistantController extends Controller
                 'error' => $service->getLastError() ?: 'المساعد القانوني مزدحم حاليًا، حاول مرة أخرى بعد لحظات.',
             ], 503);
         }
+    }
+
+    /**
+     * السؤال المحفوظ الذي تُعاد المحاولة عليه — إن كان لصاحبه ونصّه.
+     *
+     * الشرطان معاً: المعرّف وحده يسمح لمستخدمٍ بأن يشير إلى رسالة
+     * غيره، والنصّ وحده لا يميّز سؤالين متطابقين لمستخدمين.
+     */
+    private function reusableQuestion(?int $id, int $userId, string $text): ?AssistantMessage
+    {
+        if (!$id) {
+            return null;
+        }
+
+        return AssistantMessage::where('id', $id)
+            ->where('user_id', $userId)
+            ->where('role', 'user')
+            ->where('content', $text)
+            ->first();
     }
 
     public function history(): JsonResponse

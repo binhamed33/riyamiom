@@ -923,6 +923,7 @@ return [
     'ai_chat_copy' => 'Copy',
     'ai_chat_copied' => 'Copied',
     'ai_chat_retry' => 'Try again',
+    'ai_chat_retrying' => 'Momentarily unreachable — retrying automatically…',
     'ai_chat_clear_confirm' => 'The whole conversation will be deleted and cannot be restored. Continue?',
     'ai_starter_1' => 'What are the steps to file a monetary claim in Oman?',
     'ai_starter_2' => 'What is the appeal window and how is it counted?',

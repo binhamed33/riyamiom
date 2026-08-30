@@ -16,6 +16,21 @@ return [
 
     'default' => env('AI_PROVIDER', 'gemini'),
 
+    /*
+    | إعادة المحاولة
+    |
+    | الفاصل يتضاعف مع كل محاولة وفيه رجفةٌ عشوائيّة، والميزانيّة سقفٌ
+    | لزمن الطلب كلّه: بلا سقفٍ تلتهم المحاولاتُ أكثر ممّا يصبر عليه
+    | الخادم فيسقط الاتّصال بلا رسالة. و`base_delay_ms = 0` يُلغي
+    | الانتظار — تستعمله الاختبارات وحدها.
+    */
+    'retry' => [
+        'attempts_per_model' => (int) env('AI_RETRY_ATTEMPTS', 3),
+        'base_delay_ms' => (int) env('AI_RETRY_BASE_MS', 1500),
+        'max_delay_ms' => (int) env('AI_RETRY_MAX_MS', 8000),
+        'budget_ms' => (int) env('AI_RETRY_BUDGET_MS', 100000),
+    ],
+
     'providers' => [
 
         'gemini' => [

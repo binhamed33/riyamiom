@@ -15,6 +15,12 @@ class GeminiProvider implements AiProvider
     protected ?string $workingModel = null;
     protected ?string $suggestedByProvider = null;
 
+    /** ردٌّ ناجحٌ بلا نصّ — حالتُه ٢٠٠ وهو مع ذلك يستحقّ إعادة. */
+    protected bool $lastWasEmpty = false;
+
+    /** ثوانٍ يطلب المزوّد الانتظارَها قبل الإعادة (Retry-After). */
+    protected ?int $retryAfter = null;
+
     public function __construct(?string $apiKey = null, ?string $model = null)
     {
         // المفتاح والنموذج من إعدادات هذا المكتب، لا من ملف مشترك
@@ -152,6 +158,64 @@ class GeminiProvider implements AiProvider
         };
     }
 
+    /**
+     * هل يقول المزوّد صراحةً إنّ المفتاح باطل؟
+     *
+     * التمييز مهمّ: ازدحامٌ لحظيّ يزول بإعادةٍ بعد ثوانٍ، ومفتاحٌ باطل
+     * لا تُصلحه ألفُ إعادة. وخلطُهما يدفع المدير إلى تبديل مفتاحٍ سليم.
+     */
+    protected function looksLikeBadKey(string $body): bool
+    {
+        foreach (['API_KEY_INVALID', 'API key not valid', 'PERMISSION_DENIED', 'API_KEY_SERVICE_BLOCKED'] as $needle) {
+            if (stripos($body, $needle) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** ما يطلبه المزوّد من انتظارٍ قبل الإعادة — أدقُّ من تخميننا. */
+    protected function retryAfterSeconds(\Illuminate\Http\Client\Response $response): ?int
+    {
+        $header = $response->header('Retry-After');
+        if ($header !== '' && is_numeric($header)) {
+            return max(0, (int) $header);
+        }
+
+        if (preg_match('#"retryDelay"\s*:\s*"(\d+)s"#', (string) $response->body(), $m)) {
+            return (int) $m[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * فاصلُ الإعادة: يتضاعف مع كل محاولة، وفيه رجفةٌ عشوائيّة.
+     *
+     * الفاصل الثابت (١٫٥ ثانية مرّتين) لا يكفي حدَّ معدّلٍ يُقاس
+     * بالدقيقة، والرجفةُ تمنع أن ترتدّ كلُّ مكاتب الخادم في اللحظة
+     * نفسها فتُعيد إنتاج الازدحام الذي تهرب منه.
+     */
+    protected function backoffMs(int $attempt): int
+    {
+        $base = (int) config('ai.retry.base_delay_ms', 1500);
+        if ($base <= 0) {
+            return 0;
+        }
+
+        if ($this->retryAfter !== null) {
+            $wait = min($this->retryAfter * 1000, (int) config('ai.retry.max_delay_ms', 8000));
+            $this->retryAfter = null;
+
+            return $wait;
+        }
+
+        $delay = (int) min($base * (2 ** max(0, $attempt - 1)), (int) config('ai.retry.max_delay_ms', 8000));
+
+        return $delay + random_int(0, (int) min(400, $delay));
+    }
+
     protected function generate(array $payload): ?string
     {
         if (!$this->isConfigured()) {
@@ -168,7 +232,12 @@ class GeminiProvider implements AiProvider
         $elapsed = fn (): int => (int) ((microtime(true) - $startedAt) * 1000);
 
         $lastTransientError = null;
-        $maxAttemptsPerModel = 2; // محاولة إضافية عند الازدحام قبل الانتقال للنموذج الاحتياطي
+        $maxAttemptsPerModel = max(1, (int) config('ai.retry.attempts_per_model', 3));
+
+        // ميزانيّةُ وقتٍ للطلب كلّه: بلا سقفٍ قد تلتهم المحاولاتُ
+        // المتتالية أكثر ممّا يصبر عليه الخادم أو المتصفّح، فيسقط
+        // الاتّصال ويرى المحامي عطلاً بلا رسالة — أسوأ من رسالةٍ صريحة.
+        $budgetMs = max(5000, (int) config('ai.retry.budget_ms', 100000));
 
         // القائمة تُستهلك لا تُدار بـforeach: النموذج الذي يسمّيه المزوّد
         // بديلاً يُضاف إلى آخرها أثناء التنفيذ، فيُجرَّب في نفس الطلب
@@ -180,13 +249,18 @@ class GeminiProvider implements AiProvider
             $tried[] = $model;
 
             for ($attempt = 1; $attempt <= $maxAttemptsPerModel; $attempt++) {
+                if ($elapsed() >= $budgetMs) {
+                    break 2;
+                }
                 try {
                     $text = $this->callModel($model, $payload);
                     \App\Support\AiHealth::record('ok', 'gemini', $model, $elapsed(), null);
 
                     return $text;
                 } catch (\RuntimeException $e) {
-                    $retryable = in_array($this->lastStatus, [404, 429, 500, 502, 503], true);
+                    // الردّ الفارغ حالتُه ٢٠٠ ومع ذلك يُعاد عليه
+                    $retryable = $this->lastWasEmpty
+                        || in_array($this->lastStatus, [404, 429, 500, 502, 503], true);
                     if (!$retryable) {
                         \App\Support\AiHealth::record('error', 'gemini', $model, $elapsed(), 'http_' . ($this->lastStatus ?: 'x'));
 
@@ -208,15 +282,24 @@ class GeminiProvider implements AiProvider
                         break;
                     }
 
-                    // 429/500/502/503 = ازدحام مؤقت → أعد المحاولة بعد فاصل قصير
+                    // ازدحامٌ مؤقّت أو ردٌّ فارغ → أعد بعد فاصلٍ متضاعف،
+                    // ما دام في الميزانيّة متّسعٌ لمحاولةٍ أخرى.
                     if ($attempt < $maxAttemptsPerModel) {
-                        usleep(1500000);
+                        $wait = $this->backoffMs($attempt);
+                        if ($elapsed() + $wait >= $budgetMs) {
+                            break 2;
+                        }
+                        if ($wait > 0) {
+                            usleep($wait * 1000);
+                        }
                     }
                 }
             }
         }
 
-        $this->lastError = 'خدمة الذكاء الاصطناعي مزدحمة حاليًا، حاول مرة أخرى بعد لحظات.';
+        if ($lastTransientError === null || $this->lastError === null || $this->lastStatus === 429 || $this->lastWasEmpty) {
+            $this->lastError = 'خدمة الذكاء الاصطناعي مزدحمة حاليًا. حُفظ سؤالك وتُعاد المحاولة تلقائياً.';
+        }
         \App\Support\AiHealth::record('error', 'gemini', $tried !== [] ? end($tried) : $this->model, $elapsed(), 'exhausted_' . ($this->lastStatus ?: 'x'));
 
         throw $lastTransientError
@@ -278,7 +361,15 @@ class GeminiProvider implements AiProvider
                     $this->suggestedByProvider = $this->suggestedModel((string) $response->body());
                 }
                 if ($status === 429) {
-                    throw new \RuntimeException('تم تجاوز حصة مفتاح الذكاء الاصطناعي أو أن المفتاح غير صالح. حدّثه من الإعدادات ← الذكاء الاصطناعي.');
+                    $this->retryAfter = $this->retryAfterSeconds($response);
+
+                    // ٤٢٩ حدُّ معدّلٍ في الغالب — يزول بعد دقيقة. وكانت
+                    // الرسالة تأمر المدير بتغيير مفتاحه، فيُبطل مفتاحاً
+                    // سليماً على عطلٍ يزول وحده. لا يُتّهم المفتاح إلا
+                    // إذا قال المزوّد ذلك صراحةً.
+                    throw new \RuntimeException($this->looksLikeBadKey((string) $response->body())
+                        ? 'المفتاح غير صالح أو نفدت حصّته كلياً. حدّثه من الإعدادات ← الذكاء الاصطناعي.'
+                        : 'ازدحامٌ لحظيّ لدى المزوّد. تُعاد المحاولة تلقائياً.');
                 }
                 if ($status === 503) {
                     throw new \RuntimeException('النموذج ' . $model . ' مزدحم حاليًا. سيتم تجربة نموذج احتياطي تلقائيًا، وإن استمرت المشكلة حاول لاحقًا.');
@@ -286,6 +377,7 @@ class GeminiProvider implements AiProvider
                 throw new \RuntimeException($this->humanError($status));
             }
 
+            $this->lastWasEmpty = false;
             $data = $response->json();
             $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
 
@@ -299,7 +391,13 @@ class GeminiProvider implements AiProvider
             }
 
             if ($text === null) {
-                throw new \RuntimeException('لم تُرجع الخدمة أي محتوى. حاول مرة أخرى.');
+                // ردٌّ ناجحٌ بلا نصّ: مرشِّح أمانٍ حجب، أو نفدت الحصّة
+                // الرمزيّة في «التفكير» قبل أوّل حرف. حالتُه ٢٠٠ فلم
+                // يكن يُعاد عليه ولا يُنتقل منه إلى نموذجٍ احتياطيّ —
+                // فيرى المحامي عطلاً على سؤالٍ كانت إعادتُه تكفيه.
+                $this->lastWasEmpty = true;
+
+                throw new \RuntimeException('لم تُرجع الخدمة أي محتوى.');
             }
 
             return $text;
