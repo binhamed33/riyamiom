@@ -303,8 +303,8 @@
             <h2 class="text-sm font-bold text-gold-dark">{{ __('app.team_comparison') }}</h2>
             <p class="text-[11px] text-gray-400 mt-1 mb-4 leading-relaxed">{{ __('app.team_comparison_help') }}</p>
             @if($effHasData ?? false)
-                <div class="flex justify-center" style="height: 300px;">
-                    <canvas id="radarChart"></canvas>
+                <div style="height: 330px;">
+                    <canvas id="teamCompareChart"></canvas>
                 </div>
             @else
                 <p class="text-xs text-gray-400 text-center py-16">{{ __('app.no_data_yet') }}</p>
@@ -541,43 +541,86 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // === Radar Chart (Team Comparison) ===
-    const radarCtx = document.getElementById('radarChart');
-    if (radarCtx) {
-        const radarData = @json($efficiencyData);
-        // ثلاثة على الأكثر: رادار بستّ سلاسل لا يُقرأ، والألوان ثابتة لا تدور
-        const radarTop = radarData.slice(0, 3);
-        new Chart(radarCtx.getContext('2d'), {
-            type: 'radar',
+    // مقارنة الفريق: أشرطةٌ مجمّعة أفقية لا رادار.
+    //
+    // ═══ لماذا تُرك الرادار ═══
+    //
+    // الرادار يرسم «شكلاً» لا مقداراً، فالمقارنة فيه تقديرُ مساحاتٍ متداخلة
+    // لا قراءةُ أرقام. وثلاثة عيوب جعلته هنا غيرَ عملي:
+    //
+    //   · ينضغط إلى خطٍّ رفيع حين تتقارب القيم أو تبلغ حدَّيها — وهو حال
+    //     فريقٍ صغير: صفرٌ في الالتزام ومئةٌ في النجاح.
+    //   · أسماءٌ عربية ثلاثية في أسطورةٍ واحدة تزدحم فلا يُعرف صاحبُ الخط.
+    //   · لا يُقرأ منه «كم» ولا «مَن الأعلى» في مقياسٍ بعينه.
+    //
+    // والأشرطة المجمّعة تجيب السؤالين مباشرةً: كلُّ مقياسٍ مجموعةٌ، وطولُ
+    // الشريط هو القيمة. وأفقيّةٌ لأن أسماء المقاييس عربيةٌ طويلة، فتُقرأ
+    // على اليمين بلا إمالة.
+    const teamCtx = document.getElementById('teamCompareChart');
+    if (teamCtx) {
+        // ثلاثة على الأكثر: الألوان ثابتة لا تدور، ورابعٌ يعني لوناً مكرَّراً
+        const members = @json($efficiencyData).slice(0, 3);
+        const metrics = [
+            { key: 'success_rate',        label: '{{ __("app.success_rate") }}' },
+            { key: 'task_completion',     label: '{{ __("app.task_completion") }}' },
+            { key: 'deadline_compliance', label: '{{ __("app.deadline_compliance") }}' },
+            // الإنتاجية بمقياسها المُعايَر (٠–١٠٠) لا بعدد المهام في اليوم،
+            // فتقف على المحور نفسه مع بقية المقاييس
+            { key: 'productivity_score',  label: '{{ __("app.productivity") }}' },
+        ];
+
+        new Chart(teamCtx.getContext('2d'), {
+            type: 'bar',
             data: {
-                labels: ['{{ __("app.success_rate") }}', '{{ __("app.task_completion") }}', '{{ __("app.deadline_compliance") }}', '{{ __("app.productivity") }}'],
-                datasets: radarTop.map((d, i) => ({
+                labels: metrics.map(m => m.label),
+                datasets: members.map((d, i) => ({
                     label: d.user.name,
-                    // الإنتاجية بمقياسها المُعايَر (٠–١٠٠) لا بعدد المهام في اليوم،
-                    // فتُقارَن على نفس محور بقية المقاييس
-                    data: [d.success_rate, d.task_completion, d.deadline_compliance, d.productivity_score],
-                    borderColor: MdChart.series(i),
-                    backgroundColor: MdChart.withAlpha(MdChart.series(i), 0.14),
-                    pointBackgroundColor: MdChart.series(i),
-                    pointBorderColor: MdChart.series(i),
-                    borderWidth: 2,
-                    pointRadius: 3,
+                    data: metrics.map(m => d[m.key] ?? 0),
+                    backgroundColor: MdChart.series(i),
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    borderSkipped: false,
+                    // فجوةُ سطحٍ بين الأشرطة المتجاورة فلا تلتحم كتلةً واحدة
+                    barPercentage: 0.82,
+                    categoryPercentage: 0.72,
                 }))
             },
             options: {
-                responsive: true, maintainAspectRatio: false,
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { left: 4, right: 12 } },
                 scales: {
-                    r: {
+                    x: {
                         beginAtZero: true, max: 100,
-                        grid: { color: gridColor },
-                        angleLines: { color: gridColor },
-                        pointLabels: { color: tickColor, font: { size: 10 } },
-                        ticks: { display: false }
-                    }
+                        grid: { color: gridColor, drawTicks: false },
+                        border: { display: false },
+                        ticks: {
+                            color: tickColor, font: { size: 10 }, stepSize: 25,
+                            callback: v => v + '٪',
+                        },
+                    },
+                    y: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { color: tickColor, font: { size: 11 } },
+                    },
                 },
                 plugins: {
-                    legend: { position: 'bottom', labels: { color: tickColor, font: { size: 10 }, usePointStyle: true, pointStyleWidth: 8, padding: 12 } },
-                    tooltip: MdChart.tooltip()
-                }
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: tickColor, font: { size: 10 },
+                            usePointStyle: true, pointStyleWidth: 8, padding: 12,
+                            boxHeight: 8,
+                        },
+                    },
+                    tooltip: Object.assign(MdChart.tooltip(), {
+                        callbacks: {
+                            label: c => ' ' + c.dataset.label + ': ' + c.parsed.x + '٪',
+                        },
+                    }),
+                },
             }
         });
     }
