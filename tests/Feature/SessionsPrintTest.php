@@ -62,7 +62,9 @@ class SessionsPrintTest extends TestCase
 
     public function test_the_sheet_obeys_the_same_filters_as_the_screen(): void
     {
-        $this->makeSession(['title' => 'قضية هذا الأسبوع'], now()->addDay()->toDateTimeString());
+        // بعد نصف ساعة لا بعد يوم: «+يوم» يسقط خارج الأسبوع كلما جرى
+        // الاختبار في آخر أيامه — عطل حدّي ظهر يوم أحدٍ حقيقي
+        $this->makeSession(['title' => 'قضية هذا الأسبوع'], now()->addMinutes(30)->toDateTimeString());
         $this->makeSession(['title' => 'قضية بعد شهرين'], now()->addMonths(2)->toDateTimeString());
 
         $html = $this->actingAs($this->staff())->get('/sessions/print?range=week')->assertOk()->getContent();
