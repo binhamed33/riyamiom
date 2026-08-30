@@ -410,7 +410,19 @@
             --surface: #FCFAF6;   /* البطاقات واللوحات */
             --surface-2: #F7F4ED;  /* أرضية الصفحة */
             --surface-3: #F2EEE5;  /* الأشرطة الثانوية */
+            --zebra: #F8F5EF;      /* السطر المتناوب في القوائم */
         }
+
+        /* ══ صفوفٌ متناوبةُ اللون بدل خطٍّ فاصل ══════════════════
+           الخطّ بين كل سطرين يصنع على قائمةٍ طويلة شبكةً من الخطوط
+           الأفقيّة تُتعب العين وتزاحم النصّ. والتناوب يفصل بلا خط:
+           فرقٌ في الأرضيّة يكفي لتمييز السطر ولا يُقرأ لوناً ثانياً —
+           وهو ما تفعله جداول الحساب منذ الورق.
+
+           التناوب بـ:where فلا وزنَ له، ويبقى التظليل عند المرور فوق
+           السطر أعلى منه فيغلبه. ولولا ذلك لبقي السطر الزوجيّ على
+           لونه تحت المؤشّر، فيبدو أنّ نصف الأسطر لا يستجيب. */
+        .md-zebra > :where(*:nth-child(even)) { background-color: var(--zebra); }
         .bg-white, .bg-white\/60, .bg-white\/70, .bg-white\/80, .bg-white\/90 { background-color: var(--surface); }
         .bg-gray-50 { background-color: var(--surface-2); }
         .bg-gray-100 { background-color: var(--surface-3); }
@@ -716,7 +728,7 @@
         .ts-wrapper.multi .ts-control .item { background: var(--accent-a12) !important; border: 1px solid var(--accent-a30) !important; color: var(--accent-dark) !important; }
 
         /* Dark mode */
-        [data-theme="dark"] { --bg: #080B12; --card: #121826; --text: #FFFFFF; --text-muted: #94A3B8; --border: var(--accent-a15); }
+        [data-theme="dark"] { --bg: #080B12; --card: #121826; --text: #FFFFFF; --text-muted: #94A3B8; --border: var(--accent-a15); --zebra: #161C2C; }
         [data-theme="dark"] body { background-color: #080B12 !important; color: #FFFFFF !important; }
         [data-theme="dark"] .bg-white { background-color: #121826 !important; }
         [data-theme="dark"] .bg-gray-50 { background-color: #0D111B !important; }

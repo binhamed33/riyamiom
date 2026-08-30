@@ -66,7 +66,7 @@
     </div>
     <div x-data="{ briefOpen: true }">
         <template x-if="briefOpen">
-            <div class="divide-y divide-gray-50">
+            <div class="md-zebra">
                 @forelse($brief as $item)
                     @php
                         $sev = [
@@ -114,7 +114,7 @@
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ app()->getLocale() === 'ar' ? 'M15 12h4m0 0l-2-2m2 2l-2 2M5 12h10m-6-4l4 4-4 4' : 'M9 12h4m0 0l-2-2m2 2l-2 2m10 0a7 7 0 11-14 0 7 7 0 0114 0z' }}"/></svg>
             </a>
         </div>
-        <div class="divide-y divide-gray-50">
+        <div class="md-zebra">
             @php
                 $sevMap = [
                     'critical' => ['border' => 'border-red-200', 'bg' => 'bg-red-50', 'dot' => 'bg-red-500', 'text' => 'text-red-700'],
