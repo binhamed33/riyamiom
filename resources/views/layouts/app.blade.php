@@ -429,6 +429,24 @@
            هو أخصّ: تظليلُ المرور، وأرضيّةُ صفٍّ ملوّنٍ بحالته (مهمّة
            متأخّرة، رصيدٌ سالب) — تبقى على لونها ولا يبتلعها التناوب. */
         tbody > :where(tr:nth-child(even)) { background-color: var(--zebra); }
+
+        /* ══ نقاطُ «يكتب» ══════════════════════════════════════════ */
+        .md-dots { display: inline-flex; align-items: center; gap: 4px; height: 8px; }
+        .md-dots i {
+            width: 6px; height: 6px; border-radius: 99px; background: #10B981;
+            display: block; animation: mdDot 1.25s ease-in-out infinite;
+        }
+        .md-dots i:nth-child(2) { animation-delay: .18s; }
+        .md-dots i:nth-child(3) { animation-delay: .36s; }
+        @keyframes mdDot {
+            0%, 60%, 100% { opacity: .25; transform: translateY(0); }
+            30%           { opacity: 1;   transform: translateY(-3px); }
+        }
+        /* من طلب تقليل الحركة يرى النقاط ثابتةً تتبدّل شفافيّتها فقط */
+        @media (prefers-reduced-motion: reduce) {
+            .md-dots i { animation: mdDotFade 1.4s ease-in-out infinite; }
+            @keyframes mdDotFade { 0%, 100% { opacity: .3 } 50% { opacity: 1 } }
+        }
         .bg-white, .bg-white\/60, .bg-white\/70, .bg-white\/80, .bg-white\/90 { background-color: var(--surface); }
         .bg-gray-50 { background-color: var(--surface-2); }
         .bg-gray-100 { background-color: var(--surface-3); }
@@ -734,7 +752,16 @@
         .ts-wrapper.multi .ts-control .item { background: var(--accent-a12) !important; border: 1px solid var(--accent-a30) !important; color: var(--accent-dark) !important; }
 
         /* Dark mode */
-        [data-theme="dark"] { --bg: #080B12; --card: #121826; --text: #FFFFFF; --text-muted: #94A3B8; --border: var(--accent-a15); --zebra: #161C2C; }
+        [data-theme="dark"] { --bg: #080B12; --card: #121826; --text: #FFFFFF; --text-muted: #94A3B8; --border: var(--accent-a15); --zebra: #161C2C; --surface-3: #161C2C; }
+
+        /* شريط التمرير كان يرث ألوان الوضع الفاتح: مسارٌ كريميٌّ فاتح
+           وإبهامٌ رماديٌّ باهت، فيُرسمان شريطاً ساطعاً على صفحةٍ سوداء
+           يشدّ العين إليه في كل صفحة. هنا يذوب في الخلفيّة ولا يُرى
+           إلا حين يُحتاج إليه. */
+        [data-theme="dark"] ::-webkit-scrollbar-track { background: transparent; }
+        [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #2A3346; }
+        [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #3A465E; }
+        [data-theme="dark"] { scrollbar-color: #2A3346 transparent; }
         [data-theme="dark"] body { background-color: #080B12 !important; color: #FFFFFF !important; }
         [data-theme="dark"] .bg-white { background-color: #121826 !important; }
         [data-theme="dark"] .bg-gray-50 { background-color: #0D111B !important; }
@@ -2224,7 +2251,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>
                     </button>
-                    <button @click="open = false" aria-label="{{ __('app.close') }}" class="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors">
+                    <button @click="close()" aria-label="{{ __('app.close') }}" class="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -2272,12 +2299,23 @@
                             <div class="mt-1 flex items-center gap-2 px-1 text-[10px] text-gray-400"
                                  :class="m.role === 'user' ? 'justify-end' : 'justify-start'">
                                 <span x-text="when(m.at)"></span>
+                                {{-- كان نصّاً بحجم ١٠ بكسل بلا حشو: هدفٌ لا
+                                     يُصاب بالإصبع على الجوّال، ولا يكاد
+                                     يُرى. صار أيقونةً ونصّاً في زرٍّ له
+                                     حدٌّ وحشوٌ وارتفاعٌ يُلمس. --}}
                                 <template x-if="m.role === 'assistant'">
                                     <button type="button" @click="copy(m)"
-                                        class="hover:text-emerald-600 transition-colors"
+                                        class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-gray-500 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
+                                        :class="copied === m.id ? 'text-emerald-700 border-emerald-300 bg-emerald-50' : ''"
                                         :title="'{{ __('app.ai_chat_copy') }}'">
+                                        <svg x-show="copied !== m.id" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2M5 8h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"/>
+                                        </svg>
+                                        <svg x-show="copied === m.id" x-cloak class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/>
+                                        </svg>
                                         <span x-show="copied !== m.id">{{ __('app.ai_chat_copy') }}</span>
-                                        <span x-show="copied === m.id" x-cloak class="text-emerald-600 font-semibold">{{ __('app.ai_chat_copied') }}</span>
+                                        <span x-show="copied === m.id" x-cloak>{{ __('app.ai_chat_copied') }}</span>
                                     </button>
                                 </template>
                             </div>
@@ -2285,13 +2323,12 @@
                     </div>
                 </template>
 
+                {{-- ثلاثُ نقاطٍ تنبض بدل كلمة «يكتب»: الكلمة تُقرأ فتشغل،
+                     والنقاط تُفهم بلا قراءة — وهي عُرف المحادثات. --}}
                 <div x-show="sending" class="flex justify-start">
-                    <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-2">
-                        <svg class="w-4 h-4 animate-spin text-emerald-600" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span class="text-xs text-gray-500">{{ __('app.ai_chat_typing') }}</span>
+                    <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm"
+                         role="status" aria-label="{{ __('app.ai_chat_typing') }}">
+                        <span class="md-dots" aria-hidden="true"><i></i><i></i><i></i></span>
                     </div>
                 </div>
 
@@ -2317,24 +2354,54 @@
                 </div>
             </div>
 
+            {{-- تأكيد حذف المحادثة — داخل النافذة، بأسلوب التطبيق --}}
+            <div x-show="confirmClear" x-cloak
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 translate-y-1"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 class="px-4 py-3 border-t border-red-100 bg-red-50/70">
+                <p class="text-xs font-semibold text-red-800 mb-2">{{ __('app.ai_chat_clear_confirm') }}</p>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="doClear()"
+                        class="rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3.5 py-1.5 transition-colors">
+                        {{ __('app.ai_chat_clear_yes') }}
+                    </button>
+                    <button type="button" @click="confirmClear = false"
+                        class="rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 text-xs font-semibold px-3.5 py-1.5 transition-colors">
+                        {{ __('app.ai_chat_cancel') }}
+                    </button>
+                </div>
+            </div>
+
             {{-- Input --}}
             <div class="px-4 py-3 border-t border-gray-200 bg-white">
                 <p class="text-[10px] text-gray-400 mb-2">{{ __('app.ai_assistant_disclaimer') }}</p>
                 <div class="flex items-end gap-2">
                     {{-- كان سطراً واحداً مهما طال السؤال، فيكتب المحامي
                          فقرةً لا يرى منها إلا آخرها. ينمو الآن إلى حدّ. --}}
-                    <textarea x-model="input" x-ref="input" rows="1" :disabled="sending"
+                    {{-- الحقل لا يُقفل أثناء الانتظار: الجواب قد يتأخّر
+                         ثوانيَ، والمحامي يكتب سؤاله التالي في أثنائها.
+                         وقفلُه كان يجعل أيَّ تعثّرٍ يبدو تجميداً. --}}
+                    <textarea x-model="input" x-ref="input" rows="1"
                         @input="grow($el)"
                         @keydown.enter.prevent="if (!$event.shiftKey) send()"
-                        class="flex-1 rounded-xl bg-gray-50 border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:opacity-50 overflow-y-auto"
+                        class="flex-1 rounded-xl bg-gray-50 border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none overflow-y-auto"
                         style="max-height: 140px;"
                         placeholder="{{ __('app.ai_assistant_placeholder') }}"></textarea>
-                    <button @click="send()" :disabled="sending || !input.trim()"
+
+                    {{-- أثناء الانتظار يصير الزرُّ «إيقاف»: كان الانتظار
+                         بابًا مغلقًا لا مخرج منه إلا إعادة تحميل الصفحة. --}}
+                    <button x-show="!sending" @click="send()" :disabled="!input.trim()"
                         class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-2.5 rounded-xl font-semibold transition-colors text-sm disabled:opacity-50 flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                         </svg>
                         {{ __('app.ai_chat_send') }}
+                    </button>
+                    <button x-show="sending" x-cloak @click="stop()"
+                        class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2.5 rounded-xl font-semibold transition-colors text-sm flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                        {{ __('app.ai_chat_stop') }}
                     </button>
                 </div>
             </div>
@@ -2359,6 +2426,9 @@
             // إشعارُ سؤالٍ مؤجَّل، ومؤقّتُ ترقّب جوابه
             pending: null,
             watching: null,
+            // أداةُ قطع الطلب الجاري، وسؤالُ تأكيد الحذف
+            aborter: null,
+            confirmClear: false,
             copied: null,
             starters: @js([
                 __('app.ai_starter_1'),
@@ -2427,9 +2497,28 @@
                 if (el) el.scrollTop = el.scrollHeight;
             },
             toggle() {
-                this.open = !this.open;
-                if (this.open && !this.loaded) this.loadHistory();
+                if (this.open) { this.close(); return; }
+                this.open = true;
+                if (!this.loaded) this.loadHistory();
                 this.$nextTick(() => this.scrollChat());
+            },
+            /*
+             * الإغلاق أثناء الكتابة يوقفها.
+             *
+             * كان الردّ يواصل خلف نافذةٍ مغلقة، فمن أغلق وفتح وجد
+             * المساعد «يكتب» ولا سبيل إلى شيء. يُقطع الطلب وتُرفع
+             * النقاط — ويبقى الترقّبُ لسؤالٍ مؤجَّلٍ شغّالاً، فجوابه
+             * وعدٌ قائم يظهر عند العودة.
+             */
+            close() {
+                if (this.sending) {
+                    if (this.aborter) { try { this.aborter.abort(); } catch (e) {} }
+                    this.sending = false;
+                    this.retrying = 0;
+                    this.aborter = null;
+                }
+                this.confirmClear = false;
+                this.open = false;
             },
             async loadHistory() {
                 try {
@@ -2468,7 +2557,10 @@
                 this.error = null;
                 this.retrying = 0;
                 this.sending = true;
+                this.aborter = new AbortController();
                 this.$nextTick(() => this.scrollChat());
+
+                try {
 
                 // إن كانت هذه إعادةً لسؤالٍ محفوظ، بُدئ بمعرّفه فلا يتكرّر
                 let questionId = this.lastAskedId;
@@ -2480,7 +2572,8 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
                             // معرّف السؤال المحفوظ يمنع تكراره في المحادثة
-                            body: JSON.stringify(questionId ? { message: text, retry_of: questionId } : { message: text })
+                            body: JSON.stringify(questionId ? { message: text, retry_of: questionId } : { message: text }),
+                            signal: this.aborter.signal
                         });
                         status = res.status;
                         data = await res.json().catch(() => null);
@@ -2514,6 +2607,7 @@
                             break;
                         }
                     } catch (e) {
+                        if (e && e.name === 'AbortError') return;   // قطعَه المستخدم
                         status = 0;   // انقطاعُ شبكةٍ — عابرٌ يُعاد عليه
                     }
 
@@ -2530,9 +2624,32 @@
                     await new Promise(r => setTimeout(r, 1200 * attempt + Math.random() * 400));
                 }
 
+                } finally {
+                    // القفل يُفتح مهما جرى. كان يُفتح في آخر الدالة وحدها،
+                    // فأيُّ استثناءٍ يقع قبله يترك `sending` مرفوعاً إلى
+                    // الأبد: الحقل مقفل، والزرّ معطّل، ولا مخرج إلا إعادة
+                    // تحميل الصفحة — وهو ما وقع فعلاً.
+                    this.retrying = 0;
+                    this.sending = false;
+                    this.aborter = null;
+                    this.$nextTick(() => this.scrollChat());
+                }
+            },
+
+            /*
+             * يقطع الطلب الجاري.
+             *
+             * كان الانتظار باباً مغلقاً: لا إيقافَ ولا كتابة حتى يعود
+             * الجواب أو ينتهي الوقت. والقطع لا يمسّ ما حُفظ في الخادم —
+             * السؤال باقٍ، وله زرُّ إعادةٍ إن أراد.
+             */
+            stop() {
+                if (this.aborter) { try { this.aborter.abort(); } catch (e) {} }
+                this.stopWatching();
                 this.retrying = 0;
                 this.sending = false;
-                this.$nextTick(() => this.scrollChat());
+                this.aborter = null;
+                this.error = null;
             },
             /*
              * يترقّب جواباً مؤجَّلاً ويعرضه حين يصل.
@@ -2569,8 +2686,15 @@
                 this.pending = null;
             },
 
-            async clearChat() {
-                if (this.messages.length && !confirm('{{ __('app.ai_chat_clear_confirm') }}')) return;
+            clearChat() {
+                // حوارُ المتصفّح (confirm) بشكل النظام لا بشكل التطبيق،
+                // ويحجب الصفحة كلَّها. السؤال الآن داخل النافذة نفسها.
+                if (!this.messages.length) return;
+                this.confirmClear = true;
+            },
+            async doClear() {
+                this.confirmClear = false;
+                this.stop();
                 this.messages = [];
                 this.error = null;
                 this.lastAsked = null;
