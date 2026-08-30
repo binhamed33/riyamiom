@@ -78,7 +78,7 @@
                         <th class="text-right px-6 py-3 text-sm font-semibold text-gold-dark">{{ __('app.created_at') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody>
                     @forelse($client->cases ?? [] as $case)
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4 text-gray-700 font-medium" dir="ltr">{{ $case->case_number }}</td>

@@ -276,7 +276,7 @@ document.addEventListener('alpine:init', () => {
                         <th class="px-3 py-2 text-gold-dark font-bold whitespace-nowrap text-xs">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody>
                     @forelse($cases ?? [] as $case)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-3 py-2 text-gray-900 font-mono font-medium text-xs whitespace-nowrap">{{ $case->office_case_number }}</td>

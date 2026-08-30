@@ -423,6 +423,12 @@
            السطر أعلى منه فيغلبه. ولولا ذلك لبقي السطر الزوجيّ على
            لونه تحت المؤشّر، فيبدو أنّ نصف الأسطر لا يستجيب. */
         .md-zebra > :where(*:nth-child(even)) { background-color: var(--zebra); }
+
+        /* والجداول كذلك — كلُّها، بقاعدةٍ واحدة لا بتعديل أربعين جدولاً
+           بيدٍ تنسى واحداً. و`:where` يجرّدها من وزنها، فيغلبها كلُّ ما
+           هو أخصّ: تظليلُ المرور، وأرضيّةُ صفٍّ ملوّنٍ بحالته (مهمّة
+           متأخّرة، رصيدٌ سالب) — تبقى على لونها ولا يبتلعها التناوب. */
+        tbody > :where(tr:nth-child(even)) { background-color: var(--zebra); }
         .bg-white, .bg-white\/60, .bg-white\/70, .bg-white\/80, .bg-white\/90 { background-color: var(--surface); }
         .bg-gray-50 { background-color: var(--surface-2); }
         .bg-gray-100 { background-color: var(--surface-3); }

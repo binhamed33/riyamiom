@@ -31,7 +31,7 @@
                         <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody>
                     @forelse($cases as $case)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-4 py-3 text-gray-900 font-mono text-xs">{{ $case->case_number }}</td>

@@ -46,7 +46,7 @@
                         <th class="px-4 py-3 text-gold-dark font-bold text-xs">الوقت</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-50">
+                <tbody>
                     @forelse($runs as $run)
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-4 py-3 text-xs font-bold text-gray-900">

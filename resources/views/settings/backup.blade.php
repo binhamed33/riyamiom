@@ -92,7 +92,7 @@
                             <th class="px-4 py-3 text-gold-dark font-bold text-xs">{{ __('app.actions') }}</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
+                    <tbody>
                         @foreach($backups as $backup)
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-4 py-3 text-gray-900 text-xs font-mono">{{ $backup['name'] }}</td>

@@ -86,7 +86,7 @@
                             <th class="px-3 py-3 text-gold-dark font-bold text-xs min-w-[140px]">{{ __('app.evaluation_score') }}</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
+                    <tbody>
                         @foreach($rows as $row)
                             @php
                                 $m = $row['metrics'];

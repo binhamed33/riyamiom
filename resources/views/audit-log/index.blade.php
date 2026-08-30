@@ -92,7 +92,7 @@
                         <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.table_ip') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody>
                     @forelse($logs ?? [] as $log)
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4 text-gray-500 text-sm whitespace-nowrap">{{ $log->created_at?->format('Y-m-d H:i:s') ?? '—' }}</td>

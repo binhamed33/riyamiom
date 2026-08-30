@@ -161,7 +161,7 @@
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.actions') }}</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody>
                 @forelse ($tasks as $task)
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-6 py-4 font-medium text-gray-900">

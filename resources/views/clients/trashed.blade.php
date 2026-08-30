@@ -28,7 +28,7 @@
                         <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody>
                     @forelse($clients as $client)
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4">

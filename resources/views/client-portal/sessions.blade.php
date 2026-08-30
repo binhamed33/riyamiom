@@ -21,7 +21,7 @@
                         <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.notes') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody>
                     @forelse($sessions as $session)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-4 py-3 text-gray-900 text-xs whitespace-nowrap">{{ \Carbon\Carbon::parse($session->date)->format('Y/m/d H:i') }}</td>

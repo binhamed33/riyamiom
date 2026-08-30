@@ -42,7 +42,7 @@
                             <th class="px-5 py-3.5 font-bold text-gray-600">تحديث الحالة</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-50">
+                    <tbody>
                         @foreach($requests as $r)
                             <tr class="hover:bg-gray-50/60 transition-colors align-top">
                                 <td class="px-5 py-4">

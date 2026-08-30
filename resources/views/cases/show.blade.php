@@ -737,7 +737,7 @@ document.addEventListener('alpine:init', () => {
                                 <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.session_decision') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
+                        <tbody>
                             <template x-for="s in sessions" :key="s.id">
                                 <tr class="hover:bg-gray-50 transition-colors">
                                     <td class="px-3 py-2.5 text-gray-900 text-xs whitespace-nowrap" x-text="sessionDateLabel(s.date)"></td>

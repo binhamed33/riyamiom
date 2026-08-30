@@ -22,7 +22,7 @@
                         <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.table_uploaded') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody>
                     @forelse($documents as $document)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-4 py-3">

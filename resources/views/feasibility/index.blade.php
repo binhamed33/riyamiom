@@ -207,7 +207,7 @@
                                     <th class="py-1.5 text-right font-bold">{{ __('app.task_completion') }}</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100" style="font-variant-numeric: tabular-nums">
+                            <tbody style="font-variant-numeric: tabular-nums">
                                 @foreach($efficiencyData as $row)
                                     <tr>
                                         <td class="py-1.5 text-gray-700">{{ $row['user']['name'] ?? '—' }}</td>
@@ -250,7 +250,7 @@
                                     <th class="py-1.5 text-right font-bold">{{ __('app.lost') }}</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100" style="font-variant-numeric: tabular-nums">
+                            <tbody style="font-variant-numeric: tabular-nums">
                                 @foreach($monthlyTrend as $m)
                                     <tr>
                                         <td class="py-1.5 text-gray-700">{{ $m['label'] }}</td>
@@ -280,7 +280,7 @@
                 <details class="mt-3">
                     <summary class="text-[11px] font-bold text-gray-400 cursor-pointer select-none hover:text-gold-dark transition">{{ __('app.show_numbers') }}</summary>
                     <table class="w-full text-[11px] mt-2">
-                        <tbody class="divide-y divide-gray-100" style="font-variant-numeric: tabular-nums">
+                        <tbody style="font-variant-numeric: tabular-nums">
                             @foreach(collect($casesByType)->filter()->sortDesc() as $type => $count)
                                 <tr>
                                     <td class="py-1.5 text-gray-700">{{ $type }}</td>
@@ -371,7 +371,7 @@
                         <th class="text-right px-4 py-3 text-xs font-semibold text-gold-dark/70">{{ __('app.sessions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody>
                     @forelse($efficiencyData as $index => $entry)
                         <tr class="hover:bg-gray-50 transition {{ $index === 0 ? 'bg-gold/10' : '' }}">
                             <td class="px-4 py-3">

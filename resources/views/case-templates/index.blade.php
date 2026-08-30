@@ -89,7 +89,7 @@
                         <th class="px-4 py-3 text-gold-dark font-bold text-xs">إجراءات</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-50">
+                <tbody>
                     @forelse($templates as $t)
                         @php $s = $t->summary(); @endphp
                         <tr class="hover:bg-gray-50 transition {{ $t->is_active ? '' : 'opacity-60' }}">
