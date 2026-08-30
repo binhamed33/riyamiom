@@ -1901,6 +1901,13 @@
                 if (row && !e.target.closest('a,button')) { window.location = row.getAttribute('data-row-url'); }
             });
 
+            // قائمة تُرسل نموذجها فور الاختيار — بلا زر «حفظ» لكل صف.
+            // التفويض لا معالج سطري: CSP يحجب السطري بصمت.
+            document.addEventListener('change', function (e) {
+                var sel = e.target.closest('[data-autosubmit]');
+                if (sel && sel.form) { sel.form.submit(); }
+            });
+
             // روابط تحمل data-confirm أيضاً (حذف عبر رابط)
             document.addEventListener('click', function (e) {
                 var a = e.target.closest('a[data-confirm]');

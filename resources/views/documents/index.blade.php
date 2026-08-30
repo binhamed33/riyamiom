@@ -163,7 +163,75 @@
         </a>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200">
+    {{-- §9: مستكشف الملفات — تفصيلي أو مصغّرات، والاختيار يُحفظ للمستخدم --}}
+    <div x-data="{
+            view: 'details',
+            init() {
+                try { this.view = localStorage.getItem('mdDocsView') === 'tiles' ? 'tiles' : 'details'; } catch (e) {}
+                this.$watch('view', v => { try { localStorage.setItem('mdDocsView', v); } catch (e) {} });
+            }
+         }">
+        <div class="flex items-center justify-end gap-1.5 mb-3">
+            <button type="button" x-on:click="view = 'details'" :aria-pressed="view === 'details' ? 'true' : 'false'"
+                    :class="view === 'details' ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600'"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold transition"
+                    title="{{ __('app.view_details') }}" aria-label="{{ __('app.view_details') }}">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                {{ __('app.details') }}
+            </button>
+            <button type="button" x-on:click="view = 'tiles'" :aria-pressed="view === 'tiles' ? 'true' : 'false'"
+                    :class="view === 'tiles' ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600'"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold transition"
+                    title="{{ __('app.view_thumbnails') }}" aria-label="{{ __('app.view_thumbnails') }}">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5h6v6H4zM14 5h6v6h-6zM4 13h6v6H4zM14 13h6v6h-6z"/></svg>
+                {{ __('app.thumbnails') }}
+            </button>
+        </div>
+
+    <div x-show="view === 'tiles'" x-cloak class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mb-4">
+        @forelse ($documents as $document)
+            @php
+                $ext = strtolower($document->file_type ?? '');
+                $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                $previewable = in_array($ext, ['pdf', 'jpg', 'jpeg', 'png']);
+            @endphp
+            <div class="bg-white rounded-xl border border-gray-200 hover:border-gold/25 transition-colors overflow-hidden">
+                <div class="aspect-[4/3] bg-gray-100 flex items-center justify-center overflow-hidden">
+                    @if($isImage)
+                        <img src="{{ route('documents.preview', $document) }}" alt="{{ $document->title }}" loading="lazy" class="w-full h-full object-cover">
+                    @else
+                        <svg class="w-10 h-10 {{ $ext === 'pdf' ? 'text-red-400' : (str_contains($ext, 'doc') ? 'text-blue-400' : (str_contains($ext, 'xls') ? 'text-green-500' : 'text-gray-300')) }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                    @endif
+                </div>
+                <div class="p-2.5">
+                    <p class="text-xs font-medium text-gray-900 truncate" title="{{ $document->title }}">{{ $document->title }}</p>
+                    <p class="text-[11px] text-gray-400 mt-0.5" style="font-variant-numeric: tabular-nums">
+                        {{ $document->created_at?->format('Y-m-d') }} · {{ strtoupper($ext) }}
+                    </p>
+                    <div class="flex items-center gap-1 mt-2">
+                        @if($previewable)
+                            <button type="button" x-on:click="$dispatch('open-doc-viewer', { url: '{{ route('documents.preview', $document) }}', title: '{{ addslashes($document->title) }}', type: '{{ $document->file_type }}', download: '{{ route('documents.download', $document) }}' })"
+                                    class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 transition" title="{{ __('app.preview') }}">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            </button>
+                        @endif
+                        <a href="{{ route('documents.download', $document) }}" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 transition" title="{{ __('app.download') }}">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @empty
+            <div class="col-span-full">
+                <x-empty-state :title="__('app.no_documents')" :hint="__('app.no_documents_hint')" icon="documents"
+                               :filtered="($activeFilters ?? 0) > 0" :clear-url="url()->current()" />
+            </div>
+        @endforelse
+    </div>
+
+    <div x-show="view === 'details'" class="bg-white rounded-xl border border-gray-200">
         <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="text-gray-900">
@@ -263,5 +331,6 @@
             {{ $documents->links() }}
         </div>
     @endif
+    </div>
 </div>
 @endsection

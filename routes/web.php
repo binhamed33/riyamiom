@@ -301,6 +301,12 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
         Route::post('/documents/{document}/client-visibility', [DocumentController::class, 'toggleClientVisibility'])->name('documents.clientVisibility');
 
+        // §2: مجلدات القضية ونقل المستندات بينها — تنظيم لا يمسّ المحتوى
+        Route::post('/cases/{case}/folders', [App\Http\Controllers\CaseFolderController::class, 'store'])->name('case-folders.store');
+        Route::put('/case-folders/{folder}', [App\Http\Controllers\CaseFolderController::class, 'update'])->name('case-folders.update');
+        Route::delete('/case-folders/{folder}', [App\Http\Controllers\CaseFolderController::class, 'destroy'])->name('case-folders.destroy');
+        Route::post('/documents/{document}/move', [App\Http\Controllers\CaseFolderController::class, 'moveDocument'])->name('documents.move');
+
         // التنزيل والمعاينة لفريق المكتب — كانا بالخطأ داخل مجموعة إدارة
         // «أنواع المستندات» المحصورة بمدير المكتب، فلم يستطع محامٍ ولا
         // موظف تنزيل مستند واحد ولا معاينته. والصلاحية لكل مستند على

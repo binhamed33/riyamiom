@@ -820,6 +820,49 @@ document.addEventListener('alpine:init', () => {
                     </svg>
                 </a>
             </div>
+
+            {{-- §2: مجلدات القضية — ينشئها المحامي بنفسه وينقل مستنداته بينها --}}
+            <div class="mb-4 p-3 rounded-lg bg-gray-100 border border-gray-200" x-data="{ manage: false }">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-[11px] font-bold text-gray-400">🗂 {{ __('app.folders') }}:</span>
+                        @forelse($case->folders as $folder)
+                            <span class="text-[11px] font-bold text-gold-dark bg-gold/12 border border-gold/20 rounded-lg px-2 py-0.5">{{ $folder->name }} ({{ $folder->documents->count() }})</span>
+                        @empty
+                            <span class="text-[11px] text-gray-400">{{ __('app.no_folders_yet') }}</span>
+                        @endforelse
+                    </div>
+                    <button type="button" x-on:click="manage = !manage" class="text-[11px] font-bold text-gray-400 hover:text-gold-dark transition">
+                        <span x-show="!manage">{{ __('app.manage_folders') }}</span>
+                        <span x-show="manage" x-cloak>{{ __('app.done_managing') }}</span>
+                    </button>
+                </div>
+
+                <div x-show="manage" x-cloak class="mt-3 space-y-2">
+                    <form method="POST" action="{{ route('case-folders.store', $case) }}" class="flex gap-2">
+                        @csrf
+                        <input type="text" name="name" required maxlength="80" placeholder="{{ __('app.new_folder_name') }}"
+                               class="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-900 focus:border-gold/40 focus:outline-none">
+                        <button class="px-3 py-1.5 rounded-lg bg-gold/12 text-gold-dark border border-gold/25 text-xs font-bold hover:bg-gold/20 transition">{{ __('app.add') }}</button>
+                    </form>
+
+                    @foreach($case->folders as $folder)
+                        <div class="flex items-center gap-2">
+                            <form method="POST" action="{{ route('case-folders.update', $folder) }}" class="flex-1 flex gap-2">
+                                @csrf @method('PUT')
+                                <input type="text" name="name" value="{{ $folder->name }}" required maxlength="80"
+                                       class="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-900 focus:border-gold/40 focus:outline-none">
+                                <button class="px-2.5 py-1.5 rounded-lg bg-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-300 transition">{{ __('app.rename') }}</button>
+                            </form>
+                            <form method="POST" action="{{ route('case-folders.destroy', $folder) }}"
+                                  data-confirm="{{ __('app.delete_folder_confirm') }}">
+                                @csrf @method('DELETE')
+                                <button class="px-2.5 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-bold hover:bg-red-200 transition">{{ __('app.delete') }}</button>
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
             @if($case->documents && $case->documents->count() > 0)
                 @php
                     // تجميع المستندات بمجلدات القضية (من القالب الذكي) — «عام» لغير المصنف
@@ -870,6 +913,21 @@ document.addEventListener('alpine:init', () => {
                                     </a>
                                 @endif
                             </div>
+
+                            {{-- §2: نقل المستند بين مجلدات القضية — إرسالٌ فور الاختيار --}}
+                            @if($case->folders->count())
+                                <form method="POST" action="{{ route('documents.move', $document) }}" class="mt-2">
+                                    @csrf
+                                    <label class="sr-only" for="move-{{ $document->id }}">{{ __('app.move_to_folder') }}</label>
+                                    <select id="move-{{ $document->id }}" name="case_folder_id" data-autosubmit
+                                            class="w-full bg-white border border-gray-200 rounded-lg px-2 py-1 text-[11px] text-gray-600 focus:border-gold/40 focus:outline-none">
+                                        <option value="">{{ __('app.folder_general') }}</option>
+                                        @foreach($case->folders as $folder)
+                                            <option value="{{ $folder->id }}" @selected($document->case_folder_id == $folder->id)>{{ $folder->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </form>
+                            @endif
                         </div>
                     @endforeach
                 </div>

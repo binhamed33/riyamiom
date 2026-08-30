@@ -1,6 +1,19 @@
 <?php
 
 return [
+    'details' => 'تفصيلي',
+    'thumbnails' => 'مصغّرات',
+    'folders' => 'المجلدات',
+    'no_folders_yet' => 'لا مجلدات بعد',
+    'manage_folders' => 'إدارة المجلدات',
+    'done_managing' => 'تمّ',
+    'new_folder_name' => 'اسم مجلد جديد',
+    'rename' => 'إعادة تسمية',
+    'delete_folder_confirm' => 'حذف المجلد؟ مستنداته تعود إلى «عام» ولا يُحذف منها شيء.',
+    'move_to_folder' => 'نقل إلى مجلد',
+    'folder_general' => 'عام (بلا مجلد)',
+    'view_details' => 'عرض تفصيلي — جدول بالاسم والتاريخ والنوع والحجم',
+    'view_thumbnails' => 'عرض مصغّرات — شبكة صور كبيرة مع الاسم والتاريخ',
     'sort_newest' => 'الأحدث',
     'file_type' => 'النوع',
     'file_size' => 'الحجم',

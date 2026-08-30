@@ -1,6 +1,19 @@
 <?php
 
 return [
+    'details' => 'Details',
+    'thumbnails' => 'Thumbnails',
+    'folders' => 'Folders',
+    'no_folders_yet' => 'No folders yet',
+    'manage_folders' => 'Manage folders',
+    'done_managing' => 'Done',
+    'new_folder_name' => 'New folder name',
+    'rename' => 'Rename',
+    'delete_folder_confirm' => 'Delete this folder? Its documents move to General; nothing is deleted.',
+    'move_to_folder' => 'Move to folder',
+    'folder_general' => 'General (no folder)',
+    'view_details' => 'Details view — table with name, date, type and size',
+    'view_thumbnails' => 'Thumbnails view — large tiles with name and date',
     'sort_newest' => 'Newest',
     'file_type' => 'Type',
     'file_size' => 'Size',
