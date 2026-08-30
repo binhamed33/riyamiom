@@ -522,30 +522,22 @@
         /* --- Premium page transitions (View Transitions API) --- */
         @view-transition { navigation: auto; }
 
+        /* انتقالٌ سلس نقي: تلاشٍ قصير مع ارتفاع طفيف — بلا ألوان ولا
+           تكبير ولا مرشحات، فالحركة الملحوظة تُقرأ اهتزازاً لا سلاسة */
         ::view-transition-old(root) {
-            animation: pageOut 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+            animation: pageOut 120ms ease-out both;
         }
         ::view-transition-new(root) {
-            animation: pageIn 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
-        ::view-transition-new(root)::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(105deg, transparent 35%, var(--accent-a20) 50%, transparent 65%);
-            animation: goldSweep 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
+            animation: pageIn 200ms ease-out both;
         }
 
         @keyframes pageOut {
-            to { opacity: 0; transform: translateY(8px) scale(0.992); filter: saturate(0.7) brightness(0.85); }
+            to { opacity: 0; }
         }
         @keyframes pageIn {
-            from { opacity: 0; transform: translateY(18px) scale(0.995); filter: saturate(0.8) brightness(1.05); }
-            to { opacity: 1; transform: translateY(0) scale(1); filter: none; }
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes goldSweep {
-            0% { transform: translateX(-100%); opacity: 0; }
-            45% { opacity: 1; }
             100% { transform: translateX(100%); opacity: 0; }
         }
 

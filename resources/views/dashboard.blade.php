@@ -142,79 +142,45 @@
 @endif
 
 @if($isMgmt)
-    {{-- Row 1: Key Metrics (Management only) --}}
+    {{-- Row 1: بطاقات KPI — عنوان، رقم بطل، مؤشر نسبة، وسطر إضافي لكلٍّ --}}
+    @php
+        // مؤشر التغير الشهري: يُحسب فقط حين يوجد شهر سابق يُقارن به
+        $delta = function (int $now, int $prev): ?int {
+            return $prev > 0 ? (int) round((($now - $prev) / $prev) * 100) : null;
+        };
+        $casesDelta = $delta($newCasesThisMonth, $newCasesLastMonth);
+        $clientsDelta = $delta($newClientsThisMonth, $newClientsLastMonth);
+    @endphp
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div class="bg-white rounded-xl border border-gold/15 p-4 hover:border-gold/25 transition-colors">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-gold-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                </div>
-                <div>
-                    <p class="text-gray-400 text-xs">{{ __('app.total_cases') }}</p>
-                    <p class="text-xl font-bold text-gray-900">{{ $totalCases }}</p>
-                </div>
-            </div>
-        </div>
+        <x-kpi-card :title="__('app.total_cases')" :value="$totalCases" accent="gold"
+            :delta="$casesDelta" :sub="'+' . $newCasesThisMonth . ' ' . __('app.new_this_month')">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </x-kpi-card>
 
-        <div class="bg-white rounded-xl border border-green-200 p-4 hover:border-green-300 transition-colors">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                </div>
-                <div>
-                    <p class="text-gray-400 text-xs">{{ __('app.active_cases') }}</p>
-                    <p class="text-xl font-bold text-green-700">{{ $activeCases }}</p>
-                </div>
-            </div>
-        </div>
+        <x-kpi-card :title="__('app.active_cases')" :value="$activeCases" accent="green"
+            :sub="($totalCases > 0 ? round(($activeCases / $totalCases) * 100) : 0) . '٪ ' . __('app.of_total')">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </x-kpi-card>
 
-        <div class="bg-white rounded-xl border border-blue-200 p-4 hover:border-blue-300 transition-colors">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-                <div>
-                    <p class="text-gray-400 text-xs">{{ __('app.win_rate') }}</p>
-                    <p class="text-xl font-bold text-blue-700">{{ $winRate }}%</p>
-                </div>
-            </div>
-        </div>
+        <x-kpi-card :title="__('app.win_rate')" :value="$winRate . '٪'" accent="blue"
+            :sub="$wonCases . ' ' . __('app.won_cases') . ' / ' . $lostCases . ' ' . __('app.lost_cases')">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </x-kpi-card>
 
-        <div class="bg-white rounded-xl border border-purple-200 p-4 hover:border-purple-300 transition-colors">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                </div>
-                <div>
-                    <p class="text-gray-400 text-xs">{{ __('app.task_completion') }}</p>
-                    <p class="text-xl font-bold text-purple-700">{{ $tasksCompletionRate }}%</p>
-                </div>
-            </div>
-        </div>
+        <x-kpi-card :title="__('app.task_completion')" :value="$tasksCompletionRate . '٪'" accent="purple"
+            :sub="$completedThisWeek . ' ' . __('app.tasks_completed_week')">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </x-kpi-card>
 
-        <div class="bg-white rounded-xl border border-red-200 p-4 hover:border-red-300 transition-colors">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-                <div>
-                    <p class="text-gray-400 text-xs">{{ __('app.overdue') }}</p>
-                    <p class="text-xl font-bold text-red-700">{{ $overdueCases + $overdueTasks }}</p>
-                </div>
-            </div>
-        </div>
+        <x-kpi-card :title="__('app.overdue')" :value="$overdueCases + $overdueTasks" accent="red"
+            :sub="$overdueCases . ' ' . __('app.cases') . ' · ' . $overdueTasks . ' ' . __('app.tasks')">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </x-kpi-card>
 
-        <div class="bg-white rounded-xl border border-gold/15 p-4 hover:border-gold/25 transition-colors">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-gold-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                </div>
-                <div>
-                    <p class="text-gray-400 text-xs">{{ __('app.clients') }}</p>
-                    <p class="text-xl font-bold text-gold-dark">{{ $totalClients }}</p>
-                </div>
-            </div>
-        </div>
+        <x-kpi-card :title="__('app.clients')" :value="$totalClients" accent="gold"
+            :delta="$clientsDelta" :sub="'+' . $newClientsThisMonth . ' ' . __('app.new_this_month') . ' · ' . $newDocumentsThisMonth . ' ' . __('app.document')">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </x-kpi-card>
     </div>
 
     {{-- Row 2: Monthly Comparison + Today's Sessions --}}
@@ -296,22 +262,33 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white rounded-xl border border-gold/15 p-6">
             <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.cases_by_priority') }}</h2>
-            <div class="space-y-3">
+            <div class="space-y-4">
                 @php
-                    $priorityColors = ['urgent' => 'bg-red-500', 'high' => 'bg-orange-500', 'medium' => 'bg-yellow-500', 'low' => 'bg-gray-500'];
-                    $priorityText = ['urgent' => 'text-red-700', 'high' => 'text-orange-400', 'medium' => 'text-yellow-400', 'low' => 'text-gray-400'];
+                    // ألوان الحالة لا ألوان سلاسل — والنص بحبر النص دائماً
+                    $priorityColors = ['urgent' => 'bg-red-500', 'high' => 'bg-orange-400', 'medium' => 'bg-amber-400', 'low' => 'bg-gray-300'];
                     $priorityLabels = ['urgent' => __('app.priority_urgent'), 'high' => __('app.priority_high'), 'medium' => __('app.priority_medium'), 'low' => __('app.priority_low')];
                 @endphp
                 @foreach(['urgent', 'high', 'medium', 'low'] as $p)
-                    @php $count = $casesByPriority[$p] ?? 0; @endphp
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs {{ $priorityText[$p] ?? 'text-gray-400' }} w-16">{{ $priorityLabels[$p] ?? $p }}</span>
-                        <div class="flex-1 bg-gray-100 rounded-full h-3">
-                            <div class="{{ $priorityColors[$p] ?? 'bg-gray-500' }} h-3 rounded-full transition-all" style="width: {{ $totalCases > 0 ? round(($count / $totalCases) * 100) : 0 }}%"></div>
+                    @php
+                        $count = $casesByPriority[$p] ?? 0;
+                        $pct = $totalCases > 0 ? round(($count / $totalCases) * 100) : 0;
+                    @endphp
+                    <div>
+                        <div class="flex items-baseline justify-between mb-1.5">
+                            <span class="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full {{ $priorityColors[$p] }} inline-block"></span>
+                                {{ $priorityLabels[$p] ?? $p }}
+                            </span>
+                            <span class="text-xs text-gray-500" style="font-variant-numeric: tabular-nums">
+                                {{ $count }} <span class="text-gray-400">({{ $pct }}٪)</span>
+                            </span>
                         </div>
-                        <span class="text-xs text-gray-500 w-10 text-left" dir="ltr">{{ $count }}</span>
+                        <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div class="{{ $priorityColors[$p] }} h-2 rounded-full transition-all duration-500 {{ $count > 0 ? 'min-w-[8px]' : '' }}" style="width: {{ $pct }}%"></div>
+                        </div>
                     </div>
                 @endforeach
+                <p class="text-[11px] text-gray-400 pt-1">{{ __('app.total') }}: {{ $totalCases }} {{ __('app.cases') }}</p>
             </div>
         </div>
 

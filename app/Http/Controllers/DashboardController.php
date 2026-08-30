@@ -98,6 +98,9 @@ class DashboardController extends Controller
 
         // New clients this month
         $newClientsThisMonth = (clone $clientBase)->where('created_at', '>=', $startOfMonth)->count();
+        $newClientsLastMonth = (clone $clientBase)->where('created_at', '>=', $lastMonth)
+            ->where('created_at', '<', $startOfMonth)->count();
+        $newDocumentsThisMonth = (clone $documentBase)->where('created_at', '>=', $startOfMonth)->count();
 
         // === User Statistics ===
         $totalLawyers = User::where('role', 'lawyer')->count();
@@ -358,6 +361,8 @@ class DashboardController extends Controller
             'completedThisWeek',
             'totalClients',
             'newClientsThisMonth',
+            'newClientsLastMonth',
+            'newDocumentsThisMonth',
             'totalDocuments',
             'totalLawyers',
             'activeLawyers',

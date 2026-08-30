@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'of_total' => 'of total',
+    'won_cases' => 'won',
+    'lost_cases' => 'lost',
 
     // مفاتيح كانت تظهر خاماً في الواجهة (app.total وأخواتها)
     'total' => 'Total',
