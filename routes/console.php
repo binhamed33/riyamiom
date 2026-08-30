@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\Schedule;
 // فلا يجدها. ->timezone يجعل المكتوب هو المقصود.
 Schedule::command('backup:daily')->dailyAt('14:00')->timezone('Asia/Muscat');
 
+// إقفال سجلّات الحضور المفتوحة — آخر الليل بتوقيت مسقط.
+//
+// الانصراف لا يُسجَّل إلا بضغط «تسجيل خروج»، والموظّف يُغلق المتصفّح
+// ويمضي فيبقى سجلّه مفتوحاً بلا دقائق. يُقفَل هنا بوقت آخر نشاطٍ معروف
+// له، لا بساعة تشغيل الأمر.
+Schedule::command('hr:close-attendance')->dailyAt('23:50')->timezone('Asia/Muscat');
+
 // Auto backup every 30 minutes if changes detected (keep 20)
 Schedule::command('backup:auto')->everyThirtyMinutes();
 

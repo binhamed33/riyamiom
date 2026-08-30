@@ -5,8 +5,12 @@ namespace App\Support;
 use App\Models\HrAttendance;
 use App\Models\Setting;
 use App\Models\User;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * الحضور المرتبط بالجلسة.
@@ -120,6 +124,89 @@ class AttendanceGuard
 
             return null;
         }
+    }
+
+    /**
+     * يُغلق سجلّات يومٍ بقيت مفتوحة — لأن الانصراف لم يكن يُسجَّل أصلاً.
+     *
+     * ═══ العطل الذي وُضع له ═══
+     *
+     * الحضور يُسجَّل تلقائياً عند الدخول، والانصراف لا يُسجَّل إلا بضغط
+     * «تسجيل خروج» أو زرِّ الانصراف اليدوي. والموظّف يُغلق المتصفّح ويمضي
+     * — وهو الغالب — فيبقى السجلّ مفتوحاً أبداً: لا انصرافَ ولا دقائقَ
+     * محسوبة، وسِجلُّ الشهر أعمدةٌ فارغة.
+     *
+     * ووقتُ الانصراف يؤخذ من آخر نشاطٍ حقيقيّ للموظّف في جدول الجلسات لا
+     * من ساعة تشغيل الأمر: من انصرف الثانية ظهراً لا يُكتب له أنه انصرف
+     * منتصف الليل. ومن لا أثرَ لجلسته (انتهت صلاحيتها ومُسح صفُّها) يُقفل
+     * سجلُّه على حضوره نفسه بصفر دقيقة — رقمٌ ظاهرُ الخطأ يُراجَع، خيرٌ
+     * من رقمٍ مخترَعٍ يُصدَّق.
+     *
+     * والسجلّ يُوسم `auto_closed` فيعرف المكتب أن الوقت مستنتَجٌ لا مسجَّل.
+     *
+     * @return int عدد ما أُغلق
+     */
+    public static function closeStaleRecords(?CarbonInterface $for = null): int
+    {
+        $day = ($for ?? now())->toDateString();
+
+        $records = HrAttendance::whereNull('check_out_at')
+            ->whereDate('work_date', '<=', $day)
+            ->get();
+
+        $closed = 0;
+
+        foreach ($records as $record) {
+            try {
+                $lastSeen = self::lastSeenAt($record->user_id);
+
+                // الانصراف لا يسبق الحضور مهما قال جدول الجلسات
+                $out = ($lastSeen && $lastSeen->greaterThan($record->check_in_at))
+                    ? $lastSeen
+                    : $record->check_in_at;
+
+                $record->update([
+                    'check_out_at' => $out,
+                    'minutes' => (int) $record->check_in_at->diffInMinutes($out),
+                    'status' => 'completed',
+                    'source' => 'auto_closed',
+                ]);
+
+                $closed++;
+            } catch (\Throwable $e) {
+                Log::warning('attendance auto-close failed', [
+                    'record_id' => $record->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $closed;
+    }
+
+    /**
+     * آخر نشاطٍ معروف للموظّف من جدول جلسات لارافيل.
+     *
+     * `last_activity` يتجدّد مع كل طلب، فهو أصدقُ ما يُعرف عن لحظة
+     * انصرافه. وكاش «النشِط الآن» لا يصلح: عمرُه ثماني دقائق فينتهي قبل
+     * أن يعمل الأمر بساعات.
+     */
+    private static function lastSeenAt(int $userId): ?CarbonInterface
+    {
+        if (! Schema::hasTable('sessions')) {
+            return null;
+        }
+
+        $ts = DB::table('sessions')
+            ->where('user_id', $userId)
+            ->max('last_activity');
+
+        // `createFromTimestamp` تُنشئ بـUTC، والتطبيق على توقيت المكتب —
+        // فبلا تحويلٍ يُكتب الانصراف ناقصاً بفارق المنطقتين: أربع ساعات
+        // في عُمان، فمن انصرف الثالثة والنصف يُسجَّل الحادية عشرة والنصف.
+        return $ts
+            ? Carbon::createFromTimestamp((int) $ts)->setTimezone(config('app.timezone'))
+            : null;
     }
 
     /**
