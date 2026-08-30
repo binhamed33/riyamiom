@@ -145,6 +145,7 @@ class ClientAccessController extends Controller
             'sessions' => $gateway->sessionsFor($legalCase),
             'documents' => $gateway->documentsFor($legalCase),
             'timeline' => app(CaseTimeline::class, ['gateway' => $gateway])->build($legalCase),
+            'accounting' => $gateway->accountingFor($legalCase),
         ]);
     }
 

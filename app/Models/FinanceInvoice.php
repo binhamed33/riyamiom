@@ -9,7 +9,7 @@ class FinanceInvoice extends Model
 {
     protected $table = 'finance_invoices';
 
-    protected $fillable = ['invoice_number', 'client_id', 'amount', 'paid_amount', 'status', 'issue_date', 'due_date', 'description', 'user_id', 'attachment_path', 'attachment_name'];
+    protected $fillable = ['invoice_number', 'client_id', 'case_id', 'amount', 'paid_amount', 'status', 'client_visible', 'issue_date', 'due_date', 'description', 'user_id', 'attachment_path', 'attachment_name'];
 
     protected $appends = ['attachment_url', 'attachment_download_url'];
 
@@ -36,12 +36,24 @@ class FinanceInvoice extends Model
             'due_date' => 'date',
             'amount' => 'decimal:2',
             'paid_amount' => 'decimal:2',
+            'client_visible' => 'boolean',
         ];
     }
 
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function case(): BelongsTo
+    {
+        return $this->belongsTo(LegalCase::class, 'case_id');
+    }
+
+    /** ما يراه الموكّل: ما علّمه المكتب صراحةً — والافتراضي لا يُرى. */
+    public function scopeVisibleToClient($query)
+    {
+        return $query->where('client_visible', true);
     }
 
     public function user(): BelongsTo

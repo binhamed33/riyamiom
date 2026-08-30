@@ -420,6 +420,17 @@ class CaseController extends Controller
 
         $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader', 'documents.folder', 'aiMessages', 'checklistItems.doneBy', 'folders', 'reminders']);
 
+        // §13: محاسبة القضية — تُحمّل لمن يرى المال فقط، فالموظف الذي
+        // لا صلاحية مالية له لا يُجلب له شيء أصلاً لا أن يُخفى عنه بالعرض
+        $canSeeMoney = auth()->user()->isAdmin()
+            || auth()->user()->isDeveloper()
+            || $case->lawyer_id === auth()->id()
+            || auth()->user()->hasPermission('finance.view');
+
+        if ($canSeeMoney) {
+            $case->load(['fees.user', 'invoices']);
+        }
+
         $events = collect();
 
         try {
@@ -506,7 +517,7 @@ class CaseController extends Controller
             'created_at' => $m->created_at?->format('Y/m/d H:i'),
         ])->values();
 
-        return view('cases.show', compact('case', 'sessionsData', 'aiMessagesData', 'timeline'));
+        return view('cases.show', compact('case', 'sessionsData', 'aiMessagesData', 'timeline', 'canSeeMoney'));
     }
 
     /**

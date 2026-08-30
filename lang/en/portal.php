@@ -1,6 +1,19 @@
 <?php
 
 return [
+
+    'accounting' => [
+        'title' => 'Accounting',
+        'total' => 'Total',
+        'paid' => 'Paid',
+        'due' => 'Outstanding',
+        'currency' => 'OMR',
+        'invoice' => 'Invoice',
+        'paid_badge' => 'Paid',
+        'unpaid_badge' => 'Unpaid',
+        'remaining' => 'Remaining',
+        'note' => 'These are the items your office chose to share. For any question about an amount, contact your office directly.',
+    ],
     'brand' => 'Mudāwala',
     'portal' => 'Client Portal',
     'powered_by' => 'Powered by :brand',

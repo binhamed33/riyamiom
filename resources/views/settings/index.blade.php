@@ -598,6 +598,7 @@
                     [$cp::KEY_SHOW_DOCUMENTS, 'المستندات', 'المستندات التي علّمتها «مرئية للعميل» فقط'],
                     [$cp::KEY_SHOW_LAWYER, 'المحامي المسؤول', 'اسم المحامي المكلَّف بقضيته'],
                     [$cp::KEY_SHOW_OPPONENT, 'بيانات الخصم', 'اسم الخصم كما هو مسجَّل في القضية'],
+                    [$cp::KEY_SHOW_ACCOUNTING, 'المحاسبة', 'الرسوم والفواتير التي علّمتها «مرئية للموكّل» فقط'],
                 ] as [$key, $label, $hint])
                     <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-gold/40">
                         <input type="checkbox" name="{{ $key }}" value="1" class="mt-1 rounded"

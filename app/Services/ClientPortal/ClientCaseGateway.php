@@ -97,6 +97,39 @@ class ClientCaseGateway
             ->get();
     }
 
+    /**
+     * §13: محاسبة القضية كما يراها الموكّل — البندُ المعلَّم وحده،
+     * وبعد أن يفتح المكتب القسم من إعدادات البوابة.
+     *
+     * @return array{fees: Collection, invoices: Collection, total: float, paid: float, due: float}
+     */
+    public function accountingFor(LegalCase $case): array
+    {
+        $empty = ['fees' => new Collection(), 'invoices' => new Collection(), 'total' => 0.0, 'paid' => 0.0, 'due' => 0.0];
+
+        if (!ClientPortal::showsAccounting()) {
+            return $empty;
+        }
+
+        $fees = $case->fees()->visibleToClient()->get();
+        $invoices = $case->invoices()->visibleToClient()->get();
+
+        if ($fees->isEmpty() && $invoices->isEmpty()) {
+            return $empty;
+        }
+
+        $total = (float) ($fees->sum('amount') + $invoices->sum('amount'));
+        $paid = (float) ($fees->where('status', 'paid')->sum('amount') + $invoices->sum('paid_amount'));
+
+        return [
+            'fees' => $fees,
+            'invoices' => $invoices,
+            'total' => $total,
+            'paid' => $paid,
+            'due' => max(0.0, $total - $paid),
+        ];
+    }
+
     /** مستند بعينه — يمرّ بكل شروط العرض قبل أي تنزيل */
     public function findDocument(int|string $documentId): ?Document
     {

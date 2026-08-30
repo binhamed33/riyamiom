@@ -119,6 +119,56 @@
     </section>
 @endif
 
+{{-- §13: المحاسبة — ما علّمه المكتب للعرض فقط، ولا شيء إن لم يُعلَّم --}}
+@if (($accounting['fees']->count() ?? 0) + ($accounting['invoices']->count() ?? 0) > 0)
+    <section class="p-card cd-sec p-in p-in-2">
+        <button type="button" class="cd-sum" data-acc aria-expanded="false" aria-controls="sec-accounting">
+            {{ __('portal.accounting.title') }}
+            <span class="cd-sum-count">{{ $accounting['fees']->count() + $accounting['invoices']->count() }}</span>
+            <span class="cd-caret" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg></span>
+        </button>
+        <div class="cd-body" id="sec-accounting" hidden>
+            <dl class="cd-facts">
+                <div><dt>{{ __('portal.accounting.total') }}</dt><dd dir="ltr" style="text-align:start">{{ number_format($accounting['total'], 2) }} {{ __('portal.accounting.currency') }}</dd></div>
+                <div><dt>{{ __('portal.accounting.paid') }}</dt><dd dir="ltr" style="text-align:start">{{ number_format($accounting['paid'], 2) }} {{ __('portal.accounting.currency') }}</dd></div>
+                <div><dt>{{ __('portal.accounting.due') }}</dt><dd dir="ltr" style="text-align:start">{{ number_format($accounting['due'], 2) }} {{ __('portal.accounting.currency') }}</dd></div>
+            </dl>
+
+            @foreach ($accounting['fees'] as $fee)
+                <div class="cd-item">
+                    <div class="cd-item-body">
+                        <p class="cd-item-title">{{ $fee->fee_type }}</p>
+                        <p class="cd-item-meta">
+                            <span dir="ltr">{{ number_format($fee->amount, 2) }} {{ __('portal.accounting.currency') }}</span>
+                            @if ($fee->date) · {{ $fee->date->format('Y-m-d') }} @endif
+                        </p>
+                    </div>
+                    <span class="p-badge {{ $fee->status === 'paid' ? 'ok' : 'warn' }}">
+                        {{ __('portal.accounting.' . ($fee->status === 'paid' ? 'paid_badge' : 'unpaid_badge')) }}
+                    </span>
+                </div>
+            @endforeach
+
+            @foreach ($accounting['invoices'] as $invoice)
+                <div class="cd-item">
+                    <div class="cd-item-body">
+                        <p class="cd-item-title">{{ __('portal.accounting.invoice') }} <span dir="ltr">{{ $invoice->invoice_number }}</span></p>
+                        <p class="cd-item-meta">
+                            <span dir="ltr">{{ number_format($invoice->amount, 2) }} {{ __('portal.accounting.currency') }}</span>
+                            @if ($invoice->issue_date) · {{ $invoice->issue_date->format('Y-m-d') }} @endif
+                        </p>
+                    </div>
+                    <span class="p-badge {{ $invoice->remaining_amount <= 0 ? 'ok' : 'warn' }}">
+                        {{ $invoice->remaining_amount <= 0 ? __('portal.accounting.paid_badge') : __('portal.accounting.remaining') . ' ' . number_format($invoice->remaining_amount, 2) }}
+                    </span>
+                </div>
+            @endforeach
+
+            <p style="color:var(--fg-3);font-size:.78rem;margin:.6rem 0 0">{{ __('portal.accounting.note') }}</p>
+        </div>
+    </section>
+@endif
+
 {{-- المسار الزمني --}}
 @if (\App\Support\ClientPortal::showsTimeline())
     <section class="p-card cd-sec p-in p-in-2">

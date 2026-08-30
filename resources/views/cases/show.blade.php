@@ -635,6 +635,12 @@ document.addEventListener('alpine:init', () => {
                 class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
                 {{ __('app.documents_tab') }} ({{ $case->documents->count() ?? 0 }})
             </button>
+            @if($canSeeMoney ?? false)
+            <button @click="activeTab = 'money'" :class="activeTab === 'money' ? 'text-gold-dark border-b-2 border-gold-dark bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
+                class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
+                {{ __('app.case_accounting') }} ({{ $case->fees->count() + $case->invoices->count() }})
+            </button>
+            @endif
             @if($case->checklistItems->count())
             <button @click="activeTab = 'checklist'" :class="activeTab === 'checklist' ? 'text-gold-dark border-b-2 border-gold-dark bg-gray-100' : 'text-gray-400 hover:text-gray-600'"
                 class="flex-1 px-4 py-3 text-sm font-medium transition-colors" role="tab">
@@ -952,6 +958,115 @@ document.addEventListener('alpine:init', () => {
                 </div>
             @endif
         </div>
+
+        {{-- §13: محاسبة القضية — امتداد للقسم المالي لا نظام موازٍ --}}
+        @if($canSeeMoney ?? false)
+        <div x-show="activeTab === 'money'" x-cloak class="p-4 space-y-5">
+            @php
+                $feesTotal = $case->fees->sum('amount');
+                $feesPaid = $case->fees->where('status', 'paid')->sum('amount');
+                $invTotal = $case->invoices->sum('amount');
+                $invPaid = $case->invoices->sum('paid_amount');
+                $due = max(0, ($feesTotal - $feesPaid) + ($invTotal - $invPaid));
+                $currency = __('app.currency_omr');
+            @endphp
+
+            {{-- الخلاصة: ما استحقّ وما حُصّل وما بقي --}}
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="bg-gray-100 rounded-xl border border-gray-200 p-3">
+                    <p class="text-[11px] text-gray-400">{{ __('app.total_fees') }}</p>
+                    <p class="text-lg font-bold text-gray-900" style="font-variant-numeric: tabular-nums">{{ number_format($feesTotal, 2) }} <span class="text-[11px] font-normal text-gray-400">{{ $currency }}</span></p>
+                </div>
+                <div class="bg-gray-100 rounded-xl border border-gray-200 p-3">
+                    <p class="text-[11px] text-gray-400">{{ __('app.total_invoices') }}</p>
+                    <p class="text-lg font-bold text-gray-900" style="font-variant-numeric: tabular-nums">{{ number_format($invTotal, 2) }} <span class="text-[11px] font-normal text-gray-400">{{ $currency }}</span></p>
+                </div>
+                <div class="bg-gray-100 rounded-xl border border-gray-200 p-3">
+                    <p class="text-[11px] text-gray-400">{{ __('app.collected') }}</p>
+                    <p class="text-lg font-bold text-green-700" style="font-variant-numeric: tabular-nums">{{ number_format($feesPaid + $invPaid, 2) }} <span class="text-[11px] font-normal text-gray-400">{{ $currency }}</span></p>
+                </div>
+                <div class="bg-gray-100 rounded-xl border border-gray-200 p-3">
+                    <p class="text-[11px] text-gray-400">{{ __('app.outstanding') }}</p>
+                    <p class="text-lg font-bold {{ $due > 0 ? 'text-red-700' : 'text-gray-400' }}" style="font-variant-numeric: tabular-nums">{{ number_format($due, 2) }} <span class="text-[11px] font-normal text-gray-400">{{ $currency }}</span></p>
+                </div>
+            </div>
+
+            {{-- إضافة رسم من القضية نفسها — يصبّ في القسم المالي مباشرة --}}
+            <div x-data="{ adding: false }" class="bg-gray-100 rounded-xl border border-gray-200 p-3">
+                <button type="button" x-on:click="adding = !adding" class="text-xs font-bold text-gold-dark hover:opacity-80 transition flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    {{ __('app.add_case_fee') }}
+                </button>
+                <form x-show="adding" x-cloak method="POST" action="{{ route('finance.fees.store') }}" class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+                    @csrf
+                    <input type="hidden" name="case_id" value="{{ $case->id }}">
+                    <input type="hidden" name="return_to_case" value="1">
+                    <input type="text" name="fee_type" required maxlength="80" placeholder="{{ __('app.fee_type') }}"
+                           class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-gold/40 focus:outline-none">
+                    <input type="number" name="amount" required min="0" step="0.001" placeholder="{{ __('app.amount') }}"
+                           class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-gold/40 focus:outline-none">
+                    <input type="date" name="date" required value="{{ now()->toDateString() }}"
+                           class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-gold/40 focus:outline-none">
+                    <select name="status" class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-gold/40 focus:outline-none">
+                        <option value="unpaid">{{ __('app.unpaid') }}</option>
+                        <option value="paid">{{ __('app.paid') }}</option>
+                    </select>
+                    <label class="flex items-center gap-2 text-[11px] text-gray-600 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                        <input type="checkbox" name="client_visible" value="1" class="rounded border-gray-300 text-gold focus:ring-gold/40">
+                        {{ __('app.show_to_client') }}
+                    </label>
+                    <input type="text" name="description" maxlength="500" placeholder="{{ __('app.description') }}"
+                           class="sm:col-span-2 lg:col-span-4 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-gold/40 focus:outline-none">
+                    <button class="px-3 py-2 rounded-lg bg-gold/12 text-gold-dark border border-gold/25 text-xs font-bold hover:bg-gold/20 transition">{{ __('app.add') }}</button>
+                </form>
+            </div>
+
+            {{-- الرسوم --}}
+            <div>
+                <h3 class="text-xs font-bold text-gray-400 mb-2">{{ __('app.case_fees') }} ({{ $case->fees->count() }})</h3>
+                @forelse($case->fees as $fee)
+                    <div class="flex flex-wrap items-center gap-2 py-2 border-b border-gray-100 last:border-0 text-sm">
+                        <span class="font-medium text-gray-900 flex-1 min-w-0 truncate">{{ $fee->fee_type }}</span>
+                        <span class="text-gray-600" style="font-variant-numeric: tabular-nums">{{ number_format($fee->amount, 2) }} {{ $currency }}</span>
+                        <span class="badge {{ $fee->status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-amber-700' }} text-[11px] font-bold px-2 py-0.5 rounded-full">
+                            {{ $fee->status === 'paid' ? __('app.paid') : __('app.unpaid') }}
+                        </span>
+                        @if($fee->client_visible)
+                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">{{ __('app.visible_to_client') }}</span>
+                        @endif
+                        <span class="text-[11px] text-gray-400 num">{{ $fee->date?->format('Y-m-d') }}</span>
+                    </div>
+                @empty
+                    <p class="text-xs text-gray-400 py-3">{{ __('app.no_fees_yet') }}</p>
+                @endforelse
+            </div>
+
+            {{-- الفواتير المرتبطة بالقضية --}}
+            @if($case->invoices->count())
+                <div>
+                    <h3 class="text-xs font-bold text-gray-400 mb-2">{{ __('app.case_invoices') }} ({{ $case->invoices->count() }})</h3>
+                    @foreach($case->invoices as $invoice)
+                        <div class="flex flex-wrap items-center gap-2 py-2 border-b border-gray-100 last:border-0 text-sm">
+                            <a href="{{ route('finance.invoices.show', $invoice) }}" class="font-medium text-gold-dark hover:underline flex-1 min-w-0 truncate">{{ $invoice->invoice_number }}</a>
+                            <span class="text-gray-600" style="font-variant-numeric: tabular-nums">{{ number_format($invoice->amount, 2) }} {{ $currency }}</span>
+                            @if($invoice->remaining_amount > 0)
+                                <span class="text-[11px] text-red-700">{{ __('app.outstanding') }}: {{ number_format($invoice->remaining_amount, 2) }}</span>
+                            @endif
+                            @if($invoice->client_visible)
+                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">{{ __('app.visible_to_client') }}</span>
+                            @endif
+                            <span class="text-[11px] text-gray-400 num">{{ $invoice->issue_date?->format('Y-m-d') }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            <p class="text-[11px] text-gray-400 pt-2 border-t border-gray-100">
+                {{ __('app.accounting_note') }}
+                <a href="{{ route('finance.index', ['tab' => 'fees']) }}" class="text-gold-dark hover:underline font-bold">{{ __('app.open_finance') }}</a>
+            </p>
+        </div>
+        @endif
 
         {{-- Tab Content: Timeline --}}
         <div x-show="activeTab === 'timeline'" x-cloak class="p-4">

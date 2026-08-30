@@ -125,6 +125,17 @@ class LegalCase extends Model
         return $this->hasMany(Task::class, 'case_id');
     }
 
+    /** §13: رسوم هذه القضية وفواتيرها — المحاسبة ملتصقة بملفها */
+    public function fees()
+    {
+        return $this->hasMany(FinanceFee::class, 'case_id')->orderByDesc('date');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(FinanceInvoice::class, 'case_id')->orderByDesc('issue_date');
+    }
+
     public function documents(): HasMany
     {
         return $this->hasMany(Document::class, 'case_id');

@@ -23,6 +23,7 @@ class ClientPortal
     public const KEY_SHOW_DOCUMENTS = 'client_portal_show_documents';
     public const KEY_SHOW_OPPONENT = 'client_portal_show_opponent';
     public const KEY_SHOW_LAWYER = 'client_portal_show_lawyer';
+    public const KEY_SHOW_ACCOUNTING = 'client_portal_show_accounting';
 
     /** الافتراضات: الخصوصية أولاً */
     private const DEFAULTS = [
@@ -32,6 +33,7 @@ class ClientPortal
         self::KEY_SHOW_DOCUMENTS => '0',   // لا مستند إلا بقرار صريح
         self::KEY_SHOW_OPPONENT => '0',    // بيانات الخصم ليست للعرض افتراضاً
         self::KEY_SHOW_LAWYER => '1',
+        self::KEY_SHOW_ACCOUNTING => '0',  // المال لا يُعرض إلا بقرار صريح
     ];
 
     public static function enabled(): bool
@@ -69,6 +71,15 @@ class ClientPortal
     public static function showsLawyer(): bool
     {
         return self::flag(self::KEY_SHOW_LAWYER);
+    }
+
+    /**
+     * §13: بابان لا باب: مفتاح المكتب العام يفتح القسم أصلاً، وعلامة
+     * client_visible على كل بندٍ تقرّر ظهوره. غياب أحدهما يعني لا شيء.
+     */
+    public static function showsAccounting(): bool
+    {
+        return self::flag(self::KEY_SHOW_ACCOUNTING);
     }
 
     public static function welcome(): ?string

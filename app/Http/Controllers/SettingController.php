@@ -45,6 +45,7 @@ class SettingController extends Controller
             \App\Support\ClientPortal::KEY_SHOW_DOCUMENTS,
             \App\Support\ClientPortal::KEY_SHOW_OPPONENT,
             \App\Support\ClientPortal::KEY_SHOW_LAWYER,
+            \App\Support\ClientPortal::KEY_SHOW_ACCOUNTING,
         ];
 
         if ($request->has('client_portal_section')) {

@@ -135,6 +135,8 @@ class FinanceController extends Controller
         $data = $request->validate([
             'invoice_number' => 'required|string|unique:finance_invoices,invoice_number',
             'client_id' => 'nullable|exists:clients,id',
+            'case_id' => 'nullable|exists:cases,id',
+            'client_visible' => 'nullable|boolean',
             'amount' => 'required|numeric|min:0',
             'paid_amount' => 'nullable|numeric|min:0',
             'status' => 'required|in:paid,unpaid,partial,cancelled',
@@ -144,6 +146,7 @@ class FinanceController extends Controller
             'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt',
         ]);
         $data['paid_amount'] = $data['paid_amount'] ?? ($data['status'] === 'paid' ? $data['amount'] : 0);
+        $data['client_visible'] = (bool) ($data['client_visible'] ?? false);
         $data['user_id'] = auth()->id();
 
         if ($request->hasFile('attachment')) {
@@ -162,6 +165,8 @@ class FinanceController extends Controller
         $data = $request->validate([
             'invoice_number' => 'required|string|unique:finance_invoices,invoice_number,' . $invoice->id,
             'client_id' => 'nullable|exists:clients,id',
+            'case_id' => 'nullable|exists:cases,id',
+            'client_visible' => 'nullable|boolean',
             'amount' => 'required|numeric|min:0',
             'paid_amount' => 'nullable|numeric|min:0',
             'status' => 'required|in:paid,unpaid,partial,cancelled',
@@ -190,14 +195,25 @@ class FinanceController extends Controller
             'fee_type' => 'required|string',
             'amount' => 'required|numeric|min:0',
             'status' => 'required|in:paid,unpaid',
+            'client_visible' => 'nullable|boolean',
             'date' => 'required|date',
             'description' => 'nullable|string',
+            'return_to_case' => 'nullable|boolean',
         ]);
         $case = LegalCase::findOrFail($data['case_id']);
         abort_unless($this->isAdmin() || $case->lawyer_id === auth()->id(), 403);
+
+        $returnToCase = (bool) ($data['return_to_case'] ?? false);
+        unset($data['return_to_case']);
+
+        $data['client_visible'] = (bool) ($data['client_visible'] ?? false);
         $data['user_id'] = auth()->id();
         FinanceFee::create($data);
-        return redirect()->route('finance.index', ['tab' => 'fees'])->with('success', 'تم إضافة الرسم');
+
+        // من أضاف الرسم من صفحة القضية يعود إليها لا إلى القسم المالي
+        return $returnToCase
+            ? redirect()->route('cases.show', $case)->with('success', 'تم إضافة الرسم إلى القضية')
+            : redirect()->route('finance.index', ['tab' => 'fees'])->with('success', 'تم إضافة الرسم');
     }
 
     public function updateFee(Request $request, FinanceFee $fee)
@@ -208,9 +224,11 @@ class FinanceController extends Controller
             'fee_type' => 'required|string',
             'amount' => 'required|numeric|min:0',
             'status' => 'required|in:paid,unpaid',
+            'client_visible' => 'nullable|boolean',
             'date' => 'required|date',
             'description' => 'nullable|string',
         ]);
+        $data['client_visible'] = (bool) ($data['client_visible'] ?? false);
         $fee->update($data);
         return redirect()->route('finance.index', ['tab' => 'fees'])->with('success', 'تم تحديث الرسم');
     }
