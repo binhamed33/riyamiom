@@ -21,10 +21,16 @@ class RoleMiddleware
 
         $user = auth()->user();
 
-        if ($user->isDeveloper() || $user->isAdmin()) {
+        // The developer is the vendor-level account and passes every check.
+        if ($user->isDeveloper()) {
             return $next($request);
         }
 
+        // Admin used to pass unconditionally too, which handed the customer's own
+        // administrator the developer panel — subscription activation, migrations,
+        // feature toggles — even though those routes ask for 'developer' alone.
+        // Admin now has to be named by the route, which every admin-facing route
+        // already does.
         $roles = [];
         $permission = null;
 
