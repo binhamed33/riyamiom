@@ -1247,6 +1247,52 @@
             });
         }
 
+        /*
+         * موضع تمرير الشريط يبقى كما تركه المستخدم بين الصفحات.
+         *
+         * القوائم أطول من الشاشة، فمن يعمل في قسمٍ أسفل الشريط ينزل
+         * إليه ثم ينتقل صفحةً — فيرتدّ الشريط إلى أعلاه وينزل ثانية.
+         * كل انتقالٍ تحميلٌ كامل للصفحة، وموضعُ التمرير لا ينجو منه
+         * ما لم يُحفظ.
+         *
+         * في sessionStorage لا localStorage: الموضع يخصّ هذا اللسان
+         * وحده. ولو حُفظ مشتركاً لجرّ لسانٌ مفتوحٌ على قسمٍ بعيد
+         * لسانَ زميله إلى موضعه.
+         */
+        var SCROLL_KEY = 'sbScroll';
+
+        function readScroll() {
+            try { return parseInt(sessionStorage.getItem(SCROLL_KEY) || '0', 10) || 0; }
+            catch (e) { return 0; }
+        }
+
+        function keepScroll(nav) {
+            var saved = readScroll();
+            if (saved > 0) {
+                nav.scrollTop = saved;
+
+                // محاولةٌ ثانية بعد اكتمال التحميل: الخطوط تصل متأخّرةً
+                // فتتغيّر ارتفاعات السطور، واستعادةٌ قبلها تُقصّ إلى
+                // ارتفاعٍ لم يكتمل — ويستقرّ الشريط في غير موضعه.
+                window.addEventListener('load', function () {
+                    if (nav.scrollTop < saved && !nav.dataset.sbMoved) {
+                        nav.scrollTop = saved;
+                    }
+                });
+            }
+
+            var pending = false;
+            nav.addEventListener('scroll', function () {
+                nav.dataset.sbMoved = '1';   // حرّكه المستخدم: لا تُصحّح بعدها
+                if (pending) return;
+                pending = true;
+                requestAnimationFrame(function () {
+                    pending = false;
+                    try { sessionStorage.setItem(SCROLL_KEY, String(nav.scrollTop)); } catch (e) {}
+                });
+            }, { passive: true });
+        }
+
         function init() {
             var aside = document.querySelector('aside');
             if (!aside) return;
@@ -1258,6 +1304,9 @@
                     build(child);
                 }
             });
+            // الاستعادة بعد البناء: البناء يطوي أقساماً فيقصر المحتوى،
+            // واستعادةٌ قبله تُقصّ إلى ارتفاعٍ أصغر ثم تُحفظ مقصوصة.
+            if (nav) keepScroll(nav);
         }
 
         if (document.readyState === 'loading') {

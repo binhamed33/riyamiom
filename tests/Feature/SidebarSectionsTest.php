@@ -98,4 +98,41 @@ class SidebarSectionsTest extends TestCase
             $html
         );
     }
+
+    /**
+     * موضع تمرير الشريط يبقى بين الصفحات.
+     *
+     * ═══ العطل الذي وُضع له ═══
+     *
+     * القوائم أطول من الشاشة، فمن يعمل في قسمٍ أسفل الشريط ينزل إليه
+     * ثم ينتقل من لوحة التحكّم إلى المستخدمين — فيرتدّ الشريط إلى
+     * أعلاه وينزل ثانية. كلُّ انتقالٍ تحميلٌ كامل للصفحة، وموضعُ
+     * التمرير لا ينجو منه ما لم يُحفظ.
+     *
+     * والحركة نفسها لا يبلغها اختبارٌ بلا متصفّح — فهذا يحرس أن
+     * الوصل باقٍ: مفتاحٌ في تخزين اللسان، وقراءةٌ وكتابةٌ عليه.
+     */
+    public function test_the_sidebar_scroll_position_survives_navigation(): void
+    {
+        $html = $this->page();
+
+        $this->assertStringContainsString("var SCROLL_KEY = 'sbScroll'", $html);
+        $this->assertStringContainsString('sessionStorage.setItem(SCROLL_KEY', $html);
+        $this->assertStringContainsString('sessionStorage.getItem(SCROLL_KEY', $html);
+        $this->assertStringContainsString('keepScroll(nav)', $html);
+    }
+
+    /**
+     * وهو في تخزين اللسان لا في تخزين المتصفّح كلِّه.
+     *
+     * لسانان مفتوحان على قسمين متباعدين يتجاذبان موضعاً واحداً لو
+     * كان مشتركاً، فيقفز شريط كلٍّ منهما إلى حيث تركه الآخر.
+     */
+    public function test_the_scroll_position_is_per_tab(): void
+    {
+        $html = $this->page();
+
+        $this->assertStringNotContainsString('localStorage.setItem(SCROLL_KEY', $html);
+        $this->assertStringNotContainsString('localStorage.getItem(SCROLL_KEY', $html);
+    }
 }
