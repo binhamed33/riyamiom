@@ -38,6 +38,10 @@ class WhatsAppAuthorizationTest extends TestCase
         parent::setUp();
 
         Setting::set(WhatsAppSettings::KEY_TOKEN, Crypt::encryptString('EAA-token-for-tests'), 'whatsapp');
+
+        // صندوقُ الوارد مخفيٌّ افتراضاً — وهذه الاختباراتُ تفحصه
+        // نفسَه، فتُشغّله صراحةً كما يشغّله المكتب الذي يريده.
+        Setting::set(WhatsAppSettings::KEY_INBOX_VISIBLE, '1', 'whatsapp');
         Setting::set(WhatsAppSettings::KEY_PHONE_ID, '111222333', 'whatsapp');
 
         $contact = WhatsAppContact::create(['wa_id' => '96891234567', 'profile_name' => 'مستفسر']);

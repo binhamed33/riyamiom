@@ -51,6 +51,10 @@ class WhatsAppMessagingTest extends TestCase
         Setting::set(WhatsAppSettings::KEY_TOKEN, Crypt::encryptString('EAA-token-value-for-testing'), 'whatsapp');
         Setting::set(WhatsAppSettings::KEY_PHONE_ID, '111222333', 'whatsapp');
 
+        // صندوقُ الوارد مخفيٌّ افتراضاً — وهذه الاختباراتُ تفحصه
+        // نفسَه، فتُشغّله صراحةً كما يشغّله المكتب الذي يريده.
+        Setting::set(WhatsAppSettings::KEY_INBOX_VISIBLE, '1', 'whatsapp');
+
         $this->admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $this->client = Client::create([
             'name' => 'سالم البوسعيدي', 'phone' => '91234567', 'type' => 'individual',

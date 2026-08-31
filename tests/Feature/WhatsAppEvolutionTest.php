@@ -48,6 +48,10 @@ class WhatsAppEvolutionTest extends TestCase
             'whatsapp.evolution.base_url' => 'https://bridge.test',
             'whatsapp.evolution.api_key' => 'bridge-key-0123456789',
         ]);
+
+        // الصندوقُ مخفيٌّ افتراضاً — ويُشغَّل هنا لأنّ اختبارَ الردّ
+        // الحرّ يمرّ من مساره
+        \App\Models\Setting::set(WhatsAppSettings::KEY_INBOX_VISIBLE, '1', 'whatsapp');
     }
 
     private function hook(array $payload, ?string $secret = null)

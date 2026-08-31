@@ -53,6 +53,31 @@ class WhatsAppSettings
     public const KEY_REMINDER_HOURS = 'wa_reminder_hours';
     public const KEY_AI_REPLY = 'wa_ai_reply';
 
+    /**
+     * صندوقُ الوارد — مخفيٌّ افتراضاً.
+     *
+     * ═══ لماذا مخفيّ ═══
+     *
+     * لأنّه الطريقُ الوحيد لإرسالٍ يدويٍّ حرّ، وهو أخطرُ ما في
+     * المنظومة على سلامة الرقم: موظّفٌ يراسل عشرين رقماً في دقيقتين
+     * يفعل بالرقم ما لا يفعله ألفُ إشعارٍ آلي مضبوطِ الإيقاع.
+     *
+     * والإشعاراتُ الآلية لا تحتاجه: تُكتب وتُرسَل بلا أن يفتحه أحد.
+     *
+     * ولا يكفي إخفاءُ الرابط: مسارٌ يعمل ورابطٌ مخفيٌّ حمايةٌ في
+     * الشكل. فالمسارُ نفسُه يُرفض حين يكون مخفيّاً.
+     */
+    public const KEY_INBOX_VISIBLE = 'wa_inbox_visible';
+
+    public static function inboxVisible(): bool
+    {
+        try {
+            return Setting::get(self::KEY_INBOX_VISIBLE, '0') === '1';
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
     public const GROUP = 'whatsapp';
 
     /**
@@ -205,6 +230,11 @@ class WhatsAppSettings
         Setting::set(self::KEY_EVO_STATE, $state, self::GROUP);
 
         if ($state === 'open') {
+            // أوّلُ اقترانٍ يُختم مرّةً: منه يُحسب تدرّجُ السقوف في
+            // الأيام الأولى — ورقمٌ جديد يندفع فجأةً أظهرُ من رقمٍ
+            // يزيد قليلاً كلَّ يوم.
+            \App\Services\WhatsApp\SendingGuard::markPaired();
+
             Setting::set(self::KEY_CONNECTED_AT, now()->toIso8601String(), self::GROUP);
             Setting::set(self::KEY_DISCONNECTED, '0', self::GROUP);
             Setting::set(self::KEY_LAST_ERROR, '', self::GROUP);

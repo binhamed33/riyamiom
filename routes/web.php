@@ -440,7 +440,9 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     | موظّفُ الاستقبال يقرأ ويردّ ولا يملك رمز الحساب، ومديرُ المكتب
     | وحده يربط ويفصل — لأنّ الرمز يُرسل باسم المكتب كلِّه.
     */
-    Route::middleware(['feature:whatsapp'])->prefix('whatsapp')->group(function () {
+    // ‏wa.inbox: الصندوقُ مخفيٌّ افتراضاً — الإرسالُ اليدويُّ الحرّ
+    // أخطرُ ما على سلامة الرقم، والإشعاراتُ الآلية لا تحتاجه
+    Route::middleware(['feature:whatsapp', 'wa.inbox'])->prefix('whatsapp')->group(function () {
         Route::get('/', [App\Http\Controllers\WhatsAppInboxController::class, 'index'])
             ->middleware('role:developer,admin,permission:whatsapp.view')->name('whatsapp.index');
         Route::get('/{conversation}', [App\Http\Controllers\WhatsAppInboxController::class, 'show'])

@@ -46,6 +46,10 @@ class WhatsAppHardeningTest extends TestCase
         Setting::set(WhatsAppSettings::KEY_TOKEN, Crypt::encryptString('EAA-token-value-for-testing'), 'whatsapp');
         Setting::set(WhatsAppSettings::KEY_PHONE_ID, '111222333', 'whatsapp');
 
+        // الصندوقُ مخفيٌّ افتراضاً — ويُشغَّل هنا لأنّ هذه الاختبارات
+        // تفحص ظهورَ رابطه وحارسَ مساره
+        Setting::set(WhatsAppSettings::KEY_INBOX_VISIBLE, '1', 'whatsapp');
+
         User::factory()->create(['role' => 'admin', 'is_active' => true]);
 
         $this->contact = WhatsAppContact::create(['wa_id' => '96891234567']);

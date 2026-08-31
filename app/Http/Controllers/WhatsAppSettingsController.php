@@ -35,6 +35,14 @@ class WhatsAppSettingsController extends Controller
             'wa_session_template' => ['nullable', 'string', 'max:120'],
             'wa_invoice_template' => ['nullable', 'string', 'max:120'],
             'wa_reminder_hours' => ['nullable', 'integer', 'min:1', 'max:72'],
+            'wa_guard_enabled' => ['nullable'],
+            'wa_guard_clients_only' => ['nullable'],
+            'wa_guard_per_hour' => ['nullable', 'integer', 'min:1', 'max:200'],
+            'wa_guard_per_day' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'wa_guard_min_gap_s' => ['nullable', 'integer', 'min:3', 'max:600'],
+            'wa_guard_quiet_from' => ['nullable', 'integer', 'min:0', 'max:23'],
+            'wa_guard_quiet_to' => ['nullable', 'integer', 'min:0', 'max:23'],
+            'wa_inbox_visible' => ['nullable'],
             'cn_enabled' => ['nullable'],
             'cn_evt' => ['nullable', 'array'],
             'cn_evt.*' => ['string', 'max:40'],
@@ -78,6 +86,29 @@ class WhatsAppSettingsController extends Controller
         // المؤشَّرُ وحده لما أُطفئ نوعٌ أبداً: يُنزع التأشير، ويُحفظ،
         // ويبقى الإعدادُ القديم يعمل. فيُمرّ على القائمة كلِّها ويُكتب
         // لكلٍّ قرارُه — والغيابُ إطفاءٌ صريح.
+        // ── حدود الأمان ─────────────────────────────────────
+        $guard = \App\Services\WhatsApp\SendingGuard::class;
+
+        foreach ([
+            $guard::KEY_ENABLED => $request->boolean('wa_guard_enabled') ? '1' : '0',
+            $guard::KEY_CLIENTS_ONLY => $request->boolean('wa_guard_clients_only') ? '1' : '0',
+            WhatsAppSettings::KEY_INBOX_VISIBLE => $request->boolean('wa_inbox_visible') ? '1' : '0',
+        ] as $key => $value) {
+            \App\Models\Setting::set($key, $value, WhatsAppSettings::GROUP);
+        }
+
+        foreach ([
+            $guard::KEY_PER_HOUR => 'wa_guard_per_hour',
+            $guard::KEY_PER_DAY => 'wa_guard_per_day',
+            $guard::KEY_MIN_GAP => 'wa_guard_min_gap_s',
+            $guard::KEY_QUIET_FROM => 'wa_guard_quiet_from',
+            $guard::KEY_QUIET_TO => 'wa_guard_quiet_to',
+        ] as $key => $field) {
+            if (isset($validated[$field])) {
+                \App\Models\Setting::set($key, (string) $validated[$field], WhatsAppSettings::GROUP);
+            }
+        }
+
         \App\Support\ClientEvents::setMasterEnabled($request->boolean('cn_enabled'));
 
         $chosen = (array) ($validated['cn_evt'] ?? []);

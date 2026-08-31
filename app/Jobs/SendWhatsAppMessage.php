@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\WhatsAppMessage;
+use App\Services\WhatsApp\SendingGuard;
 use App\Services\WhatsApp\WhatsAppManager;
 use App\Support\WhatsAppSettings;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,9 +29,22 @@ class SendWhatsAppMessage implements ShouldQueue
 
     public int $tries = 4;
 
-    public function __construct(public int $messageId)
+    /**
+     * ═══ لماذا عدّادُ تأجيلٍ مستقلّ ═══
+     *
+     * ‏release() يستهلك محاولةً من tries، وصمتُ الليل قد يمتدّ إحدى
+     * عشرة ساعة. فلو أُجّلت الرسالةُ به لاستنفدت محاولاتِها الأربع
+     * ونُسبت إلى «فشل» — وهي لم تُجرَّب أصلاً، إنّما انتظرت الصباح.
+     *
+     * فالتأجيلُ يدفع مهمّةً جديدةً بمهلة، ومحاولاتُها تبدأ من الصفر.
+     * والعدّادُ يمنع دورةً لا تنتهي لو بقي الحاكم رافضاً لعلّةٍ فينا.
+     */
+    public function __construct(public int $messageId, public int $deferrals = 0)
     {
     }
+
+    /** سقفُ التأجيلات — يكفي ليلةً كاملة وإيقاعَ يومٍ مزدحم. */
+    private const MAX_DEFERRALS = 24;
 
     /** @return array<int, int> */
     public function backoff(): array
@@ -75,6 +89,41 @@ class SendWhatsAppMessage implements ShouldQueue
 
         if (!$provider) {
             $this->fail($message, 'لم يُربط رقم واتساب لهذا المكتب.');
+
+            return;
+        }
+
+        // ═══ لا يُراسَل إلا موكّلٌ في سجلّ المكتب ═══
+        //
+        // الإرسالُ إلى من لم يراسلك قطّ ولا علاقةَ له بك أظهرُ ما
+        // يُرصد، وأسرعُ ما يُبلَّغ عنه. ومكتبُ المحاماة لا يحتاجه
+        // أصلاً: مخاطبوه موكّلوه.
+        //
+        // ومن راسل المكتبَ بنفسه مستثنى: الردُّ على من بدأ المحادثة
+        // ليس اقتحاماً، وهو ما يفعله أيُّ هاتفٍ عادي.
+        if (SendingGuard::clientsOnly()
+            && $contact->client_id === null
+            && $conversation->last_inbound_at === null) {
+            $this->fail($message, 'الإرسال مقصورٌ على الموكّلين المسجَّلين ومن راسل المكتب.');
+
+            return;
+        }
+
+        // ═══ الإيقاع ═══
+        //
+        // مهلةٌ متفاوتةٌ بين رسالةٍ وأخرى، وسقفٌ في الساعة واليوم،
+        // وصمتٌ في ساعات النوم. والتأجيلُ لا الإسقاط: رسالةُ الموكّل
+        // لا تُلغى لأنّ الساعة متأخّرة — تنتظر الصباح.
+        $delay = SendingGuard::delayFor($message);
+
+        if ($delay !== null) {
+            if ($this->deferrals >= self::MAX_DEFERRALS) {
+                $this->fail($message, 'تعذّر الإرسال ضمن حدود الأمان — راجع إعدادات الإيقاع.');
+
+                return;
+            }
+
+            self::dispatch($this->messageId, $this->deferrals + 1)->delay(now()->addSeconds($delay));
 
             return;
         }

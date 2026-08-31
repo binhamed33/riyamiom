@@ -381,6 +381,90 @@
             </div>
             @endunless
 
+            {{-- ═══ حدودُ الأمان ═══
+
+                 ما يُحظَر لأجله رقمٌ ليس «استعمالَ أداة» أوّلاً بل
+                 السلوك: دفعةٌ في دقيقة، وإرسالٌ إلى غير الموكّلين،
+                 ورسائلُ في الثالثة فجراً — ثمّ بلاغات. والبلاغُ هو
+                 الوقودُ الحقيقي. --}}
+            <div class="pt-3 border-t border-gray-100">
+                <div class="flex items-baseline justify-between gap-3 flex-wrap mb-2">
+                    <h3 class="text-sm font-bold text-gray-800">حدود الأمان</h3>
+                    <span class="text-[11px] text-gray-400">
+                        بقي اليوم: {{ \App\Services\WhatsApp\SendingGuard::remainingToday() }} رسالة
+                    </span>
+                </div>
+
+                <div class="grid sm:grid-cols-2 gap-2 mb-3">
+                    <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-gray-200 cursor-pointer hover:border-gold/40">
+                        <input type="checkbox" name="wa_guard_enabled" value="1" class="mt-0.5 rounded border-gray-300"
+                               @checked(\App\Services\WhatsApp\SendingGuard::enabled())>
+                        <span>
+                            <span class="block text-xs font-semibold text-gray-800">تفعيل حدود الأمان</span>
+                            <span class="block text-[11px] text-gray-500">إيقاعٌ متفاوت، وسقوف، وصمتٌ ليلي</span>
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-gray-200 cursor-pointer hover:border-gold/40">
+                        <input type="checkbox" name="wa_guard_clients_only" value="1" class="mt-0.5 rounded border-gray-300"
+                               @checked(\App\Services\WhatsApp\SendingGuard::clientsOnly())>
+                        <span>
+                            <span class="block text-xs font-semibold text-gray-800">الموكّلون فقط</span>
+                            <span class="block text-[11px] text-gray-500">لا يُراسَل رقمٌ ليس في السجلّ ولم يراسل المكتب</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-500">في الساعة</label>
+                        <input type="number" name="wa_guard_per_hour" min="1" max="200"
+                               value="{{ \App\Services\WhatsApp\SendingGuard::perHour() }}"
+                               class="w-full mt-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-500">في اليوم</label>
+                        <input type="number" name="wa_guard_per_day" min="1" max="1000"
+                               value="{{ \App\Services\WhatsApp\SendingGuard::perDay() }}"
+                               class="w-full mt-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-500">مهلة بين رسالتين (ث)</label>
+                        <input type="number" name="wa_guard_min_gap_s" min="3" max="600"
+                               value="{{ \App\Services\WhatsApp\SendingGuard::minGap() }}"
+                               class="w-full mt-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-500">صمتٌ من — إلى</label>
+                        <div class="flex items-center gap-1 mt-1">
+                            <input type="number" name="wa_guard_quiet_from" min="0" max="23"
+                                   value="{{ (int) (\App\Models\Setting::get(\App\Services\WhatsApp\SendingGuard::KEY_QUIET_FROM, 21)) }}"
+                                   class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm">
+                            <input type="number" name="wa_guard_quiet_to" min="0" max="23"
+                                   value="{{ (int) (\App\Models\Setting::get(\App\Services\WhatsApp\SendingGuard::KEY_QUIET_TO, 8)) }}"
+                                   class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <label class="flex items-start gap-2.5 p-2.5 mt-3 rounded-lg border border-gray-200 cursor-pointer hover:border-gold/40">
+                    <input type="checkbox" name="wa_inbox_visible" value="1" class="mt-0.5 rounded border-gray-300"
+                           @checked(\App\Support\WhatsAppSettings::inboxVisible())>
+                    <span>
+                        <span class="block text-xs font-semibold text-gray-800">إظهار صندوق وارد واتساب</span>
+                        <span class="block text-[11px] text-gray-500 leading-relaxed">
+                            مخفيٌّ افتراضاً. وهو الطريق الوحيد لإرسالٍ يدويٍّ حرّ — وأخطرُ ما على سلامة الرقم.
+                            والإشعاراتُ الآلية تعمل بدونه.
+                        </span>
+                    </span>
+                </label>
+
+                <p class="text-[11px] text-gray-500 leading-relaxed mt-2 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                    هذه الحدود <span class="font-semibold">تخفض</span> احتمال الحظر ولا تلغيه.
+                    الضمانُ الوحيد هو الواجهة الرسمية من Meta. وفي الأيام السبعة الأولى بعد الاقتران
+                    تكون السقوف أقلّ تلقائياً ثمّ تصعد — رقمٌ جديد يندفع فجأةً أظهرُ من رقمٍ يزيد قليلاً كلَّ يوم.
+                </p>
+            </div>
+
             {{-- ═══ إشعارات الموكّل ═══
 
                  واتساب هنا قناةُ تنبيهٍ لا مخزنُ بيانات: الرسالةُ تقول

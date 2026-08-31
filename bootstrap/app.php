@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'feature' => \App\Http\Middleware\CheckFeatureAccess::class,
             'subscription' => \App\Http\Middleware\EnsureActiveSubscription::class,
             'client.portal' => \App\Http\Middleware\ClientPortalGuard::class,
+            'wa.inbox' => \App\Http\Middleware\WhatsAppInboxGuard::class,
         ]);
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\PreventBrowserCache::class);
