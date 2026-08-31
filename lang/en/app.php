@@ -1062,6 +1062,7 @@ return [
     'wa_disconnected' => 'Not connected',
     'wa_needs_attention' => 'Needs attention',
     'wa_connect_help' => 'Connecting is a one-time job for the office manager: create an app in the Meta developer console, add the WhatsApp product to it, and link it to your WhatsApp Business Account and the office number. Then copy the permanent access token, the phone number ID, the WhatsApp Business Account ID and the app secret from the Meta console, and paste them into the fields below. Finally, take the webhook URL and verify token shown on this page, paste them into Meta’s Webhooks configuration, and subscribe to the messages field. Not one incoming message arrives until that last step is done.',
+    "wa_connect_help_evolution" => "Pair by scanning a code: press “Start pairing”, then open WhatsApp on the phone that holds the office number → Settings → Linked devices → Link a device → point the camera at the code. No Meta app, nothing to copy. The number you scan becomes the office number — try a spare number first.",
     'wa_token' => 'Permanent access token',
     'wa_phone_id' => 'Phone Number ID',
     'wa_waba_id' => 'WhatsApp Business Account ID (WABA ID)',

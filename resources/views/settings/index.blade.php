@@ -190,7 +190,7 @@
             @endif
         </div>
 
-        <p class="text-xs text-gray-500 leading-relaxed mb-4">{{ __('app.wa_connect_help') }}</p>
+        <p class="text-xs text-gray-500 leading-relaxed mb-4">{{ __($waEvolution ? 'app.wa_connect_help_evolution' : 'app.wa_connect_help') }}</p>
 
         @if($waEvolution)
         {{-- ═══ اقترانٌ بمسح رمز — جسر واتساب ويب ═══
