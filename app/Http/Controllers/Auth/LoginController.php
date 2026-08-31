@@ -188,8 +188,15 @@ class LoginController extends Controller
 
         app(StaffDiscordService::class)->reportLogout($user, $ip);
 
-        // قبل إبطال الجلسة: بعدها لا يبقى مستخدمٌ نَنسب إليه الانصراف
-        AttendanceGuard::checkOutOnLogout($user);
+        // قبل إبطال الجلسة: بعدها لا يبقى مستخدمٌ نَنسب إليه الانصراف.
+        //
+        // وخروجُ الخمول التلقائي (auto=1) ليس «زرَّ الخروج»: تسجيلُ
+        // انصرافٍ عنده يعيد الشكوى التي أُغلق بابها — محامٍ انشغل عن
+        // الشاشة إحدى عشرة دقيقةً وُجد منصرفاً ودوامُه قائم. الجلسة
+        // تُغلق للأمان، والانصرافُ للزرّ الصريح وحده.
+        if (! $request->boolean('auto')) {
+            AttendanceGuard::checkOutOnLogout($user);
+        }
 
         auth()->logout();
         $request->session()->invalidate();

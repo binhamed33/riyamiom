@@ -43,6 +43,50 @@ class AttendanceOnlyByButtonTest extends TestCase
         ]);
     }
 
+    /**
+     * خروجُ الخمول التلقائي يُغلق الجلسة ولا يُنهي يومَ العمل.
+     *
+     * نافذةُ «هل ما زلت هنا؟» تُسلّم نموذجَ الخروج نفسه بعد ١١ دقيقة
+     * خمول — فكان زرُّ الخروج يُضغط نيابةً عن المحامي وهو في مكتبه،
+     * ويُسجَّل انصرافُه: الشكوى التي أُغلق بابُها عائدةً من بابٍ خلفي.
+     */
+    public function test_idle_auto_logout_ends_the_session_but_not_the_work_day(): void
+    {
+        $user = $this->staff();
+        $record = $this->openRecord($user);
+
+        $this->actingAs($user)->post(route('logout'), ['auto' => '1']);
+
+        $this->assertGuest();
+        $this->assertNull($record->fresh()->check_out_at, 'خمولُ الشاشة سجّل انصرافاً');
+    }
+
+    /** وزرُّ الخروج الصريح يبقى يسجّل الانصراف كما وُعد المحامي. */
+    public function test_the_explicit_logout_button_still_records_the_checkout(): void
+    {
+        $user = $this->staff();
+        $record = $this->openRecord($user);
+
+        $this->actingAs($user)->post(route('logout'));
+
+        $this->assertGuest();
+        $this->assertNotNull($record->fresh()->check_out_at, 'زرُّ الخروج لم يعد يسجّل الانصراف');
+    }
+
+    /**
+     * وواجهةُ الخمول موصولة فعلاً: النموذج يحمل العلامة، والنبضة
+     * تتوقف عند موت الجلسة بدل قرع الخادم برمزٍ ميت كلَّ ١٠ ثوانٍ.
+     */
+    public function test_the_idle_ui_declares_itself_and_stops_on_a_dead_session(): void
+    {
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+
+        $this->assertStringContainsString('name="auto" value="1"', $layout, 'نموذج الخمول بلا علامة auto');
+        $this->assertStringContainsString('doLogout(true)', $layout, 'موت الجلسة لا يوقف النبضة');
+        $this->assertStringContainsString('window.location.replace', $layout,
+            'الجلسة الميتة تُرسَل نموذجاً برمز CSRF ميت بدل صفحة الدخول');
+    }
+
     /** الافتراض: لا يُخترع وقتُ انصرافٍ من آخر نشاط. */
     public function test_inactivity_never_writes_a_checkout_by_default(): void
     {

@@ -1758,6 +1758,9 @@
     @auth
     <form id="autoLogoutForm" action="{{ route('logout') }}" method="POST" style="display:none;">
         @csrf
+        {{-- خروجُ الخمول ليس «زرَّ الخروج»: العلامة تخبر الخادم ألّا
+             يسجّل انصرافاً — وإلا عاد اختراعُ وقت الانصراف من بابٍ خلفي --}}
+        <input type="hidden" name="auto" value="1">
     </form>
 
     <div id="autoLogoutOverlay" style="display:none;" class="fixed inset-0 z-[9999] flex items-center justify-center" data-autologout-backdrop role="alertdialog" aria-modal="true" aria-labelledby="autoLogoutTitle">
@@ -1835,9 +1838,17 @@
                 }
             }, 1000);
             // كل 10 ثوانٍ أثناء التنبيه نجدد الجلسة عند السيرفر حتى يُسجَّل
-            // الخروج التلقائي بشكل صحيح عند انتهاء العد
+            // الخروج التلقائي بشكل صحيح عند انتهاء العد.
+            //
+            // وردُّ «الجلسة ماتت» يوقف كل شيء فوراً: تجاهلُه كان يُبقي
+            // النبضة تقرع خادماً برمز CSRF ميت — تبويبٌ واحد منسيّ
+            // بعد نوم الجهاز ملأ سجلَّ الأخطاء بمئات 419 في الساعة.
             clearInterval(keepAliveTimer);
-            keepAliveTimer = setInterval(function() { sendKeepAlive(); }, 10000);
+            keepAliveTimer = setInterval(function() {
+                sendKeepAlive(function (status) {
+                    if (status === 401 || status === 419) doLogout(true);
+                });
+            }, 10000);
         }
 
         function updateDisplay() {
@@ -1856,17 +1867,23 @@
             sendKeepAlive(function (status) {
                 if (status === 401 || status === 419) {
                     // الجلسة انتهت فعلاً عند الخادم — الخروج هو التصرّف الصحيح
-                    doLogout();
+                    doLogout(true);
                     return;
                 }
                 resetTimer();
             });
         }
 
-        function doLogout() {
+        function doLogout(sessionDead) {
             clearTimeout(timer);
             clearInterval(countdownTimer);
             clearInterval(keepAliveTimer);
+            if (sessionDead) {
+                // الجلسة ميتة عند الخادم: إرسالُ نموذجٍ برمز CSRF ميت
+                // يرتدّ صفحةَ 419 وسطرَ خطأ — صفحةُ الدخول هي المقصد
+                window.location.replace('{{ route('login') }}');
+                return;
+            }
             var form = document.getElementById('autoLogoutForm');
             if (form) { form.submit(); } else { window.location.href = '{{ route('login') }}'; }
         }
