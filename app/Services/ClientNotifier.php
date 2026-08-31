@@ -114,10 +114,104 @@ class ClientNotifier
         return ClientMessage::caseUpdate();
     }
 
+    /**
+     * كتابةُ الإشعار في خيط واتساب ودفعُه للطابور.
+     *
+     * يعيد null إن تعذّر — فيسقط النداءُ إلى المسار القديم بدل أن
+     * يُحرَم الموكّل إشعارَه لأنّ الطريق الجديد لم يكتمل.
+     */
+    private static function queueThroughInbox(string $phone, LegalCase $case): ?bool
+    {
+        try {
+            $waId = \App\Models\WhatsAppContact::normalizeWaId($phone);
+
+            if ($waId === '') {
+                return null;
+            }
+
+            $contact = \App\Models\WhatsAppContact::firstOrCreate(
+                ['wa_id' => $waId],
+                ['client_id' => $case->client_id]
+            );
+
+            // من طلب إيقاف المراسلة لا يُراسَل — ولا يُحاوَل بالمسار
+            // القديم أيضاً: «false» لا «null»، فالرفضُ قرارُ العميل
+            // لا عطلٌ نتجاوزه.
+            if (!$contact->acceptsNotifications()) {
+                return false;
+            }
+
+            if ($contact->client_id === null && $case->client_id) {
+                $contact->forceFill(['client_id' => $case->client_id])->save();
+            }
+
+            $conversation = \App\Models\WhatsAppConversation::firstOrCreate(
+                ['contact_id' => $contact->id],
+                ['status' => \App\Models\WhatsAppConversation::STATUS_OPEN, 'unread_count' => 0]
+            );
+
+            if ($conversation->case_id === null) {
+                $conversation->forceFill(['case_id' => $case->id])->save();
+            }
+
+            $inbox = app(\App\Services\WhatsApp\InboxService::class);
+            $template = \App\Support\WhatsAppSettings::templateName(
+                \App\Support\WhatsAppSettings::KEY_SESSION_TEMPLATE
+            );
+
+            // داخل النافذة: نصٌّ حرّ. خارجها: لا يمرّ إلا قالبٌ معتمَد —
+            // وبلا قالبٍ مضبوط لا نتظاهر بالإرسال، بل نُسقط للقديم.
+            if ($conversation->windowOpen()) {
+                $message = $inbox->queueOutgoing($conversation, 'text', self::updateMessage());
+            } elseif ($template !== '') {
+                $message = $inbox->queueOutgoing(
+                    $conversation,
+                    'template',
+                    json_encode([$case->case_number ?: '—', ClientMessage::portalUrl()], JSON_UNESCAPED_UNICODE),
+                    null,
+                    ['template_name' => $template],
+                );
+            } else {
+                return null;
+            }
+
+            \App\Jobs\SendWhatsAppMessage::dispatch($message->id);
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('WhatsApp inbox notify failed, falling back: ' . $e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
+     * إشعارُ الموكّل عبر واتساب.
+     *
+     * ═══ لماذا يمرّ بصندوق الوارد أوّلاً ═══
+     *
+     * كان هذا الطريق يُطلق نداءً مباشراً إلى Meta وينسى: لا أثرَ في
+     * النظام لما أُرسل، ولا حالةَ تسليم، ولا يرى المحامي في محادثة
+     * موكّله أنّ النظام راسله. فإن ردّ الموكّل «أيّ قضية؟» لم يجد
+     * الموظّفُ سياقاً.
+     *
+     * فصار يُكتب في الخيط ويُرسَل من الطابور — فالمرسَل مرئيٌّ وحالتُه
+     * متتبَّعة، والردُّ يقع في مكانه. والمسارُ القديم يبقى احتياطاً
+     * للمكاتب التي لم تربط رقمها بعد.
+     */
     public static function sendWhatsApp(?string $phone, LegalCase $case): bool
     {
         if (!$phone) {
             return false;
+        }
+
+        if (\App\Services\WhatsApp\WhatsAppManager::isConnected()
+            && \App\Support\WhatsAppSettings::flag(\App\Support\WhatsAppSettings::KEY_NOTIFY_CASE_UPDATES)) {
+            $queued = self::queueThroughInbox($phone, $case);
+
+            if ($queued !== null) {
+                return $queued;
+            }
         }
 
         $metaToken = config('services.whatsapp.meta_token', '');

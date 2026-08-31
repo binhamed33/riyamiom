@@ -79,3 +79,21 @@ Schedule::command('queue:work --queue=mail,default --stop-when-empty --tries=3 -
 // القديمة أسبوعياً كي لا يكبر الجدول بلا حدّ — والأسبوع يكفي لمن
 // يريد أن يقرأ سبب الإخفاق.
 Schedule::command('queue:prune-failed --hours=168')->weekly();
+
+/*
+| واتساب
+|
+| ‏sweep حارسٌ لا مُنفِّذ: الويبهوك يقيّد الحدث ثمّ يدفعه إلى الطابور،
+| فإن كان الطابور متوقّفاً لحظتَها بقي الحدث مقيَّداً بلا معالجة. هذا
+| الأمرُ يلتقط ما مضى عليه خمسُ دقائق ولم يُعالَج — فرسالةُ موكّلٍ لا
+| تضيع لأنّ عاملاً تعثّر، ثمّ يقلّم السجلّ القديم كي لا يكبر بلا حدّ.
+*/
+Schedule::command('whatsapp:sweep')->everyFiveMinutes()->withoutOverlapping();
+
+// تذكيرُ الجلسات — كلَّ ساعة، والأمرُ نفسه يقرّر أيَّ جلساتٍ حان
+// تذكيرُها وفق إعداد المكتب، ويرفض التكرار على نفس الجلسة.
+Schedule::command('whatsapp:session-reminders')->hourly()->withoutOverlapping();
+
+// حالةُ القوالب تتغيّر عند Meta بلا إشعارٍ لنا: قالبٌ معتمَدٌ قد
+// يُوقَف. المزامنةُ اليومية تمنع أن نعرض «معتمَد» لما لم يعد كذلك.
+Schedule::command('whatsapp:sync-templates')->dailyAt('03:30')->timezone('Asia/Muscat');

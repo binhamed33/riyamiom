@@ -163,6 +163,182 @@
     </div>
 
 
+    {{-- ===== واتساب الأعمال: رقم هذا المكتب وحده ===== --}}
+    @php
+        $wa = \App\Support\WhatsAppSettings::snapshot();
+        $waVerify = \App\Support\WhatsAppSettings::verifyToken();
+        $waTemplates = \Illuminate\Support\Facades\Schema::hasTable('whatsapp_templates')
+            ? \App\Models\WhatsAppTemplate::where('status', 'APPROVED')->orderBy('name')->get()
+            : collect();
+    @endphp
+    <div class="p-6 rounded-2xl glass-card" id="whatsapp-settings">
+        <div class="flex items-center justify-between gap-3 flex-wrap border-b border-gray-200 pb-3 mb-4">
+            <div class="flex items-center gap-2.5">
+                <h2 class="text-base font-bold text-gray-800">{{ __('app.wa_settings_title') }}</h2>
+                @if($wa['needs_attention'])
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">{{ __('app.wa_needs_attention') }}</span>
+                @elseif($wa['connected'])
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">● {{ __('app.wa_connected') }}</span>
+                @else
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">{{ __('app.wa_disconnected') }}</span>
+                @endif
+            </div>
+            @if($wa['connected'])
+                <button type="button" data-wa-test class="text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">{{ __('app.wa_test') }}</button>
+            @endif
+        </div>
+
+        <p class="text-xs text-gray-500 leading-relaxed mb-4">{{ __('app.wa_connect_help') }}</p>
+
+        {{-- العنوان ورمز التحقّق: يُلصقان في إعداد الويبهوك عند Meta.
+             ليسا سرّاً بالمعنى الذي يُخفى — لكنّهما لا يُنسخان إلا هنا. --}}
+        <div class="grid md:grid-cols-2 gap-3 mb-5">
+            <div>
+                <label class="text-xs font-bold text-gray-500">{{ __('app.wa_webhook_url') }}</label>
+                <div class="flex items-center gap-2 mt-1">
+                    <input type="text" readonly dir="ltr" value="{{ $wa['webhook_url'] }}"
+                           class="flex-1 text-xs font-mono px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-600">
+                    <button type="button" data-wa-copy="{{ $wa['webhook_url'] }}"
+                            class="text-xs font-bold px-2.5 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">{{ __('app.wa_copy') }}</button>
+                </div>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500">{{ __('app.wa_verify_token') }}</label>
+                <div class="flex items-center gap-2 mt-1">
+                    <input type="text" readonly dir="ltr" value="{{ $waVerify }}"
+                           class="flex-1 text-xs font-mono px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-600">
+                    <button type="button" data-wa-copy="{{ $waVerify }}"
+                            class="text-xs font-bold px-2.5 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">{{ __('app.wa_copy') }}</button>
+                </div>
+            </div>
+        </div>
+
+        @if($wa['connected'])
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5 text-xs">
+                <div class="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <div class="text-gray-400 mb-0.5">{{ __('app.wa_number') }}</div>
+                    <div class="font-bold text-gray-700" dir="ltr">{{ $wa['display_phone'] ?: '—' }}</div>
+                </div>
+                <div class="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <div class="text-gray-400 mb-0.5">{{ __('app.wa_business_name') }}</div>
+                    <div class="font-bold text-gray-700">{{ $wa['business_name'] ?: '—' }}</div>
+                </div>
+                <div class="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <div class="text-gray-400 mb-0.5">{{ __('app.wa_phone_id') }}</div>
+                    <div class="font-bold text-gray-700 font-mono" dir="ltr">{{ $wa['phone_number_id'] ?: '—' }}</div>
+                </div>
+                <div class="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <div class="text-gray-400 mb-0.5">{{ __('app.wa_last_webhook') }}</div>
+                    <div class="font-bold text-gray-700">
+                        {{ $wa['last_webhook_at'] ? \Illuminate\Support\Carbon::parse($wa['last_webhook_at'])->diffForHumans() : '—' }}
+                    </div>
+                </div>
+            </div>
+
+            @if($wa['error'])
+                <div class="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">{{ $wa['error'] }}</div>
+            @endif
+        @endif
+
+        <form method="POST" action="{{ route('settings.whatsapp.update') }}" class="space-y-4">
+            @csrf
+            <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500">{{ __('app.wa_token') }}</label>
+                    {{-- الحقل فارغٌ دائماً ولو كان الرمز مضبوطاً: عرضُه ولو
+                         مقنَّعاً في قيمة input يضعه في مصدر الصفحة. --}}
+                    <input type="password" name="wa_access_token" autocomplete="new-password" dir="ltr"
+                           placeholder="{{ $wa['token_hint'] ? $wa['token_hint'] : 'EAAG…' }}"
+                           class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500">{{ __('app.wa_app_secret') }}</label>
+                    <input type="password" name="wa_app_secret" autocomplete="new-password" dir="ltr"
+                           placeholder="••••••••"
+                           class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500">{{ __('app.wa_phone_id') }}</label>
+                    <input type="text" name="wa_phone_number_id" dir="ltr" inputmode="numeric"
+                           value="{{ old('wa_phone_number_id') }}"
+                           class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500">{{ __('app.wa_waba_id') }}</label>
+                    <input type="text" name="wa_business_account_id" dir="ltr" inputmode="numeric"
+                           value="{{ old('wa_business_account_id') }}"
+                           class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono">
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-gray-100 grid sm:grid-cols-2 gap-3">
+                <label class="flex items-center gap-2 text-xs text-gray-700">
+                    <input type="checkbox" name="wa_notify_sessions" value="1" class="rounded border-gray-300"
+                           @checked(\App\Support\WhatsAppSettings::flag(\App\Support\WhatsAppSettings::KEY_NOTIFY_SESSIONS))>
+                    {{ __('app.wa_notify_sessions') }}
+                </label>
+                <label class="flex items-center gap-2 text-xs text-gray-700">
+                    <input type="checkbox" name="wa_notify_case_updates" value="1" class="rounded border-gray-300"
+                           @checked(\App\Support\WhatsAppSettings::flag(\App\Support\WhatsAppSettings::KEY_NOTIFY_CASE_UPDATES))>
+                    {{ __('app.wa_notify_case_updates') }}
+                </label>
+                <label class="flex items-center gap-2 text-xs text-gray-700">
+                    <input type="checkbox" name="wa_notify_invoices" value="1" class="rounded border-gray-300"
+                           @checked(\App\Support\WhatsAppSettings::flag(\App\Support\WhatsAppSettings::KEY_NOTIFY_INVOICES))>
+                    {{ __('app.wa_notify_invoices') }}
+                </label>
+                <label class="flex items-center gap-2 text-xs text-gray-700">
+                    <input type="checkbox" name="wa_ai_reply" value="1" class="rounded border-gray-300"
+                           @checked(\App\Support\WhatsAppSettings::flag(\App\Support\WhatsAppSettings::KEY_AI_REPLY))>
+                    {{ __('app.wa_ai_reply') }}
+                </label>
+            </div>
+            <p class="text-[11px] text-gray-400 leading-relaxed">{{ __('app.wa_ai_reply_hint') }}</p>
+
+            <div class="grid md:grid-cols-3 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500">{{ __('app.wa_reminder_hours') }}</label>
+                    <input type="number" name="wa_reminder_hours" min="1" max="72"
+                           value="{{ \App\Support\WhatsAppSettings::reminderHours() }}"
+                           class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-xs font-bold text-gray-500">{{ __('app.wa_templates') }}</label>
+                    <select name="wa_session_template" class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm">
+                        <option value="">{{ __('app.wa_template_none_approved') }}</option>
+                        @foreach($waTemplates as $template)
+                            <option value="{{ $template->name }}"
+                                @selected(\App\Support\WhatsAppSettings::templateName(\App\Support\WhatsAppSettings::KEY_SESSION_TEMPLATE) === $template->name)>
+                                {{ $template->name }} ({{ $template->language }}) — {{ \Illuminate\Support\Str::limit($template->body, 50) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap pt-2">
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-gold-dark text-white text-sm font-bold">{{ __('app.save') }}</button>
+                @if($wa['connected'])
+                    <button type="submit" form="wa-sync" class="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold">{{ __('app.wa_template_sync') }}</button>
+                @endif
+            </div>
+        </form>
+
+        @if($wa['connected'])
+            <form id="wa-sync" method="POST" action="{{ route('settings.whatsapp.templates.sync') }}" class="hidden">@csrf</form>
+
+            <form method="POST" action="{{ route('settings.whatsapp.disconnect') }}" class="mt-4 pt-4 border-t border-gray-100">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="text-xs font-bold text-red-600 hover:text-red-700"
+                        data-confirm="{{ __('app.wa_disconnect_confirm_body') }}">{{ __('app.wa_disconnect_confirm_title') }}</button>
+            </form>
+        @endif
+
+        <p class="mt-4 text-[11px] text-gray-400 leading-relaxed">{{ __('app.wa_pricing_note') }}</p>
+    </div>
+
+
     {{-- ===== الذكاء الاصطناعي: مفتاح ونموذج خاصان بهذا المكتب ===== --}}
     @php
         $aiProviders = \App\Support\AiSettings::availableProviders();

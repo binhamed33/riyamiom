@@ -70,6 +70,76 @@ class Client extends Model
         return trim(preg_replace('/[\s\-]+/', '', $western) ?? '');
     }
 
+    /**
+     * بصمة الهاتف تُحسب لحظة الإسناد — قبل أن يشفّر Encryptable القيمة.
+     *
+     * الحارس على «enc:» ضروري لنفس سبب حارس الهوية: سمة التشفير تُعيد
+     * إسناد القيمة مشفَّرةً قبل الحفظ، ولولاه لحُسبت البصمة من النصّ
+     * المشفَّر — وهو يتغيّر كلَّ حفظ، فتصير رسائل واتساب الواردة بلا
+     * صاحبٍ معروف بعد أوّل تعديلٍ على سجلّ الموكّل.
+     */
+    public function setPhoneAttribute(?string $value): void
+    {
+        $this->attributes['phone'] = $value;
+
+        if ($value === null || !str_starts_with($value, 'enc:')) {
+            $this->attributes['phone_hash'] = self::hashPhone($value);
+        }
+    }
+
+    /**
+     * بصمة حتميّة للهاتف — تُطابَق ولا تُعكَس، ومفتاحُها مفتاحُ هذا
+     * المكتب وحده: لا تُقارَن ببصمة مكتبٍ آخر ولو سُرّبت.
+     */
+    public static function hashPhone(?string $value): ?string
+    {
+        $normalized = self::normalizePhone($value);
+
+        return $normalized === '' ? null : hash_hmac('sha256', $normalized, config('app.key'));
+    }
+
+    /**
+     * الصيغة الموحَّدة للمطابقة: أرقامٌ فقط، ثم آخر ثمانية منها.
+     *
+     * الموكّل يكتب رقمه في سجلّه «91234567» ويصل من واتساب
+     * ‏«96891234567» — وهما رقمٌ واحد. والاقتطاع من الآخر يتخطّى مفتاح
+     * الدولة والصفرَ البادئ معاً بلا تخمينٍ لأيّهما كُتب.
+     */
+    public static function normalizePhone(?string $value): string
+    {
+        $digits = \App\Support\GulfPhone::digits(strtr(trim((string) $value), [
+            '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
+            '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+        ]));
+
+        if ($digits === '') {
+            return '';
+        }
+
+        return strlen($digits) > 8 ? substr($digits, -8) : $digits;
+    }
+
+    /**
+     * الموكّل صاحبُ هذا الرقم إن عُرف يقيناً — بلا فكّ تشفير أحد.
+     *
+     * والتباسٌ يُردّ بلا ربط: اقتطاعُ ثمانية أرقام قد يجمع رقماً
+     * عُمانياً ورقماً سعودياً يشتركان في آخرهما. وربطُ محادثةِ موكّلٍ
+     * بسجلّ موكّلٍ آخر يعرض رسائله لمن لا يملكها — فحين يتعدّد
+     * المطابقون يُترك الربط لإنسانٍ يعرف أيّهما.
+     */
+    public static function findByPhone(?string $raw): ?self
+    {
+        $hash = self::hashPhone($raw);
+
+        if ($hash === null) {
+            return null;
+        }
+
+        $matches = static::where('phone_hash', $hash)->limit(2)->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

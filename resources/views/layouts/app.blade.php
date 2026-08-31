@@ -980,6 +980,33 @@
             <span>{{ __('app.clients') }}</span>
             </a>
 
+            {{-- واتساب — يظهر لمن يملك صلاحية قراءته وحده. عنصرُ قائمةٍ
+                 يقود إلى 403 أسوأ من غيابه: يوحي بميزةٍ مُنعت عمداً. --}}
+            @if(Auth::user()->isDeveloper() || Auth::user()->isAdmin() || Auth::user()->hasPermission('whatsapp.view'))
+            <a href="{{ route('whatsapp.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('whatsapp.*') ? 'active' : '' }}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
+            </svg>
+            <span>{{ __('app.nav_whatsapp') }}</span>
+            @php
+                // عدٌّ محفوظٌ دقيقةً لا استعلامٌ في كل صفحة: هذه القيمة
+                // تُرسم مع كلّ شاشة في النظام، واستعلامُها المباشر يجعل
+                // واتساب يُبطئ لوحةَ التحكّم كلَّها. والحارسُ لمكتبٍ لم
+                // تُنفَّذ هجراتُه بعد — عدمُ وجود الجدول لا يُسقط الموقع.
+                $waUnread = \Illuminate\Support\Facades\Cache::remember('wa_unread_badge', 60, function () {
+                    try {
+                        return \App\Models\WhatsAppConversation::where('unread_count', '>', 0)->count();
+                    } catch (\Throwable) {
+                        return 0;
+                    }
+                });
+            @endphp
+            @if($waUnread > 0)
+            <span class="mr-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500 text-white">{{ $waUnread }}</span>
+            @endif
+            </a>
+            @endif
+
             <a href="{{ route('documents.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('documents.*') ? 'active' : '' }}">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

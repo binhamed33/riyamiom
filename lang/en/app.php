@@ -915,6 +915,187 @@ return [
     'notif_backup_remind_body' => 'Last successful backup: :date (:size MB). It refreshes daily and is kept on the server and in a protected vault, and you can restore from it any time via Settings → Backup. We recommend downloading a copy to your own device now — a third location that you own.',
     'notif_backup_stale_title' => 'Warning: the backup is overdue',
     'notif_backup_stale_body' => 'The last successful backup was on :date — more than two days ago. Open Settings → Backup, create a manual copy now, and contact support if this keeps happening.',
+
+    // WhatsApp — واتساب الأعمال
+    // المفاتيح مسطّحة بلا تداخل، كبقيّة الملف: الواجهات تستدعيها __('app.wa_…')
+    // مباشرةً، ولو جُمعت تحت مفتاحٍ أبٍ لأعاد __() المصفوفة نفسها فيطبع بليد
+    // كلمة «Array» في مكان النص — عطبٌ صامت لا يُسقِط الصفحة فلا ينتبه له أحد.
+    'page_whatsapp' => 'WhatsApp Business',
+    'nav_whatsapp' => 'WhatsApp',
+    // عائلة الشريط الجانبي تُسمّي عناصرها sidebar_*، فيُضاف المفتاح على
+    // قياسها. ويبقى nav_whatsapp معه لأنّ layouts/app.blade.php ما يزال
+    // يناديه — وحذفه اليوم يطبع «app.nav_whatsapp» خاماً في الشريط.
+    'sidebar_whatsapp' => 'WhatsApp',
+
+    // Inbox and conversation list
+    'wa_inbox_title' => 'WhatsApp Inbox',
+    'wa_no_conversations' => 'No conversations yet. The first message a client sends to the office number opens one here.',
+    'wa_search_placeholder' => 'Search by contact name, number, or message text…',
+    'wa_filter_all' => 'All',
+    'wa_filter_unread' => 'Unread',
+    'wa_filter_mine' => 'Assigned to me',
+    'wa_filter_unassigned' => 'Unassigned',
+    'wa_filter_open' => 'Open',
+    'wa_filter_closed' => 'Closed',
+
+    // Conversation row in the list
+    // أكثرُ هذه المفاتيح بديلٌ يظهر حين تغيب البيانات — اسمٌ لم يصل من
+    // ‏Meta، أو محادثةٌ بلا رسالةٍ بعد — أو عنوانٌ لأيقونةٍ لا نصَّ فيها.
+    // بدونها يقرأ الموظّف شارةً صامتة لا يعرف معناها، ويقرأ قارئُ الشاشة
+    // عدداً مجرّداً بلا سياق.
+    'wa_unknown_contact' => 'Unknown contact',
+    'wa_unread_aria' => 'Unread messages',
+    'wa_preview_you' => 'You:',
+    'wa_no_preview' => 'No messages yet',
+    'wa_linked_client' => 'Linked to a client',
+    'wa_linked_case' => 'Linked to a case',
+    'wa_assigned_to' => 'Assigned to',
+    'wa_no_conversations_hint' => 'When a client messages the office number on WhatsApp, the conversation opens here and the team is notified.',
+    'wa_pick_conversation' => 'Pick a conversation',
+    'wa_pick_conversation_hint' => 'Choose a conversation from the list to read it and reply.',
+
+    // Connection state as the inbox sees it, not as the settings page does
+    // الموظّف يفتح الصندوق ولا يملك الإعدادات: يُقال له ما الحال ومَن
+    // يُصلحه، فلا يحسب الصفحة معطوبة ولا يُساق إلى بابٍ يردّه.
+    'wa_not_connected_title' => 'No WhatsApp number connected yet',
+    'wa_not_connected_hint' => 'The office manager connects the WhatsApp Business number once; after that, client messages arrive in this inbox and are answered from here.',
+    'wa_not_connected_readonly' => 'The WhatsApp connection is off: earlier conversations can be read, but nothing goes out until it is connected again.',
+    'wa_connect_now' => 'Connect now',
+    'wa_ask_admin_to_connect' => 'Connecting is the office manager’s to do — ask them to finish it so conversations start arriving.',
+    'wa_settings_link' => 'WhatsApp settings',
+    'wa_number' => 'Office number',
+    'wa_business_name' => 'WhatsApp business name',
+    'wa_last_webhook' => 'Last event from Meta',
+
+    // The 24-hour service window
+    'wa_window_open' => 'Reply window open',
+    'wa_window_closed' => 'Reply window closed',
+    'wa_window_left' => ':minutes minute(s) left in the reply window',
+    'wa_window_hint' => 'A free-form reply is allowed within twenty-four hours of the client’s last message. After that, only a Meta-approved template will reach them.',
+
+    // Replying and internal notes
+    'wa_send' => 'Send',
+    'wa_reply_placeholder' => 'Write your reply…',
+    'wa_internal_note' => 'Internal note',
+    'wa_note_placeholder' => 'A note only the office team reads — it is never sent to the client…',
+    'wa_note_saved' => 'Internal note saved',
+
+    // The thread and the composer
+    'wa_thread_title' => 'WhatsApp conversation',
+    'wa_back_to_inbox' => 'Back to inbox',
+    'wa_no_messages' => 'No messages in this conversation',
+    'wa_no_messages_hint' => 'The first message received or sent will appear here.',
+    'wa_tab_reply' => 'Reply',
+    'wa_tab_note' => 'Note',
+    'wa_save_note' => 'Save note',
+    // الفرق بين ما يصل الموكّل وما لا يصله لونٌ في الواجهة، واللونُ وحده
+    // لا يكفي لمن لا يميّزه: تصريحٌ نصيّ يمنع أن تُكتب ملاحظةٌ داخلية في
+    // ظنّ صاحبها أنّها ردّ — أو أن يُكتب ردٌّ في ظنّ أنّه ملاحظة، وهو الأخطر.
+    'wa_note_never_sent' => 'Internal note — never sent to the client',
+    'wa_no_send_permission' => 'You do not have permission to send on WhatsApp — this view is read-only.',
+    'wa_no_manage_permission' => 'You do not have permission to manage this conversation: linking, assigning and closing are for administrators.',
+
+    // Outgoing message status
+    'wa_status_queued' => 'Queued',
+    'wa_status_sent' => 'Sent',
+    'wa_status_delivered' => 'Delivered',
+    'wa_status_read' => 'Read',
+    'wa_status_failed' => 'Failed to send',
+
+    // Attachments
+    // ‏Meta لا تُرسل اسم ملفٍّ دائماً، فيحلّ نوعُ المرفق محلَّ الاسم —
+    // وسطرٌ فارغ مكان الاسم يجعل المرفق السليم يبدو عطباً في العرض.
+    'wa_media_image' => 'Image',
+    'wa_media_document' => 'Document',
+    'wa_media_audio' => 'Voice message',
+    'wa_media_video' => 'Video',
+    'wa_media_sticker' => 'Sticker',
+    'wa_media_file' => 'Attachment',
+    'wa_open_document' => 'Open document',
+    'wa_link_case_first' => 'Link the conversation to a case to save the attachment into its file',
+    // قد تردّ Meta برمز خطأ بلا وصف: يُقال إنّ الإرسال فشل ولم يُبيَّن
+    // سببه، بدل سطرٍ خالٍ يوهم أنّ الرسالة وصلت.
+    'wa_error_unknown' => 'Could not send — Meta gave no reason',
+
+    // Linking, assigning, handing over
+    'wa_link_client' => 'Link to client',
+    'wa_link_case' => 'Link to case',
+    'wa_unlinked' => 'Not linked',
+    'wa_assign' => 'Assign conversation',
+    'wa_unassigned' => 'Unassigned',
+    'wa_handoff' => 'Hand over to a person',
+    'wa_handoff_done' => 'Automatic replies stopped — the conversation is now with a person.',
+    'wa_close' => 'Close conversation',
+    'wa_reopen' => 'Reopen conversation',
+    'wa_save_document' => 'Save to case documents',
+    'wa_document_saved' => 'The attachment was saved to the case documents',
+    'wa_open_case' => 'Open case',
+
+    // Conversation panel: links, assignment, and the state of automatic replies
+    'wa_links_title' => 'Links',
+    'wa_link_client_first' => 'Link the conversation to a client first; their cases then appear here to choose from.',
+    'wa_assign_to_me' => 'Assign to me',
+    'wa_ai_active' => 'Automatic replies are running on this conversation inside the twenty-four hour window.',
+    'wa_ai_stopped' => 'Automatic replies stopped',
+    // التحويلُ والإغلاقُ يغيّران حال المحادثة عند الموكّل لا عندنا وحدنا،
+    // وأحدهما لا رجعةَ عنه. فسؤالُ التأكيد قبلهما يمنع أن تُقلب محادثةٌ
+    // حسّاسة بغلطةِ إصبعٍ على شاشة الهاتف.
+    'wa_handoff_confirm' => 'Automatic replies stop on this conversation and do not resume. Hand it over to the team?',
+    'wa_handoff_hint' => 'This stops automatic replies on this conversation only; no other conversation is affected.',
+    'wa_close_confirm' => 'The conversation is closed and leaves the follow-up list; its messages are kept. Close it?',
+    'wa_reopen_confirm' => 'The conversation returns to the follow-up list. Reopen it?',
+
+    // Approved templates
+    'wa_templates' => 'Templates',
+    'wa_template_pick' => 'Pick an approved template',
+    'wa_template_none_approved' => 'No approved template yet. Templates are approved in the Meta account, then synced here.',
+    'wa_template_sync' => 'Sync templates',
+    'wa_template_synced' => 'The template list was refreshed from Meta',
+    // الخيار الفارغ في قائمةٍ إلزاميّة: نصٌّ يدلّ على أنّ الاختيار لم
+    // يقع بعد، لا فراغٌ يُظنّ معه أنّ القائمة خالية من القوالب.
+    'wa_template_none' => '— Pick a template —',
+    'wa_template_variable' => 'Variable',
+
+    // Connection settings
+    'wa_settings_title' => 'WhatsApp Business connection',
+    'wa_connected' => 'Connected',
+    'wa_disconnected' => 'Not connected',
+    'wa_needs_attention' => 'Needs attention',
+    'wa_connect_help' => 'Connecting is a one-time job for the office manager: create an app in the Meta developer console, add the WhatsApp product to it, and link it to your WhatsApp Business Account and the office number. Then copy the permanent access token, the phone number ID, the WhatsApp Business Account ID and the app secret from the Meta console, and paste them into the fields below. Finally, take the webhook URL and verify token shown on this page, paste them into Meta’s Webhooks configuration, and subscribe to the messages field. Not one incoming message arrives until that last step is done.',
+    'wa_token' => 'Permanent access token',
+    'wa_phone_id' => 'Phone Number ID',
+    'wa_waba_id' => 'WhatsApp Business Account ID (WABA ID)',
+    'wa_app_secret' => 'App Secret',
+    'wa_verify_token' => 'Verify token',
+    'wa_webhook_url' => 'Webhook URL',
+    'wa_copy' => 'Copy',
+    'wa_copied' => 'Copied',
+    'wa_test' => 'Test connection',
+    'wa_test_ok' => 'The connection is healthy — the office number was read back from Meta.',
+    'wa_test_failed' => 'Could not reach Meta. Check the entered credentials and that the token is still valid, then try again.',
+    'wa_disconnect_confirm_title' => 'Disconnect WhatsApp?',
+    'wa_disconnect_confirm_body' => 'The credentials are erased from this office and sending and receiving stop at once. Saved conversations and messages stay exactly as they are, and you can connect again at any time.',
+    'wa_disconnect_yes' => 'Disconnect',
+    'wa_cancel' => 'Cancel',
+
+    // What is sent automatically
+    'wa_notify_sessions' => 'Remind clients of hearing dates',
+    'wa_notify_invoices' => 'Notify clients about invoices and dues',
+    'wa_notify_case_updates' => 'Tell clients about updates to their cases',
+    'wa_ai_reply' => 'Automatic replies to incoming messages',
+    'wa_ai_reply_hint' => 'The assistant answers general questions inside the twenty-four hour window only. It does not go into case details and makes no promises on the office’s behalf, and the first request to speak with a person stops the automatic replies and hands the conversation to the team.',
+    'wa_reminder_hours' => 'Remind this many hours before',
+    'wa_opted_out' => 'This contact asked to stop receiving messages — nothing reaches them except a reply to a message they start.',
+    'wa_pricing_note' => 'Meta bills per message sent, and from 1 October 2026 even free-form replies inside the twenty-four hour window become billable.',
+
+    // In-app notifications
+    'notif_wa_failed_title' => 'A WhatsApp message could not be sent',
+    'notif_wa_failed_body' => 'The message did not reach the recipient. Reason: :reason',
+    'notif_wa_handoff_title' => 'A WhatsApp conversation is waiting for a person',
+    'notif_wa_handoff_body' => ':name asked to speak with a person — automatic replies on that conversation are stopped.',
+    'notif_wa_incoming_title' => 'New WhatsApp message',
+    'notif_wa_incoming_body' => 'A message arrived from :name',
+
     'task_status_changed' => 'Task is now :status.',
     'task_stage_hint_pending' => 'Work has not started yet.',
     'task_stage_hint_in_progress' => 'Work is under way.',

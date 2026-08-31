@@ -98,6 +98,26 @@ Route::get('/client-access/case/{case}', function (string $case) {
     return redirect()->route('client.portal.case', $case);
 })->name('client.access.case');
 
+/*
+|--------------------------------------------------------------------------
+| ويبهوك واتساب — عامٌّ بالضرورة، محميٌّ بالتوقيع
+|--------------------------------------------------------------------------
+| Meta تنادي هذا العنوان من خوادمها بلا جلسةٍ ولا رمز CSRF، فلا سبيل
+| إلى وضعه خلف تسجيل دخول. والحمايةُ ليست إخفاءَ العنوان بل التحقّق:
+| مصافحةُ GET تُقارَن بـhash_equals برمز تحقّقٍ مولَّد لا يكتبه إنسان،
+| وطلبُ POST يُرفض ما لم يحمل توقيع HMAC-SHA256 صحيحاً بسرّ تطبيق
+| هذا المكتب — والسرُّ يخصّه وحده، فلا يوقّع أحدٌ نيابةً عنه.
+|
+| والخانق ٦٠٠/دقيقة سخيٌّ عمداً: مكتبٌ نشط قد يستقبل دفعةَ إشعاراتٍ
+| بعد انقطاع، وخنقُها يجعل Meta تُعيد الإرسال فيتفاقم الازدحام.
+*/
+Route::middleware('throttle:600,1')->group(function () {
+    Route::get('/webhooks/whatsapp', [App\Http\Controllers\WhatsAppWebhookController::class, 'challenge'])
+        ->name('whatsapp.webhook.challenge');
+    Route::post('/webhooks/whatsapp', [App\Http\Controllers\WhatsAppWebhookController::class, 'receive'])
+        ->name('whatsapp.webhook.receive');
+});
+
 // Subscription expired page (reachable while authenticated, not gated)
 Route::middleware('auth')->get('/subscription-expired', function () {
     return view('subscription.expired');
@@ -394,6 +414,43 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     // هوية المكتب — نفس صلاحية الإعدادات تماماً
     Route::post('/settings/logo', [App\Http\Controllers\OfficeBrandController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.logo.update');
     Route::delete('/settings/logo', [App\Http\Controllers\OfficeBrandController::class, 'destroy'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.logo.destroy');
+
+    /*
+    | واتساب — صندوق الوارد وإعدادات الربط
+    |
+    | ثلاث صلاحيات لا واحدة: القراءة غير الردّ، والردّ غير ربط الرقم.
+    | موظّفُ الاستقبال يقرأ ويردّ ولا يملك رمز الحساب، ومديرُ المكتب
+    | وحده يربط ويفصل — لأنّ الرمز يُرسل باسم المكتب كلِّه.
+    */
+    Route::middleware(['feature:whatsapp'])->prefix('whatsapp')->group(function () {
+        Route::get('/', [App\Http\Controllers\WhatsAppInboxController::class, 'index'])
+            ->middleware('role:developer,admin,permission:whatsapp.view')->name('whatsapp.index');
+        Route::get('/{conversation}', [App\Http\Controllers\WhatsAppInboxController::class, 'show'])
+            ->middleware('role:developer,admin,permission:whatsapp.view')->name('whatsapp.show');
+
+        Route::post('/{conversation}/send', [App\Http\Controllers\WhatsAppInboxController::class, 'send'])
+            ->middleware(['role:developer,admin,permission:whatsapp.send', 'throttle:60,1'])->name('whatsapp.send');
+        Route::post('/{conversation}/note', [App\Http\Controllers\WhatsAppInboxController::class, 'note'])
+            ->middleware('role:developer,admin,permission:whatsapp.send')->name('whatsapp.note');
+        Route::post('/{conversation}/assign', [App\Http\Controllers\WhatsAppInboxController::class, 'assign'])
+            ->middleware('role:developer,admin,permission:whatsapp.manage')->name('whatsapp.assign');
+        Route::post('/{conversation}/link-client', [App\Http\Controllers\WhatsAppInboxController::class, 'linkClient'])
+            ->middleware('role:developer,admin,permission:whatsapp.manage')->name('whatsapp.link-client');
+        Route::post('/{conversation}/link-case', [App\Http\Controllers\WhatsAppInboxController::class, 'linkCase'])
+            ->middleware('role:developer,admin,permission:whatsapp.manage')->name('whatsapp.link-case');
+        Route::post('/{conversation}/handoff', [App\Http\Controllers\WhatsAppInboxController::class, 'handoff'])
+            ->middleware('role:developer,admin,permission:whatsapp.send')->name('whatsapp.handoff');
+        Route::post('/{conversation}/close', [App\Http\Controllers\WhatsAppInboxController::class, 'close'])
+            ->middleware('role:developer,admin,permission:whatsapp.manage')->name('whatsapp.close');
+        Route::post('/message/{message}/document', [App\Http\Controllers\WhatsAppInboxController::class, 'saveDocument'])
+            ->middleware('role:developer,admin,permission:whatsapp.manage')->name('whatsapp.save-document');
+    });
+
+    // ربطُ الرقم — مع إعدادات المكتب، لمن يدير الإعدادات وحده
+    Route::post('/settings/whatsapp', [App\Http\Controllers\WhatsAppSettingsController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.whatsapp.update');
+    Route::delete('/settings/whatsapp', [App\Http\Controllers\WhatsAppSettingsController::class, 'disconnect'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.whatsapp.disconnect');
+    Route::post('/settings/whatsapp/test', [App\Http\Controllers\WhatsAppSettingsController::class, 'test'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.test');
+    Route::post('/settings/whatsapp/templates', [App\Http\Controllers\WhatsAppSettingsController::class, 'syncTemplates'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.templates.sync');
 
     // إعدادات الذكاء الاصطناعي — خاصة بهذا المكتب، ومقصورة على من يدير الإعدادات
     Route::post('/settings/ai', [App\Http\Controllers\AiSettingsController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.ai.update');

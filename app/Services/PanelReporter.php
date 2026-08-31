@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Suggestion;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * قناة من المكتب إلى لوحة مُداوَلة.
@@ -73,38 +74,50 @@ class PanelReporter
         }
 
         try {
+            $payload = [
+                // الأرقامُ من محاسبة الحدود نفسها لا من عدٍّ موازٍ.
+                //
+                // كانت هذه السطور تعدّ «المستخدمين النشطين»، والحدُّ
+                // يُفرَض على «كلِّ من ليس موكّلاً». فرقمان لكلمةٍ
+                // واحدة: تعرض اللوحةُ أحدهما ويمنع المكتبُ بالآخر،
+                // فيقف صاحب اللوحة أمام «١ من ٥» في مكتبٍ فيه ستّة.
+                'users_count' => \App\Support\PlanLimits::used('users'),
+                'clients_count' => \App\Support\PlanLimits::used('clients'),
+                'cases_count' => \App\Support\PlanLimits::used('cases'),
+                'documents_count' => \App\Support\PlanLimits::used('documents'),
+                'storage_bytes' => \App\Support\PlanLimits::usedStorageBytes(),
+                // وهل يعرف هذا المكتب حدوده أصلاً؟ مكتبٌ لم تصله
+                // يعمل بلا حدّ — وذاك مقصود، لكنّه يجب أن يُرى.
+                'limits_known' => !\App\Support\PlanLimits::unlimited(),
+                'limits_synced_at' => \App\Support\PlanLimits::syncedAt()?->toIso8601String(),
+                'ai_enabled' => self::aiEnabled(),
+                'app_version' => (string) config('app.version', ''),
+                // نبض الأخطاء: عدد ونوع ومسار — بلا نصّ الخطأ، فبيانات
+                // المكتب لا تغادر خادمه (§56)
+                'errors' => \App\Support\ErrorPulse::summary(),
+                // النسخ الاحتياطي: أرقامٌ وتواريخُ وسببٌ منقّى.
+                //
+                // كلُّ مكتبٍ ينسخ نفسه كلَّ ليلة، ولم يكن يعلم بذلك
+                // أحد. فمركزُ النسخ في اللوحة كان يعرض «لا نسخ بعد»
+                // لمكتبٍ ينسخ بانتظام، ومثلَه لمكتبٍ عطبت نسخُه منذ
+                // أسبوع — فلا يُقرأ منه شيء.
+                'backup' => \App\Support\BackupStatus::summary(),
+            ];
+
+            // واتساب: مجموعةٌ تُضاف إن وُجدت جداولها، وتُحذف كاملةً إن
+            // غابت. والحذفُ لا الإرسالُ بأصفار: صفرٌ يعني «فُحص فلم
+            // يوجد شيء»، وغيابُ المجموعة يعني «لم يُفحص» — واللوحة عندها
+            // تُبقي آخر ما تعرفه بدل أن تُصفّر بطاقةَ مكتبٍ يعمل.
+            $whatsapp = self::whatsappPulse();
+
+            if ($whatsapp !== null) {
+                $payload['whatsapp'] = $whatsapp;
+            }
+
             $response = Http::timeout((int) config('panel.ingest_timeout', 8))
                 ->withHeaders(['X-Mudawala-Token' => config('panel.ingest_token')])
                 ->acceptJson()
-                ->post(rtrim((string) config('panel.ingest_url'), '/') . '/ingest/heartbeat', [
-                    // الأرقامُ من محاسبة الحدود نفسها لا من عدٍّ موازٍ.
-                    //
-                    // كانت هذه السطور تعدّ «المستخدمين النشطين»، والحدُّ
-                    // يُفرَض على «كلِّ من ليس موكّلاً». فرقمان لكلمةٍ
-                    // واحدة: تعرض اللوحةُ أحدهما ويمنع المكتبُ بالآخر،
-                    // فيقف صاحب اللوحة أمام «١ من ٥» في مكتبٍ فيه ستّة.
-                    'users_count' => \App\Support\PlanLimits::used('users'),
-                    'clients_count' => \App\Support\PlanLimits::used('clients'),
-                    'cases_count' => \App\Support\PlanLimits::used('cases'),
-                    'documents_count' => \App\Support\PlanLimits::used('documents'),
-                    'storage_bytes' => \App\Support\PlanLimits::usedStorageBytes(),
-                    // وهل يعرف هذا المكتب حدوده أصلاً؟ مكتبٌ لم تصله
-                    // يعمل بلا حدّ — وذاك مقصود، لكنّه يجب أن يُرى.
-                    'limits_known' => !\App\Support\PlanLimits::unlimited(),
-                    'limits_synced_at' => \App\Support\PlanLimits::syncedAt()?->toIso8601String(),
-                    'ai_enabled' => self::aiEnabled(),
-                    'app_version' => (string) config('app.version', ''),
-                    // نبض الأخطاء: عدد ونوع ومسار — بلا نصّ الخطأ، فبيانات
-                    // المكتب لا تغادر خادمه (§56)
-                    'errors' => \App\Support\ErrorPulse::summary(),
-                    // النسخ الاحتياطي: أرقامٌ وتواريخُ وسببٌ منقّى.
-                    //
-                    // كلُّ مكتبٍ ينسخ نفسه كلَّ ليلة، ولم يكن يعلم بذلك
-                    // أحد. فمركزُ النسخ في اللوحة كان يعرض «لا نسخ بعد»
-                    // لمكتبٍ ينسخ بانتظام، ومثلَه لمكتبٍ عطبت نسخُه منذ
-                    // أسبوع — فلا يُقرأ منه شيء.
-                    'backup' => \App\Support\BackupStatus::summary(),
-                ]);
+                ->post(rtrim((string) config('panel.ingest_url'), '/') . '/ingest/heartbeat', $payload);
 
             // الردّ يحمل الباقة والحدود نزولاً — هذه هي قناة المزامنة.
             // ترقيةٌ في اللوحة تسري هنا في النبضة التالية بلا لمس المكتب.
@@ -196,6 +209,66 @@ class PanelReporter
             Log::warning('PanelReporter: replies unreachable — ' . $e->getMessage());
 
             return [];
+        }
+    }
+
+    /**
+     * نبض واتساب: أرقامٌ وتواريخُ وحدها.
+     *
+     * ═══ ما لا يُرسَل من هنا أبداً ═══
+     *
+     * لا رقم العرض ولا معرّف الرقم ولا معرّف حساب الأعمال ولا بصمة
+     * الرمز، ولا أيّ رقم هاتف، ولا نصّ رسالةٍ واحدة، ولا اسمُ جهة
+     * اتصال. عددٌ وتاريخٌ لا غير.
+     *
+     * ولماذا: هذه المحادثات مراسلاتُ موكّلين بمكتب محاماة، ورقمُ
+     * الموكّل وحده — بلا نصٍّ أصلاً — يكفي ليُعرف أنّ فلاناً يراسل
+     * هذا المكتب، وذاك سرُّ مهنةٍ لا شأن للوحة به. واللوحةُ لا تحتاجه:
+     * سؤالها «أيعمل ربطُ هذا المكتب أم تعطّل؟» وجوابُه أربعةُ أرقامٍ
+     * وتاريخ. وبيانات المكتب لا تغادر خادمه (§56).
+     *
+     * ═══ ولماذا تُحذف المجموعة ولا يُرمى ═══
+     *
+     * مكتبٌ لم تُنفَّذ هجراتُه بعد لا جداولَ واتساب عنده، والاستعلامُ
+     * فيها يرمي. والنبضةُ جسرُ المكتب الوحيد إلى اللوحة: لو ماتت
+     * لعميت اللوحةُ عن نسخه الاحتياطية وأخطائه معاً — بطاقةٌ جديدة
+     * تُطفئ بطاقاتٍ قائمة. فتُحذف المجموعة وحدها وتُكمل النبضة طريقها.
+     *
+     * @return array{connected:bool,last_webhook_at:?string,failed_24h:int,pending_events:int,checked_at:string}|null
+     */
+    private static function whatsappPulse(): ?array
+    {
+        try {
+            // غيابُ أيّ جدولٍ يُقرأ منه = لا خبر. والفحصُ قبل الاستعلام
+            // لا التقاطُ استثنائه بعده: استعلامٌ فاشل يُكتب في سجلّ
+            // الأخطاء فيُعدّ خطأً في نبضةٍ لاحقة — نُبلّغ عن عطلٍ نصنعه.
+            if (!Schema::hasTable('whatsapp_messages') || !Schema::hasTable('whatsapp_webhook_events')) {
+                return null;
+            }
+
+            return [
+                'connected' => (bool) \App\Services\WhatsApp\WhatsAppManager::isConnected(),
+                // آخر إشعارٍ وصل من Meta — يُقرأ من اللقطة نفسها التي
+                // تقرأها شاشةُ المكتب، فلا يفترق الرقمان.
+                'last_webhook_at' => \App\Support\WhatsAppSettings::snapshot()['last_webhook_at'] ?? null,
+                // إخفاقاتُ اليوم وحدها: عددٌ تراكميٌّ منذ التنصيب يبقى
+                // مرتفعاً بعد أن يُصلَح العطل، فلا يُقرأ منه أنّ المكتب عوفي.
+                'failed_24h' => \App\Models\WhatsAppMessage::query()
+                    ->where('status', \App\Models\WhatsAppMessage::STATUS_FAILED)
+                    ->where('created_at', '>=', now()->subDay())
+                    ->count(),
+                // أحداثٌ دُوّنت ولم تُعالَج: تراكمُها يعني عاملَ طابورٍ
+                // متوقّفاً — عطلٌ صامت لا يظهر في سجلّ الأخطاء أبداً.
+                'pending_events' => \App\Models\WhatsAppWebhookEvent::query()
+                    ->whereNull('processed_at')
+                    ->count(),
+                'checked_at' => now()->toIso8601String(),
+            ];
+        } catch (\Throwable $e) {
+            // ولا يُسجَّل إلا سببُ التعذّر، ولا يُرمى منه شيء إلى النبضة
+            Log::warning('PanelReporter: whatsapp pulse unavailable — ' . $e->getMessage());
+
+            return null;
         }
     }
 
