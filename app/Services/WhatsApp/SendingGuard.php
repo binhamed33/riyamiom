@@ -43,9 +43,15 @@ class SendingGuard
 
     public const GROUP = 'whatsapp';
 
-    /** حدودٌ محافظة: مكتبُ محاماةٍ يراسل موكّليه لا سوقاً. */
+    /**
+     * حدودٌ محافظة: مكتبُ محاماةٍ يراسل موكّليه لا سوقاً.
+     *
+     * ومئةٌ في اليوم بسقف خمسَ عشرةَ في الساعة متّسقان: نافذةُ النهار
+     * ‏(٨ ← ٢١) تسع مئةً وخمساً وتسعين، فالسقفُ اليومي هو الحدُّ لا
+     * الساعيّ — ولا يقع أن يبلغ المكتبُ يومَه ثمّ يجد ساعتَه مغلقة.
+     */
     public const DEFAULT_PER_HOUR = 15;
-    public const DEFAULT_PER_DAY = 50;
+    public const DEFAULT_PER_DAY = 100;
     public const DEFAULT_MIN_GAP = 15;
     public const DEFAULT_QUIET_FROM = 21;
     public const DEFAULT_QUIET_TO = 8;

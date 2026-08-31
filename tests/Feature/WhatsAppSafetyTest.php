@@ -405,6 +405,26 @@ class WhatsAppSafetyTest extends TestCase
         $this->assertNotNull(SendingGuard::delayFor($this->queued()));
     }
 
+    /** والحدُّ اليومي مئةٌ — والمثبِّتُ يمسك تغييرَه بلا قصد. */
+    public function test_the_agreed_limits_are_what_the_office_runs_on(): void
+    {
+        $this->assertSame(100, SendingGuard::DEFAULT_PER_DAY, 'تغيّر الحدُّ اليومي المتّفق عليه');
+        $this->assertSame(15, SendingGuard::DEFAULT_PER_HOUR);
+        $this->assertSame(15, SendingGuard::DEFAULT_MIN_GAP);
+        $this->assertSame(21, SendingGuard::DEFAULT_QUIET_FROM);
+        $this->assertSame(8, SendingGuard::DEFAULT_QUIET_TO);
+
+        // ومئةٌ في اليوم تُبلَغ فعلاً: نافذةُ النهار (٨ ← ٢١) بسقف
+        // خمسَ عشرةَ في الساعة تسع مئةً وخمساً وتسعين
+        $daylightHours = SendingGuard::DEFAULT_QUIET_FROM - SendingGuard::DEFAULT_QUIET_TO;
+
+        $this->assertGreaterThanOrEqual(
+            SendingGuard::DEFAULT_PER_DAY,
+            $daylightHours * SendingGuard::DEFAULT_PER_HOUR,
+            'السقفُ اليومي لا يُبلغ ضمن ساعات النهار — حدٌّ لا معنى له',
+        );
+    }
+
     /** والمطوّرُ يملكها — هو من يقرّر. */
     public function test_a_developer_can_change_them(): void
     {
