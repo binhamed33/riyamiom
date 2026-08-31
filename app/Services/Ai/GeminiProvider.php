@@ -21,6 +21,17 @@ class GeminiProvider implements AiProvider
     /** ثوانٍ يطلب المزوّد الانتظارَها قبل الإعادة (Retry-After). */
     protected ?int $retryAfter = null;
 
+    /**
+     * ٤٢٩ نوعان لا يستويان: حدُّ دقيقةٍ يزول بانتظار ثوانٍ، وحصّةُ
+     * يومٍ نفدت لا يردُّها إلا منتصف الليل. الإصرار على النموذج نفسه
+     * في الثانية كان يحرق ميزانيّة الطلب كلّها قبل بلوغ النموذج
+     * الاحتياطي — وحصّتُه مستقلّةٌ وربما ممتلئة.
+     */
+    protected bool $dailyQuotaHit = false;
+
+    /** سبب الردّ الفارغ (SAFETY/MAX_TOKENS/…) — بدونه لا يُشخَّص العطل. */
+    protected ?string $lastEmptyReason = null;
+
     public function __construct(?string $apiKey = null, ?string $model = null)
     {
         // المفتاح والنموذج من إعدادات هذا المكتب، لا من ملف مشترك
@@ -282,12 +293,30 @@ class GeminiProvider implements AiProvider
                         break;
                     }
 
+                    // حصّة اليوم نفدت لهذا النموذج → الانتظار عبث حتى
+                    // منتصف الليل، والنموذج التالي حصّتُه مستقلّة. القفز
+                    // إليه فوراً بدل ثلاث محاولاتٍ ميّتة كان الفرق بين
+                    // جوابٍ من الاحتياطي و«سؤالك محفوظ» على كل سؤال.
+                    if ($this->lastStatus === 429 && $this->dailyQuotaHit) {
+                        $this->retryAfter = null;
+
+                        break;
+                    }
+
                     // ازدحامٌ مؤقّت أو ردٌّ فارغ → أعد بعد فاصلٍ متضاعف،
                     // ما دام في الميزانيّة متّسعٌ لمحاولةٍ أخرى.
                     if ($attempt < $maxAttemptsPerModel) {
                         $wait = $this->backoffMs($attempt);
                         if ($elapsed() + $wait >= $budgetMs) {
-                            break 2;
+                            // الانتظار الذي يلتهم بقيّة الميزانيّة لا
+                            // يُدفَع. لكنّ `break 2` هنا كان يتخلّى أيضاً
+                            // عن النماذج التي لم تُجرَّب — ومحاولةٌ فوريّة
+                            // على نموذجٍ جديد أرخص من الاستسلام.
+                            if ($models === []) {
+                                break 2;
+                            }
+
+                            break;
                         }
                         if ($wait > 0) {
                             usleep($wait * 1000);
@@ -300,7 +329,12 @@ class GeminiProvider implements AiProvider
         if ($lastTransientError === null || $this->lastError === null || $this->lastStatus === 429 || $this->lastWasEmpty) {
             $this->lastError = 'خدمة الذكاء الاصطناعي مزدحمة حاليًا. حُفظ سؤالك وتُعاد المحاولة تلقائياً.';
         }
-        \App\Support\AiHealth::record('error', 'gemini', $tried !== [] ? end($tried) : $this->model, $elapsed(), 'exhausted_' . ($this->lastStatus ?: 'x'));
+        // «فارغ» بلا سببٍ لا يُشخَّص — أما empty_SAFETY فيقول فوراً:
+        // المشكلة مرشِّح حجب، لا ازدحام ولا مفتاح.
+        $errorType = $this->lastWasEmpty
+            ? 'empty_' . ($this->lastEmptyReason ?: 'x')
+            : 'exhausted_' . ($this->lastStatus ?: 'x');
+        \App\Support\AiHealth::record('error', 'gemini', $tried !== [] ? end($tried) : $this->model, $elapsed(), $errorType);
 
         throw $lastTransientError
             ?? new \RuntimeException('Gemini API error — tried models: ' . implode(', ', $tried));
@@ -323,6 +357,11 @@ class GeminiProvider implements AiProvider
 
     protected function callModel(string $model, array $payload): string
     {
+        // أعلام المحاولة السابقة لا تصف هذه المحاولة — بقاؤها يقفز
+        // بالطلب فوق نموذجٍ سليم أو يشخّص عطلاً بغير سببه.
+        $this->dailyQuotaHit = false;
+        $this->lastEmptyReason = null;
+
         try {
             $config = [
                 'temperature' => 0.4,
@@ -363,6 +402,11 @@ class GeminiProvider implements AiProvider
                 if ($status === 429) {
                     $this->retryAfter = $this->retryAfterSeconds($response);
 
+                    // حصّة اليوم تُعرَف من اسمها في الردّ (…PerDay…) أو
+                    // من مهلةٍ يطلبها المزوّد أطول من سقف فواصلنا.
+                    $this->dailyQuotaHit = stripos((string) $response->body(), 'PerDay') !== false
+                        || ($this->retryAfter !== null && $this->retryAfter * 1000 > (int) config('ai.retry.max_delay_ms', 8000));
+
                     // ٤٢٩ حدُّ معدّلٍ في الغالب — يزول بعد دقيقة. وكانت
                     // الرسالة تأمر المدير بتغيير مفتاحه، فيُبطل مفتاحاً
                     // سليماً على عطلٍ يزول وحده. لا يُتّهم المفتاح إلا
@@ -397,7 +441,16 @@ class GeminiProvider implements AiProvider
                 // فيرى المحامي عطلاً على سؤالٍ كانت إعادتُه تكفيه.
                 $this->lastWasEmpty = true;
 
-                throw new \RuntimeException('لم تُرجع الخدمة أي محتوى.');
+                // السبب يذهب إلى سجلّ ai_requests — كان «لم تُرجع الخدمة
+                // أي محتوى» بلا سبب، فلا يفرّق التشخيص بين حجبِ أمانٍ
+                // يتكرّر على كلّ سؤال وبين نفاد رموزٍ يعالَج بالإعدادات.
+                $reason = $data['promptFeedback']['blockReason']
+                    ?? $data['candidates'][0]['finishReason']
+                    ?? null;
+                $this->lastEmptyReason = is_string($reason) ? $reason : null;
+
+                throw new \RuntimeException('لم تُرجع الخدمة أي محتوى'
+                    . ($this->lastEmptyReason ? ' (' . $this->lastEmptyReason . ')' : '') . '.');
             }
 
             return $text;

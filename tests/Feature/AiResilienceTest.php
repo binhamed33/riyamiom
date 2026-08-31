@@ -136,6 +136,85 @@ class AiResilienceTest extends TestCase
     }
 
     /**
+     * حصّةُ اليوم إذا نفدت فالانتظار عبثٌ حتى منتصف الليل — يُقفَز
+     * فوراً إلى النموذج الاحتياطي ذي الحصّة المستقلّة.
+     *
+     * قبل الإصلاح: ثلاث محاولاتٍ ميّتة على النموذج الميّت تحرق
+     * الميزانيّة التفاعليّة (~٢٠ ثانية) قبل بلوغ الاحتياطي، فيرى
+     * المحامي «سؤالك محفوظ» على كلّ سؤالٍ بقيّةَ اليوم.
+     */
+    public function test_a_daily_quota_429_jumps_to_the_fallback_without_burning_attempts(): void
+    {
+        config()->set('ai.providers.gemini.fallback_models', ['gemini-3.6-flash']);
+
+        $perModel = [];
+        Http::fake(function ($request) use (&$perModel) {
+            preg_match('#/models/([^:]+):#', $request->url(), $m);
+            $model = $m[1] ?? '?';
+            $perModel[$model] = ($perModel[$model] ?? 0) + 1;
+
+            return $model === 'gemini-3.6-flash'
+                ? Http::response($this->text('جواب الاحتياطي.'), 200)
+                : Http::response(['error' => [
+                    'code' => 429, 'status' => 'RESOURCE_EXHAUSTED',
+                    'message' => 'You exceeded your current quota.',
+                    'details' => [[
+                        '@type' => 'type.googleapis.com/google.rpc.RetryInfo',
+                        'retryDelay' => '45s',
+                    ]],
+                ]], 429);
+        });
+
+        $reply = (new GeminiProvider())->chat([['role' => 'user', 'content' => 'س']], 'ن');
+
+        $this->assertSame('جواب الاحتياطي.', $reply);
+        $this->assertSame(1, $perModel[self::MODEL] ?? 0, 'أصرّ على نموذجٍ نفدت حصّته اليوميّة');
+    }
+
+    /** أمّا حدُّ الدقيقة (مهلة ثوانٍ) فيُعاد على النموذج نفسه — لا قفز. */
+    public function test_a_minute_limit_429_still_retries_the_same_model(): void
+    {
+        config()->set('ai.providers.gemini.fallback_models', ['gemini-3.6-flash']);
+
+        $perModel = [];
+        Http::fake(function ($request) use (&$perModel) {
+            preg_match('#/models/([^:]+):#', $request->url(), $m);
+            $model = $m[1] ?? '?';
+            $n = $perModel[$model] = ($perModel[$model] ?? 0) + 1;
+
+            if ($model === self::MODEL && $n >= 2) {
+                return Http::response($this->text('جواب النموذج الأصلي.'), 200);
+            }
+
+            return Http::response(['error' => [
+                'code' => 429, 'status' => 'RESOURCE_EXHAUSTED',
+                'message' => 'Rate limit, slow down.',
+                'details' => [[
+                    '@type' => 'type.googleapis.com/google.rpc.RetryInfo',
+                    'retryDelay' => '3s',
+                ]],
+            ]], 429);
+        });
+
+        $reply = (new GeminiProvider())->chat([['role' => 'user', 'content' => 'س']], 'ن');
+
+        $this->assertSame('جواب النموذج الأصلي.', $reply, 'قفز عن نموذجٍ كان انتظارُ ثوانٍ يكفيه');
+        $this->assertArrayNotHasKey('gemini-3.6-flash', $perModel, 'استُدعي الاحتياطي بلا داعٍ');
+    }
+
+    /** والردّ الفارغ يسجّل سببه — فيُعرف حجبُ الأمان من نفاد الرموز. */
+    public function test_an_empty_reply_reason_is_recorded_for_diagnosis(): void
+    {
+        config()->set('ai.providers.gemini.fallback_models', []);
+
+        Http::fake(['*' => Http::response(['promptFeedback' => ['blockReason' => 'SAFETY']], 200)]);
+
+        (new GeminiProvider())->chat([['role' => 'user', 'content' => 'س']], 'ن');
+
+        $this->assertDatabaseHas('ai_requests', ['status' => 'error', 'error_type' => 'empty_SAFETY']);
+    }
+
+    /**
      * إعادةُ المتصفّح للسؤال لا تُضاعفه في المحادثة.
      *
      * السؤال يُحفظ قبل الطلب حتى لا يضيع إن سقط الاتّصال. فإذا أعاد

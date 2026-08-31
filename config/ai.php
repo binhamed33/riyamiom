@@ -61,9 +61,14 @@ return [
                 'gemini-3.5-flash',
                 'gemini-2.5-pro',
             ],
+            // flash-lite ملاذٌ أخير مقصود: أضعف، لكن حصّته اليوميّة
+            // المجانيّة مستقلّة وأكبر — فإذا نفدت حصص flash كلّها بقي
+            // جوابٌ من الاحتياطي خيراً من «سؤالك محفوظ» إلى منتصف الليل.
+            // (flash-latest و3.6-flash قد يكونان النموذجَ نفسه بحصّةٍ
+            // واحدة — الاسم الأوّل مستعار.)
             'fallback_models' => array_values(array_filter(array_map(
                 'trim',
-                explode(',', (string) env('GEMINI_FALLBACK_MODELS', 'gemini-3.6-flash,gemini-flash-latest'))
+                explode(',', (string) env('GEMINI_FALLBACK_MODELS', 'gemini-3.6-flash,gemini-flash-latest,gemini-flash-lite-latest'))
             ))),
         ],
 
