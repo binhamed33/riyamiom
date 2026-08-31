@@ -140,7 +140,16 @@ class NotificationLocaleTest extends TestCase
                     continue;
                 }
 
-                if (str_contains(file_get_contents($file->getPathname()), 'Notification::create([')) {
+                // ═══ حدُّ كلمةٍ لا احتواءُ نصّ ═══
+                //
+                // ‏`ClientNotification::create([` يحتوي على النصّ
+                // المبحوث عنه حرفياً وليس منه: هو نموذجُ إشعارِ
+                // الموكّل في بوابته، ونصُّه يُركَّب عند وقوع الحدث
+                // ويُرسَل إلى واتساب حيث لا لغةَ قارئٍ تُقرأ أصلاً.
+                //
+                // والمقصودُ هنا إشعاراتُ الموظّفين (App\Models\Notification)
+                // وحدها: هي التي تُقرأ في شاشةٍ يبدّل صاحبُها لغتَها.
+                if (preg_match('/(?<![A-Za-z])Notification::create\(\[/', file_get_contents($file->getPathname()))) {
                     $offenders[] = str_replace(base_path() . '/', '', $file->getPathname());
                 }
             }

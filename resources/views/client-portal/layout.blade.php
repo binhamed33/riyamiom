@@ -3,6 +3,20 @@
     $officeName = \App\Support\OfficeBrand::name();
     $officeLogo = \App\Support\OfficeBrand::logoUrl();
     $contact = \App\Support\ClientPortal::contact();
+
+    // عدُّ غير المقروء يُحسب مرّةً هنا لا في كلّ شريط، ويُقرأ في
+    // الشريطين معاً. والحارسُ لمكتبٍ لم تُنفَّذ هجراتُه بعد: غيابُ
+    // الجدول لا يُسقط البوابةَ على الموكّل.
+    $pUnread = 0;
+
+    if (($client ?? null) !== null) {
+        try {
+            $pUnread = \App\Models\ClientNotification::where('client_id', $client->id)
+                ->whereNull('read_at')->count();
+        } catch (\Throwable) {
+            $pUnread = 0;
+        }
+    }
 @endphp
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
@@ -135,7 +149,7 @@
 
         .p-tabbar {
             position: fixed; inset-inline: 0; bottom: 0; z-index: 45;
-            display: grid; grid-template-columns: repeat(3, 1fr);
+            display: grid; grid-template-columns: repeat(4, 1fr);
             background: color-mix(in srgb, var(--surface) 94%, transparent);
             backdrop-filter: blur(14px);
             border-block-start: 1px solid var(--line);
@@ -147,6 +161,15 @@
         }
         .p-tab svg { width: 20px; height: 20px; }
         .p-tab.is-on { color: var(--gold); }
+        .p-tab-icon { position: relative; display: inline-flex; }
+        .p-dot {
+            position: absolute; inset-block-start: -5px; inset-inline-end: -8px;
+            min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+            background: #C0392B; color: #fff; font-size: .6rem; font-weight: 700;
+            display: inline-flex; align-items: center; justify-content: center;
+            line-height: 1;
+        }
+        .p-dot-inline { position: static; margin-inline-start: .3rem; }
 
         main { padding-block: 1.4rem 5.6rem; }
         @media (min-width: 760px) {
@@ -259,6 +282,7 @@
             <nav class="p-nav" aria-label="{{ __('portal.a11y.menu') }}">
                 <a href="{{ route('client.portal.home') }}" @class(['is-on' => request()->routeIs('client.portal.home')])>{{ __('portal.nav.home') }}</a>
                 <a href="{{ route('client.portal.cases') }}" @class(['is-on' => request()->routeIs('client.portal.case*')])>{{ __('portal.nav.cases') }}</a>
+                <a href="{{ route('client.portal.notifications') }}" @class(['is-on' => request()->routeIs('client.portal.notifications')])>الإشعارات@if($pUnread > 0) <span class="p-dot p-dot-inline">{{ $pUnread > 9 ? '9+' : $pUnread }}</span>@endif</a>
                 <a href="{{ route('client.portal.account') }}" @class(['is-on' => request()->routeIs('client.portal.account')])>{{ __('portal.nav.account') }}</a>
             </nav>
         @endif
@@ -298,6 +322,21 @@
     @yield('content')
 </main>
 
+@php
+    // عدٌّ واحدٌ للصفحة كلّها — يُستعمل في الشريطين. والحارسُ لمكتبٍ
+    // لم تُنفَّذ هجراتُه بعد: غيابُ الجدول لا يُسقط البوابة على الموكّل.
+    $pUnread = 0;
+
+    if ($client ?? null) {
+        try {
+            $pUnread = \App\Models\ClientNotification::where('client_id', $client->id)
+                ->whereNull('read_at')->count();
+        } catch (\Throwable) {
+            $pUnread = 0;
+        }
+    }
+@endphp
+
 @if ($client)
     <nav class="p-tabbar" aria-label="{{ __('portal.a11y.menu') }}">
         <a href="{{ route('client.portal.home') }}" class="p-tab @if(request()->routeIs('client.portal.home')) is-on @endif">
@@ -307,6 +346,13 @@
         <a href="{{ route('client.portal.cases') }}" class="p-tab @if(request()->routeIs('client.portal.case*')) is-on @endif">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1zM9 12h6M9 16h6"/></svg>
             {{ __('portal.nav.cases') }}
+        </a>
+        <a href="{{ route('client.portal.notifications') }}" class="p-tab @if(request()->routeIs('client.portal.notifications')) is-on @endif">
+            <span class="p-tab-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0m6 0H9"/></svg>
+                @if($pUnread > 0)<span class="p-dot">{{ $pUnread > 9 ? '9+' : $pUnread }}</span>@endif
+            </span>
+            الإشعارات
         </a>
         <a href="{{ route('client.portal.account') }}" class="p-tab @if(request()->routeIs('client.portal.account')) is-on @endif">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16 19a4 4 0 00-8 0M12 11a3 3 0 100-6 3 3 0 000 6z"/></svg>

@@ -381,6 +381,67 @@
             </div>
             @endunless
 
+            {{-- ═══ إشعارات الموكّل ═══
+
+                 واتساب هنا قناةُ تنبيهٍ لا مخزنُ بيانات: الرسالةُ تقول
+                 «جدَّ شيء» وتحمل رابطاً آمناً، والتفاصيلُ في البوابة
+                 خلف الدخول. ولا يُفتح نوعٌ لم يطلبه المكتب: كلُّ رسالةٍ
+                 تُحاسَب، وكلُّ رسالةٍ غير مرغوبة بلاغٌ محتمَل يُنزل
+                 تقييمَ الرقم. --}}
+            <div class="pt-3 border-t border-gray-100">
+                <div class="flex items-baseline justify-between gap-3 flex-wrap mb-2">
+                    <h3 class="text-sm font-bold text-gray-800">إشعارات الموكّل</h3>
+                    <span class="text-[11px] text-gray-400">تنبيهٌ قصير + رابطٌ آمن للبوابة — بلا تفاصيل في الرسالة</span>
+                </div>
+
+                {{-- المفتاحُ الرئيسي: لا يُراسَل موكّلٌ واحد قبل تشغيله.
+                     وحالتُه ظاهرةٌ كما هي — لا خاناتٌ مؤشَّرة على ميزةٍ
+                     لا تعمل. --}}
+                <label class="flex items-start gap-2.5 p-3 rounded-lg border-2 mb-3 cursor-pointer
+                              {{ \App\Support\ClientEvents::masterEnabled() ? 'border-gold/50 bg-gold/5' : 'border-gray-200' }}">
+                    <input type="checkbox" name="cn_enabled" value="1" class="mt-0.5 rounded border-gray-300"
+                           @checked(\App\Support\ClientEvents::masterEnabled())>
+                    <span class="min-w-0">
+                        <span class="block text-sm font-bold text-gray-800">تشغيل إشعارات الموكّل</span>
+                        <span class="block text-[11px] text-gray-500 leading-relaxed">
+                            مطفأةٌ حتى تشغّلها. وقبل تشغيلها لا تصل الموكّلين رسالةٌ واحدة، ولا يُقيَّد لهم إشعارٌ في البوابة.
+                        </span>
+                    </span>
+                </label>
+
+                <div class="grid sm:grid-cols-2 gap-2 {{ \App\Support\ClientEvents::masterEnabled() ? '' : 'opacity-50' }}">
+                    @foreach(\App\Support\ClientEvents::catalogue() as $evtKey => $evt)
+                        <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-gray-200 cursor-pointer hover:border-gold/40">
+                            <input type="checkbox" name="cn_evt[]" value="{{ $evtKey }}" class="mt-0.5 rounded border-gray-300"
+                                   @checked(\App\Support\ClientEvents::enabled($evtKey))>
+                            <span class="min-w-0">
+                                <span class="block text-xs font-semibold text-gray-800">{{ $evt['label'] }}</span>
+                                <span class="block text-[11px] text-gray-500 leading-relaxed">{{ $evt['hint'] }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+
+                <div class="mt-3 grid sm:grid-cols-2 gap-3 items-end">
+                    <label class="flex items-center gap-2 text-xs text-gray-700">
+                        <input type="checkbox" name="cn_links_enabled" value="1" class="rounded border-gray-300"
+                               @checked(\App\Services\ClientPortal\PortalLinks::enabled())>
+                        رابط دخولٍ مباشر في الرسالة
+                    </label>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500">صلاحية الرابط (ساعة)</label>
+                        <input type="number" name="cn_links_ttl_hours" min="1" max="720"
+                               value="{{ \App\Services\ClientPortal\PortalLinks::ttlHours() }}"
+                               class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm">
+                    </div>
+                </div>
+
+                <p class="text-[11px] text-gray-500 leading-relaxed mt-2 bg-gray-50 border border-gray-200 rounded-lg p-2.5">
+                    الرابط يُستعمل <span class="font-semibold">مرّةً واحدة</span> وتنتهي صلاحيته بالمدّة أعلاه.
+                    وإن أطفأته، وصل الموكّلَ رابطُ بوابةٍ عاديّ يدخل منه برقم هويّته وآخرِ ثلاثة أرقام من هاتفه.
+                </p>
+            </div>
+
             <div class="pt-2 border-t border-gray-100 grid sm:grid-cols-2 gap-3">
                 <label class="flex items-center gap-2 text-xs text-gray-700">
                     <input type="checkbox" name="wa_notify_sessions" value="1" class="rounded border-gray-300"

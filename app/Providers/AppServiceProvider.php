@@ -35,6 +35,9 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\Document::observe(\App\Observers\DocumentObserver::class);
         \App\Models\LegalCase::observe(\App\Observers\LegalCaseObserver::class);
 
+        // الفاتورة وحدها بلا مراقبٍ قائم — تُراقَب هنا لإشعار الموكّل
+        \App\Models\FinanceInvoice::observe(\App\Observers\FinanceInvoiceObserver::class);
+
         config(['app.timezone' => 'Asia/Muscat']);
         date_default_timezone_set('Asia/Muscat');
 

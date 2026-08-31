@@ -17,6 +17,8 @@ class DocumentObserver
 {
     public function created(Document $document): void
     {
+        app(\App\Observers\ClientNotifyObserver::class)->documentCreated($document);
+
         if (!$this->visibleToClient($document)) {
             return;
         }
@@ -31,6 +33,13 @@ class DocumentObserver
 
     public function updated(Document $document): void
     {
+        // مستندٌ رُفع داخلياً ثمّ عُلّم مرئيّاً: هذه لحظةُ إتاحته
+        // للموكّل لا لحظةُ رفعه. ولولاها لرأى في بوابته مستنداً لم
+        // يصله عنه إشعارٌ قطّ.
+        if ($document->wasChanged('client_visible') && $document->client_visible) {
+            app(\App\Observers\ClientNotifyObserver::class)->documentCreated($document);
+        }
+
         if (!$document->wasChanged(['client_visible', 'access_level'])) {
             return;
         }

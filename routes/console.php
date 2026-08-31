@@ -97,3 +97,9 @@ Schedule::command('whatsapp:session-reminders')->hourly()->withoutOverlapping();
 // حالةُ القوالب تتغيّر عند Meta بلا إشعارٍ لنا: قالبٌ معتمَدٌ قد
 // يُوقَف. المزامنةُ اليومية تمنع أن نعرض «معتمَد» لما لم يعد كذلك.
 Schedule::command('whatsapp:sync-templates')->dailyAt('03:30')->timezone('Asia/Muscat');
+
+// روابطُ الدخول المنتهية تُقلَّم: صفٌّ لكلّ إشعارٍ أُرسل، ولو بقيت
+// كلُّها لنمت بلا حدّ. والمقلَّمُ منتهٍ أصلاً — لا يفتح شيئاً.
+Schedule::call(function () {
+    \App\Services\ClientPortal\PortalLinks::prune();
+})->dailyAt('03:45')->timezone('Asia/Muscat')->name('portal-links-prune');

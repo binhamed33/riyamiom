@@ -91,7 +91,20 @@ Route::middleware('client.portal')->prefix('client-access')->group(function () {
     Route::get('/cases/{case}', [App\Http\Controllers\ClientAccessController::class, 'showCase'])->name('client.portal.case');
     Route::get('/documents/{document}', [App\Http\Controllers\ClientAccessController::class, 'document'])->name('client.portal.document');
     Route::get('/account', [App\Http\Controllers\ClientAccessController::class, 'account'])->name('client.portal.account');
+    Route::get('/notifications', [App\Http\Controllers\ClientAccessController::class, 'notifications'])->name('client.portal.notifications');
 });
+
+/*
+| رابطُ الدخول المرسَل في واتساب.
+|
+| المسارُ قصيرٌ لأنّه يُلصَق في رسالة: كلُّ محرفٍ زائدٍ يقصّه بعضُ
+| العملاء أو يلتفّ به السطر. والرمزُ نفسُه ٦٤ محرفاً لا يُخمَّن،
+| والحدُّ يمنع تجريبَ الرموز بالجملة.
+*/
+Route::get('/p/{token}', [App\Http\Controllers\ClientLinkController::class, 'open'])
+    ->where('token', '[A-Za-z0-9]{32,80}')
+    ->middleware('throttle:30,1')
+    ->name('client.link.open');
 
 // توافق: الرابط القديم لصفحة القضية يوجّه إلى مقابله الجديد
 Route::get('/client-access/case/{case}', function (string $case) {

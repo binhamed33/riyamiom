@@ -17,6 +17,8 @@ class SessionObserver
 {
     public function created(Session $session): void
     {
+        app(\App\Observers\ClientNotifyObserver::class)->sessionCreated($session);
+
         $line = implode(' — ', array_filter([
             $session->date?->format('Y-m-d'),
             $session->location,
@@ -33,6 +35,8 @@ class SessionObserver
 
     public function updated(Session $session): void
     {
+        app(\App\Observers\ClientNotifyObserver::class)->sessionUpdated($session);
+
         // الموعد وحده هو ما يعني الموكّل. تغيير ملاحظة داخلية أو حالة
         // إدارية لا يستحق سطراً في مساره.
         if (!$session->wasChanged('date')) {

@@ -35,6 +35,11 @@ class WhatsAppSettingsController extends Controller
             'wa_session_template' => ['nullable', 'string', 'max:120'],
             'wa_invoice_template' => ['nullable', 'string', 'max:120'],
             'wa_reminder_hours' => ['nullable', 'integer', 'min:1', 'max:72'],
+            'cn_enabled' => ['nullable'],
+            'cn_evt' => ['nullable', 'array'],
+            'cn_evt.*' => ['string', 'max:40'],
+            'cn_links_enabled' => ['nullable'],
+            'cn_links_ttl_hours' => ['nullable', 'integer', 'min:1', 'max:720'],
         ], [
             'wa_access_token.min' => 'الرمز المُدخل قصير جداً — تأكد من نسخه كاملاً.',
             'wa_phone_number_id.regex' => 'معرّف الرقم أرقامٌ فقط كما يظهر في لوحة Meta.',
@@ -67,7 +72,38 @@ class WhatsAppSettingsController extends Controller
             }
         }
 
-        $this->audit('whatsapp_settings_updated', ['token_changed' => $tokenChanged]);
+        // ═══ الأنواعُ تُكتب كلُّها في كلّ حفظة ═══
+        //
+        // خانةٌ غيرُ مؤشَّرة لا تُرسَل في النموذج أصلاً. فلو كُتب
+        // المؤشَّرُ وحده لما أُطفئ نوعٌ أبداً: يُنزع التأشير، ويُحفظ،
+        // ويبقى الإعدادُ القديم يعمل. فيُمرّ على القائمة كلِّها ويُكتب
+        // لكلٍّ قرارُه — والغيابُ إطفاءٌ صريح.
+        \App\Support\ClientEvents::setMasterEnabled($request->boolean('cn_enabled'));
+
+        $chosen = (array) ($validated['cn_evt'] ?? []);
+
+        foreach (\App\Support\ClientEvents::types() as $eventType) {
+            \App\Support\ClientEvents::setEnabled($eventType, in_array($eventType, $chosen, true));
+        }
+
+        \App\Models\Setting::set(
+            \App\Services\ClientPortal\PortalLinks::KEY_ENABLED,
+            $request->boolean('cn_links_enabled') ? '1' : '0',
+            \App\Support\ClientEvents::GROUP,
+        );
+
+        if (isset($validated['cn_links_ttl_hours'])) {
+            \App\Models\Setting::set(
+                \App\Services\ClientPortal\PortalLinks::KEY_TTL_HOURS,
+                (string) $validated['cn_links_ttl_hours'],
+                \App\Support\ClientEvents::GROUP,
+            );
+        }
+
+        $this->audit('whatsapp_settings_updated', [
+            'token_changed' => $tokenChanged,
+            'client_events' => count($chosen),
+        ]);
 
         return back()->with('success', $tokenChanged
             ? 'حُفظت إعدادات واتساب وحُدّث الرمز.'

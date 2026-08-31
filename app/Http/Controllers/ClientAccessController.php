@@ -150,6 +150,34 @@ class ClientAccessController extends Controller
     }
 
     /**
+     * مركزُ الإشعارات — ما جدَّ في ملفّات هذا الموكّل.
+     *
+     * والاستعلامُ محصورٌ بمعرّفه من الجلسة لا من العنوان: لا يوجد في
+     * هذا المسار معرّفٌ يكتبه المستخدم أصلاً، فلا شيءَ يُغيَّر ليُرى
+     * إشعارُ غيره.
+     */
+    public function notifications(Request $request): View
+    {
+        $client = $this->auth->current($request);
+
+        $items = \App\Models\ClientNotification::where('client_id', $client->id)
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
+
+        // تُعلَّم مقروءةً عند الفتح: الوسمُ يعني «جدَّ ما لم تره»،
+        // وبقاؤه بعد القراءة يجعله ضجيجاً يُتجاهَل
+        \App\Models\ClientNotification::where('client_id', $client->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return view('client-portal.notifications', [
+            'client' => $client,
+            'items' => $items,
+        ]);
+    }
+
+    /**
      * تنزيل مستند.
      *
      * الصلاحية تُفحص في الخادم لا بإخفاء الزر: معرّف مستند لا يخصّ

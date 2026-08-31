@@ -168,6 +168,26 @@ class ClientAuthenticator
         return ['ok' => true, 'locked' => false, 'expired' => false, 'client' => $client, 'retry_after' => null];
     }
 
+    /**
+     * فتحُ جلسةٍ لموكّلٍ تحقّقنا منه بطريقٍ آخر (رابطٌ موقّع).
+     *
+     * ═══ لماذا regenerate هنا أيضاً ═══
+     *
+     * لأنّ معرّفَ الجلسة قبل الدخول معرّفُ زائر، وقد يكون أحدٌ زرعه
+     * في متصفّح الموكّل (Session Fixation). فيُبدَّل عند رفع
+     * الصلاحية — هنا كما في الدخول بالهوية سواءً بسواء.
+     */
+    public function establish(Request $request, Client $client): void
+    {
+        $request->session()->regenerate();
+        $request->session()->forget(self::SESSION_CHALLENGE);
+        $request->session()->put([
+            self::SESSION_CLIENT => $client->id,
+            self::SESSION_NAME => $client->name,
+            self::SESSION_AT => now()->timestamp,
+        ]);
+    }
+
     /** العميل الحالي — أو null. لا يُقرأ من غير الجلسة. */
     public function current(Request $request): ?Client
     {
