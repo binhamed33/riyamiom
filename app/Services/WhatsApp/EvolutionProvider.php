@@ -85,8 +85,29 @@ class EvolutionProvider implements WhatsAppProviderInterface
             return ['qr' => null, 'state' => 'open', 'message' => 'الرقم موصولٌ بالفعل.'];
         }
 
-        $this->createInstance($instance);
-        $this->applyWebhook($instance);
+        // ═══ العطلُ الحقيقي لا صداه ═══
+        //
+        // كان الإنشاءُ يُبتلع صامتاً، فيصل المكتبُ إلى `connect` ويجد
+        // ٤٠٤ فيُقال له «النسخة غير موجودة — أعد الاقتران». وهو يعيد
+        // ويعيد، والعلّةُ في خطوةٍ قبلها لم تُذكر قطّ.
+        //
+        // فيُقال سببُ الإنشاء نفسه، ويُتوقّف عنده.
+        $created = $this->createInstance($instance);
+
+        if ($created !== null) {
+            $this->lastError = $created;
+
+            return ['qr' => null, 'state' => 'close', 'message' => $created];
+        }
+
+        if (!$this->applyWebhook($instance)) {
+            // ويبهوكٌ لم يُضبط يعني رمزاً يُمسح ثمّ صمتاً تامّاً: لا
+            // رسالةَ تصل ولا سبب. يُقال قبل المسح لا بعده.
+            $reason = $this->lastError ?: 'تعذّر ضبط عنوان الاستقبال على النسخة.';
+            $this->lastError = $reason;
+
+            return ['qr' => null, 'state' => 'close', 'message' => $reason];
+        }
 
         try {
             $response = $this->http()->get($this->url('instance/connect/' . $instance));
@@ -344,18 +365,52 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
     // ── داخلي ────────────────────────────────────────────────────
 
-    protected function createInstance(string $instance): void
+    /**
+     * إنشاءُ النسخة — يعيد null عند النجاح، أو سببَ الإخفاق بالعربية.
+     *
+     * ونسخةٌ موجودةٌ نجاحٌ لا إخفاق: المكتب يفتح الصفحة مرّتين، وأن
+     * تكون النسخةُ قائمةً هو ما نريده أصلاً.
+     */
+    protected function createInstance(string $instance): ?string
     {
         try {
-            $this->http()->post($this->url('instance/create'), [
+            $response = $this->http()->post($this->url('instance/create'), [
                 'instanceName' => $instance,
                 'qrcode' => true,
                 'integration' => (string) config('whatsapp.evolution.integration', 'WHATSAPP-BAILEYS'),
             ]);
         } catch (\Throwable $e) {
-            // نسخةٌ موجودة تُرجع 403 — وهي الحالةُ الغالبة لا الخطأ
-            Log::info('Evolution instance create: ' . $e->getMessage());
+            Log::warning('Evolution instance create failed: ' . $e->getMessage());
+
+            return 'تعذّر الاتصال بخادم الجسر لإنشاء نسخة المكتب.';
         }
+
+        if ($response->successful()) {
+            return null;
+        }
+
+        $body = (string) $response->body();
+
+        // «الاسم مستعمَل» = النسخةُ قائمة، وهو المطلوب
+        if (str_contains(mb_strtolower($body), 'already in use') || $response->status() === 409) {
+            return null;
+        }
+
+        Log::warning('Evolution instance create rejected (' . $response->status() . '): ' . mb_substr($body, 0, 500));
+
+        // ٥٠٠ من Evolution عند الإنشاء علامتُه الغالبة أنّ قاعدة
+        // بياناته غير موصولة: النسخةُ صفٌّ في جدول، فبلا قاعدةٍ لا
+        // تُنشأ. وقولُ «أخفق» وحدها يترك المشغّل يبحث في الرقم
+        // والمفتاح، والعلّةُ في تنصيب الخادم لا في المكتب.
+        return match (true) {
+            $response->status() === 401 || $response->status() === 403
+                => 'خادم الجسر رفض المفتاح — راجع EVOLUTION_API_KEY في ملفّ بيئة المكتب.',
+            $response->status() >= 500
+                => 'خادم الجسر لم يستطع إنشاء النسخة — الأرجح أنّ قاعدة بياناته غير موصولة.'
+                    . ' على الخادم: sudo bash scripts/install-evolution.sh status',
+            default
+                => 'خادم الجسر رفض إنشاء النسخة (' . $response->status() . ').',
+        };
     }
 
     /**
@@ -391,11 +446,22 @@ class EvolutionProvider implements WhatsAppProviderInterface
             try {
                 $response = $this->http()->post($this->url('webhook/set/' . $instance), $payload['webhook']);
             } catch (\Throwable) {
+                $this->lastError = 'تعذّر الاتصال بخادم الجسر لضبط عنوان الاستقبال.';
+
                 return false;
             }
         }
 
-        return $response->successful();
+        if (!$response->successful()) {
+            Log::warning('Evolution webhook set failed (' . $response->status() . '): '
+                . mb_substr((string) $response->body(), 0, 300));
+
+            $this->lastError = 'خادم الجسر رفض ضبط عنوان الاستقبال (' . $response->status() . ').';
+
+            return false;
+        }
+
+        return true;
     }
 
     /** @return array{number: string, name: string}|null */
