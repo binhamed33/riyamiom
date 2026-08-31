@@ -166,6 +166,40 @@ class WhatsAppHardeningTest extends TestCase
         $this->assertLessThanOrEqual(120, mb_strlen($clean));
     }
 
+    /**
+     * القائمةُ الجانبية لا تُسقط النظام حين يغيب المسار.
+     *
+     * ═══ العطل الذي أطفأ مكتب الإنتاج ═══
+     *
+     * `route('whatsapp.index')` بلا حارسٍ في القالب الذي تحته كلُّ
+     * صفحة. فمكتبٌ حُدِّث كودُه فأُعيدت ترجمةُ قوالبه بينما ظلّت
+     * مساراتُه تُقرأ من نسخةٍ قديمة (opcache بـvalidate_timestamps=0)
+     * طلب مساراً لا تعرفه الطبقةُ التي تخدم الطلب — فردّت لوحةُ
+     * التحكّم 500 لكلّ مستخدم، لا الرابطُ وحده اختفى.
+     *
+     * ورابطٌ في قائمةٍ لا يجوز أن يملك هذه القدرة مهما كان السبب.
+     */
+    public function test_the_sidebar_survives_a_missing_whatsapp_route(): void
+    {
+        $admin = User::where('role', 'admin')->firstOrFail();
+
+        // تُمحى مسارات واتساب كما لو لم تُحمَّل بعد
+        $routes = new \Illuminate\Routing\RouteCollection();
+
+        foreach (\Illuminate\Support\Facades\Route::getRoutes() as $route) {
+            if (!str_starts_with((string) $route->getName(), 'whatsapp.')) {
+                $routes->add($route);
+            }
+        }
+
+        app('router')->setRoutes($routes);
+        \Illuminate\Support\Facades\URL::setRoutes($routes);
+
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('whatsapp.index'));
+
+        $this->actingAs($admin)->get(route('dashboard'))->assertOk();
+    }
+
     // ── رمزُ المزوّد لا يظهر في استجابة ─────────────────────────
 
     /**
