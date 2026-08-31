@@ -116,6 +116,11 @@ Route::middleware('throttle:600,1')->group(function () {
         ->name('whatsapp.webhook.challenge');
     Route::post('/webhooks/whatsapp', [App\Http\Controllers\WhatsAppWebhookController::class, 'receive'])
         ->name('whatsapp.webhook.receive');
+    // جسرُ واتساب ويب: السرُّ في المسار — الجسرُ لا يوقّع حمولاتِه،
+    // فمن لا يعرف السرَّ لا يجد العنوان أصلاً
+    Route::post('/webhooks/evolution/{secret}', [App\Http\Controllers\WhatsAppWebhookController::class, 'evolution'])
+        ->where('secret', '[A-Za-z0-9]{20,80}')
+        ->name('whatsapp.webhook.evolution');
 });
 
 // Subscription expired page (reachable while authenticated, not gated)
@@ -454,6 +459,9 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::post('/settings/whatsapp/checkup', [App\Http\Controllers\WhatsAppSettingsController::class, 'checkup'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.checkup');
     // إتمامُ الربط نيابةً عن المكتب — يكتب عند Meta، فحدُّه أضيق
     Route::post('/settings/whatsapp/autowire', [App\Http\Controllers\WhatsAppSettingsController::class, 'autowire'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:6,1'])->name('settings.whatsapp.autowire');
+    // اقترانُ جسر واتساب ويب — رمزُ المسح وحالتُه
+    Route::post('/settings/whatsapp/pair', [App\Http\Controllers\WhatsAppSettingsController::class, 'pair'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:20,1'])->name('settings.whatsapp.pair');
+    Route::get('/settings/whatsapp/pair-state', [App\Http\Controllers\WhatsAppSettingsController::class, 'pairState'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:60,1'])->name('settings.whatsapp.pair-state');
     Route::post('/settings/whatsapp/templates', [App\Http\Controllers\WhatsAppSettingsController::class, 'syncTemplates'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.templates.sync');
 
     // إعدادات الذكاء الاصطناعي — خاصة بهذا المكتب، ومقصورة على من يدير الإعدادات

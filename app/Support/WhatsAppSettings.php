@@ -37,6 +37,13 @@ class WhatsAppSettings
     public const KEY_LAST_ERROR = 'wa_last_error';
     public const KEY_DISCONNECTED = 'wa_disconnected';
 
+    // ── Evolution: جسر واتساب ويب ────────────────────────────
+    // اسمُ نسخة المكتب على الخادم المشترك، وسرُّ ويبهوكها. العنوانُ
+    // والمفتاحُ العام في ملفّ البيئة لا هنا: الخادم واحدٌ للجميع.
+    public const KEY_EVO_INSTANCE = 'wa_evo_instance';
+    public const KEY_EVO_SECRET = 'wa_evo_secret';
+    public const KEY_EVO_STATE = 'wa_evo_state';
+
     // إعدادات السلوك — لا أسرار
     public const KEY_NOTIFY_SESSIONS = 'wa_notify_sessions';
     public const KEY_NOTIFY_INVOICES = 'wa_notify_invoices';
@@ -48,12 +55,30 @@ class WhatsAppSettings
 
     public const GROUP = 'whatsapp';
 
-    /** هل يستطيع هذا المكتب الإرسال فعلاً؟ */
+    /**
+     * هل يستطيع هذا المكتب الإرسال فعلاً؟
+     *
+     * والجواب يختلف بالمزوّد: Meta تحتاج رمزاً ومعرّفَ رقم، وEvolution
+     * تحتاج نسخةً حالتُها «open» — أي أنّ رمزاً مُسح وهاتفاً مقترن.
+     * وخلطُ الشرطين يجعل مكتباً على Evolution يبدو مفصولاً أبداً.
+     */
     public static function isConnected(): bool
     {
-        return !self::isDisconnected()
-            && self::accessToken() !== null
-            && self::phoneNumberId() !== null;
+        if (self::isDisconnected()) {
+            return false;
+        }
+
+        if (self::usingEvolution()) {
+            return self::evolutionState() === 'open';
+        }
+
+        return self::accessToken() !== null && self::phoneNumberId() !== null;
+    }
+
+    /** أيُّ مزوّدٍ يعمل عليه هذا المكتب. */
+    public static function usingEvolution(): bool
+    {
+        return (string) config('whatsapp.default', 'meta') === 'evolution';
     }
 
     /**
@@ -115,6 +140,75 @@ class WhatsAppSettings
     {
         return self::plain(self::KEY_PHONE_ID)
             ?? self::envValue(config('services.whatsapp.meta_phone_id'));
+    }
+
+    /**
+     * اسمُ نسخة هذا المكتب على خادم Evolution.
+     *
+     * يُشتقّ من نطاق المكتب لا يُختار: خادمٌ واحدٌ يحمل نسخَ كلّ
+     * المكاتب، واسمان متشابهان يعنيان مكتباً يقرأ رسائل مكتبٍ آخر.
+     * والنطاقُ فريدٌ بحكم التعريف.
+     */
+    public static function evolutionInstance(): string
+    {
+        $stored = (string) self::plain(self::KEY_EVO_INSTANCE);
+
+        if ($stored !== '') {
+            return $stored;
+        }
+
+        $host = (string) parse_url((string) config('app.url'), PHP_URL_HOST);
+        $name = preg_replace('/[^a-z0-9]+/i', '-', $host !== '' ? $host : 'office');
+        // يدخل الاسمُ في عنوانٍ عند الخادم: يُصغَّر كي لا يختلف مكتبان
+        // بحرفٍ كبيرٍ وحده فيقرأ أحدُهما رسائل الآخر
+        $name = strtolower(trim((string) $name, '-')) ?: 'office';
+
+        Setting::set(self::KEY_EVO_INSTANCE, $name, self::GROUP);
+
+        return $name;
+    }
+
+    /**
+     * سرُّ ويبهوك Evolution — يُولَّد مرّةً ويعيش في العنوان نفسه.
+     *
+     * ═══ لماذا في المسار لا في ترويسة ═══
+     *
+     * ‏Evolution لا يوقّع حمولاتِه توقيعاً معمّى كما تفعل Meta. فبابٌ
+     * مفتوحٌ بلا سرّ يقبل من أيّ أحدٍ في الإنترنت رسالةً يزعم أنّها من
+     * موكّل — فتُكتب في خيطه ويقرؤها المحامي على أنّها منه.
+     *
+     * فالسرُّ في المسار: من لا يعرفه لا يجد العنوان أصلاً. وهو أربعون
+     * محرفاً عشوائياً، ويُقارَن بمقارنةٍ ثابتة الزمن.
+     */
+    public static function evolutionSecret(): string
+    {
+        $stored = (string) self::plain(self::KEY_EVO_SECRET);
+
+        if ($stored !== '') {
+            return $stored;
+        }
+
+        $secret = Str::random(40);
+        Setting::set(self::KEY_EVO_SECRET, $secret, self::GROUP);
+
+        return $secret;
+    }
+
+    /** آخرُ حالةِ اتصالٍ عرفناها من الخادم: open|connecting|close. */
+    public static function evolutionState(): string
+    {
+        return self::plain(self::KEY_EVO_STATE) ?: 'close';
+    }
+
+    public static function setEvolutionState(string $state): void
+    {
+        Setting::set(self::KEY_EVO_STATE, $state, self::GROUP);
+
+        if ($state === 'open') {
+            Setting::set(self::KEY_CONNECTED_AT, now()->toIso8601String(), self::GROUP);
+            Setting::set(self::KEY_DISCONNECTED, '0', self::GROUP);
+            Setting::set(self::KEY_LAST_ERROR, '', self::GROUP);
+        }
     }
 
     public static function appId(): ?string

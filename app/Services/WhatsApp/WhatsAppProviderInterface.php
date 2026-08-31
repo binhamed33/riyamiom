@@ -61,17 +61,6 @@ interface WhatsAppProviderInterface
     public function fetchTemplates(): array;
 
     /**
-     * حقولُ الويبهوك التي اشترك فيها تطبيقُنا عند Meta.
-     *
-     * تُعيد null إن تعذّر السؤال (بلا معرّف حساب، أو ردٌّ غير ناجح) —
-     * وذلك يختلف عن `[]` التي تعني «سألتُ وMeta تقول: لا اشتراك».
-     * والمعالجُ يقول للمكتب أحدَ الجوابين لا يخلط بينهما.
-     *
-     * @return array<int, string>|null
-     */
-    public function subscribedFields(): ?array;
-
-    /**
      * تسجيلُ عنوان الويبهوك عند المزوّد — بدل أن يفتح المكتبُ لوحته.
      *
      * @param array<int, string> $fields
@@ -80,6 +69,16 @@ interface WhatsAppProviderInterface
 
     /** اشتراكُ تطبيقنا في حساب هذا المكتب — لا يكفي تسجيلُ العنوان. */
     public function subscribeAccount(): bool;
+
+    /**
+     * حقولُ الويبهوك المشترَك فيها فعلاً — أو null إن تعذّر السؤال.
+     *
+     * وnull تختلف عن `[]`: الأولى «لم أستطع أن أسأل»، والثانية
+     * «سألتُ والجواب: لا اشتراك». والمعالجُ يقول للمكتب أحدَهما.
+     *
+     * @return array<int, string>|null
+     */
+    public function subscribedFields(): ?array;
 
     /**
      * ما يُستنتج من الرمز نفسه: معرّفُ الحساب والرقم — بدل نسخِهما.

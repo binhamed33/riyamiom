@@ -66,7 +66,22 @@ class WhatsAppSessionReminders extends Command
             return self::SUCCESS;
         }
 
+        // ═══ القوالبُ شرطُ Meta لا شرطُ الرسالة ═══
+        //
+        // جسرُ واتساب ويب لا يعرف قوالبَ ولا اعتماداً: النصُّ يُرسَل
+        // كما هو. فاشتراطُ قالبٍ معتمَدٍ هناك يُطفئ تذكيرَ الجلسات
+        // إلى الأبد بلا سبب — والموكّل هو من يدفع الثمن غياباً عن
+        // جلسة.
+        $templatesRequired = (bool) config(
+            'whatsapp.providers.' . config('whatsapp.default', 'meta') . '.templates',
+            true,
+        );
+
         $templateName = WhatsAppSettings::templateName(WhatsAppSettings::KEY_SESSION_TEMPLATE);
+
+        if (!$templatesRequired) {
+            return $this->runWithoutTemplates($inbox, $dry, $templateName);
+        }
 
         if ($templateName === '') {
             $this->line('<fg=yellow>لم يُختَر قالبُ تذكير الجلسات</> في الإعدادات — لا شيء يُرسَل.');
@@ -256,6 +271,135 @@ class WhatsAppSessionReminders extends Command
     }
 
     // ── داخلي ────────────────────────────────────────────────────
+
+    /**
+     * تذكيرُ الجلسات على جسرٍ لا يعرف القوالب — نصٌّ حرّ.
+     *
+     * نفسُ منطق النافذة والحُرّاس وحارس التكرار، ويختلف موضعٌ واحد:
+     * الرسالةُ نصٌّ مبنيٌّ من صيغة القالب المخزَّنة إن وُجدت، وإلا من
+     * تفاصيل الجلسة مباشرة. فلا ينتظر الموكّلُ اعتمادَ Meta لقالبٍ لا
+     * يمرّ منه شيءٌ أصلاً على هذا المزوّد.
+     */
+    private function runWithoutTemplates(InboxService $inbox, bool $dry, string $templateName): int
+    {
+        $hours = WhatsAppSettings::reminderHours();
+        $anchor = now()->addHours($hours)->startOfHour();
+        $from = $anchor->copy()->subHour();
+        $to = $anchor->copy()->addHour();
+
+        $this->line('المزوّد لا يشترط قوالب — التذكير نصٌّ حرّ.');
+        $this->line('نافذة الجلسات : ' . $from->format('Y-m-d H:i') . ' ← ' . $to->format('Y-m-d H:i'));
+
+        $sessions = Session::query()
+            ->with(['case.client'])
+            ->whereNotNull('case_id')
+            ->where('status', 'upcoming')
+            ->where('date', '>=', $from)
+            ->where('date', '<', $to)
+            ->orderBy('date')
+            ->limit(self::MAX_PER_RUN)
+            ->get();
+
+        if ($sessions->isEmpty()) {
+            $this->line('لا جلسات في هذه النافذة.');
+
+            return self::SUCCESS;
+        }
+
+        $queued = 0;
+        $skipped = [];
+        // مفتاحُ حارس التكرار: النصُّ الحرّ لا يحمل template_name، فيُستعمل
+        // اسمُ القالب المضبوط إن وُجد، وإلا علامةٌ ثابتةٌ لهذا المزوّد
+        $guardName = $templateName !== '' ? $templateName : '__evolution_session__';
+
+        foreach ($sessions as $session) {
+            $case = $session->case;
+            $client = $case?->client;
+
+            if (! $case || ! $client) {
+                $this->skip($skipped, 'جلسة بلا قضية أو بلا موكّل');
+                continue;
+            }
+
+            $waId = WhatsAppContact::normalizeWaId((string) $client->phone);
+
+            if (mb_strlen($waId) < 9) {
+                $this->skip($skipped, 'موكّل بلا رقم صالح');
+                continue;
+            }
+
+            $contact = WhatsAppContact::where('wa_id', $waId)->first();
+
+            if ($contact && ! $contact->acceptsNotifications()) {
+                $this->skip($skipped, 'طلب إيقاف المراسلة');
+                continue;
+            }
+
+            $conversation = $contact
+                ? WhatsAppConversation::where('contact_id', $contact->id)->first()
+                : null;
+
+            if ($conversation && $this->alreadyReminded($conversation, $guardName, $session)) {
+                $this->skip($skipped, 'ذُكِّر من قبل');
+                continue;
+            }
+
+            if ($dry) {
+                $queued++;
+                continue;
+            }
+
+            $contact ??= WhatsAppContact::create(['wa_id' => $waId, 'client_id' => $client->id]);
+
+            if ($contact->client_id === null) {
+                $contact->forceFill(['client_id' => $client->id])->save();
+            }
+
+            $conversation ??= WhatsAppConversation::firstOrCreate(
+                ['contact_id' => $contact->id],
+                ['status' => WhatsAppConversation::STATUS_OPEN, 'unread_count' => 0]
+            );
+
+            if ($conversation->case_id === null) {
+                $conversation->forceFill(['case_id' => $case->id])->save();
+            }
+
+            $body = \App\Services\WhatsApp\EvolutionProvider::renderTemplate(
+                $templateName !== '' ? $templateName : '__none__',
+                'ar',
+                $this->params(new WhatsAppTemplate(['variables' => ['1', '2', '3', '4']]), (string) $client->name, $case, $session),
+            );
+
+            if (trim($body) === '') {
+                $this->skip($skipped, 'نصُّ التذكير فارغ');
+                continue;
+            }
+
+            // ‏session_id يختم حارسَ التكرار، وtemplate_name يحمل اسمَ
+            // الحارس نفسه كي يجده التشغيلُ القادم
+            $message = $inbox->queueOutgoing(
+                $conversation,
+                'text',
+                $body,
+                null,
+                ['template_name' => $guardName, 'session_id' => $session->id],
+            );
+
+            SendWhatsAppMessage::dispatch($message->id);
+            $queued++;
+        }
+
+        $this->newLine();
+        $this->line($dry
+            ? '<fg=yellow>تجربة:</> ' . $queued . ' تذكير كان سيُرسَل.'
+            : '<fg=green>' . $queued . ' تذكير دُفع إلى الطابور.</>');
+
+        foreach ($skipped as $reason => $n) {
+            $this->line('  تُخطّي ' . $n . ' — ' . $reason);
+        }
+
+        return self::SUCCESS;
+    }
 
     /** @param array<string, int> $bag */
     private function skip(array &$bag, string $reason): void

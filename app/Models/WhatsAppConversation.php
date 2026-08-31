@@ -68,6 +68,15 @@ class WhatsAppConversation extends Model
      */
     public function windowOpen(): bool
     {
+        // ═══ النافذةُ قاعدةُ Meta لا قاعدتُنا ═══
+        //
+        // جسرُ واتساب ويب لا يعرفها: ما يقدر عليه الهاتفُ يقدر عليه،
+        // ويرسل لأيّ رقمٍ في أيّ وقت. فمنعُ المحامي من الردّ هناك منعٌ
+        // بلا سبب — يرى «انتهت النافذة» بينما الرسالة كانت ستصل.
+        if (!(bool) config('whatsapp.providers.' . config('whatsapp.default', 'meta') . '.service_window', true)) {
+            return true;
+        }
+
         if ($this->last_inbound_at === null) {
             return false;
         }
@@ -77,10 +86,16 @@ class WhatsAppConversation extends Model
         );
     }
 
+    /** هل يفرض المزوّدُ نافذةً أصلاً؟ — للعرض في الواجهة. */
+    public function windowApplies(): bool
+    {
+        return (bool) config('whatsapp.providers.' . config('whatsapp.default', 'meta') . '.service_window', true);
+    }
+
     /** كم بقي من النافذة بالدقائق — للعرض في الواجهة. */
     public function windowMinutesLeft(): int
     {
-        if (!$this->windowOpen()) {
+        if (!$this->windowApplies() || $this->last_inbound_at === null || !$this->windowOpen()) {
             return 0;
         }
 

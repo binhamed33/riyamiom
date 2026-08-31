@@ -50,6 +50,13 @@ class SetupDoctor
      */
     public function report(bool $probe = false): array
     {
+        // خطواتُ Meta لا معنى لها على الجسر: لا رمزَ ولا سرَّ تطبيق
+        // ولا اشتراكَ حقول. وعرضُها متعثّرةً هناك يُوهم المكتبَ أنّ
+        // عنده أربعةَ أعطالٍ وهو موصولٌ يعمل.
+        if (WhatsAppSettings::usingEvolution()) {
+            return $this->bridgeReport($probe);
+        }
+
         $steps = [
             $this->credentials(),
             $this->reachable($probe),
@@ -86,6 +93,75 @@ class SetupDoctor
                 static fn (bool $carry, array $s): bool => $carry && $s['state'] === self::DONE,
                 true,
             ),
+            'next' => $this->firstIncomplete($steps),
+        ];
+    }
+
+    /**
+     * خطواتُ الجسر — ثلاثٌ لا ستّ.
+     *
+     * @return array{steps: array<int, array<string, mixed>>, ready: bool, next: ?string}
+     */
+    private function bridgeReport(bool $probe): array
+    {
+        $configured = filled(config('whatsapp.evolution.base_url')) && filled(config('whatsapp.evolution.api_key'));
+        $state = WhatsAppSettings::evolutionState();
+
+        if ($probe) {
+            $provider = WhatsAppManager::make();
+
+            if ($provider instanceof EvolutionProvider) {
+                $state = $provider->connectionState();
+                WhatsAppSettings::setEvolutionState($state);
+            }
+        }
+
+        $steps = [
+            $this->step(
+                key: 'bridge_server',
+                title: 'خادم الجسر يعمل',
+                where: 'على هذا الخادم',
+                done: $configured,
+                reason: $configured
+                    ? 'العنوان والمفتاح مضبوطان.'
+                    : 'لم يُضبط EVOLUTION_BASE_URL أو EVOLUTION_API_KEY في ملفّ بيئة المكتب.',
+                action: 'شغّل سكربت التنصيب على الخادم ثمّ أعد الفحص.',
+            ),
+            $this->step(
+                key: 'bridge_paired',
+                title: 'الرقم مقترن',
+                where: 'واتساب ← الأجهزة المرتبطة',
+                done: $state === 'open',
+                reason: match ($state) {
+                    'open' => 'الرقم مقترنٌ ويرسل.',
+                    'connecting' => 'النسخة تنتظر مسحَ الرمز.',
+                    default => 'لا اقترانَ بعد.',
+                },
+                action: 'اضغط «ابدأ الاقتران» وامسح الرمز من هاتف المكتب.',
+            ),
+            $this->firstMessage(),
+        ];
+
+        $found = false;
+
+        foreach ($steps as $i => $step) {
+            if ($step['state'] === self::DONE) {
+                continue;
+            }
+
+            if (!$found) {
+                $found = true;
+                continue;
+            }
+
+            $steps[$i]['state'] = self::WAITING;
+            $steps[$i]['reason'] = 'تنتظر إتمام ما قبلها.';
+        }
+
+        return [
+            'steps' => $steps,
+            'probed' => $probe,
+            'ready' => $configured && $state === 'open',
             'next' => $this->firstIncomplete($steps),
         ];
     }

@@ -167,6 +167,8 @@
     @php
         $wa = \App\Support\WhatsAppSettings::snapshot();
         $waVerify = \App\Support\WhatsAppSettings::verifyToken();
+        $waEvolution = \App\Support\WhatsAppSettings::usingEvolution();
+        $waState = $waEvolution ? \App\Support\WhatsAppSettings::evolutionState() : null;
         $waTemplates = \Illuminate\Support\Facades\Schema::hasTable('whatsapp_templates')
             ? \App\Models\WhatsAppTemplate::where('status', 'APPROVED')->orderBy('name')->get()
             : collect();
@@ -190,6 +192,46 @@
 
         <p class="text-xs text-gray-500 leading-relaxed mb-4">{{ __('app.wa_connect_help') }}</p>
 
+        @if($waEvolution)
+        {{-- ═══ اقترانٌ بمسح رمز — جسر واتساب ويب ═══
+
+             لا رمزَ يُنسخ ولا لوحةَ Meta: يُمسح الرمزُ من واتساب في
+             الهاتف كما يُربط واتساب ويب. الشاشةُ تسأل الحالةَ كلَّ
+             ثانيتين حتى تصير «open». --}}
+        <div class="mb-5 rounded-xl border border-gray-200 overflow-hidden" data-wa-pair
+             data-pair-url="{{ route('settings.whatsapp.pair') }}"
+             data-state-url="{{ route('settings.whatsapp.pair-state') }}">
+            <div class="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between gap-3">
+                <span class="text-xs font-bold text-gray-700">اقتران الرقم</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-full border
+                             {{ $waState === 'open' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200' }}"
+                      data-pair-badge>{{ $waState === 'open' ? '● موصول' : 'غير موصول' }}</span>
+            </div>
+            <div class="p-4 grid sm:grid-cols-[auto_1fr] gap-5 items-center">
+                <div class="w-48 h-48 mx-auto rounded-xl border border-gray-200 bg-white flex items-center justify-center overflow-hidden"
+                     data-pair-qr-box>
+                    <span class="text-xs text-gray-400 text-center px-4" data-pair-placeholder>
+                        {{ $waState === 'open' ? 'الرقم موصول — لا حاجة للمسح.' : 'اضغط «ابدأ الاقتران» ليظهر الرمز.' }}
+                    </span>
+                </div>
+                <div class="text-xs text-gray-600 leading-relaxed space-y-2">
+                    <p class="font-bold text-gray-800">كيف تربط رقمك:</p>
+                    <ol class="space-y-1.5 list-decimal pr-4">
+                        <li>افتح <span class="font-semibold">واتساب</span> في الهاتف الذي يحمل رقم المكتب.</li>
+                        <li>الإعدادات ← <span class="font-semibold">الأجهزة المرتبطة</span> ← ربط جهاز.</li>
+                        <li>وجّه الكاميرا إلى الرمز الظاهر هنا.</li>
+                    </ol>
+                    <p class="text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2" data-pair-status>
+                        الرقمُ الذي تمسحه يصبح رقمَ المكتب في النظام. جرّب برقمٍ جانبيّ أوّلاً.
+                    </p>
+                    <button type="button" data-pair-start
+                            class="mt-1 text-xs font-bold px-4 py-2 rounded-lg bg-gold text-white hover:bg-gold-dark">
+                        {{ $waState === 'open' ? 'إعادة الاقتران' : 'ابدأ الاقتران' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+        @else
         {{-- ═══ معالجُ الربط ═══
 
              الربطُ خمسُ خطوات، ثلاثٌ منها في لوحة Meta لا هنا. وحين لا
@@ -241,9 +283,12 @@
             </ol>
             <div class="hidden px-4 py-3 border-t border-gray-100 text-xs leading-relaxed" data-wa-autowire-result></div>
         </div>
+        @endif
 
         {{-- العنوان ورمز التحقّق: يُلصقان في إعداد الويبهوك عند Meta.
-             ليسا سرّاً بالمعنى الذي يُخفى — لكنّهما لا يُنسخان إلا هنا. --}}
+             ليسا سرّاً بالمعنى الذي يُخفى — لكنّهما لا يُنسخان إلا هنا.
+             ولا معنى لهما على الجسر: ويبهوكُه يُضبط تلقائياً عند الاقتران. --}}
+        @unless($waEvolution)
         <div class="grid md:grid-cols-2 gap-3 mb-5">
             <div>
                 <label class="text-xs font-bold text-gray-500">{{ __('app.wa_webhook_url') }}</label>
@@ -264,6 +309,7 @@
                 </div>
             </div>
         </div>
+        @endunless
 
         @if($wa['connected'])
             <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5 text-xs">
@@ -294,6 +340,7 @@
 
         <form method="POST" action="{{ route('settings.whatsapp.update') }}" class="space-y-4">
             @csrf
+            @unless($waEvolution)
             <div class="grid md:grid-cols-2 gap-4">
                 <div>
                     <label class="text-xs font-bold text-gray-500">{{ __('app.wa_token') }}</label>
@@ -332,6 +379,7 @@
                     <p class="text-[11px] text-gray-400 mt-1">اتركه فارغاً — يُستنتج من الرمز.</p>
                 </div>
             </div>
+            @endunless
 
             <div class="pt-2 border-t border-gray-100 grid sm:grid-cols-2 gap-3">
                 <label class="flex items-center gap-2 text-xs text-gray-700">
@@ -984,6 +1032,109 @@
             .catch(function () { flash(testButton, 'تعذّر الفحص', false); })
             .finally(function () { testButton.disabled = false; });
         });
+    }
+
+    // ── اقتران الجسر بمسح رمز ────────────────────────────────
+    //
+    // الشاشةُ تسأل الحالةَ كل ثانيتين لا تنتظر ويبهوكاً: الويبهوك
+    // يصل فعلاً، لكنّ المكتب ينظر إلى الشاشة لا إلى السجلّ — ولو
+    // انتظرناه وحده لبقي الرمزُ معروضاً بعد نجاح المسح، فيعيد
+    // المكتبُ المسحَ ظنّاً أنّه أخفق.
+    var pairBox = card.querySelector('[data-wa-pair]');
+
+    if (pairBox) {
+        var qrBox = pairBox.querySelector('[data-pair-qr-box]');
+        var badge = pairBox.querySelector('[data-pair-badge]');
+        var status = pairBox.querySelector('[data-pair-status]');
+        var start = pairBox.querySelector('[data-pair-start]');
+        var poll = null;
+
+        start.addEventListener('click', function () {
+            start.disabled = true;
+            start.textContent = 'جارٍ التحضير…';
+            setStatus('يُنشأ الاتصال بالخادم…', 'wait');
+
+            fetch(pairBox.dataset.pairUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.state === 'open') { connected(); return; }
+                if (data.qr) { showQr(data.qr); startPolling(); }
+                else { setStatus(data.message || 'تعذّر إحضار الرمز.', 'bad'); }
+            })
+            .catch(function () { setStatus('تعذّر الاتصال بالخادم.', 'bad'); })
+            .finally(function () {
+                start.disabled = false;
+                start.textContent = 'أعد إحضار الرمز';
+            });
+        });
+
+        function showQr(qr) {
+            qrBox.textContent = '';
+
+            if (qr.indexOf('data:') === 0) {
+                var img = document.createElement('img');
+                img.src = qr;
+                img.alt = 'رمز الاقتران';
+                img.className = 'w-full h-full object-contain';
+                qrBox.appendChild(img);
+            } else {
+                // بعضُ إصدارات الجسر تُرجع نصَّ الرمز لا صورتَه
+                var pre = document.createElement('div');
+                pre.className = 'text-[9px] font-mono break-all p-2 text-gray-600';
+                pre.textContent = qr.replace(/^text:/, '');
+                qrBox.appendChild(pre);
+            }
+
+            setStatus('امسح الرمز خلال دقيقة — بعدها يُعاد إحضاره.', 'wait');
+        }
+
+        function startPolling() {
+            if (poll) { clearInterval(poll); }
+
+            var ticks = 0;
+
+            poll = setInterval(function () {
+                ticks++;
+
+                // ‏١٥٠ ثانية ثمّ نتوقّف: صفحةٌ تُركت مفتوحةً ليلاً لا
+                // تسأل الخادمَ ألفَ مرّة بلا أحدٍ ينظر
+                if (ticks > 75) { clearInterval(poll); setStatus('انتهت المهلة — اضغط لإحضار رمزٍ جديد.', 'bad'); return; }
+
+                fetch(pairBox.dataset.stateUrl, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) { if (data.state === 'open') { clearInterval(poll); connected(); } })
+                .catch(function () {});
+            }, 2000);
+        }
+
+        function connected() {
+            qrBox.textContent = '';
+            var ok = document.createElement('div');
+            ok.className = 'text-center text-emerald-700 font-bold text-sm px-4';
+            ok.textContent = '✓ تمّ الاقتران';
+            qrBox.appendChild(ok);
+
+            badge.textContent = '● موصول';
+            badge.className = 'text-[11px] px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200';
+
+            setStatus('الرقم موصول. أرسل رسالةً إليه من هاتفٍ آخر لتراها في صندوق الوارد.', 'good');
+        }
+
+        function setStatus(text, kind) {
+            status.textContent = text;
+            status.className = 'rounded-lg p-2 mt-2 border ' + (
+                kind === 'good' ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                : kind === 'bad' ? 'text-red-700 bg-red-50 border-red-200'
+                : 'text-amber-700 bg-amber-50 border-amber-200'
+            );
+        }
     }
 
     // ── معالج الربط ──────────────────────────────────────────

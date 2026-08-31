@@ -82,6 +82,16 @@ class WhatsAppSettingsController extends Controller
      */
     public function disconnect(Request $request): RedirectResponse
     {
+        // على الجسر: يُلغى الاقتران عند الخادم أيضاً، وإلا بقي الهاتفُ
+        // مقترناً يرسل بينما الشاشةُ تقول «مفصول»
+        if (WhatsAppSettings::usingEvolution()) {
+            $provider = WhatsAppManager::make();
+
+            if ($provider instanceof \App\Services\WhatsApp\EvolutionProvider) {
+                $provider->logout();
+            }
+        }
+
         WhatsAppSettings::disconnect();
 
         $this->audit('whatsapp_disconnected', []);
@@ -192,6 +202,47 @@ class WhatsAppSettingsController extends Controller
             'failed' => $failed,
             'report' => app(\App\Services\WhatsApp\SetupDoctor::class)->report(probe: true),
         ], 200);
+    }
+
+    /**
+     * اقترانُ جسر واتساب ويب — إنشاءُ النسخة وإرجاعُ رمز المسح.
+     *
+     * يُنادى من شاشة الاقتران كلَّ ثوانٍ حتى تصير الحالة «open».
+     * ولا يُعرض إلا حين يكون المزوّدُ Evolution: على Meta لا معنى له.
+     */
+    public function pair(): JsonResponse
+    {
+        if (!WhatsAppSettings::usingEvolution()) {
+            return response()->json(['state' => 'close', 'message' => 'هذا المزوّد لا يُقترن بمسح رمز.'], 200);
+        }
+
+        $provider = WhatsAppManager::make();
+
+        if (!$provider instanceof \App\Services\WhatsApp\EvolutionProvider) {
+            return response()->json(['state' => 'close', 'message' => 'جسر واتساب ويب غير مضبوط على الخادم.'], 200);
+        }
+
+        $result = $provider->pair();
+        $this->audit('whatsapp_evolution_pair', ['state' => $result['state']]);
+
+        return response()->json($result, 200);
+    }
+
+    /** حالةُ الاقتران الحاليّة — تسألها الشاشةُ لتعرف متى تتوقّف. */
+    public function pairState(): JsonResponse
+    {
+        if (!WhatsAppSettings::usingEvolution()) {
+            return response()->json(['state' => WhatsAppSettings::isConnected() ? 'open' : 'close'], 200);
+        }
+
+        $provider = WhatsAppManager::make();
+        $state = $provider instanceof \App\Services\WhatsApp\EvolutionProvider
+            ? $provider->connectionState()
+            : 'close';
+
+        WhatsAppSettings::setEvolutionState($state);
+
+        return response()->json(['state' => $state], 200);
     }
 
     /** فحصُ اتصالٍ حقيقي — الاستجابة لا تحتوي الرمز. */

@@ -8,9 +8,16 @@
 | ومعرّف الرقم وسرّ التطبيق — فتُخزَّن مشفَّرةً في جدول settings الخاص
 | بقاعدة بيانات ذلك المكتب، بمفتاح تطبيقه هو. راجع App\Support\WhatsAppSettings.
 |
-| المزوّد الرسمي هو Meta Cloud API. ولم يُكتب مزوّدٌ غير رسمي (يحاكي
-| واتساب ويب) عمداً: أرقامُ مكاتب المحاماة معروفةٌ لموكّليها، وحظرُ رقمٍ
-| بسبب مخالفة شروط Meta خسارةٌ لا تُستردّ.
+| مزوّدان:
+|
+|  • meta      — Meta Cloud API الرسمي. لا يُحظر، ويحتاج تطبيقاً عند Meta
+|                ونافذةَ أربعٍ وعشرين ساعة وقوالبَ معتمَدة.
+|  • evolution — جسرُ واتساب ويب (Baileys). يُربط بمسح رمزٍ في ثوانٍ، بلا
+|                تطبيقٍ ولا نافذةٍ ولا قوالب — ويخالف شروط Meta، والرقمُ
+|                المستعمَل عبره قد يُحظر بلا إنذار.
+|
+| الاختيارُ قرارُ صاحب النظام لا قرارُ الكود. وما بينهما من فروق (النافذة،
+| القوالب) مكتوبٌ في جدول المزوّدين أدناه لا مبعثراً في الشيفرة.
 */
 
 return [
@@ -44,7 +51,37 @@ return [
             'label' => 'Meta WhatsApp Cloud API',
             'implemented' => true,
             'driver' => \App\Services\WhatsApp\MetaCloudProvider::class,
+            // قواعدُ Meta لا خياراتُنا: خارج النافذة لا يمرّ إلا قالب
+            'service_window' => true,
+            'templates' => true,
+            'pairing' => 'credentials',
         ],
+        'evolution' => [
+            'label' => 'Evolution API (واتساب ويب)',
+            'implemented' => true,
+            'driver' => \App\Services\WhatsApp\EvolutionProvider::class,
+            // جسرُ واتساب ويب لا يعرف نافذةً ولا قوالب: ما يقدر عليه
+            // الهاتفُ يقدر عليه. فمنعُ الردّ الحرّ هنا منعٌ بلا سبب.
+            'service_window' => false,
+            'templates' => false,
+            'pairing' => 'qr',
+        ],
+    ],
+
+    /*
+    | خادم Evolution — عنوانُه ومفتاحُه العام.
+    |
+    | يُقرآن من ملفّ البيئة لا من قاعدة المكتب: الخادمُ واحدٌ لكل
+    | المكاتب على هذا الجهاز، ومفتاحُه يفتح كلَّ نسخِه. أمّا اسمُ نسخة
+    | المكتب (instance) فيُخزَّن في قاعدته هو.
+    |
+    | ولا يُكتب المفتاح في git: يوضع في ملفّ بيئة المكتب على الخادم.
+    */
+    'evolution' => [
+        'base_url' => env('EVOLUTION_BASE_URL', ''),
+        'api_key' => env('EVOLUTION_API_KEY', ''),
+        // ‏Baileys هو التكامل الافتراضي في Evolution v2
+        'integration' => env('EVOLUTION_INTEGRATION', 'WHATSAPP-BAILEYS'),
     ],
 
     /*

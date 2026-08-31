@@ -86,6 +86,54 @@ class WhatsAppWebhookController extends Controller
     }
 
     /**
+     * بابُ جسر واتساب ويب (Evolution).
+     *
+     * ═══ لماذا بابٌ آخر ═══
+     *
+     * حمولةُ الجسر شكلٌ آخرُ تماماً، وتحقّقُها آخر: لا توقيعَ معمّى
+     * كتوقيع Meta، فالسرُّ في المسار نفسه. من لا يعرفه لا يجد العنوان.
+     *
+     * ═══ ولماذا يُقارَن بـhash_equals ═══
+     *
+     * المقارنةُ العادية تتوقّف عند أوّل حرفٍ مختلف، وزمنُ توقّفها
+     * يُسرّب طولَ البادئة الصحيحة لمن يقيس آلافَ المحاولات.
+     *
+     * وحدثُ الاتصال (CONNECTION_UPDATE) يُعالَج هنا لا في الطابور:
+     * هو ما تنتظره شاشةُ الاقتران لتقول «تمّ»، وتأخيرُ دقيقةٍ فيه
+     * يجعل المكتبَ يظنّ أنّ المسح أخفق فيعيده.
+     */
+    public function evolution(Request $request, string $secret): Response
+    {
+        if (!hash_equals(WhatsAppSettings::evolutionSecret(), $secret)) {
+            Log::warning('Evolution webhook secret rejected from ' . $request->ip());
+
+            return response('', 403);
+        }
+
+        $payload = (array) $request->json()->all();
+        $event = strtoupper((string) ($payload['event'] ?? ''));
+        $data = (array) ($payload['data'] ?? []);
+
+        WhatsAppSettings::touchWebhook();
+
+        if (str_replace('.', '_', $event) === 'CONNECTION_UPDATE') {
+            $state = (string) ($data['state'] ?? $data['connection'] ?? '');
+
+            if (in_array($state, ['open', 'connecting', 'close'], true)) {
+                WhatsAppSettings::setEvolutionState($state);
+            }
+
+            return response('', 200);
+        }
+
+        foreach (\App\Services\WhatsApp\EvolutionPayload::events($event, $data) as $item) {
+            $this->enqueue($item);
+        }
+
+        return response('', 200);
+    }
+
+    /**
      * التحقّق من توقيع Meta — HMAC-SHA256 على الجسم الخام بسرّ التطبيق.
      *
      * ═══ لماذا الجسم الخام ═══
