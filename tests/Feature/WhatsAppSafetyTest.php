@@ -383,6 +383,28 @@ class WhatsAppSafetyTest extends TestCase
         $this->assertFalse(WhatsAppSettings::inboxVisible(), 'أظهر مديرٌ صندوقَ الوارد');
     }
 
+    /** والأرقامُ مقفلةٌ كالمفاتيح: سقفٌ يُرفع يُبطل الحمايةَ كإطفائها. */
+    public function test_an_admin_cannot_raise_the_caps_or_shorten_the_gap(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        $this->actingAs($admin)->post(route('settings.whatsapp.update'), [
+            'wa_guard_per_hour' => 200,
+            'wa_guard_per_day' => 1000,
+            'wa_guard_min_gap_s' => 3,
+            'wa_guard_quiet_from' => 0,
+            'wa_guard_quiet_to' => 0,
+        ])->assertRedirect();
+
+        $this->assertSame(SendingGuard::DEFAULT_PER_HOUR, SendingGuard::perHour());
+        $this->assertSame(SendingGuard::DEFAULT_PER_DAY, SendingGuard::perDay());
+        $this->assertSame(SendingGuard::DEFAULT_MIN_GAP, SendingGuard::minGap());
+
+        // والصمتُ ما زال قائماً — لم يُلغَ بمساواة الساعتين
+        $this->travelTo(now()->setTime(3, 0));
+        $this->assertNotNull(SendingGuard::delayFor($this->queued()));
+    }
+
     /** والمطوّرُ يملكها — هو من يقرّر. */
     public function test_a_developer_can_change_them(): void
     {
@@ -390,9 +412,33 @@ class WhatsAppSafetyTest extends TestCase
 
         $this->actingAs($dev)->post(route('settings.whatsapp.update'), [
             'wa_inbox_visible' => '1',
+            'wa_guard_per_day' => 90,
         ])->assertRedirect();
 
         $this->assertTrue(WhatsAppSettings::inboxVisible());
+        $this->assertSame(90, SendingGuard::perDay());
+    }
+
+    /**
+     * والحدودُ تعود إلى وضعها الصحيح على مكتبٍ أطفأها قبل القفل.
+     *
+     * وقع هذا: حفظةُ إعداداتٍ واحدة كتبت `0` قبل أن تُقفل، ثمّ قُفلت
+     * فصار الرقمُ يعمل بلا حدود ولا أحدَ في المكتب يستطيع إعادتها.
+     */
+    public function test_the_repair_migration_restores_the_safe_values(): void
+    {
+        Setting::set(SendingGuard::KEY_ENABLED, '0', 'whatsapp');
+        Setting::set(SendingGuard::KEY_CLIENTS_ONLY, '0', 'whatsapp');
+        Setting::set(WhatsAppSettings::KEY_INBOX_VISIBLE, '1', 'whatsapp');
+
+        $this->assertFalse(SendingGuard::enabled());
+
+        require database_path('migrations/2026_09_01_100003_restore_whatsapp_safety_defaults.php');
+        (include database_path('migrations/2026_09_01_100003_restore_whatsapp_safety_defaults.php'))->up();
+
+        $this->assertTrue(SendingGuard::enabled(), 'بقيت الحدودُ مطفأةً بعد الإصلاح');
+        $this->assertTrue(SendingGuard::clientsOnly());
+        $this->assertFalse(WhatsAppSettings::inboxVisible());
     }
 
     // ── الرقم العُماني ──────────────────────────────────────────

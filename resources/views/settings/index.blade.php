@@ -426,37 +426,42 @@
                     </label>
                 </div>
 
+                @php $waNumCls = 'w-full mt-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm'
+                        . ($waLocked ? ' bg-gray-50 text-gray-500 cursor-not-allowed' : ''); @endphp
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
                         <label class="text-[11px] font-bold text-gray-500">في الساعة</label>
                         <input type="number" name="wa_guard_per_hour" min="1" max="200"
                                value="{{ \App\Services\WhatsApp\SendingGuard::perHour() }}"
-                               class="w-full mt-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm">
+                               class="{{ $waNumCls }}" @disabled($waLocked)>
                     </div>
                     <div>
                         <label class="text-[11px] font-bold text-gray-500">في اليوم</label>
                         <input type="number" name="wa_guard_per_day" min="1" max="1000"
                                value="{{ \App\Services\WhatsApp\SendingGuard::perDay() }}"
-                               class="w-full mt-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm">
+                               class="{{ $waNumCls }}" @disabled($waLocked)>
                     </div>
                     <div>
                         <label class="text-[11px] font-bold text-gray-500">مهلة بين رسالتين (ث)</label>
                         <input type="number" name="wa_guard_min_gap_s" min="3" max="600"
                                value="{{ \App\Services\WhatsApp\SendingGuard::minGap() }}"
-                               class="w-full mt-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm">
+                               class="{{ $waNumCls }}" @disabled($waLocked)>
                     </div>
                     <div>
                         <label class="text-[11px] font-bold text-gray-500">صمتٌ من — إلى</label>
                         <div class="flex items-center gap-1 mt-1">
                             <input type="number" name="wa_guard_quiet_from" min="0" max="23"
                                    value="{{ (int) (\App\Models\Setting::get(\App\Services\WhatsApp\SendingGuard::KEY_QUIET_FROM, 21)) }}"
-                                   class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm">
+                                   class="{{ str_replace('mt-1', '', $waNumCls) }}" @disabled($waLocked)>
                             <input type="number" name="wa_guard_quiet_to" min="0" max="23"
                                    value="{{ (int) (\App\Models\Setting::get(\App\Services\WhatsApp\SendingGuard::KEY_QUIET_TO, 8)) }}"
-                                   class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm">
+                                   class="{{ str_replace('mt-1', '', $waNumCls) }}" @disabled($waLocked)>
                         </div>
                     </div>
                 </div>
+                @if($waLocked)
+                    <p class="text-[11px] text-gray-400 mt-1.5">هذه الحدود يضبطها المطوّر — تُعرض لك ولا تُعدَّل من هنا.</p>
+                @endif
 
                 <label class="flex items-start gap-2.5 p-2.5 mt-3 rounded-lg border {{ $waLocked ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-200 cursor-pointer hover:border-gold/40' }}">
                     <input type="checkbox" name="wa_inbox_visible" value="1" class="mt-0.5 rounded border-gray-300"

@@ -69,12 +69,23 @@ class SendingGuard
         return !(auth()->user()?->isDeveloper() ?? false);
     }
 
-    /** أسماءُ الإعدادات المقفلة — يقرؤها المتحكّم فيتجاهلها. */
+    /**
+     * أسماءُ الإعدادات المقفلة — يقرؤها المتحكّم فيتجاهلها.
+     *
+     * والأرقامُ مقفلةٌ كالمفاتيح: سقفٌ يُرفع إلى ألفٍ يُبطل الحمايةَ
+     * كما يُبطلها إطفاؤها، ومهلةٌ تُنزَّل إلى ثلاثِ ثوانٍ تجعل
+     * الإرسالَ دفعةً واحدة. فالحدُّ الذي يملك المكتبُ توسيعَه ليس حدّاً.
+     */
     public static function lockedKeys(): array
     {
         return [
             self::KEY_ENABLED,
             self::KEY_CLIENTS_ONLY,
+            self::KEY_PER_HOUR,
+            self::KEY_PER_DAY,
+            self::KEY_MIN_GAP,
+            self::KEY_QUIET_FROM,
+            self::KEY_QUIET_TO,
             \App\Support\WhatsAppSettings::KEY_INBOX_VISIBLE,
         ];
     }

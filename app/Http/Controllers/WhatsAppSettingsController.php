@@ -103,17 +103,21 @@ class WhatsAppSettingsController extends Controller
             ] as $key => $value) {
                 \App\Models\Setting::set($key, $value, WhatsAppSettings::GROUP);
             }
-        }
 
-        foreach ([
-            $guard::KEY_PER_HOUR => 'wa_guard_per_hour',
-            $guard::KEY_PER_DAY => 'wa_guard_per_day',
-            $guard::KEY_MIN_GAP => 'wa_guard_min_gap_s',
-            $guard::KEY_QUIET_FROM => 'wa_guard_quiet_from',
-            $guard::KEY_QUIET_TO => 'wa_guard_quiet_to',
-        ] as $key => $field) {
-            if (isset($validated[$field])) {
-                \App\Models\Setting::set($key, (string) $validated[$field], WhatsAppSettings::GROUP);
+            // والأرقامُ مقفلةٌ كالمفاتيح: سقفٌ يُرفع إلى ألفٍ يُبطل
+            // الحمايةَ كما يُبطلها إطفاؤها، ومهلةٌ تُنزَّل إلى ثلاثِ
+            // ثوانٍ تجعل الإرسالَ دفعةً واحدة. فالحدُّ الذي يملك
+            // المكتبُ توسيعَه ليس حدّاً.
+            foreach ([
+                $guard::KEY_PER_HOUR => 'wa_guard_per_hour',
+                $guard::KEY_PER_DAY => 'wa_guard_per_day',
+                $guard::KEY_MIN_GAP => 'wa_guard_min_gap_s',
+                $guard::KEY_QUIET_FROM => 'wa_guard_quiet_from',
+                $guard::KEY_QUIET_TO => 'wa_guard_quiet_to',
+            ] as $key => $field) {
+                if (isset($validated[$field])) {
+                    \App\Models\Setting::set($key, (string) $validated[$field], WhatsAppSettings::GROUP);
+                }
             }
         }
 
