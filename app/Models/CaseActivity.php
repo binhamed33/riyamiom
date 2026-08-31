@@ -27,7 +27,18 @@ class CaseActivity extends Model
         'title',
         'content',
         'occurred_at',
+        'created_via',
     ];
+
+    /** اسم الفاعل كما يُعرض — والنظامُ فاعلٌ باسمه لا باسم صاحب القاعدة. */
+    public function actorLabel(): ?string
+    {
+        if ($this->created_via === 'automation') {
+            return 'نظام مُداوَلة';
+        }
+
+        return $this->user?->name;
+    }
 
     protected function casts(): array
     {

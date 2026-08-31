@@ -442,6 +442,8 @@ class AutomationEngine
             'case_id' => $case?->id,
             'assigned_to' => $assignee->id,
             'created_by' => $rule->created_by ?? $assignee->id,
+            // الفاعل الظاهر هو النظام — وcreated_by للمساءلة وحدها
+            'created_via' => 'automation',
             'status' => 'pending',
             'priority' => in_array($action['priority'] ?? '', ['low', 'medium', 'high', 'urgent'], true) ? $action['priority'] : 'high',
             'due_date' => now()->addDays(max(0, (int) ($action['due_in_days'] ?? 1))),
@@ -499,6 +501,7 @@ class AutomationEngine
         CaseActivity::create([
             'case_id' => $case->id,
             'user_id' => $userId,
+            'created_via' => 'automation',
             'type' => CaseActivity::TYPE_OTHER,
             'title' => '⚙️ ' . ($action['title'] ?? $rule->name),
             'content' => 'حدث تلقائي من قاعدة: ' . $rule->name,

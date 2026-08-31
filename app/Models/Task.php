@@ -25,6 +25,7 @@ class Task extends Model
         'case_id',
         'assigned_to',
         'created_by',
+        'created_via',
         'status',
         'priority',
         'due_date',
@@ -52,6 +53,22 @@ class Task extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /**
+     * اسم مَن يُعرض مُنشئاً للمهمّة.
+     *
+     * ما أنشأته الأتمتة يُنسب إلى «نظام مُداوَلة» لا إلى صاحب القاعدة:
+     * اشتكى مستخدمٌ يرى اسمه على مهامَّ أنشأتها قاعدةٌ ليلاً وهو نائم.
+     * وcreated_by باقٍ في القاعدة للمساءلة — قاعدةُ مَن فعلت.
+     */
+    public function creatorLabel(): string
+    {
+        if ($this->created_via === 'automation') {
+            return 'نظام مُداوَلة';
+        }
+
+        return $this->creator->name ?? '—';
     }
 
     public function creator(): BelongsTo

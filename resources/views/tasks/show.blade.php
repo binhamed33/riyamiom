@@ -84,7 +84,7 @@
             </div>
             <div>
                 <dt class="text-sm text-gray-500 mb-1">{{ __('app.created_by') }}</dt>
-                <dd class="text-gray-800 font-medium">{{ $task->creator->name ?? '—' }}</dd>
+                <dd class="text-gray-800 font-medium">{{ $task->creatorLabel() }}</dd>
             </div>
             <div>
                 <dt class="text-sm text-gray-500 mb-1">{{ __('app.due_date') }}</dt>

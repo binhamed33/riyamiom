@@ -449,7 +449,7 @@ class CaseController extends Controller
             $events->push([
                 'kind' => 'activity',
                 'label' => $a->title,
-                'sub' => $typeLabel . ($a->user ? ' • ' . $a->user->name : ''),
+                'sub' => $typeLabel . ($a->actorLabel() ? ' • ' . $a->actorLabel() : ''),
                 'date' => $a->occurred_at,
                 'key' => 'a' . $a->id,
             ]);
