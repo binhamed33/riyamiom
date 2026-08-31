@@ -175,20 +175,18 @@ class BackupPulseTest extends TestCase
     {
         $source = file_get_contents(app_path('Console/Commands/DailyBackup.php'));
 
-        $this->assertMatchesRegularExpression(
-            "/'backup-' \. date\(/",
-            $source,
-            'غُيّرت بادئةُ اسم النسخة — يجب تغيير BackupStatus::GLOB معها',
-        );
+        // الاسم الثابت الجديد يبدأ بما يبحث عنه الملخّص
+        $this->assertStringContainsString("LATEST = 'backup-", $source,
+            'غُيّرت بادئةُ اسم النسخة — يجب تغيير BackupStatus::GLOB معها');
 
         // ونثبتُ الارتباط سلوكياً لا بالنصّ وحده
-        $this->makeArchive('backup-' . date('Y-m-d-His') . '.zip');
+        $this->makeArchive(\App\Console\Commands\DailyBackup::LATEST);
         $this->assertSame(1, BackupStatus::summary()['count']);
 
-        // ونسخُ النصف ساعة لها بادئتُها، فلا تُحسب نسخةً يومية ولا
-        // تُغطّي على يوميّةٍ أخفقت
-        $this->makeArchive('auto-' . date('Y-m-d-His') . '.zip');
-        $this->assertSame(1, BackupStatus::summary()['count'], 'نسخةٌ نصف ساعية حُسبت يومية');
+        // والنسخ اليدوية لها بادئتُها، فلا تُحسب متجددةً ولا تُغطّي
+        // على متجددةٍ أخفقت
+        $this->makeArchive('manual-' . date('Y-m-d-His') . '.zip');
+        $this->assertSame(1, BackupStatus::summary()['count'], 'نسخةٌ يدوية حُسبت متجددة');
     }
 
     // ─────────────────────────────────────────── النبضة تحمله
@@ -225,16 +223,9 @@ class BackupPulseTest extends TestCase
         $summary = BackupStatus::summary();
 
         $this->assertSame(
-            ['last_at', 'last_ok_at', 'last_run_at', 'count', 'size_bytes', 'total_bytes', 'oldest_at', 'error', 'tables', 'levels'],
+            ['last_at', 'last_ok_at', 'last_run_at', 'count', 'size_bytes', 'total_bytes', 'oldest_at', 'error', 'tables'],
             array_keys($summary),
         );
-
-        // §14: المستويات أعدادٌ لا أسماء — اللوحة تعرف أن التاريخ محفوظ
-        // ولا تعرف اسم ملفٍ واحد
-        $this->assertSame(['daily', 'weekly', 'monthly', 'yearly'], array_keys($summary['levels']));
-        foreach ($summary['levels'] as $level => $count) {
-            $this->assertIsInt($count, "المستوى {$level} عددٌ صحيح");
-        }
 
         $this->assertStringNotContainsString('backup-2026', json_encode($summary, JSON_UNESCAPED_UNICODE));
     }

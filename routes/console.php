@@ -17,8 +17,12 @@ Schedule::command('backup:daily')->dailyAt('14:00')->timezone('Asia/Muscat');
 // له، لا بساعة تشغيل الأمر.
 Schedule::command('hr:close-attendance')->dailyAt('23:50')->timezone('Asia/Muscat');
 
-// Auto backup every 30 minutes if changes detected (keep 20)
-Schedule::command('backup:auto')->everyThirtyMinutes();
+// التذكير الشهري بالنسخة — أول كل شهر ٩ صباحاً بتوقيت مسقط.
+//
+// مديرٌ لا يعرف أين نسخته ولا كيف يستعيدها يكتشف ذلك يومَ الكارثة.
+// (النسخ النصف-ساعية أُلغيت بسياسة «نسخة واحدة تتجدد»: كانت تراكم
+// عشرين ملفاً من بيانات الموكلين لكل مكتب — مساحةً وسطحَ تسريب.)
+Schedule::command('backup:remind')->monthlyOn(1, '09:00')->timezone('Asia/Muscat');
 
 // Server status to Discord every 5 minutes
 Schedule::command('discord:status')->everyFiveMinutes();

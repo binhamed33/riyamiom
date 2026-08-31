@@ -95,7 +95,9 @@ class BackupController extends Controller
             mkdir($backupDir, 0755, true);
         }
         
-        $filename = 'backup-' . date('Y-m-d-His') . '.zip';
+        // manual- لا backup-: النسخة اليدوية ملكُ من صنعها — التسمية
+        // المميزة تعصمها من أي تنظيف آلي يطال بقايا النظام القديم
+        $filename = 'manual-' . date('Y-m-d-His') . '.zip';
         $filepath = $backupDir . '/' . $filename;
         
         $zip = new ZipArchive();

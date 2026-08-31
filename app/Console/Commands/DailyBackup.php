@@ -3,13 +3,33 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
+/**
+ * النسخة الاحتياطية اليومية — نسخة واحدة تتجدد، لا أكوام.
+ *
+ * ═══ سياسة صاحب المنصة ═══
+ *
+ * «نسخة وحدة تحدّث يومياً وليس أكثر — عشان المساحة والأمان». النظام
+ * السابق راكم: سبع يوميات، وعشرين نصف-ساعية، وسلّم ترقيةٍ أسبوعي
+ * وشهري وسنوي — لكل مكتب. كل ملفٍ منها قاعدةُ بيانات موكلين كاملة،
+ * فكثرتُها عبءُ مساحةٍ وسطحُ تسريب معاً.
+ *
+ * ═══ لماذا لا يضيع شيء رغم أنها واحدة ═══
+ *
+ * تُبنى النسخة باسم مؤقت وتُفحص، ولا تحل محل السابقة إلا بعد نجاح
+ * الفحص وبتبديلٍ ذرّي (rename) — فلا توجد لحظةٌ بلا نسخةٍ سليمة،
+ * وفشلُ الليلة يُبقي نسخةَ الأمس كما هي. والتعدد يتحقق بالأماكن لا
+ * بالأعداد: خزنة الجذر على الخادم تلتقط النسخة ذاتها بعد إنشائها،
+ * والتذكير الشهري يدعو المدير لتنزيل نسخته الخاصة.
+ */
 class DailyBackup extends Command
 {
     protected $signature = 'backup:daily';
-    protected $description = 'Create daily backup of database and private files';
+    protected $description = 'نسخة احتياطية واحدة متجددة يومياً — تُفحص قبل أن تحل محل السابقة';
+
+    /** اسم النسخة الثابت — ثباتُه ما يسمح للخزنة والاسترجاع بإيجاده دائماً */
+    public const LATEST = 'backup-latest.zip';
 
     public function handle(): int
     {
@@ -18,12 +38,16 @@ class DailyBackup extends Command
             mkdir($backupDir, 0700, true);
         }
 
-        $filename = 'backup-' . date('Y-m-d-His') . '.zip';
-        $filepath = $backupDir . '/' . $filename;
+        // البناء باسم مؤقت: النسخة الحالية لا تُمسّ حتى تنجح الجديدة
+        $building = $backupDir . '/backup-new.zip';
+        $latest = $backupDir . '/' . self::LATEST;
+        @unlink($building);
 
         $zip = new ZipArchive();
-        if ($zip->open($filepath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            $this->error("Failed to create backup: {$filename}");
+        if ($zip->open($building, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            $this->error('تعذّر إنشاء ملف النسخة.');
+            \App\Support\BackupStatus::record(false, 'تعذّر إنشاء ملف النسخة');
+
             return 1;
         }
 
@@ -64,15 +88,13 @@ class DailyBackup extends Command
                 // لا تفريغ ولا بديل: أرشيف بلا قاعدة بيانات ليس نسخة
                 // احتياطية بل وهمُ نسخة — نفشل بصوت عالٍ ولا ننشئه أصلاً.
                 $zip->close();
-                @unlink($filepath);
+                @unlink($building);
                 @unlink($sqlFile);
                 @unlink($configFile);
 
                 $this->error('تعذّر تفريغ قاعدة البيانات ولا يوجد بديل — لم تُنشأ نسخة.');
-                $this->error('النسخ القديمة لم تُمسّ.');
+                $this->error('النسخة الحالية لم تُمسّ.');
 
-                // تُدوَّن الحقيقة حيث تقرؤها اللوحة، لا في السجلّ وحده:
-                // نسخةٌ تخفق كلَّ ليلة كانت تخفق بصمت.
                 \App\Support\BackupStatus::record(false, 'تعذّر تفريغ قاعدة البيانات ولا بديل لها');
 
                 self::audit([
@@ -99,17 +121,16 @@ class DailyBackup extends Command
 
         @unlink($sqlFile);
         @unlink($configFile);
-        chmod($filepath, 0600);
+        chmod($building, 0600);
 
-        // نسخة لم تُفحص ليست نسخة: نتحقق أن الأرشيف يُفتح وأن قاعدة
-        // البيانات داخله فعلاً وفيها جداول — قبل أن نتفاخر بأنها أُنشئت،
-        // وقبل أن نحذف أي نسخة قديمة سليمة.
-        $verify = \App\Support\BackupVerifier::verify($filepath);
+        // الفحص قبل التبديل: نسخة لم تُفحص ليست نسخة، ونسخةٌ فاشلة
+        // لا يُسمح لها أن تحل محل نسخةٍ سليمة.
+        $verify = \App\Support\BackupVerifier::verify($building);
 
         if (!$verify['ok']) {
             $this->error('النسخة الاحتياطية فشلت في الفحص: ' . $verify['reason']);
-            $this->error('النسخ القديمة لم تُمسّ. لا تعتمد على هذا الملف.');
-            @unlink($filepath);
+            $this->error('نسخة الأمس لم تُمسّ — لا تعتمد على ملف الليلة.');
+            @unlink($building);
 
             \App\Support\BackupStatus::record(false, 'فشل الفحص: ' . $verify['reason']);
 
@@ -119,7 +140,7 @@ class DailyBackup extends Command
                 'model_type' => 'System',
                 'model_id' => null,
                 'old_values' => null,
-                'new_values' => json_encode(['filename' => $filename, 'reason' => $verify['reason']], JSON_UNESCAPED_UNICODE),
+                'new_values' => json_encode(['reason' => $verify['reason']], JSON_UNESCAPED_UNICODE),
                 'ip_address' => '127.0.0.1',
                 'user_agent' => 'System',
             ]);
@@ -127,10 +148,13 @@ class DailyBackup extends Command
             return 1;
         }
 
+        // التبديل الذرّي: rename على نفس القرص لا يترك لحظةً بلا ملف
+        rename($building, $latest);
+
         \App\Support\BackupStatus::record(true, tables: (int) $verify['tables']);
 
-        $size = round(filesize($filepath) / 1024 / 1024, 2);
-        $this->info("Backup created: {$filename} ({$size} MB)");
+        $size = round(filesize($latest) / 1024 / 1024, 2);
+        $this->info('النسخة محدَّثة: ' . self::LATEST . " ({$size} MB)");
         $this->info('الفحص: قاعدة البيانات داخل الأرشيف، ' . $verify['tables'] . ' جدولاً، ' . $verify['files'] . ' ملفاً.');
 
         self::audit([
@@ -140,7 +164,7 @@ class DailyBackup extends Command
             'model_id' => null,
             'old_values' => null,
             'new_values' => json_encode([
-                'filename' => $filename,
+                'filename' => self::LATEST,
                 'size_mb' => $size,
                 'tables' => $verify['tables'],
                 'files' => $verify['files'],
@@ -150,27 +174,54 @@ class DailyBackup extends Command
             'user_agent' => 'System',
         ]);
 
-        // §14: الترقية قبل الحذف — أولى نسخِ الأسبوع تصير أسبوعية، وأولى
-        // نسخِ الشهر شهرية، وأولى نسخِ السنة سنوية. الترقية تسبق حذف
-        // اليوميات كي لا تُحذف نسخةٌ كان يجب أن تُرقّى.
-        $rotation = \App\Support\BackupRotation::rotate($backupDir, $filepath);
-
-        foreach ($rotation['promoted'] as $copy) {
-            $this->info('نسخة مُرقّاة: ' . $copy);
-        }
-        foreach ($rotation['removed'] as $gone) {
-            $this->info('نسخة منتهية حُذفت: ' . $gone);
-        }
-
-        // الاحتفاظ بسبع نسخ يومية لا واحدة: نسخة الليلة قد تكون معطوبة
-        // بعطل لم يكشفه الفحص، وسبع ليالٍ تاريخ يُرجَع إليه.
-        foreach (\App\Support\BackupVerifier::prune($backupDir, 'backup-*.zip', keep: \App\Support\BackupRotation::KEEP['daily']) as $removed) {
-            $this->info('Old backup removed: ' . $removed);
+        // تنظيف تركة النظام القديم — بعد نجاح نسخة الليلة وفحصها فقط،
+        // فلا نكون أبداً أفقر نسخاً مما كنا قبل الحذف.
+        foreach ($this->cleanupLegacy($backupDir) as $line) {
+            $this->info($line);
         }
 
         return 0;
     }
 
+    /**
+     * إزالة أكوام النظام القديم — الآليُّ قطعاً فوراً، والملتبسُ بمهلة.
+     *
+     * auto-*.zip وweekly/monthly/yearly-*.zip لا يصنعها إلا الجهاز —
+     * تُحذف مباشرة. أما backup-بتاريخ.zip فكانت تسمية اليوميات القديمة
+     * «واليدويةِ من الواجهة أيضاً» — قد تكون نسخةً صنعها مديرٌ بيده قبل
+     * عمليةٍ خطرة، فلا تُحذف إلا بعد ٤٥ يوماً من عمرها. واليدوية
+     * الجديدة تُسمّى manual-* ولا يمسّها هذا التنظيف أبداً.
+     *
+     * @return array<int, string>
+     */
+    private function cleanupLegacy(string $backupDir): array
+    {
+        $report = [];
+        $freed = 0;
+
+        foreach (['auto-*.zip', 'weekly-*.zip', 'monthly-*.zip', 'yearly-*.zip'] as $pattern) {
+            foreach (glob($backupDir . '/' . $pattern) ?: [] as $file) {
+                $freed += (int) filesize($file);
+                @unlink($file);
+                $report[] = 'أُزيلت نسخة النظام القديم: ' . basename($file);
+            }
+        }
+
+        $cutoff = time() - 45 * 86400;
+        foreach (glob($backupDir . '/backup-[0-9]*.zip') ?: [] as $file) {
+            if (filemtime($file) < $cutoff) {
+                $freed += (int) filesize($file);
+                @unlink($file);
+                $report[] = 'أُزيلت نسخة مؤرّخة تجاوزت ٤٥ يوماً: ' . basename($file);
+            }
+        }
+
+        if ($freed > 0) {
+            $report[] = 'المساحة المحرَّرة: ' . round($freed / 1024 / 1024, 1) . ' MB';
+        }
+
+        return $report;
+    }
 
     /**
      * تدوينُ الحدث في السجلّ — ولا يُفشل النسخَ إن تعذّر.

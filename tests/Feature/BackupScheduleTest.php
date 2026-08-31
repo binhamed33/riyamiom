@@ -59,4 +59,29 @@ class BackupScheduleTest extends TestCase
     {
         $this->assertArrayHasKey('backup:daily', \Illuminate\Support\Facades\Artisan::all());
     }
+
+    /** التذكير الشهري — أول الشهر ٩ صباحاً بتوقيت مسقط. */
+    public function test_the_monthly_backup_reminder_is_scheduled(): void
+    {
+        $this->assertSame('0 9 1 * *', $this->expression('backup:remind'));
+        $this->assertSame('Asia/Muscat', (string) $this->event('backup:remind')->timezone);
+    }
+
+    /**
+     * النصف-ساعية أُلغيت — سياسة «نسخة واحدة تتجدد».
+     *
+     * كانت تراكم عشرين ملفاً من بيانات الموكلين لكل مكتب. عودتُها
+     * تعيد أكوام المساحة وسطح التسريب الذي أُلغيت من أجله.
+     */
+    public function test_the_half_hourly_auto_backup_is_gone(): void
+    {
+        /** @var Schedule $schedule */
+        $schedule = $this->app->make(Schedule::class);
+
+        foreach ($schedule->events() as $event) {
+            $this->assertStringNotContainsString('backup:auto', $event->command ?? '');
+        }
+
+        $this->assertArrayNotHasKey('backup:auto', \Illuminate\Support\Facades\Artisan::all());
+    }
 }

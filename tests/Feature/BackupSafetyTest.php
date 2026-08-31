@@ -125,14 +125,27 @@ class BackupSafetyTest extends TestCase
         $this->assertCount(2, glob($this->dir . '/backup-*.zip'), 'الحذف النصف-ساعي طال النسخ اليومية');
     }
 
-    public function test_the_daily_command_never_deletes_all_but_one(): void
+    /**
+     * سياسة «نسخة واحدة تتجدد» لا تترك لحظةً بلا نسخةٍ سليمة.
+     *
+     * البناء باسم مؤقت، والفحص قبل التبديل، والتبديل ذرّي — فنسخةُ
+     * الأمس لا تُمسّ إلا بعد أن تنجح نسخةُ الليلة في فحصها.
+     */
+    public function test_verification_precedes_the_swap_and_manual_copies_are_never_cleaned(): void
     {
-        $src = file_get_contents(app_path('Console/Commands/DailyBackup.php'))
-             . file_get_contents(app_path('Console/Commands/AutoBackup.php'));
+        $src = file_get_contents(app_path('Console/Commands/DailyBackup.php'));
+
+        $verifyAt = strpos($src, 'BackupVerifier::verify');
+        $swapAt = strpos($src, 'rename($building, $latest)');
+        $this->assertNotFalse($verifyAt, 'لا فحص إطلاقاً');
+        $this->assertNotFalse($swapAt, 'لا تبديل ذرّي — النسخة تُكتب فوق السابقة مباشرة');
+        $this->assertLessThan($swapAt, $verifyAt, 'التبديل يسبق الفحص — نسخة معطوبة قد تمحو سليمة');
 
         // المنطق القديم كان دالة keepOnlyNewest تحذف كل شيء عدا الأحدث
         $this->assertStringNotContainsString('keepOnlyNewest', $src);
-        $this->assertStringContainsString("BackupVerifier::prune", $src);
+
+        // والتنظيف لا يعرف اليدوية أصلاً: نسخة صنعها مديرٌ بيده ملكُه
+        $this->assertStringNotContainsString("'manual-", $src, 'التنظيف الآلي يطال النسخ اليدوية');
     }
 
     // -------------------------------------------------- تشغيل حقيقي
@@ -145,26 +158,43 @@ class BackupSafetyTest extends TestCase
     public function test_the_daily_backup_actually_runs_and_includes_storage_files(): void
     {
         $backupDir = storage_path('app/backups');
-        $before = glob($backupDir . '/backup-*.zip') ?: [];
+        @mkdir($backupDir, 0700, true);
+        $latest = $backupDir . '/backup-latest.zip';
 
         // ملف تخزين حقيقي يجب أن يظهر داخل الأرشيف
         $probe = storage_path('app/private/backup-probe.txt');
         @mkdir(dirname($probe), 0700, true);
         file_put_contents($probe, 'محتوى تجريبي للفحص');
 
+        // تركة النظام القديم + نسخة يدوية + مؤرّختان (عتيقة وحديثة)
+        $seed = function (string $name, ?int $ageDays = null) use ($backupDir): string {
+            $p = $backupDir . '/' . $name;
+            $zip = new \ZipArchive();
+            $zip->open($p, \ZipArchive::CREATE);
+            $zip->addFromString('database/backup.sql', 'CREATE TABLE `t` ();');
+            $zip->close();
+            if ($ageDays !== null) {
+                touch($p, time() - $ageDays * 86400);
+            }
+
+            return $p;
+        };
+        $auto = $seed('auto-2026-01.zip');
+        $weekly = $seed('weekly-2026-W01.zip');
+        $manual = $seed('manual-2026-01-01-000000.zip', ageDays: 300);
+        $ancient = $seed('backup-2026-01-01-000000.zip', ageDays: 60);
+        $recent = $seed('backup-2026-08-30-000000.zip', ageDays: 2);
+
         try {
             $this->artisan('backup:daily')->assertSuccessful();
 
-            $after = glob($backupDir . '/backup-*.zip') ?: [];
-            $new = array_values(array_diff($after, $before));
-            $this->assertCount(1, $new, 'لم تُنشأ نسخة جديدة');
-
-            $verify = BackupVerifier::verify($new[0]);
+            $this->assertFileExists($latest, 'لم تُنشأ النسخة المتجددة');
+            $verify = BackupVerifier::verify($latest);
             $this->assertTrue($verify['ok'], 'النسخة لا تجتاز الفحص: ' . $verify['reason']);
 
             // قاعدة البيانات وملفات التخزين معاً — لا قاعدة وحدها
             $zip = new \ZipArchive();
-            $zip->open($new[0]);
+            $zip->open($latest);
             $names = [];
             for ($i = 0; $i < $zip->numFiles; $i++) {
                 $names[] = $zip->getNameIndex($i);
@@ -174,9 +204,22 @@ class BackupSafetyTest extends TestCase
             $this->assertContains('storage/private/backup-probe.txt', $names,
                 'ملفات التخزين غائبة عن الأرشيف — نسخة ناقصة');
 
-            @unlink($new[0]);
+            // التنظيف: الآليّ القديم ذهب، واليدويةُ والمؤرّخةُ الحديثة بقيتا
+            $this->assertFileDoesNotExist($auto, 'النصف-ساعية القديمة لم تُنظَّف');
+            $this->assertFileDoesNotExist($weekly, 'نسخ سلّم الترقية القديم لم تُنظَّف');
+            $this->assertFileDoesNotExist($ancient, 'مؤرّخة تجاوزت ٤٥ يوماً بقيت تأكل المساحة');
+            $this->assertFileExists($manual, 'نسخة يدوية حُذفت — ملكُ من صنعها');
+            $this->assertFileExists($recent, 'مؤرّخة حديثة حُذفت قبل مهلة الالتباس');
+
+            // تشغيلٌ ثانٍ: تبقى نسخة متجددة واحدة، بلا ملف بناءٍ يتيم
+            $this->artisan('backup:daily')->assertSuccessful();
+            $this->assertCount(1, glob($backupDir . '/backup-latest.zip'));
+            $this->assertFileDoesNotExist($backupDir . '/backup-new.zip');
         } finally {
             @unlink($probe);
+            foreach ([$latest, $auto, $weekly, $manual, $ancient, $recent, $backupDir . '/backup-new.zip'] as $f) {
+                @unlink($f);
+            }
         }
     }
 
