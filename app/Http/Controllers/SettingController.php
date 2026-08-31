@@ -40,6 +40,7 @@ class SettingController extends Controller
             // الحضور التلقائي مفروضاً بلا مفتاح إطفاء، وملاحظةُ الصيانة
             // لا تظهر أبداً.
             'hr_auto_checkin'    => 'nullable',
+            'hr_auto_close'      => 'nullable',
             'maintenance_note'   => 'nullable|string|max:300',
         ]);
 
@@ -65,6 +66,7 @@ class SettingController extends Controller
         // يُرسَل». وبلا هذا يبقى مفروضاً على المكتب بلا مفتاح إطفاء.
         if ($request->has('hr_section')) {
             Setting::set('hr_auto_checkin', $request->boolean('hr_auto_checkin') ? '1' : '0', 'hr');
+            Setting::set('hr_auto_close', $request->boolean('hr_auto_close') ? '1' : '0', 'hr');
         }
 
         // أنواع البريد: يقرّر المكتب ما يصل موكّليه. تُقرأ من التعداد
@@ -91,6 +93,7 @@ class SettingController extends Controller
             'items_per_page'     => 'system',
             'client_portal_welcome' => 'client_portal',
             'hr_auto_checkin'    => 'hr',
+            'hr_auto_close'      => 'hr',
             'maintenance_note'   => 'system',
         ];
 

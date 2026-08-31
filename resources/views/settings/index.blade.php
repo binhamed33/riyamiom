@@ -581,6 +581,21 @@
                 </span>
             </label>
 
+            <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer mb-5">
+                <input type="checkbox" name="hr_auto_close" value="1"
+                       @checked(\App\Support\AttendanceGuard::autoCloseEnabled())
+                       class="mt-0.5 w-4 h-4 rounded text-gold focus:ring-gold/40 border-gray-300">
+                <span>
+                    <span class="block text-sm font-semibold text-gray-800">إقفال ليليّ للسجلّات التي نُسي انصرافها</span>
+                    <span class="block text-xs text-gray-500 mt-0.5">
+                        معطَّلٌ افتراضاً: الانصراف يُسجَّل بضغط زرّ الخروج وحده، ومن نسيه
+                        تُعرض خانتُه «بلا انصراف» ليُصحّحها الإداري. فعّله إن أردت أن يُقفل
+                        النظام السجلَّ المنسيّ آخرَ الليل على آخر نشاطٍ معروف — مع وسمه
+                        بأن الوقت مستنتَجٌ لا مسجَّل.
+                    </span>
+                </span>
+            </label>
+
             <div>
                 <label for="maintenance_note" class="block text-sm font-semibold text-gray-800 mb-1.5">ملاحظة صفحة الصيانة</label>
                 <textarea id="maintenance_note" name="maintenance_note" rows="2" maxlength="300"

@@ -146,8 +146,25 @@ class AttendanceGuard
      *
      * @return int عدد ما أُغلق
      */
-    public static function closeStaleRecords(?CarbonInterface $for = null): int
+    /**
+     * هل فعّل المكتب الإقفال الليليّ بآخر نشاطٍ معروف؟
+     *
+     * معطَّلٌ افتراضاً بناءً على اقتراح محامٍ يستعمل النظام: المحامي
+     * يكتب ويقابل الموكّلين بعيداً عن الشاشة، فآخرُ نقرةٍ له الساعة
+     * ١١:٢٠ لا تعني انصرافه ١١:٢٠ — ووقتٌ مخترَع في كشف دوامٍ أسوأ
+     * من خانةٍ فارغة تقول الصدق: «لم يُسجَّل». الانصراف بزرّه وحده.
+     */
+    public static function autoCloseEnabled(): bool
     {
+        return (string) Setting::get('hr_auto_close', '0') === '1';
+    }
+
+    public static function closeStaleRecords(?CarbonInterface $for = null, bool $force = false): int
+    {
+        if (! $force && ! self::autoCloseEnabled()) {
+            return 0;
+        }
+
         $day = ($for ?? now())->toDateString();
 
         $records = HrAttendance::whereNull('check_out_at')
@@ -235,6 +252,13 @@ class AttendanceGuard
             return 'absent';
         }
 
-        return $record->check_out_at === null ? 'present' : 'completed';
+        if ($record->check_out_at !== null) {
+            return 'completed';
+        }
+
+        // «حاضرٌ» صفةُ يومه فقط. سجلُّ أمسِ المفتوح — والإقفال الليليّ
+        // معطَّلٌ بطلب المكاتب — كان سيُعرض «ما زال حاضراً» إلى الأبد،
+        // فيظهر الموظّف حاضراً منذ الثلاثاء في كشف الشهر.
+        return $record->work_date?->isToday() ?? false ? 'present' : 'unclosed';
     }
 }

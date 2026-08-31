@@ -26,6 +26,15 @@ class AttendanceAutoCloseTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // هذه الحزمة تختبر سلوك الإقفال «حين يُفعَّل». وهو معطَّل
+        // افتراضاً بناءً على اقتراح محامٍ: وقتُ آخر نقرةٍ ليس وقتَ
+        // انصراف، والانصراف بزرّه وحده — انظر AttendanceOnlyByButtonTest.
+        \App\Models\Setting::set('hr_auto_close', '1');
+    }
+
     private function staff(): User
     {
         return User::factory()->create(['role' => 'staff', 'is_active' => true]);

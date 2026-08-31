@@ -101,7 +101,17 @@
                         <tr class="border-b border-gray-100">
                             <td class="px-4 py-3 font-medium">{{ $rec->user->name ?? '—' }}</td>
                             <td class="px-4 py-3">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
-                            <td class="px-4 py-3">{{ $rec->check_out_at?->timezone('Asia/Muscat')->format('H:i') ?? 'ما زال حاضراً' }}</td>
+                            <td class="px-4 py-3">
+                                @if($rec->check_out_at)
+                                    {{ $rec->check_out_at->timezone('Asia/Muscat')->format('H:i') }}
+                                @elseif($rec->work_date?->isToday())
+                                    ما زال حاضراً
+                                @else
+                                    {{-- بلا إقفالٍ ليليّ يبقى المنسيّ مفتوحاً — فيُقال الصدق
+                                         بدل حضورٍ أبديّ، وللإداري تصحيحه. --}}
+                                    <span class="text-amber-600 font-semibold">بلا انصراف</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3">{{ $rec->minutes !== null ? intdiv((int) $rec->minutes, 60) . 'س ' . ((int) $rec->minutes) % 60 . 'د' : '—' }}</td>
                         </tr>
                         @empty
@@ -395,6 +405,7 @@
                         $tone = match ($row['status']) {
                             'present'   => ['حاضر', 'bg-emerald-500', 'text-emerald-600'],
                             'completed' => ['منتهٍ', 'bg-gray-400', 'text-gray-500'],
+                            'unclosed'  => ['بلا انصراف', 'bg-amber-400', 'text-amber-600'],
                             'on_leave'  => ['إجازة', 'bg-gold', 'text-gold-dark'],
                             default     => ['غائب', 'bg-gray-300', 'text-gray-400'],
                         };

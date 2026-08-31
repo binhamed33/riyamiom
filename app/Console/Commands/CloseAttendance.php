@@ -17,7 +17,8 @@ use Illuminate\Console\Command;
 class CloseAttendance extends Command
 {
     protected $signature = 'hr:close-attendance
-                            {--date= : اليوم المراد إقفاله (Y-m-d) — اليوم افتراضاً}';
+                            {--date= : اليوم المراد إقفاله (Y-m-d) — اليوم افتراضاً}
+                            {--force : الإقفال ولو كان الخيار معطَّلاً في الإعدادات}';
 
     protected $description = 'إقفال سجلّات الحضور المفتوحة بوقت آخر نشاطٍ معروف للموظّف';
 
@@ -33,7 +34,13 @@ class CloseAttendance extends Command
             return self::FAILURE;
         }
 
-        $closed = AttendanceGuard::closeStaleRecords($day);
+        if (! $this->option('force') && ! AttendanceGuard::autoCloseEnabled()) {
+            $this->info('الإقفال التلقائي معطَّل: الانصراف يُسجَّل بزرّ الخروج وحده. (--force للتجاوز)');
+
+            return self::SUCCESS;
+        }
+
+        $closed = AttendanceGuard::closeStaleRecords($day, force: true);
 
         $this->info($closed > 0
             ? "أُقفل {$closed} سجلّ حضورٍ حتى {$day->toDateString()}."
