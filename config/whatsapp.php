@@ -57,7 +57,7 @@ return [
             'pairing' => 'credentials',
         ],
         'evolution' => [
-            'label' => 'Evolution API (واتساب ويب)',
+            'label' => 'ربط مباشر بالرقم',
             'implemented' => true,
             'driver' => \App\Services\WhatsApp\EvolutionProvider::class,
             // جسرُ واتساب ويب لا يعرف نافذةً ولا قوالب: ما يقدر عليه

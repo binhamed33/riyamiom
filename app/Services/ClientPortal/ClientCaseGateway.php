@@ -130,6 +130,83 @@ class ClientCaseGateway
         ];
     }
 
+    /**
+     * ما على الموكّل في قضاياه كلِّها — لا في قضيّةٍ واحدة.
+     *
+     * ═══ لماذا مجموعٌ لا تفصيلٌ فقط ═══
+     *
+     * الموكّلُ لا يحمل في رأسه أرقامَ ثلاث قضايا. سؤالُه الذي يهاتف
+     * المكتبَ لأجله واحد: «كم عليّ؟». وتفصيلٌ بلا مجموعٍ يجعله يجمع
+     * بنفسه — أو يهاتف، وهو ما وُضعت البوابة لتغنيه عنه.
+     *
+     * ═══ وما لا يُعرض ═══
+     *
+     * ما لم يعلّمه المكتبُ «مرئياً للموكّل» لا يدخل في الحساب أصلاً:
+     * لا في المجموع ولا في التفصيل. فرسمٌ داخليٌّ قيد المراجعة لا
+     * يظهر رقماً في شاشة الموكّل قبل أن يقرّره المكتب.
+     *
+     * @return array{total: float, paid: float, due: float, items: Collection, cases: int}
+     */
+    public function duesSummary(): array
+    {
+        $empty = ['total' => 0.0, 'paid' => 0.0, 'due' => 0.0, 'items' => new Collection(), 'cases' => 0];
+
+        if (!ClientPortal::showsAccounting()) {
+            return $empty;
+        }
+
+        $cases = $this->cases()->get(['id', 'case_number', 'office_case_number', 'title']);
+
+        if ($cases->isEmpty()) {
+            return $empty;
+        }
+
+        $byCase = $cases->keyBy('id');
+        $items = new Collection();
+        $total = 0.0;
+        $paid = 0.0;
+
+        foreach ($cases as $case) {
+            $accounting = $this->accountingFor($case);
+
+            $total += (float) $accounting['total'];
+            $paid += (float) $accounting['paid'];
+
+            foreach ($accounting['invoices'] as $invoice) {
+                $items->push([
+                    'kind' => 'invoice',
+                    'label' => (string) ($invoice->invoice_number ?: '—'),
+                    'amount' => (float) $invoice->amount,
+                    'remaining' => (float) max(0, $invoice->amount - $invoice->paid_amount),
+                    'date' => $invoice->issue_date,
+                    'case' => $byCase[$case->id] ?? null,
+                ]);
+            }
+
+            foreach ($accounting['fees'] as $fee) {
+                $items->push([
+                    'kind' => 'fee',
+                    'label' => (string) ($fee->description ?: $fee->fee_type ?: '—'),
+                    'amount' => (float) $fee->amount,
+                    'remaining' => $fee->status === 'paid' ? 0.0 : (float) $fee->amount,
+                    'date' => $fee->date ?? $fee->created_at,
+                    'case' => $byCase[$case->id] ?? null,
+                ]);
+            }
+        }
+
+        // غيرُ المسدَّد أوّلاً: هو ما يعني الموكّل، والمسدَّدُ سجلٌّ
+        $items = $items->sortByDesc('remaining')->values();
+
+        return [
+            'total' => $total,
+            'paid' => $paid,
+            'due' => max(0.0, $total - $paid),
+            'items' => $items,
+            'cases' => $cases->count(),
+        ];
+    }
+
     /** مستند بعينه — يمرّ بكل شروط العرض قبل أي تنزيل */
     public function findDocument(int|string $documentId): ?Document
     {

@@ -111,6 +111,7 @@ class ClientAccessController extends Controller
             'nextSession' => $upcoming->first(),
             'upcoming' => $upcoming,
             'recent' => $gateway->recentlyUpdated(3),
+            'dues' => $gateway->duesSummary(),
         ]);
     }
 

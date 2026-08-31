@@ -3,6 +3,31 @@
 
 @push('styles')
 <style>
+    .du-tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:.6rem; margin-bottom:.9rem; }
+    .du-tile { padding:.9rem .7rem; text-align:center; }
+    .du-tile .du-label { display:block; font-size:.66rem; color:var(--fg-3); margin-bottom:.3rem; }
+    .du-tile b { font-size:1.02rem; font-weight:800; }
+    .du-tile b small { font-size:.6rem; font-weight:600; color:var(--fg-3); }
+    .du-due { border:1px solid color-mix(in srgb, #C0392B 40%, var(--line)); }
+    .du-due b { color:#C0392B; }
+    .du-list { display:flex; flex-direction:column; gap:.5rem; }
+    .du-row { display:flex; align-items:center; justify-content:space-between; gap:.8rem; padding:.85rem 1rem; min-height:58px; text-align:start; }
+    .du-row-body { min-width:0; }
+    .du-row-title { display:block; font-weight:700; font-size:.86rem; line-height:1.5; }
+    .du-row-meta { display:block; font-size:.7rem; color:var(--fg-3); margin-top:.15rem; }
+    .du-row-amt { flex-shrink:0; text-align:end; }
+    .du-amt-due { display:block; font-weight:800; font-size:.92rem; color:#C0392B; }
+    .du-amt-paid { display:block; font-weight:700; font-size:.88rem; color:var(--fg-2); }
+    .du-amt-tag { display:inline-block; font-size:.6rem; font-weight:700; border-radius:6px; padding:.1rem .4rem; margin-top:.2rem; }
+    .du-tag-due { background:color-mix(in srgb,#C0392B 14%,transparent); color:#C0392B; }
+    .du-tag-paid { background:var(--gold-soft); color:var(--gold); }
+    .du-note { font-size:.7rem; color:var(--fg-3); margin-top:.7rem; line-height:1.6; }
+</style>
+@endpush
+
+
+@push('styles')
+<style>
     .hm-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin: 1.3rem 0; }
     .hm-stat { padding: .95rem .8rem; text-align: center; }
     .hm-stat b { display: block; font-size: 1.55rem; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
@@ -86,6 +111,59 @@
             <p>{{ __('portal.empty.sessions') }}</p>
         </div>
     </section>
+@endif
+
+{{-- ما على الموكّل في قضاياه كلِّها — سؤالُه الأوّل: «كم عليّ؟».
+     ولا يُعرض إلا ما علّمه المكتبُ «مرئياً للموكّل». والمِرساةُ
+     ‏#billing وجهةُ رابط إشعار الفاتورة في واتساب. --}}
+@if (($dues['items'] ?? collect())->isNotEmpty())
+<section id="billing" class="p-in p-in-2" style="margin-bottom:1.2rem;scroll-margin-top:1rem">
+    <h2 class="p-h2">المستحقّات المالية</h2>
+
+    <div class="du-tiles">
+        <div class="p-card du-tile du-due">
+            <span class="du-label">المتبقّي عليكم</span>
+            <b dir="ltr">{{ number_format($dues['due'], 2) }} <small>{{ __('portal.accounting.currency') }}</small></b>
+        </div>
+        <div class="p-card du-tile">
+            <span class="du-label">الإجمالي</span>
+            <b dir="ltr">{{ number_format($dues['total'], 2) }} <small>{{ __('portal.accounting.currency') }}</small></b>
+        </div>
+        <div class="p-card du-tile">
+            <span class="du-label">المسدَّد</span>
+            <b dir="ltr">{{ number_format($dues['paid'], 2) }} <small>{{ __('portal.accounting.currency') }}</small></b>
+        </div>
+    </div>
+
+    <div class="du-list">
+        @foreach ($dues['items'] as $item)
+            @php $href = ($item['case']->id ?? null) ? route('client.portal.case', $item['case']->id) : null; @endphp
+            <{{ $href ? 'a' : 'div' }} @if($href) href="{{ $href }}" @endif class="p-card du-row">
+                <span class="du-row-body">
+                    <span class="du-row-title">
+                        {{ $item['kind'] === 'invoice' ? __('portal.accounting.invoice') . ' ' : '' }}{{ $item['label'] }}
+                    </span>
+                    <span class="du-row-meta">
+                        @if($item['case']) {{ $item['case']->title }} @endif
+                        @php $num = $item['case']->case_number ?? ($item['case']->office_case_number ?? null); @endphp
+                        @if($num) · <span dir="ltr">{{ $num }}</span> @endif
+                    </span>
+                </span>
+                <span class="du-row-amt">
+                    @if ($item['remaining'] > 0)
+                        <span class="du-amt-due" dir="ltr">{{ number_format($item['remaining'], 2) }}</span>
+                        <span class="du-amt-tag du-tag-due">متبقٍّ</span>
+                    @else
+                        <span class="du-amt-paid" dir="ltr">{{ number_format($item['amount'], 2) }}</span>
+                        <span class="du-amt-tag du-tag-paid">مسدَّد</span>
+                    @endif
+                </span>
+            </{{ $href ? 'a' : 'div' }}>
+        @endforeach
+    </div>
+
+    <p class="du-note">التفاصيل الكاملة داخل كلّ قضية. وللاستفسار عن أيّ مبلغ، تواصلوا مع المكتب.</p>
+</section>
 @endif
 
 <section class="p-in p-in-2">

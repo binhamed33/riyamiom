@@ -342,6 +342,9 @@ class WhatsAppEvolutionTest extends TestCase
      * كان يقول «Meta تردّ» على الجسر، ويعرض معرّفَ الحساب وبصمةَ
      * الرمز فارغتين بشرطات — فيرى المشغّل حقولاً خاويةً ويظنّ الربطَ
      * ناقصاً وهو تامّ، ويبحث عن قيمٍ لا وجود لها في هذا الطريق.
+     *
+     * والوسمُ محايدٌ عمداً («ربط مباشر بالرقم»): مخرَجُ التشخيص
+     * يُصوَّر ويُلصَق، ولا يُقال فيه ما لا يعني قارئَه.
      */
     public function test_the_doctor_speaks_about_the_bridge_not_meta(): void
     {
@@ -355,7 +358,7 @@ class WhatsAppEvolutionTest extends TestCase
         ]);
 
         $this->artisan('whatsapp:doctor --probe')
-            ->expectsOutputToContain('Evolution')
+            ->expectsOutputToContain('ربط مباشر بالرقم')
             ->expectsOutputToContain('نسخة المكتب')
             ->doesntExpectOutputToContain('بصمة الرمز')
             ->doesntExpectOutputToContain('معرّف حساب الأعمال')
