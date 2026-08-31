@@ -772,6 +772,8 @@
         [data-theme="dark"] .text-gray-300 { color: #94A3B8 !important; }
 [data-theme="dark"] .border-gray-200, [data-theme="dark"] .border-gray-100, [data-theme="dark"] .divide-gray-100, [data-theme="dark"] .divide-gray-200 { border-color: #252D3D !important; }
         [data-theme="dark"] .border-amber-200, [data-theme="dark"] .border-amber-300 { border-color: rgba(217,119,6,0.4) !important; }
+        [data-theme="dark"] .border-amber-100 { border-color: rgba(217,119,6,0.25) !important; }
+        [data-theme="dark"] .border-emerald-100 { border-color: rgba(22,163,74,0.25) !important; }
         [data-theme="dark"] .hover\:bg-gray-50:hover { background-color: #0D111B !important; }
         [data-theme="dark"] .hover\:bg-gray-100:hover { background-color: #182033 !important; }
         [data-theme="dark"] .hover\:text-gold-dark:hover, [data-theme="dark"] .hover\:text-gold-dark:hover { color: var(--accent-light) !important; }

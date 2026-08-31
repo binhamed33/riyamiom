@@ -480,6 +480,229 @@ class MetaCloudProvider implements WhatsAppProviderInterface
         return array_values(array_unique($fields));
     }
 
+    /**
+     * تسجيلُ عنوان الويبهوك عند Meta — بدل أن يفتح المكتبُ لوحتَها.
+     *
+     * ═══ لماذا يجوز هذا بلا توثيقٍ ولا مراجعة ═══
+     *
+     * لأنّه ليس امتيازاً تمنحه Meta، بل حقُّ من يملك التطبيق. ورمزُ
+     * التطبيق `{app_id}|{app_secret}` هو إثباتُ الملكيّة، والقيمتان
+     * عندنا لأنّ المكتب لصقهما.
+     *
+     * ═══ العطل الذي يمنعه ═══
+     *
+     * الخطوةُ الوحيدة التي لا يتركُ إغفالُها أثراً. يسجّل المكتبُ
+     * العنوان وينسى الاشتراكَ في الحقول، أو يُخطئ حرفاً في رمز
+     * التحقّق، فلا تصل رسالةٌ واحدة أبداً — ولا شيءَ في أيّ شاشةٍ
+     * يقول لماذا، لأنّ عدم الوصول لا يُسجَّل. فتُسحب الخطوة من يده.
+     *
+     * وMeta تنادي عنوانَنا فور التسجيل بتحدّي التحقّق — فيردّ عليه
+     * المتحكّمُ نفسُه، وتُختم الخطوةُ الثالثة في المعالج تلقائياً.
+     *
+     * @param array<int, string> $fields
+     */
+    public function registerWebhook(string $callbackUrl, string $verifyToken, array $fields): bool
+    {
+        $this->lastError = null;
+        $appToken = $this->appToken();
+
+        if ($appToken === null) {
+            return false;
+        }
+
+        try {
+            $response = Http::timeout((int) config('whatsapp.timeout', 30))
+                ->asForm()
+                ->post($this->url(WhatsAppSettings::appId() . '/subscriptions'), [
+                    'object' => 'whatsapp_business_account',
+                    'callback_url' => $callbackUrl,
+                    'verify_token' => $verifyToken,
+                    'fields' => implode(',', $fields),
+                    'access_token' => $appToken,
+                ]);
+        } catch (\Throwable) {
+            $this->lastError = 'تعذّر الاتصال بـMeta لتسجيل الويبهوك.';
+
+            return false;
+        }
+
+        if (!$response->successful()) {
+            $this->failureFrom($response);
+
+            return false;
+        }
+
+        return (bool) $response->json('success', true);
+    }
+
+    /**
+     * اشتراكُ تطبيقنا في حساب واتساب — زرّ «Manage» الذي يُنسى.
+     *
+     * ولا يكفي تسجيلُ العنوان: العنوانُ يُسجَّل على التطبيق، والاشتراكُ
+     * يُعقد على الحساب. الأوّل بلا الثاني يعطي «Verified» عند Meta
+     * وصمتاً تامّاً عندنا.
+     */
+    public function subscribeAccount(): bool
+    {
+        $this->lastError = null;
+        $waba = WhatsAppSettings::wabaId();
+
+        if (!filled($waba)) {
+            $this->lastError = 'معرّف حساب الأعمال غير معروف بعد.';
+
+            return false;
+        }
+
+        try {
+            $response = $this->http()->post($this->url($waba . '/subscribed_apps'));
+        } catch (\Throwable) {
+            $this->lastError = 'تعذّر الاتصال بـMeta للاشتراك في الحساب.';
+
+            return false;
+        }
+
+        if (!$response->successful()) {
+            $this->failureFrom($response);
+
+            return false;
+        }
+
+        return (bool) $response->json('success', true);
+    }
+
+    /**
+     * ما يمكن استنتاجُه من الرمز نفسه — بدل أن يُنسخ باليد.
+     *
+     * ═══ من أين تأتي المعرّفات ═══
+     *
+     * رمزُ مستخدم النظام يحمل «نطاقاتٍ محبَّبة» (granular scopes)،
+     * وفيها يذكر Meta أيَّ حساباتِ واتساب يخوّلها هذا الرمز بالضبط.
+     * فيُسأل `debug_token` عنها فيُعرف معرّفُ الحساب، ثمّ يُسأل
+     * الحسابُ عن أرقامه فيُعرف معرّفُ الرقم.
+     *
+     * فلا يُنسخ من لوحة Meta إلا الرمزُ ومعرّفُ التطبيق وسرُّه —
+     * ثلاثتُها في صفحتين، والباقي يُستنتج.
+     *
+     * ولا يُخمَّن شيء: حسابان في الرمز يعنيان أنّنا لا نعرف أيَّهما
+     * أراد المكتب، فيُقال ذلك ويُترك الاختيار له. اختيارُ الأوّل
+     * صامتاً قد يربط المكتبَ بحسابٍ ليس حسابه.
+     *
+     * @return array{waba_id: ?string, phone_number_id: ?string, display_phone: ?string, choices: array<int, string>}
+     */
+    public function discover(): array
+    {
+        $this->lastError = null;
+        $empty = ['waba_id' => null, 'phone_number_id' => null, 'display_phone' => null, 'choices' => []];
+        $appToken = $this->appToken();
+
+        if ($appToken === null || !filled($this->token)) {
+            $this->lastError = $this->lastError ?: 'أكمل الرمز ومعرّف التطبيق وسرّه أولاً.';
+
+            return $empty;
+        }
+
+        try {
+            $debug = Http::timeout((int) config('whatsapp.timeout', 30))
+                ->get($this->url('debug_token'), [
+                    'input_token' => $this->token,
+                    'access_token' => $appToken,
+                ]);
+        } catch (\Throwable) {
+            $this->lastError = 'تعذّر الاتصال بـMeta لقراءة صلاحيات الرمز.';
+
+            return $empty;
+        }
+
+        if (!$debug->successful()) {
+            $this->failureFrom($debug);
+
+            return $empty;
+        }
+
+        $accounts = [];
+
+        foreach ((array) $debug->json('data.granular_scopes', []) as $scope) {
+            if (!in_array((string) ($scope['scope'] ?? ''), ['whatsapp_business_management', 'whatsapp_business_messaging'], true)) {
+                continue;
+            }
+
+            foreach ((array) ($scope['target_ids'] ?? []) as $id) {
+                $accounts[] = (string) $id;
+            }
+        }
+
+        $accounts = array_values(array_unique($accounts));
+
+        if ($accounts === []) {
+            $this->lastError = 'الرمز لا يخوّل أيّ حساب واتساب أعمال.'
+                . ' تأكّد أنّه رمزُ مستخدم نظام (System User) أُسند إليه حسابُ المكتب.';
+
+            return $empty;
+        }
+
+        if (count($accounts) > 1) {
+            $this->lastError = 'الرمز يخوّل أكثر من حساب — اختر معرّف الحساب بنفسك.';
+
+            return array_merge($empty, ['choices' => $accounts]);
+        }
+
+        $waba = $accounts[0];
+        $numbers = $this->phoneNumbersOf($waba);
+
+        return [
+            'waba_id' => $waba,
+            'phone_number_id' => $numbers[0]['id'] ?? null,
+            'display_phone' => $numbers[0]['display_phone_number'] ?? null,
+            'choices' => count($numbers) > 1
+                ? array_map(static fn (array $n): string => (string) ($n['id'] ?? ''), $numbers)
+                : [],
+        ];
+    }
+
+    /** @return array<int, array<string, string>> */
+    protected function phoneNumbersOf(string $waba): array
+    {
+        try {
+            $response = $this->http()->get($this->url($waba . '/phone_numbers'), [
+                'fields' => 'id,display_phone_number,verified_name',
+            ]);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        if (!$response->successful()) {
+            return [];
+        }
+
+        return array_map(
+            static fn (array $row): array => [
+                'id' => (string) ($row['id'] ?? ''),
+                'display_phone_number' => (string) ($row['display_phone_number'] ?? ''),
+            ],
+            (array) $response->json('data', []),
+        );
+    }
+
+    /**
+     * رمزُ التطبيق — لا يُخزَّن ولا يُسجَّل، يُبنى عند الحاجة ويُنسى.
+     *
+     * وهو أقوى من رمز الوصول: يتصرّف في التطبيق نفسه. فلا يُكتب في
+     * جدولٍ ولا سجلٍّ، ولا يخرج من هذا الصنف.
+     */
+    protected function appToken(): ?string
+    {
+        $appId = WhatsAppSettings::appId();
+        $secret = WhatsAppSettings::appSecret();
+
+        if (!filled($appId) || !filled($secret)) {
+            $this->lastError = 'معرّف التطبيق أو سرّه غير مضبوط — وبهما وحدهما يُسجَّل الويبهوك.';
+
+            return null;
+        }
+
+        return $appId . '|' . $secret;
+    }
+
     // ── داخلي ────────────────────────────────────────────────────
 
     protected function http()

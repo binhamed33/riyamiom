@@ -1066,6 +1066,7 @@ return [
     'wa_phone_id' => 'Phone Number ID',
     'wa_waba_id' => 'WhatsApp Business Account ID (WABA ID)',
     'wa_app_secret' => 'App Secret',
+    'wa_app_id' => 'App ID',
     'wa_verify_token' => 'Verify token',
     'wa_webhook_url' => 'Webhook URL',
     'wa_copy' => 'Copy',

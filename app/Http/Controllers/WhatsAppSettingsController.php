@@ -27,6 +27,7 @@ class WhatsAppSettingsController extends Controller
             'wa_app_secret' => ['nullable', 'string', 'min:16', 'max:200'],
             'wa_phone_number_id' => ['nullable', 'string', 'max:40', 'regex:/^\d*$/'],
             'wa_business_account_id' => ['nullable', 'string', 'max:40', 'regex:/^\d*$/'],
+            'wa_app_id' => ['nullable', 'string', 'max:40', 'regex:/^\d*$/'],
             'wa_notify_sessions' => ['nullable'],
             'wa_notify_invoices' => ['nullable'],
             'wa_notify_case_updates' => ['nullable'],
@@ -38,6 +39,7 @@ class WhatsAppSettingsController extends Controller
             'wa_access_token.min' => 'الرمز المُدخل قصير جداً — تأكد من نسخه كاملاً.',
             'wa_phone_number_id.regex' => 'معرّف الرقم أرقامٌ فقط كما يظهر في لوحة Meta.',
             'wa_business_account_id.regex' => 'معرّف حساب الأعمال أرقامٌ فقط كما يظهر في لوحة Meta.',
+            'wa_app_id.regex' => 'معرّف التطبيق أرقامٌ فقط كما يظهر في أعلى لوحة Meta.',
         ]);
 
         $tokenChanged = filled($validated['wa_access_token'] ?? null);
@@ -47,6 +49,7 @@ class WhatsAppSettingsController extends Controller
             $validated['wa_phone_number_id'] ?? null,
             $validated['wa_business_account_id'] ?? null,
             $validated['wa_app_secret'] ?? null,
+            $validated['wa_app_id'] ?? null,
         );
 
         WhatsAppSettings::setFlag(WhatsAppSettings::KEY_NOTIFY_SESSIONS, $request->boolean('wa_notify_sessions'));
@@ -105,6 +108,90 @@ class WhatsAppSettingsController extends Controller
             app(\App\Services\WhatsApp\SetupDoctor::class)->report(probe: true),
             200,
         );
+    }
+
+    /**
+     * إتمامُ الربط نيابةً عن المكتب — الخطوات الأربع التي يتعثّر فيها.
+     *
+     * ═══ لماذا يجوز أن يفعلها النظام ═══
+     *
+     * ليست امتيازاً تمنحه Meta لشريكٍ موثَّق، بل حقُّ من يملك التطبيق.
+     * ورمزُ التطبيق — معرّفُه وسرُّه — إثباتُ الملكيّة، وقد لصقهما
+     * المكتبُ بيده. فما كان يفعله بالنقر يُفعل بالنداء.
+     *
+     * ═══ الترتيب ملزِم ═══
+     *
+     * الاستنتاجُ أوّلاً (لا يُسجَّل ويبهوكٌ لحسابٍ لا نعرفه)، ثمّ
+     * التسجيلُ (وMeta تنادي عنوانَنا بتحدّي التحقّق فوراً — فتُختم
+     * خطوةُ الويبهوك بنفسها)، ثمّ الاشتراكُ في الحساب (والعنوانُ
+     * يُسجَّل على التطبيق بينما الاشتراكُ يُعقد على الحساب: الأوّل بلا
+     * الثاني «Verified» عند Meta وصمتٌ تامّ عندنا)، ثمّ فحصُ الاتصال
+     * ليمتلئ رقمُ المكتب واسمُ نشاطه.
+     *
+     * ولا يتوقّف عند أوّل إخفاق: كلُّ خطوةٍ تُروى وحدها، فيرى المكتب
+     * ما تمّ وما لم يتمّ ولماذا — لا «أخفق» واحدةً مبهمة.
+     */
+    public function autowire(): JsonResponse
+    {
+        $provider = WhatsAppManager::make();
+
+        if (!$provider) {
+            return response()->json([
+                'ok' => false,
+                'steps' => [],
+                'message' => 'مزوّد واتساب غير مدعوم في هذا الإصدار.',
+            ], 200);
+        }
+
+        $done = [];
+        $failed = [];
+
+        // ١) ما يُستنتج من الرمز
+        $found = $provider->discover();
+
+        if (filled($found['waba_id'])) {
+            WhatsAppSettings::store(null, $found['phone_number_id'], $found['waba_id']);
+            $done[] = 'عُرف حساب الأعمال ورقمُه من الرمز.';
+        } else {
+            $failed[] = $provider->getLastError() ?: 'تعذّر استنتاج حساب الأعمال من الرمز.';
+        }
+
+        // ٢) تسجيلُ العنوان — ولو لم يُستنتج الحساب: التسجيل على
+        //    التطبيق لا على الحساب، فقد ينجح وحده
+        $registered = $provider->registerWebhook(
+            url('/webhooks/whatsapp'),
+            WhatsAppSettings::verifyToken(),
+            array_merge(\App\Services\WhatsApp\SetupDoctor::REQUIRED_FIELDS, \App\Services\WhatsApp\SetupDoctor::NICE_FIELDS),
+        );
+
+        if ($registered) {
+            $done[] = 'سُجّل عنوان الويبهوك عند Meta.';
+        } else {
+            $failed[] = $provider->getLastError() ?: 'تعذّر تسجيل عنوان الويبهوك.';
+        }
+
+        // ٣) الاشتراكُ في الحساب
+        if (filled(WhatsAppSettings::wabaId())) {
+            if ($provider->subscribeAccount()) {
+                $done[] = 'اشترك التطبيق في حساب المكتب.';
+            } else {
+                $failed[] = $provider->getLastError() ?: 'تعذّر الاشتراك في الحساب.';
+            }
+        }
+
+        // ٤) الهويّة — ليمتلئ رقمُ المكتب واسمُ نشاطه في الشاشة
+        if (filled(WhatsAppSettings::phoneNumberId())) {
+            $provider->testConnection();
+        }
+
+        $this->audit('whatsapp_autowired', ['done' => count($done), 'failed' => count($failed)]);
+
+        return response()->json([
+            'ok' => $failed === [],
+            'done' => $done,
+            'failed' => $failed,
+            'report' => app(\App\Services\WhatsApp\SetupDoctor::class)->report(probe: true),
+        ], 200);
     }
 
     /** فحصُ اتصالٍ حقيقي — الاستجابة لا تحتوي الرمز. */

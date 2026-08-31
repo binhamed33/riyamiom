@@ -1066,6 +1066,7 @@ return [
     'wa_phone_id' => 'معرّف الرقم (Phone Number ID)',
     'wa_waba_id' => 'معرّف حساب واتساب للأعمال (WABA ID)',
     'wa_app_secret' => 'سرّ التطبيق (App Secret)',
+    'wa_app_id' => 'معرّف التطبيق (App ID)',
     'wa_verify_token' => 'رمز التحقّق',
     'wa_webhook_url' => 'رابط الويبهوك',
     'wa_copy' => 'نسخ',

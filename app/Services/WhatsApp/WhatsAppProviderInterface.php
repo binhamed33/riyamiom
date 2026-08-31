@@ -71,6 +71,23 @@ interface WhatsAppProviderInterface
      */
     public function subscribedFields(): ?array;
 
+    /**
+     * تسجيلُ عنوان الويبهوك عند المزوّد — بدل أن يفتح المكتبُ لوحته.
+     *
+     * @param array<int, string> $fields
+     */
+    public function registerWebhook(string $callbackUrl, string $verifyToken, array $fields): bool;
+
+    /** اشتراكُ تطبيقنا في حساب هذا المكتب — لا يكفي تسجيلُ العنوان. */
+    public function subscribeAccount(): bool;
+
+    /**
+     * ما يُستنتج من الرمز نفسه: معرّفُ الحساب والرقم — بدل نسخِهما.
+     *
+     * @return array{waba_id: ?string, phone_number_id: ?string, display_phone: ?string, choices: array<int, string>}
+     */
+    public function discover(): array;
+
     /** آخرُ خطأٍ بصيغةٍ مفهومة — بلا رموز سرّية. */
     public function getLastError(): ?string;
 }

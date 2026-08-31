@@ -452,6 +452,8 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::post('/settings/whatsapp/test', [App\Http\Controllers\WhatsAppSettingsController::class, 'test'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.test');
     // فحصُ خطوات الربط — محدودٌ كالفحص: ثلاثةُ نداءاتٍ إلى Meta لكلّ ضغطة
     Route::post('/settings/whatsapp/checkup', [App\Http\Controllers\WhatsAppSettingsController::class, 'checkup'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.checkup');
+    // إتمامُ الربط نيابةً عن المكتب — يكتب عند Meta، فحدُّه أضيق
+    Route::post('/settings/whatsapp/autowire', [App\Http\Controllers\WhatsAppSettingsController::class, 'autowire'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:6,1'])->name('settings.whatsapp.autowire');
     Route::post('/settings/whatsapp/templates', [App\Http\Controllers\WhatsAppSettingsController::class, 'syncTemplates'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.templates.sync');
 
     // إعدادات الذكاء الاصطناعي — خاصة بهذا المكتب، ومقصورة على من يدير الإعدادات

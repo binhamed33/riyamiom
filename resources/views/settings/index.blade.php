@@ -209,6 +209,14 @@
                             class="text-xs font-bold px-3 py-1.5 rounded-lg bg-gold/10 border border-gold/40 text-gold-dark hover:bg-gold/20">
                         افحص الآن
                     </button>
+                    {{-- لا يُعرض إلا حين يمكن فعلاً: زرٌّ يظهر ثمّ يقول
+                         «ينقصني كذا» أسوأ من زرٍّ لا يظهر. --}}
+                    @if($wa['can_autowire'])
+                        <button type="button" data-wa-autowire="1"
+                                class="text-xs font-bold px-3 py-1.5 rounded-lg bg-gold text-white hover:bg-gold-dark">
+                            أكمل الربط تلقائياً
+                        </button>
+                    @endif
                 </div>
             </div>
             <ol class="divide-y divide-gray-100" data-wa-steps>
@@ -231,6 +239,7 @@
                     </li>
                 @endforeach
             </ol>
+            <div class="hidden px-4 py-3 border-t border-gray-100 text-xs leading-relaxed" data-wa-autowire-result></div>
         </div>
 
         {{-- العنوان ورمز التحقّق: يُلصقان في إعداد الويبهوك عند Meta.
@@ -301,16 +310,26 @@
                            class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono">
                 </div>
                 <div>
+                    <label class="text-xs font-bold text-gray-500">{{ __('app.wa_app_id') }}</label>
+                    <input type="text" name="wa_app_id" dir="ltr" inputmode="numeric"
+                           value="{{ old('wa_app_id') }}"
+                           placeholder="{{ \App\Support\WhatsAppSettings::appId() ?: '1234567890' }}"
+                           class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono">
+                    <p class="text-[11px] text-gray-400 mt-1">في أعلى صفحة Meta بجانب اسم التطبيق — وبه يُتمّ النظامُ الربطَ عنك.</p>
+                </div>
+                <div>
                     <label class="text-xs font-bold text-gray-500">{{ __('app.wa_phone_id') }}</label>
                     <input type="text" name="wa_phone_number_id" dir="ltr" inputmode="numeric"
                            value="{{ old('wa_phone_number_id') }}"
                            class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono">
+                    <p class="text-[11px] text-gray-400 mt-1">اتركه فارغاً — يُستنتج من الرمز.</p>
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-500">{{ __('app.wa_waba_id') }}</label>
                     <input type="text" name="wa_business_account_id" dir="ltr" inputmode="numeric"
                            value="{{ old('wa_business_account_id') }}"
                            class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono">
+                    <p class="text-[11px] text-gray-400 mt-1">اتركه فارغاً — يُستنتج من الرمز.</p>
                 </div>
             </div>
 
@@ -992,6 +1011,62 @@
             checkup.textContent = 'افحص الآن';
         });
     });
+
+    // ── أكمل الربط تلقائياً ──────────────────────────────────
+    var autowire = card.querySelector('[data-wa-autowire]');
+    var result = card.querySelector('[data-wa-autowire-result]');
+
+    if (autowire) {
+        autowire.addEventListener('click', function () {
+            autowire.disabled = true;
+            autowire.textContent = 'جارٍ الإتمام…';
+
+            fetch(@json(route('settings.whatsapp.autowire')), {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.report) { paint(data.report); }
+                showResult(data);
+            })
+            .catch(function () {
+                showResult({ ok: false, failed: ['تعذّر الاتصال بالخادم — أعد المحاولة.'] });
+            })
+            .finally(function () {
+                autowire.disabled = false;
+                autowire.textContent = 'أكمل الربط تلقائياً';
+            });
+        });
+    }
+
+    function showResult(data) {
+        if (!result) { return; }
+
+        result.textContent = '';
+        result.className = 'px-4 py-3 border-t text-xs leading-relaxed ' +
+            (data.ok ? 'border-emerald-100 bg-emerald-50 text-emerald-800'
+                     : 'border-amber-100 bg-amber-50 text-amber-800');
+
+        // ‏ما تمّ وما لم يتمّ يُعرضان معاً: إخفاقُ خطوةٍ لا يعني أنّ
+        // ما قبلها لم يقع، ورؤيةُ «أخفق» وحدها تدفع المكتبَ إلى
+        // إعادة كلّ شيء من أوّله بلا داعٍ.
+        [['✓ ', data.done || []], ['✗ ', data.failed || []]].forEach(function (pair) {
+            pair[1].forEach(function (line) {
+                var row = document.createElement('div');
+                // ‏textContent: نصُّ الإخفاق يحمل ما تقوله Meta
+                row.textContent = pair[0] + line;
+                result.appendChild(row);
+            });
+        });
+
+        if (data.message) {
+            var only = document.createElement('div');
+            only.textContent = data.message;
+            result.appendChild(only);
+        }
+    }
 
     function paint(data) {
         (data.steps || []).forEach(function (step, index) {

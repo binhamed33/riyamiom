@@ -24,6 +24,7 @@ class WhatsAppSettings
 {
     public const KEY_TOKEN = 'wa_access_token';
     public const KEY_APP_SECRET = 'wa_app_secret';
+    public const KEY_APP_ID = 'wa_app_id';
     public const KEY_VERIFY_TOKEN = 'wa_verify_token';
     public const KEY_PHONE_ID = 'wa_phone_number_id';
     public const KEY_WABA_ID = 'wa_business_account_id';
@@ -116,6 +117,11 @@ class WhatsAppSettings
             ?? self::envValue(config('services.whatsapp.meta_phone_id'));
     }
 
+    public static function appId(): ?string
+    {
+        return self::plain(self::KEY_APP_ID) ?: null;
+    }
+
     public static function wabaId(): ?string
     {
         return self::plain(self::KEY_WABA_ID);
@@ -146,7 +152,15 @@ class WhatsAppSettings
         ?string $phoneNumberId,
         ?string $wabaId = null,
         ?string $appSecret = null,
+        ?string $appId = null,
     ): void {
+        if (filled($appId)) {
+            // معرّفُ التطبيق ليس سرّاً — يظهر في كلّ عنوانٍ في لوحة
+            // Meta. لكنّه مع السرّ يصنع «رمزَ تطبيق» يسجّل الويبهوك
+            // ويشترك في الحقول بلا أن يفتح المكتبُ لوحةَ Meta أصلاً.
+            Setting::set(self::KEY_APP_ID, trim($appId), self::GROUP);
+        }
+
         if (filled($token)) {
             $token = trim($token);
             Setting::set(self::KEY_TOKEN, Crypt::encryptString($token), self::GROUP);
@@ -254,6 +268,9 @@ class WhatsAppSettings
             'last_sync_at' => self::plain(self::KEY_LAST_SYNC_AT) ?: null,
             'last_webhook_at' => $lastWebhook ?: null,
             'webhook_url' => url('/webhooks/whatsapp'),
+            // ‏«أكمل الربط تلقائياً» لا يُعرض إلا حين يمكن فعلاً:
+            // زرٌّ يظهر ثم يقول «ينقصني كذا» أسوأ من زرٍّ لا يظهر
+            'can_autowire' => filled(self::appId()) && filled(self::appSecret()) && filled(self::accessToken()),
             'error' => $error ?: null,
             // «يحتاج انتباهاً»: مربوطٌ ولم يصل منه إشعارٌ قطّ، أو مضى
             // على آخر إشعارٍ أكثر من أسبوع — ربطٌ يبدو حياً وهو ميت.
