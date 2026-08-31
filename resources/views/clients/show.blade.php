@@ -32,6 +32,12 @@
                     <div class="bg-white rounded-lg p-4">
                         <p class="text-gray-400 text-sm mb-1">{{ __('app.phone') }}</p>
                         <p class="text-gray-700 font-medium" dir="ltr">{{ $client->phone ?? '—' }}</p>
+                        {{-- رقمُ واتساب المشتقّ منه: يُرى هنا لا يُخمَّن.
+                             ولا يُعرض إن كان الرقمُ هو نفسَه بعد التطبيع. --}}
+                        @php $waNumber = \App\Models\WhatsAppContact::displayWaId($client->phone); @endphp
+                        @if($waNumber !== '' && ltrim($waNumber, '+') !== preg_replace('/\D+/', '', (string) $client->phone))
+                            <p class="text-[11px] text-gray-400 mt-0.5" dir="ltr">واتساب: {{ $waNumber }}</p>
+                        @endif
                     </div>
                     <div class="bg-white rounded-lg p-4">
                         <p class="text-gray-400 text-sm mb-1">{{ __('app.email') }}</p>

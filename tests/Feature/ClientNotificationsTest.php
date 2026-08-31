@@ -283,17 +283,41 @@ class ClientNotificationsTest extends TestCase
         Queue::assertNotPushed(SendClientNotification::class);
     }
 
-    public function test_only_the_new_case_event_is_on_by_default(): void
+    /**
+     * سيرُ القضية يُؤشَّر افتراضاً، والثلاثةُ الباقية تُترك للمكتب.
+     *
+     * فتحُ القضية وحالتُها وتحديثُها والجلسةُ وتأجيلُها وتذكيرُها
+     * والفاتورة: هذه ما يسأل عنه الموكّل المكتبَ هاتفياً كلَّ أسبوع،
+     * وإخبارُه بها هو الغرضُ من المنظومة أصلاً.
+     *
+     * أمّا المستندُ (قد يُرفع عشرةٌ في يومٍ واحد فتغرق رسائلُه)
+     * والدفعةُ (خبرٌ ماليٌّ يُساء فهمه بلا سياق) والإشعارُ العام —
+     * فبيد المكتب.
+     */
+    public function test_the_case_lifecycle_events_are_on_and_the_rest_are_left_to_the_office(): void
     {
-        $this->assertTrue(ClientEvents::enabled(ClientEvents::CASE_CREATED));
+        $on = [
+            ClientEvents::CASE_CREATED, ClientEvents::CASE_STATUS, ClientEvents::CASE_UPDATE,
+            ClientEvents::SESSION_NEW, ClientEvents::SESSION_MOVED, ClientEvents::SESSION_REMINDER,
+            ClientEvents::INVOICE_NEW,
+        ];
 
-        foreach (ClientEvents::types() as $type) {
-            if ($type === ClientEvents::CASE_CREATED) {
-                continue;
-            }
+        $off = [ClientEvents::DOCUMENT_NEW, ClientEvents::PAYMENT_NEW, ClientEvents::ANNOUNCEMENT];
 
-            $this->assertFalse(ClientEvents::enabled($type), $type . ' مفعَّلٌ افتراضاً وما كان ينبغي');
+        foreach ($on as $type) {
+            $this->assertTrue(ClientEvents::enabled($type), $type . ' مطفأٌ وكان ينبغي أن يعمل');
         }
+
+        foreach ($off as $type) {
+            $this->assertFalse(ClientEvents::enabled($type), $type . ' مفعَّلٌ وكان ينبغي أن يُترك للمكتب');
+        }
+
+        // نوعٌ يُضاف ولا يُقرَّر له افتراضٌ يمرّ صامتاً — فيُعدّ العدد
+        $this->assertSame(
+            count($on) + count($off),
+            count(ClientEvents::types()),
+            'أُضيف نوعٌ ولم يُقرَّر له افتراض',
+        );
     }
 
     // ══════════ التكرار ══════════

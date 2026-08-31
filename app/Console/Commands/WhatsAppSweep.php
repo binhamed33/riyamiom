@@ -44,6 +44,66 @@ class WhatsAppSweep extends Command
     /** سقفُ الحذف في التشغيل الواحد — الباقي يُقلَّم في التشغيل التالي. */
     private const PRUNE_CAP = 20000;
 
+    /**
+     * الإفراجُ عمّا حان موعدُه، وإحياءُ ما أسقطته دورةُ التأجيل.
+     *
+     * ═══ لماذا تُحيا الفاشلة ═══
+     *
+     * نسخةٌ سابقة كانت تُعيد دفعَ المهمّة بمهلة، فإن لم تُحترم المهلةُ
+     * دارت وأُعلنت الرسالةُ «فشلاً» وهي لم تُجرَّب قطّ — رسالةُ موكّلٍ
+     * ضاعت لأنّ الساعة كانت الثالثة فجراً. وتلك الرسائلُ لا يزال
+     * صاحبُها ينتظرها، فتُعاد إلى الانتظار بدل أن تُترك في «فشل»
+     * أبديّ.
+     *
+     * والشرطُ ضيّق: نصُّ الخطأ بعينه، وبلا معرّف رسالةٍ عند المزوّد —
+     * أي أنّها لم تُرسَل فعلاً. فلا يُعاد إرسالُ ما وصل.
+     */
+    protected function releaseHeld(): void
+    {
+        if (! Schema::hasColumn('whatsapp_messages', 'hold_until')) {
+            return;
+        }
+
+        $due = \App\Models\WhatsAppMessage::query()
+            ->where('status', \App\Models\WhatsAppMessage::STATUS_QUEUED)
+            ->whereNotNull('hold_until')
+            ->where('hold_until', '<=', now())
+            ->orderBy('id')
+            ->limit(self::REDISPATCH_CAP)
+            ->pluck('id');
+
+        foreach ($due as $id) {
+            \App\Jobs\SendWhatsAppMessage::dispatch((int) $id);
+        }
+
+        if ($due->isNotEmpty()) {
+            $this->line('  أُفرج عن ' . $due->count() . ' رسالة حان موعدها');
+        }
+
+        // إحياءُ ما أسقطته دورةُ التأجيل القديمة
+        $revived = \App\Models\WhatsAppMessage::query()
+            ->where('status', \App\Models\WhatsAppMessage::STATUS_FAILED)
+            ->whereNull('wamid')
+            ->where('error_title', 'like', '%ضمن حدود الأمان%')
+            ->limit(self::REDISPATCH_CAP)
+            ->get();
+
+        foreach ($revived as $message) {
+            $message->forceFill([
+                'status' => \App\Models\WhatsAppMessage::STATUS_QUEUED,
+                'hold_until' => null,
+                'error_code' => null,
+                'error_title' => null,
+            ])->save();
+
+            \App\Jobs\SendWhatsAppMessage::dispatch($message->id);
+        }
+
+        if ($revived->isNotEmpty()) {
+            $this->line('  أُعيدت ' . $revived->count() . ' رسالة أسقطها عطلُ التأجيل');
+        }
+    }
+
     public function handle(): int
     {
         if (! Schema::hasTable('whatsapp_webhook_events')) {
@@ -56,6 +116,12 @@ class WhatsAppSweep extends Command
         // فيُمحى دفترُ اليوم كلُّه بما فيه ما لم يُعالَج بعد
         $retentionDays = max(1, (int) config('whatsapp.event_retention_days', 14));
         $retentionCutoff = now()->subDays($retentionDays);
+
+        // ── ٠) الرسائلُ المحجوزة التي حان موعدها ──────────────
+        //
+        // الحجزُ لحدود الإيقاع (صمتٌ ليليّ أو سقفٌ بلغ) يُكتب في
+        // الرسالة نفسها لا في الطابور. فهنا تُفرَج حين يحين وقتُها.
+        $this->releaseHeld();
 
         // ── ١) إعادةُ دفع العالق ───────────────────────────────
         //

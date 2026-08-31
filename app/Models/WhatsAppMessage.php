@@ -40,6 +40,7 @@ class WhatsAppMessage extends Model
         'media_size',
         'document_id',
         'status',
+        'hold_until',
         'error_code',
         'error_title',
         'sent_by',
@@ -56,6 +57,7 @@ class WhatsAppMessage extends Model
         return [
             'is_internal' => 'boolean',
             'media_size' => 'integer',
+            'hold_until' => 'datetime',
             'sent_at' => 'datetime',
             'delivered_at' => 'datetime',
             'read_at' => 'datetime',

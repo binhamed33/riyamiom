@@ -139,9 +139,10 @@ class WhatsAppSafetyTest extends TestCase
         $second = $this->queued('الثانية');
         (new SendWhatsAppMessage($second->id))->handle();
 
-        // لم تُرسَل — أُعيد جدولتُها
-        $this->assertSame(WhatsAppMessage::STATUS_QUEUED, $second->fresh()->status);
-        Queue::assertPushed(SendWhatsAppMessage::class);
+        // لم تُرسَل — حُجزت بموعدٍ قريب يُفرج عنها فيه
+        $fresh = $second->fresh();
+        $this->assertSame(WhatsAppMessage::STATUS_QUEUED, $fresh->status);
+        $this->assertNotNull($fresh->hold_until, 'لم يُكتب موعدُ الإفراج');
     }
 
     /** والسقفُ اليومي يوقف ما بعده. */
@@ -170,8 +171,14 @@ class WhatsAppSafetyTest extends TestCase
 
     // ── الصمت الليلي ────────────────────────────────────────────
 
-    /** الثالثةُ فجراً: تنتظر الصباح ولا تُلغى. */
-    public function test_a_message_at_three_in_the_morning_waits_for_daylight(): void
+    /**
+     * الثالثةُ فجراً: تنتظر الصباح — ولا تُلغى ولا تُعلَن «فشلاً».
+     *
+     * وقع هذا فعلاً: نسخةٌ سابقة كانت تعيد دفعَ المهمّة بمهلة، فلم
+     * تُحترم المهلةُ فدارت وأُعلنت الرسالةُ «فشل الإرسال» — وهي لم
+     * تُجرَّب قطّ. فالانتظارُ الآن يُكتب في الرسالة نفسها.
+     */
+    public function test_an_automatic_message_at_three_in_the_morning_waits_and_never_fails(): void
     {
         Queue::fake();
         $this->travelTo(now()->setTime(3, 0));
@@ -179,8 +186,89 @@ class WhatsAppSafetyTest extends TestCase
         $message = $this->queued();
         (new SendWhatsAppMessage($message->id))->handle();
 
-        $this->assertSame(WhatsAppMessage::STATUS_QUEUED, $message->fresh()->status, 'أُلغيت رسالةٌ بدل أن تنتظر');
+        $fresh = $message->fresh();
+
+        $this->assertSame(WhatsAppMessage::STATUS_QUEUED, $fresh->status, 'أُلغيت رسالةٌ بدل أن تنتظر');
+        $this->assertNotNull($fresh->hold_until, 'لم يُكتب موعدُ الإفراج');
+        $this->assertTrue($fresh->hold_until->isFuture());
+
+        // ولا تدور: لا مهمّةَ جديدة تُدفع مع كلّ محاولة
+        Queue::assertNotPushed(SendWhatsAppMessage::class);
+    }
+
+    /**
+     * وردُّ المحامي بيده لا يمنعه الصمتُ الليلي.
+     *
+     * الصمتُ وُضع لئلّا يوقظ النظامُ موكّلاً برسالةٍ آليّة. أمّا محامٍ
+     * يجلس الآن ويكتب رداً في محادثةٍ مفتوحة فذاك سلوكُ إنسانٍ عادي —
+     * وحجزُ رسالته خمسَ ساعاتٍ وهو ينتظر وصولَها عطلٌ لا حماية.
+     */
+    public function test_a_human_reply_at_three_in_the_morning_goes_out(): void
+    {
+        Http::fake(['*' => Http::response(['messages' => [['id' => 'wamid.NIGHT']]], 200)]);
+        $this->travelTo(now()->setTime(3, 0));
+
+        $lawyer = User::factory()->create(['role' => 'lawyer', 'is_active' => true]);
+
+        $message = WhatsAppMessage::create([
+            'conversation_id' => $this->conversation->id,
+            'direction' => WhatsAppMessage::OUT,
+            'type' => 'text',
+            'body' => 'ردٌّ بيد المحامي',
+            'status' => WhatsAppMessage::STATUS_QUEUED,
+            'sent_by' => $lawyer->id,
+        ]);
+
+        (new SendWhatsAppMessage($message->id))->handle();
+
+        $this->assertSame(WhatsAppMessage::STATUS_SENT, $message->fresh()->status);
+    }
+
+    /** والمحجوزةُ تُفرَج حين يحين وقتُها — من أمر الاستدراك. */
+    public function test_the_sweep_releases_a_message_whose_time_has_come(): void
+    {
+        Queue::fake();
+
+        $message = $this->queued('محجوزة');
+        $message->forceFill(['hold_until' => now()->subMinute()])->save();
+
+        $this->artisan('whatsapp:sweep')->assertSuccessful();
+
         Queue::assertPushed(SendWhatsAppMessage::class);
+    }
+
+    /** وما أسقطته دورةُ التأجيل القديمة يُحيا ولا يُترك في «فشل». */
+    public function test_the_sweep_revives_messages_the_old_defer_loop_dropped(): void
+    {
+        Queue::fake();
+
+        $message = $this->queued('ضاعت');
+        $message->forceFill([
+            'status' => WhatsAppMessage::STATUS_FAILED,
+            'error_title' => 'تعذّر الإرسال ضمن حدود الأمان — راجع إعدادات الإيقاع.',
+        ])->save();
+
+        $this->artisan('whatsapp:sweep')->assertSuccessful();
+
+        $this->assertSame(WhatsAppMessage::STATUS_QUEUED, $message->fresh()->status);
+        Queue::assertPushed(SendWhatsAppMessage::class);
+    }
+
+    /** ولا تُحيا رسالةٌ وصلت فعلاً. */
+    public function test_the_sweep_never_revives_something_already_delivered(): void
+    {
+        Queue::fake();
+
+        $message = $this->queued('وصلت');
+        $message->forceFill([
+            'status' => WhatsAppMessage::STATUS_FAILED,
+            'wamid' => 'wamid.DELIVERED',
+            'error_title' => 'تعذّر الإرسال ضمن حدود الأمان — راجع إعدادات الإيقاع.',
+        ])->save();
+
+        $this->artisan('whatsapp:sweep')->assertSuccessful();
+
+        $this->assertSame(WhatsAppMessage::STATUS_FAILED, $message->fresh()->status);
     }
 
     public function test_midday_is_not_quiet(): void
@@ -270,6 +358,62 @@ class WhatsAppSafetyTest extends TestCase
         $dev = User::factory()->create(['role' => 'developer', 'is_active' => true]);
 
         $this->actingAs($dev)->get(route('whatsapp.index'))->assertOk();
+    }
+
+    // ── ما لا يملكه المكتب ──────────────────────────────────────
+
+    /**
+     * مديرُ المكتب لا يُطفئ حدودَ الأمان ولو بنى الطلبَ بيده.
+     *
+     * تعطيلُ الحقل في الصفحة ليس حماية: من يرسل الطلبَ مباشرةً
+     * يتجاوزه. فالرفضُ في الخادم.
+     */
+    public function test_an_admin_cannot_switch_off_the_guard_even_by_posting_directly(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        $this->actingAs($admin)->post(route('settings.whatsapp.update'), [
+            'wa_guard_enabled' => null,
+            'wa_guard_clients_only' => null,
+            'wa_inbox_visible' => '1',
+        ])->assertRedirect();
+
+        $this->assertTrue(SendingGuard::enabled(), 'أطفأ مديرٌ حدودَ الأمان');
+        $this->assertTrue(SendingGuard::clientsOnly(), 'ألغى مديرٌ قصرَ المراسلة على الموكّلين');
+        $this->assertFalse(WhatsAppSettings::inboxVisible(), 'أظهر مديرٌ صندوقَ الوارد');
+    }
+
+    /** والمطوّرُ يملكها — هو من يقرّر. */
+    public function test_a_developer_can_change_them(): void
+    {
+        $dev = User::factory()->create(['role' => 'developer', 'is_active' => true]);
+
+        $this->actingAs($dev)->post(route('settings.whatsapp.update'), [
+            'wa_inbox_visible' => '1',
+        ])->assertRedirect();
+
+        $this->assertTrue(WhatsAppSettings::inboxVisible());
+    }
+
+    // ── الرقم العُماني ──────────────────────────────────────────
+
+    /** خمسُ صورٍ لرقمٍ واحد تخرج كلُّها بمفتاح ٩٦٨. */
+    public function test_every_local_form_of_an_omani_number_resolves_to_one(): void
+    {
+        foreach (['91234567', '+968 9123 4567', '00968 91234567', '968-9123-4567', '091234567'] as $written) {
+            $this->assertSame(
+                '96891234567',
+                WhatsAppContact::normalizeWaId($written),
+                'لم يُعرف «' . $written . '» رقماً عُمانياً',
+            );
+        }
+    }
+
+    /** ورقمٌ بمفتاح دولةٍ أخرى يمرّ كما هو — لا يُقحَم عليه ٩٦٨. */
+    public function test_a_foreign_number_keeps_its_own_country_code(): void
+    {
+        $this->assertSame('971501234567', WhatsAppContact::normalizeWaId('+971 50 123 4567'));
+        $this->assertSame('966551234567', WhatsAppContact::normalizeWaId('00966 55 123 4567'));
     }
 
     /** والإشعاراتُ الآلية تعمل والصندوقُ مخفيّ. */

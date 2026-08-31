@@ -87,14 +87,22 @@ class WhatsAppSettingsController extends Controller
         // ويبقى الإعدادُ القديم يعمل. فيُمرّ على القائمة كلِّها ويُكتب
         // لكلٍّ قرارُه — والغيابُ إطفاءٌ صريح.
         // ── حدود الأمان ─────────────────────────────────────
+        //
+        // ثلاثةٌ منها تحمي الرقمَ نفسَه ولا يملكها المكتب: تفعيلُ
+        // الحدود، وقصرُ المراسلة على الموكّلين، وإظهارُ صندوق الوارد.
+        // والحمايةُ في الخادم لا في تعطيل الحقل: حقلٌ معطَّلٌ في
+        // الصفحة لا يُرسَل، لكنّ من يبني الطلبَ بيده يرسله — فيُتجاهل
+        // هنا مهما وصل.
         $guard = \App\Services\WhatsApp\SendingGuard::class;
 
-        foreach ([
-            $guard::KEY_ENABLED => $request->boolean('wa_guard_enabled') ? '1' : '0',
-            $guard::KEY_CLIENTS_ONLY => $request->boolean('wa_guard_clients_only') ? '1' : '0',
-            WhatsAppSettings::KEY_INBOX_VISIBLE => $request->boolean('wa_inbox_visible') ? '1' : '0',
-        ] as $key => $value) {
-            \App\Models\Setting::set($key, $value, WhatsAppSettings::GROUP);
+        if (!$guard::lockedForOffice()) {
+            foreach ([
+                $guard::KEY_ENABLED => $request->boolean('wa_guard_enabled') ? '1' : '0',
+                $guard::KEY_CLIENTS_ONLY => $request->boolean('wa_guard_clients_only') ? '1' : '0',
+                WhatsAppSettings::KEY_INBOX_VISIBLE => $request->boolean('wa_inbox_visible') ? '1' : '0',
+            ] as $key => $value) {
+                \App\Models\Setting::set($key, $value, WhatsAppSettings::GROUP);
+            }
         }
 
         foreach ([

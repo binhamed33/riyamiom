@@ -395,20 +395,32 @@
                     </span>
                 </div>
 
+                @php $waLocked = \App\Services\WhatsApp\SendingGuard::lockedForOffice(); @endphp
+
+                {{-- مقفلةٌ على المكتب ومقروءةٌ له: يرى حالتَها ويعرف
+                     لماذا هي كذلك، ولا تُخفى عنه. والحمايةُ في الخادم
+                     لا في `disabled` — الحقلُ المعطَّل لا يُرسَل، لكنّ
+                     من يبني الطلبَ بيده يرسله. --}}
                 <div class="grid sm:grid-cols-2 gap-2 mb-3">
-                    <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-gray-200 cursor-pointer hover:border-gold/40">
+                    <label class="flex items-start gap-2.5 p-2.5 rounded-lg border {{ $waLocked ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-200 cursor-pointer hover:border-gold/40' }}">
                         <input type="checkbox" name="wa_guard_enabled" value="1" class="mt-0.5 rounded border-gray-300"
-                               @checked(\App\Services\WhatsApp\SendingGuard::enabled())>
+                               @checked(\App\Services\WhatsApp\SendingGuard::enabled()) @disabled($waLocked)>
                         <span>
-                            <span class="block text-xs font-semibold text-gray-800">تفعيل حدود الأمان</span>
+                            <span class="block text-xs font-semibold text-gray-800">
+                                تفعيل حدود الأمان
+                                @if($waLocked)<span class="text-[10px] font-normal text-gray-400">— يضبطه المطوّر</span>@endif
+                            </span>
                             <span class="block text-[11px] text-gray-500">إيقاعٌ متفاوت، وسقوف، وصمتٌ ليلي</span>
                         </span>
                     </label>
-                    <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-gray-200 cursor-pointer hover:border-gold/40">
+                    <label class="flex items-start gap-2.5 p-2.5 rounded-lg border {{ $waLocked ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-200 cursor-pointer hover:border-gold/40' }}">
                         <input type="checkbox" name="wa_guard_clients_only" value="1" class="mt-0.5 rounded border-gray-300"
-                               @checked(\App\Services\WhatsApp\SendingGuard::clientsOnly())>
+                               @checked(\App\Services\WhatsApp\SendingGuard::clientsOnly()) @disabled($waLocked)>
                         <span>
-                            <span class="block text-xs font-semibold text-gray-800">الموكّلون فقط</span>
+                            <span class="block text-xs font-semibold text-gray-800">
+                                الموكّلون فقط
+                                @if($waLocked)<span class="text-[10px] font-normal text-gray-400">— يضبطه المطوّر</span>@endif
+                            </span>
                             <span class="block text-[11px] text-gray-500">لا يُراسَل رقمٌ ليس في السجلّ ولم يراسل المكتب</span>
                         </span>
                     </label>
@@ -446,11 +458,14 @@
                     </div>
                 </div>
 
-                <label class="flex items-start gap-2.5 p-2.5 mt-3 rounded-lg border border-gray-200 cursor-pointer hover:border-gold/40">
+                <label class="flex items-start gap-2.5 p-2.5 mt-3 rounded-lg border {{ $waLocked ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-200 cursor-pointer hover:border-gold/40' }}">
                     <input type="checkbox" name="wa_inbox_visible" value="1" class="mt-0.5 rounded border-gray-300"
-                           @checked(\App\Support\WhatsAppSettings::inboxVisible())>
+                           @checked(\App\Support\WhatsAppSettings::inboxVisible()) @disabled($waLocked)>
                     <span>
-                        <span class="block text-xs font-semibold text-gray-800">إظهار صندوق وارد واتساب</span>
+                        <span class="block text-xs font-semibold text-gray-800">
+                            إظهار صندوق وارد واتساب
+                            @if($waLocked)<span class="text-[10px] font-normal text-gray-400">— يضبطه المطوّر</span>@endif
+                        </span>
                         <span class="block text-[11px] text-gray-500 leading-relaxed">
                             مخفيٌّ افتراضاً. وهو الطريق الوحيد لإرسالٍ يدويٍّ حرّ — وأخطرُ ما على سلامة الرقم.
                             والإشعاراتُ الآلية تعمل بدونه.

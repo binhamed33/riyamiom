@@ -58,6 +58,13 @@
                 @error('phone')
                     <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
                 @enderror
+                {{-- الرقمُ الذي سيراه واتساب — يُقال للموظّف قبل الحفظ
+                     لا بعد أن تذهب رسالةٌ إلى بلدٍ آخر. --}}
+                <p class="mt-1 text-[11px] text-gray-500 leading-relaxed">
+                    الرقم المحلّي (٨ خانات) يُعامَل تلقائياً كرقمٍ عُمانيّ
+                    <span dir="ltr" class="font-mono">+968</span>.
+                    ولموكّلٍ خارج عُمان، اكتب رقمه بمفتاح دولته.
+                </p>
             </div>
             <div>
                 <label for="email" class="block text-sm font-medium text-gold-dark mb-2">{{ __('app.client_email') }}</label>
