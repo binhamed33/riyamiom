@@ -41,6 +41,20 @@ class WhatsAppDoctor extends Command
         // ── ١) الربط ────────────────────────────────────────────
         $snapshot = WhatsAppSettings::snapshot();
 
+        // ═══ التشخيصُ يسمّي المزوّدَ الذي يعمل ═══
+        //
+        // كان يقول «Meta تردّ» على جسر واتساب ويب، ويعرض حقولَ Meta
+        // ‏(معرّف الحساب، بصمة الرمز) فارغةً بشرطات. فيرى المشغّل
+        // خمسةَ حقولٍ خاويةً ويظنّ الربطَ ناقصاً وهو تامّ — ويبحث عن
+        // قيمٍ لا وجود لها في هذا الطريق أصلاً.
+        $bridge = WhatsAppSettings::usingEvolution();
+        $providerLabel = (string) config(
+            'whatsapp.providers.' . config('whatsapp.default', 'meta') . '.label',
+            'المزوّد',
+        );
+
+        $this->row('المزوّد', $providerLabel);
+
         $this->row('الربط', $snapshot['connected']
             ? '<fg=green>مربوط</>'
             : '<fg=red>غير مربوط</>');
@@ -48,23 +62,41 @@ class WhatsAppDoctor extends Command
         if (! $snapshot['connected']) {
             $this->newLine();
             $this->line('اربط الرقم من: الإعدادات ← واتساب الأعمال.');
-            $this->line('يلزم: رمز الوصول الدائم + معرّف الرقم (Phone number ID) من Meta.');
+            $this->line($bridge
+                ? 'يلزم: مسحُ رمز الاقتران من واتساب في هاتف المكتب.'
+                : 'يلزم: رمز الوصول الدائم + معرّف الرقم (Phone number ID) من Meta.');
 
             // ولا يعود بفشل: مكتبٌ لم يربط رقمه بعد ليس مكتباً معطَّلاً،
             // وهذا الأمرُ يُشغَّل من سكربتات الصيانة كما يُشغَّل باليد.
             return self::SUCCESS;
         }
 
-        $this->row('معرّف الرقم', $snapshot['phone_number_id']);
-        $this->row('معرّف حساب الأعمال', $snapshot['waba_id']);
-        $this->row('الرقم الظاهر', $snapshot['display_phone']);
-        $this->row('اسم النشاط', $snapshot['business_name']);
-        // بصمةُ الرمز لا الرمز: أربعةُ محارف يتعرّف بها المدير على أيّ
-        // رمزٍ لصق، ولا تكفي أحداً ليرسل بها رسالةً واحدة.
-        $this->row('بصمة الرمز', $snapshot['token_hint']);
+        if ($bridge) {
+            $this->row('نسخة المكتب', WhatsAppSettings::evolutionInstance());
+            $this->row('حالة الاقتران', match (WhatsAppSettings::evolutionState()) {
+                'open' => '<fg=green>مقترن</>',
+                'connecting' => '<fg=yellow>ينتظر مسح الرمز</>',
+                default => '<fg=red>غير مقترن</>',
+            });
+            $this->row('الرقم الظاهر', $snapshot['display_phone']);
+        } else {
+            $this->row('معرّف الرقم', $snapshot['phone_number_id']);
+            $this->row('معرّف حساب الأعمال', $snapshot['waba_id']);
+            $this->row('الرقم الظاهر', $snapshot['display_phone']);
+            $this->row('اسم النشاط', $snapshot['business_name']);
+            // بصمةُ الرمز لا الرمز: أربعةُ محارف يتعرّف بها المدير على
+            // أيّ رمزٍ لصق، ولا تكفي أحداً ليرسل بها رسالةً واحدة.
+            $this->row('بصمة الرمز', $snapshot['token_hint']);
+        }
+
         $this->row('رُبط في', $snapshot['connected_at']);
-        $this->row('آخر مزامنة', $snapshot['last_sync_at']);
-        $this->row('عنوان الويبهوك', $snapshot['webhook_url']);
+
+        if (! $bridge) {
+            $this->row('آخر مزامنة', $snapshot['last_sync_at']);
+        }
+        $this->row('عنوان الويبهوك', $bridge
+            ? url('/webhooks/evolution/…')
+            : $snapshot['webhook_url']);
 
         // آخرُ إشعارٍ وصل من Meta هو الدليلُ الوحيد على أنّ الويبهوك
         // مضبوطٌ عندهم فعلاً: ربطٌ صحيحُ الرمز بلا ويبهوكٍ يعني إرسالاً
@@ -209,12 +241,16 @@ class WhatsAppDoctor extends Command
                 $ms = (int) ((microtime(true) - $t0) * 1000);
 
                 if ((bool) ($result['ok'] ?? false)) {
-                    $this->line("<fg=green>Meta تردّ</> ({$ms} م.ث): " . (string) ($result['message'] ?? ''));
+                    $this->line('<fg=green>' . ($bridge ? 'الجسر يردّ' : 'Meta تردّ') . "</> ({$ms} م.ث): "
+                        . (string) ($result['message'] ?? ''));
                     $this->row('الرقم الظاهر', (string) ($result['display_phone_number'] ?? ''));
-                    $this->row('الاسم المعتمَد', (string) ($result['verified_name'] ?? ''));
-                    // تقييمُ الجودة هبوطُه إنذارٌ مبكّر بتقييد الإرسال —
-                    // ويهبط بالبلاغات عن رسائل غير مرغوبة لا بعطلٍ تقنيّ.
-                    $this->row('تقييم الجودة', (string) ($result['quality_rating'] ?? ''));
+
+                    if (! $bridge) {
+                        $this->row('الاسم المعتمَد', (string) ($result['verified_name'] ?? ''));
+                        // تقييمُ الجودة هبوطُه إنذارٌ مبكّر بتقييد الإرسال —
+                        // ويهبط بالبلاغات عن رسائل غير مرغوبة لا بعطلٍ تقنيّ.
+                        $this->row('تقييم الجودة', (string) ($result['quality_rating'] ?? ''));
+                    }
                 } else {
                     $this->line('<fg=red>أخفق:</> ' . (string) ($result['message'] ?? 'بلا تفسير'));
                 }

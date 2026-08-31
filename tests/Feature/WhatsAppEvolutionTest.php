@@ -330,6 +330,34 @@ class WhatsAppEvolutionTest extends TestCase
         $this->assertSame('office-riyami-om', WhatsAppSettings::evolutionInstance());
     }
 
+    // ── التشخيص ─────────────────────────────────────────────────
+
+    /**
+     * التشخيصُ يسمّي المزوّدَ العامل ولا يعرض حقولَ غيره.
+     *
+     * كان يقول «Meta تردّ» على الجسر، ويعرض معرّفَ الحساب وبصمةَ
+     * الرمز فارغتين بشرطات — فيرى المشغّل حقولاً خاويةً ويظنّ الربطَ
+     * ناقصاً وهو تامّ، ويبحث عن قيمٍ لا وجود لها في هذا الطريق.
+     */
+    public function test_the_doctor_speaks_about_the_bridge_not_meta(): void
+    {
+        WhatsAppSettings::setEvolutionState('open');
+
+        Http::fake([
+            '*/instance/connectionState/*' => Http::response(['instance' => ['state' => 'open']], 200),
+            '*/instance/fetchInstances*' => Http::response([
+                ['instance' => ['owner' => '96871730036@s.whatsapp.net', 'profileName' => 'المكتب']],
+            ], 200),
+        ]);
+
+        $this->artisan('whatsapp:doctor --probe')
+            ->expectsOutputToContain('Evolution')
+            ->expectsOutputToContain('نسخة المكتب')
+            ->doesntExpectOutputToContain('بصمة الرمز')
+            ->doesntExpectOutputToContain('معرّف حساب الأعمال')
+            ->assertSuccessful();
+    }
+
     // ── الصلاحية ────────────────────────────────────────────────
 
     public function test_a_lawyer_cannot_pair(): void
