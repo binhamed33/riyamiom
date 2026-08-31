@@ -792,6 +792,7 @@
         [data-theme="dark"] .bg-emerald-100 { background-color: rgba(22,163,74,0.15) !important; }
         [data-theme="dark"] .text-emerald-700 { color: #4ADE80 !important; }
         [data-theme="dark"] .bg-yellow-100 { background-color: rgba(217,119,6,0.15) !important; }
+        [data-theme="dark"] .bg-amber-100 { background-color: rgba(217,119,6,0.15) !important; }
         [data-theme="dark"] .text-yellow-700 { color: #F59E0B !important; }
         [data-theme="dark"] .bg-orange-100 { background-color: rgba(249,115,22,0.15) !important; }
         [data-theme="dark"] .text-orange-700 { color: #FB923C !important; }

@@ -423,6 +423,63 @@ class MetaCloudProvider implements WhatsAppProviderInterface
         }
     }
 
+    /**
+     * هل اشترك تطبيقُنا في حقول هذا الحساب — وفي أيّها؟
+     *
+     * ═══ لماذا يُسأل Meta ولا يُفترض ═══
+     *
+     * أكثرُ ما يتعثّر فيه المكتب أن يسجّل عنوانَ الويبهوك وينسى
+     * الاشتراكَ في الحقول (زرّ Manage تحته). فيرى «Verified» عند Meta
+     * ويظنّ أنّه أتمّ، ولا تصله رسالةٌ واحدة أبداً — ولا شيءَ في
+     * نظامنا يعرف السبب، لأنّ عدم الوصول لا يترك أثراً.
+     *
+     * فيُسأل الحسابُ عن اشتراكاته، ويُقال للمكتب: «العنوان مسجَّل،
+     * والحقول لا» — وهي الجملةُ التي كان يبحث عنها ساعة.
+     *
+     * @return array<int, string>|null
+     */
+    public function subscribedFields(): ?array
+    {
+        $this->lastError = null;
+        $waba = WhatsAppSettings::wabaId();
+
+        if (!$this->isConfigured()) {
+            $this->lastError = 'لم يُربط رقم واتساب لهذا المكتب بعد.';
+
+            return null;
+        }
+
+        if (!filled($waba)) {
+            $this->lastError = 'معرّف حساب الأعمال (WABA ID) غير مضبوط — والاشتراكات تُقرأ منه.';
+
+            return null;
+        }
+
+        try {
+            $response = $this->http()->get($this->url($waba . '/subscribed_apps'));
+        } catch (\Throwable) {
+            $this->lastError = 'تعذّر الاتصال بخدمة واتساب للسؤال عن الاشتراكات.';
+
+            return null;
+        }
+
+        if (!$response->successful()) {
+            $this->failureFrom($response);
+
+            return null;
+        }
+
+        $fields = [];
+
+        foreach ((array) $response->json('data', []) as $app) {
+            foreach ((array) ($app['subscribed_fields'] ?? []) as $field) {
+                $fields[] = (string) $field;
+            }
+        }
+
+        return array_values(array_unique($fields));
+    }
+
     // ── داخلي ────────────────────────────────────────────────────
 
     protected function http()

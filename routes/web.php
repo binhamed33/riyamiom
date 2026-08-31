@@ -450,6 +450,8 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::post('/settings/whatsapp', [App\Http\Controllers\WhatsAppSettingsController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.whatsapp.update');
     Route::delete('/settings/whatsapp', [App\Http\Controllers\WhatsAppSettingsController::class, 'disconnect'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.whatsapp.disconnect');
     Route::post('/settings/whatsapp/test', [App\Http\Controllers\WhatsAppSettingsController::class, 'test'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.test');
+    // فحصُ خطوات الربط — محدودٌ كالفحص: ثلاثةُ نداءاتٍ إلى Meta لكلّ ضغطة
+    Route::post('/settings/whatsapp/checkup', [App\Http\Controllers\WhatsAppSettingsController::class, 'checkup'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.checkup');
     Route::post('/settings/whatsapp/templates', [App\Http\Controllers\WhatsAppSettingsController::class, 'syncTemplates'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.templates.sync');
 
     // إعدادات الذكاء الاصطناعي — خاصة بهذا المكتب، ومقصورة على من يدير الإعدادات

@@ -86,6 +86,27 @@ class WhatsAppSettingsController extends Controller
         return back()->with('success', 'فُصل رقم واتساب. المحادثات السابقة محفوظة كما هي.');
     }
 
+    /**
+     * أين توقّف الربط — فحصٌ حيٌّ يسأل Meta.
+     *
+     * ═══ لماذا بضغطةٍ لا مع كلّ فتحةِ صفحة ═══
+     *
+     * الفحصُ ثلاثةُ نداءاتٍ شبكيّة إلى Meta. تنفيذُها كلَّما فُتحت
+     * صفحةُ الإعدادات يُبطئها بثوانٍ، ويستهلك حصّةَ الطلبات على رقمٍ
+     * حصّتُه للرسائل لا للفحص. فتُعرض الحالةُ المخزَّنة عند الفتح،
+     * ويُسأل Meta حين يطلب المستخدم.
+     *
+     * والاستجابةُ لا تحمل رمزاً ولا سرّاً — أسماءَ خطواتٍ وأسبابَ
+     * تعثّرٍ بالعربية فقط.
+     */
+    public function checkup(): JsonResponse
+    {
+        return response()->json(
+            app(\App\Services\WhatsApp\SetupDoctor::class)->report(probe: true),
+            200,
+        );
+    }
+
     /** فحصُ اتصالٍ حقيقي — الاستجابة لا تحتوي الرمز. */
     public function test(): JsonResponse
     {

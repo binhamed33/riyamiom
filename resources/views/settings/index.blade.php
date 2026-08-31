@@ -190,6 +190,49 @@
 
         <p class="text-xs text-gray-500 leading-relaxed mb-4">{{ __('app.wa_connect_help') }}</p>
 
+        {{-- ═══ معالجُ الربط ═══
+
+             الربطُ خمسُ خطوات، ثلاثٌ منها في لوحة Meta لا هنا. وحين لا
+             تصل رسالة لا يعرف صاحبُ المكتب أيَّ خطوةٍ سقطت — فيعيدها
+             كلَّها مراراً، وكلُّها تبدو صحيحةً عند Meta.
+
+             فتُعرض الخطواتُ بترتيبها، وواحدةٌ فقط هي «التالية»،
+             وسببُ تعثّرها مكتوبٌ تحتها. والحالةُ المخزَّنة تُعرض عند
+             فتح الصفحة، و«افحص الآن» يسأل Meta فعلاً. --}}
+        @php $waSetup = app(\App\Services\WhatsApp\SetupDoctor::class)->report(); @endphp
+        <div class="mb-5 rounded-xl border border-gray-200 overflow-hidden" data-wa-wizard>
+            <div class="flex items-center justify-between gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+                <span class="text-xs font-bold text-gray-700">خطوات الربط</span>
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] text-gray-400" data-wa-wizard-note>الحالة المحفوظة — لم يُسأل Meta بعد</span>
+                    <button type="button" data-wa-checkup
+                            class="text-xs font-bold px-3 py-1.5 rounded-lg bg-gold/10 border border-gold/40 text-gold-dark hover:bg-gold/20">
+                        افحص الآن
+                    </button>
+                </div>
+            </div>
+            <ol class="divide-y divide-gray-100" data-wa-steps>
+                @foreach($waSetup['steps'] as $i => $step)
+                    <li class="flex items-start gap-3 px-4 py-3" data-wa-step="{{ $step['key'] }}">
+                        <span class="mt-0.5 w-5 h-5 shrink-0 rounded-full text-[10px] font-bold flex items-center justify-center
+                                     {{ $step['state'] === 'done' ? 'bg-emerald-100 text-emerald-700' : ($step['state'] === 'next' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400') }}"
+                              data-wa-step-badge>{{ $step['state'] === 'done' ? '✓' : $i + 1 }}</span>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-baseline gap-2 flex-wrap">
+                                <span class="text-sm font-semibold text-gray-800" data-wa-step-title>{{ $step['title'] }}</span>
+                                <span class="text-[11px] text-gray-400" dir="ltr" data-wa-step-where>{{ $step['where'] }}</span>
+                                @if(!$step['required'])
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 border border-gray-200">اختياري</span>
+                                @endif
+                            </div>
+                            <p class="text-xs text-gray-500 mt-0.5 leading-relaxed" data-wa-step-reason>{{ $step['reason'] }}</p>
+                            <p class="text-xs text-gold-dark mt-1 leading-relaxed {{ $step['action'] ? '' : 'hidden' }}" data-wa-step-action>{{ $step['action'] }}</p>
+                        </div>
+                    </li>
+                @endforeach
+            </ol>
+        </div>
+
         {{-- العنوان ورمز التحقّق: يُلصقان في إعداد الويبهوك عند Meta.
              ليسا سرّاً بالمعنى الذي يُخفى — لكنّهما لا يُنسخان إلا هنا. --}}
         <div class="grid md:grid-cols-2 gap-3 mb-5">
@@ -847,3 +890,143 @@
     </form>
 </div>
 @endsection
+
+@push('scripts')
+<script nonce="{{ $cspNonce }}">
+(function () {
+    // ═══ لماذا كان هذا الملفّ بلا جافاسكربت ═══
+    //
+    // كانت أزرارُ «اختبار الاتصال» و«نسخ» موجودةً بسِماتها
+    // ‏(data-wa-test و data-wa-copy) ولا شيءَ يستمع إليها. فيضغطها
+    // صاحبُ المكتب ولا يحدث شيء — لا رسالةَ نجاحٍ ولا خطأ — فيظنّ
+    // النظامَ معطّلاً ويعيد إدخال بياناته من أوّلها.
+    'use strict';
+
+    var card = document.getElementById('whatsapp-settings');
+    if (!card) { return; }
+
+    var token = document.querySelector('meta[name="csrf-token"]');
+    var csrf = token ? token.getAttribute('content') : '';
+
+    function flash(button, text, good) {
+        var original = button.dataset.waOriginal || button.textContent;
+        button.dataset.waOriginal = original;
+        button.textContent = text;
+        button.classList.toggle('text-emerald-700', !!good);
+        button.classList.toggle('text-red-700', !good);
+        setTimeout(function () {
+            button.textContent = button.dataset.waOriginal;
+            button.classList.remove('text-emerald-700', 'text-red-700');
+        }, 2200);
+    }
+
+    // ── النسخ ────────────────────────────────────────────────
+    // ‏clipboard.writeText يحتاج سياقاً آمناً؛ ولأنّ بعض المكاتب
+    // تُفتح على http في شبكةٍ داخلية، يبقى تحديدُ النصّ بديلاً
+    // يعمل في كلّ حال بدل زرٍّ صامت.
+    card.querySelectorAll('[data-wa-copy]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var value = button.getAttribute('data-wa-copy') || '';
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(value).then(function () {
+                    flash(button, 'نُسخ', true);
+                }).catch(function () {
+                    selectSibling(button);
+                });
+            } else {
+                selectSibling(button);
+            }
+        });
+    });
+
+    function selectSibling(button) {
+        var input = button.parentElement && button.parentElement.querySelector('input');
+        if (input) { input.select(); flash(button, 'حدِّد وانسخ', true); }
+    }
+
+    // ── اختبار الاتصال ───────────────────────────────────────
+    var testButton = card.querySelector('[data-wa-test]');
+    if (testButton) {
+        testButton.addEventListener('click', function () {
+            testButton.disabled = true;
+            flash(testButton, 'جارٍ الفحص…', true);
+
+            fetch(@json(route('settings.whatsapp.test')), {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                flash(testButton, data.ok ? 'الاتصال سليم' : 'أخفق', !!data.ok);
+                if (!data.ok && data.message) { alert(data.message); }
+            })
+            .catch(function () { flash(testButton, 'تعذّر الفحص', false); })
+            .finally(function () { testButton.disabled = false; });
+        });
+    }
+
+    // ── معالج الربط ──────────────────────────────────────────
+    var checkup = card.querySelector('[data-wa-checkup]');
+    var note = card.querySelector('[data-wa-wizard-note]');
+
+    if (!checkup) { return; }
+
+    checkup.addEventListener('click', function () {
+        checkup.disabled = true;
+        checkup.textContent = 'جارٍ سؤال Meta…';
+
+        fetch(@json(route('settings.whatsapp.checkup')), {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) { paint(data); })
+        .catch(function () {
+            if (note) { note.textContent = 'تعذّر الفحص — أعد المحاولة'; }
+        })
+        .finally(function () {
+            checkup.disabled = false;
+            checkup.textContent = 'افحص الآن';
+        });
+    });
+
+    function paint(data) {
+        (data.steps || []).forEach(function (step, index) {
+            var li = card.querySelector('[data-wa-step="' + step.key + '"]');
+            if (!li) { return; }
+
+            var badge = li.querySelector('[data-wa-step-badge]');
+            var reason = li.querySelector('[data-wa-step-reason]');
+            var action = li.querySelector('[data-wa-step-action]');
+
+            if (badge) {
+                badge.className = 'mt-0.5 w-5 h-5 shrink-0 rounded-full text-[10px] font-bold flex items-center justify-center ' +
+                    (step.state === 'done' ? 'bg-emerald-100 text-emerald-700'
+                     : step.state === 'next' ? 'bg-amber-100 text-amber-700'
+                     : 'bg-gray-100 text-gray-400');
+                badge.textContent = step.state === 'done' ? '✓' : String(index + 1);
+            }
+
+            // ‏textContent لا innerHTML: نصُّ السبب يحمل ما تقوله Meta،
+            // وهو نصٌّ خارجيّ لا نملك تحريره.
+            if (reason) { reason.textContent = step.reason || ''; }
+
+            if (action) {
+                action.textContent = step.action || '';
+                action.classList.toggle('hidden', !step.action);
+            }
+        });
+
+        if (note) {
+            note.textContent = data.ready
+                ? 'كلّ الخطوات اللازمة تمّت — الاستقبال يعمل'
+                : 'فُحص الآن';
+            note.className = 'text-[11px] ' + (data.ready ? 'text-emerald-700 font-bold' : 'text-gray-400');
+        }
+    }
+})();
+</script>
+@endpush

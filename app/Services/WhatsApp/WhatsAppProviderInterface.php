@@ -60,6 +60,17 @@ interface WhatsAppProviderInterface
     /** قوالبُ الحساب وحالتُها عند Meta — لا نعتمدها نحن. */
     public function fetchTemplates(): array;
 
+    /**
+     * حقولُ الويبهوك التي اشترك فيها تطبيقُنا عند Meta.
+     *
+     * تُعيد null إن تعذّر السؤال (بلا معرّف حساب، أو ردٌّ غير ناجح) —
+     * وذلك يختلف عن `[]` التي تعني «سألتُ وMeta تقول: لا اشتراك».
+     * والمعالجُ يقول للمكتب أحدَ الجوابين لا يخلط بينهما.
+     *
+     * @return array<int, string>|null
+     */
+    public function subscribedFields(): ?array;
+
     /** آخرُ خطأٍ بصيغةٍ مفهومة — بلا رموز سرّية. */
     public function getLastError(): ?string;
 }
