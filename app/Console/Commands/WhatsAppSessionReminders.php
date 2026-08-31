@@ -149,9 +149,21 @@ class WhatsAppSessionReminders extends Command
             }
 
             // القراءةُ أوّلاً والكتابةُ بعد كلّ الحُرّاس: التجربةُ تمرّ
-            // بنفس القرارات تماماً ولا تكتب صفّاً واحداً
-            $contact = WhatsAppContact::where('wa_id', $waId)->first()
-                ?? WhatsAppContact::where('client_id', $client->id)->first();
+            // بنفس القرارات تماماً ولا تكتب صفّاً واحداً.
+            //
+            // ═══ ولا احتياطيَّ بـ client_id ═══
+            //
+            // كان هنا `?? where('client_id', $client->id)`: إن لم يوجد
+            // صفٌّ لرقم الموكّل الحالي، يُؤخذ أيُّ صفٍّ مربوطٍ به. وذلك
+            // صفٌّ **برقمٍ آخر** بالضرورة — وإلا لطابق الشرطَ الأوّل.
+            //
+            // فموكّلٌ غيّر رقمه يُرسَل تذكيرُه إلى رقمه القديم، وأرقامُ
+            // عُمان تُعاد تدويرُها؛ ومن راسل المكتبَ مرّةً من رقمٍ ثمّ
+            // رُبط صفُّه بموكّلٍ يتلقّى اسمَه ورقمَ قضيّته وموعدَ جلسته
+            // ومحكمتَها. سرُّ المهنة لا يُخاطَر به لتوفير رسالة.
+            //
+            // فالرقمُ المكتوب في سجلّ الموكّل هو العنوان، وحده.
+            $contact = WhatsAppContact::where('wa_id', $waId)->first();
 
             // الرفضُ الصريح يُحترم مهما قالت إعداداتُ المكتب — شرطُ Meta
             // وأدبُ المهنة معاً، ومخالفتُه تُبلَّغ فيهبط تقييمُ الرقم
@@ -164,7 +176,7 @@ class WhatsAppSessionReminders extends Command
                 ? WhatsAppConversation::where('contact_id', $contact->id)->first()
                 : null;
 
-            if ($conversation && $this->alreadyReminded($conversation, $templateName, $session, $hours)) {
+            if ($conversation && $this->alreadyReminded($conversation, $templateName, $session)) {
                 $this->skip($skipped, 'ذُكِّر من قبل');
                 continue;
             }
@@ -215,7 +227,7 @@ class WhatsAppSessionReminders extends Command
                 'template',
                 json_encode($params, JSON_UNESCAPED_UNICODE),
                 null,
-                ['template_name' => $templateName],
+                ['template_name' => $templateName, 'session_id' => $session->id],
             );
 
             SendWhatsAppMessage::dispatch($message->id);
@@ -252,48 +264,39 @@ class WhatsAppSessionReminders extends Command
     }
 
     /**
-     * هل خرج تذكيرٌ بهذا القالب لهذه الجلسة من هذا الخيط؟
+     * هل خرج تذكيرٌ لهذه الجلسة بعينها من هذا الخيط؟
      *
-     * ═══ لماذا حدّان لا حدٌّ واحد ═══
+     * ═══ لماذا بمعرّف الجلسة لا بالزمن ═══
      *
-     * السقفُ ثمانٍ وأربعون ساعة: لا يُنظر إلى تذكيرٍ أقدم منها، فلا
-     * يمنع تذكيرُ الأسبوع الماضي تذكيرَ اليوم.
+     * كان السؤالُ زمنيّاً: «هل خرج تذكيرٌ بهذا القالب في المدّة
+     * الفلانية؟» — ومهما ضُبطت المدّة فهي إمّا واسعةٌ تبتلع جلسةً
+     * حقيقيّة، أو ضيّقةٌ يفلت منها التكرار. وكانت أضيقُ أرضيّةٍ تمنع
+     * التكرار ثلاثَ ساعات (الجلسةُ تُمسح في تشغيلين، والنافذةُ
+     * ساعتان)؛ فموكّلٌ له جلستان بينهما ساعتان — وهذا يقع كثيراً:
+     * قضيّتان أمام نفس المحكمة في نفس الصباح — يُذكَّر بالأولى
+     * وتُبتلع الثانية. وغيابُه عنها قد يُصدر حكماً غيابيّاً.
      *
-     * والأرضيّةُ مربوطةٌ بالجلسة نفسها: تذكيرُ هذه الجلسة يُكتب حول
-     * ‏(موعدها − المدّة المضبوطة)، فما كُتب قبل ذلك بثلاث ساعاتٍ فأكثر
-     * إنّما هو تذكيرُ جلسةٍ أخرى لنفس الموكّل. ولولا هذه الأرضيّة
-     * لابتلع تذكيرُ جلسةِ الغد تذكيرَ جلسةِ بعده — وهما جلستان
-     * حقيقيّتان في قضيّتين، والموكّل لا يُذكَّر بإحداهما.
+     * فصار السؤالُ عن الجلسة نفسها: خرج تذكيرُها أو لم يخرج. لا مدّةَ
+     * تُضبط ولا حالةَ حدّيّة.
      *
-     * ═══ ولماذا ثلاثٌ بالضبط ═══
+     * والقالبُ يبقى في الشرط: مكتبٌ بدّل قالبَه يُعيد التذكير مرّةً
+     * واحدة بالقالب الجديد، وهذا مقصود.
      *
-     * الجلسةُ الواحدة تُمسح في تشغيلين متتاليين على الأكثر (النافذةُ
-     * ساعتان)، فالأرضيّةُ لا بدّ أن تتجاوز ساعتين وإلّا أفلت التكرار.
-     * وكلُّ ساعةٍ تُزاد بعدها تبتلع جلسةً أقربَ إلى أختها — فثلاثٌ هي
-     * الحدُّ الذي يمنع التكرار ولا يبتلع إلا جلستين في ساعاتٍ ثلاث،
-     * وهما في الواقع يومٌ واحد ورسالةٌ واحدة تكفيهما.
+     * ويبقى سقفُ الثماني والأربعين ساعة: جلسةٌ أُجّلت ثمّ أُعيد
+     * جدولتُها بنفس الصفّ بعد أسبوع تستحقّ تذكيراً جديداً، ولا يمنعه
+     * تذكيرُ موعدها القديم.
      */
     private function alreadyReminded(
         WhatsAppConversation $conversation,
         string $templateName,
         Session $session,
-        int $hours,
     ): bool {
-        $ceiling = now()->subHours(48);
-
-        $since = $session->date instanceof CarbonInterface
-            ? $session->date->copy()->subHours($hours + 3)
-            : $ceiling;
-
-        if ($since->lessThan($ceiling)) {
-            $since = $ceiling;
-        }
-
         return WhatsAppMessage::query()
             ->where('conversation_id', $conversation->id)
             ->where('direction', WhatsAppMessage::OUT)
             ->where('template_name', $templateName)
-            ->where('created_at', '>=', $since)
+            ->where('session_id', $session->id)
+            ->where('created_at', '>=', now()->subHours(48))
             ->exists();
     }
 

@@ -191,6 +191,32 @@ class WhatsAppAuthorizationTest extends TestCase
         $this->assertSame($secret, Crypt::decryptString($stored));
     }
 
+    /**
+     * سببُ الإخفاق المدوَّن لا يحمل سرّاً — ولو حمله نصُّ Meta.
+     *
+     * هذا النصّ يُعرض في صفحة الإعدادات وفي مخرَج whatsapp:doctor.
+     * وMailIdentity::scrub تعرف اعتماداتِ البريد وحدها، فلو اتُّكل
+     * عليها وحدها لظهر رمزُ المكتب على الشاشة يومَ يعيده المزوّد في
+     * رسالة خطأ.
+     */
+    public function test_a_recorded_error_never_keeps_a_token(): void
+    {
+        $token = 'EAAG' . str_repeat('x', 40);
+        WhatsAppSettings::store($token, '111222333', '999', 'the-app-secret-value');
+
+        WhatsAppSettings::recordError('فشل الطلب بالرمز ' . $token . ' والسرّ the-app-secret-value');
+
+        $stored = (string) Setting::get(WhatsAppSettings::KEY_LAST_ERROR);
+
+        $this->assertStringNotContainsString($token, $stored);
+        $this->assertStringNotContainsString('the-app-secret-value', $stored);
+        $this->assertStringContainsString('[محجوب]', $stored);
+
+        // ورمزٌ على هيئة Meta ليس رمزَنا يُحجب أيضاً
+        WhatsAppSettings::recordError('رمز آخر: EAA' . str_repeat('z', 30));
+        $this->assertStringNotContainsString(str_repeat('z', 30), (string) Setting::get(WhatsAppSettings::KEY_LAST_ERROR));
+    }
+
     /** وفصلُ الرقم يمحو الاعتمادات ولا يمحو المراسلات. */
     public function test_disconnecting_clears_credentials_and_keeps_the_history(): void
     {

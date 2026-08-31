@@ -78,6 +78,7 @@ class InboxService
             ])->save();
 
             $this->honourOptOut($contact, $parsed['body']);
+            $this->honourHandoffRequest($conversation, $parsed['body']);
 
             return $row;
         });
@@ -202,6 +203,33 @@ class InboxService
             return null;
         }
 
+        // ═══ حدُّ الحجم قبل التنزيل لا بعده ═══
+        //
+        // التنزيلُ يجلب الملفَّ كلَّه إلى سلسلةٍ في الذاكرة داخل طلبِ
+        // ويب. ومستندٌ من مئة ميغابايت — وMeta تقبل ذلك — يستهلك من
+        // ذاكرة PHP أضعافَ حجمه، فيسقط الطلب بلا رسالة مفهومة ويُبطئ
+        // المكتب كلَّه معه. والسقفُ كان مكتوباً في config/whatsapp.php
+        // ولا يقرؤه أحد.
+        $max = (int) config('whatsapp.auto_download_max', 20 * 1024 * 1024);
+        $size = (int) ($meta['size'] ?? 0);
+
+        if ($max > 0 && $size > $max) {
+            WhatsAppSettings::recordError(
+                'ملفٌّ أكبر من الحدّ المسموح (' . round($size / 1048576, 1) . ' م.ب) — لم يُحفظ.'
+            );
+
+            return null;
+        }
+
+        // ونوعٌ لا تعرفه القائمة لا يُحفظ في ملفّ قضيّة: ما لا نعرف
+        // نوعَه لا نعرف أنّه يُفتح، ووضعُه في السجلّ الرسمي يوهم بوجود
+        // مستندٍ لا يُقرأ.
+        if (!$this->mimeAllowed((string) ($meta['mime'] ?? $message->media_mime))) {
+            WhatsAppSettings::recordError('نوع الملف غير مدعوم في واتساب — لم يُحفظ.');
+
+            return null;
+        }
+
         $binary = $provider->downloadMedia($meta['url']);
 
         if ($binary === null || $binary === '') {
@@ -254,10 +282,21 @@ class InboxService
 
         // الربطُ التلقائي مرّةً واحدة: من رُبط يدوياً بموكّلٍ لا يُعاد
         // ربطُه بمطابقةِ رقمٍ قد تكون أضعف من حكم الموظّف.
+        //
+        // ═══ ولماذا لا تكفي البصمة وحدها ═══
+        //
+        // بصمةُ الهاتف تُحسب على آخر ثمانية أرقام — وهذا يجعل رقماً من
+        // دولةٍ أخرى ينتهي بها يطابق موكّلاً عُمانياً. ومن ملك رقماً
+        // كذلك ورسل رسالةً واحدة صار خيطُه يحمل اسمَ موكّلٍ حقيقي، ثمّ
+        // يلتقطه تذكيرُ الجلسات فيُرسل إليه اسمَ الموكّل ورقمَ قضيّته
+        // وموعدَ جلسته.
+        //
+        // فالبصمةُ مُرشِّحٌ رخيص، والحكمُ للرقم كاملاً بمفتاح دولته.
+        // وما لم يتطابق يُترك لإنسان يربطه — وهو الإخفاق الآمن.
         if ($contact->client_id === null) {
             $client = Client::findByPhone($waId);
 
-            if ($client) {
+            if ($client && WhatsAppContact::normalizeWaId((string) $client->phone) === $waId) {
                 $changes['client_id'] = $client->id;
             }
         }
@@ -277,17 +316,47 @@ class InboxService
         );
     }
 
+    /**
+     * اسمُ ملفّ المُرسِل — نصٌّ يكتبه هو، فيُنظَّف قبل حفظه.
+     *
+     * ═══ لماذا يُنظَّف وBlade يهرّب أصلاً ═══
+     *
+     * لأنّ هذا الاسم لا يبقى في Blade: يدخل في نصّ إشعارٍ يُقرأ
+     * بجافاسكربت، وفي عنوان مهمّة، وفي تصدير CSV. وكلُّ مخرجٍ من هذه
+     * له قواعدُ تهريبٍ مختلفة، وكفايةُ واحدةٍ منها لا تكفي البقيّة.
+     * فيُقلَّم عند الباب مرّةً بدل أن يُتذكَّر عند كلّ مخرج.
+     *
+     * والمحارفُ الحاكمة (U+202E وأخواتُها) تُحذف بالذات: اسمٌ يحمل
+     * أحدَها يقلب اتجاهَ ما بعده في قائمة المحادثات، فيُرى رقمُ موكّلٍ
+     * أو نصُّ رسالةٍ معكوساً — تزويرٌ بصريٌّ لا يكشفه النظر.
+     */
     protected function profileNameFor(string $waId, array $contacts): ?string
     {
         foreach ($contacts as $entry) {
             if (WhatsAppContact::normalizeWaId((string) ($entry['wa_id'] ?? '')) === $waId) {
-                $name = (string) ($entry['profile']['name'] ?? '');
+                $name = self::sanitizeProfileName((string) ($entry['profile']['name'] ?? ''));
 
-                return $name !== '' ? mb_substr($name, 0, 120) : null;
+                return $name !== '' ? $name : null;
             }
         }
 
         return null;
+    }
+
+    public static function sanitizeProfileName(string $raw): string
+    {
+        // المحارفُ الحاكمة والمخفيّة: أصفارُ العرض وقالباتُ الاتجاه
+        $clean = (string) preg_replace('/[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}\x{FEFF}]/u', '', $raw);
+
+        // محارفُ التحكّم (بما فيها السطرُ الجديد): الاسمُ سطرٌ واحد
+        $clean = (string) preg_replace('/[\x{0000}-\x{001F}\x{007F}]/u', ' ', $clean);
+
+        // الزوايا لا معنى لها في اسم، ووجودُها نيّةٌ لا سهو
+        $clean = str_replace(['<', '>'], '', $clean);
+
+        $clean = trim((string) preg_replace('/\s+/u', ' ', $clean));
+
+        return mb_substr($clean, 0, 120);
     }
 
     /**
@@ -363,30 +432,167 @@ class InboxService
      */
     protected function honourOptOut(WhatsAppContact $contact, ?string $body): void
     {
-        $text = trim(mb_strtolower((string) $body));
+        $text = self::normalizeArabic((string) $body);
 
         if ($text === '') {
             return;
         }
 
-        $stopWords = ['stop', 'unsubscribe', 'إيقاف', 'ايقاف', 'الغاء', 'إلغاء', 'توقف', 'لا تراسلني'];
-        $resumeWords = ['start', 'subscribe', 'اشتراك', 'تفعيل', 'استئناف'];
+        // الإيقافُ تعليمةٌ لا موضوع.
+        //
+        // ═══ العطل الذي وُضع له هذا الشرط ═══
+        //
+        // كانت المطابقةُ str_contains على الكلمة داخل الرسالة، فجملةٌ
+        // عاديّةٌ تماماً في مكتب محاماة — «أريد إلغاء الوكالة» أو «هل
+        // يمكن إلغاء العقد؟» — تقطع الموكّلَ عن كلّ إشعارات مكتبه إلى
+        // الأبد. ولا يعرف أحدٌ لماذا توقّفت رسائلُه، ولا كان يُعيدها
+        // إلا رسالةٌ من كلمةٍ واحدة بعينها لا يخطر ببال أحد.
+        //
+        // فالآن: الرسالةُ إمّا أن تكون التعليمةَ نفسها، أو قصيرةً جداً
+        // (ثلاث كلماتٍ فأقلّ) تتضمّنها. أمّا جملةٌ فيها كلامٌ آخر فهي
+        // حديثٌ عن الإلغاء لا طلبٌ لإيقاف المراسلة.
+        $stopPhrases = ['stop', 'unsubscribe', 'ايقاف', 'توقف', 'لا تراسلني',
+                        'الغاء الاشتراك', 'ايقاف الرسائل', 'لا ترسل'];
+        $resumePhrases = ['start', 'subscribe', 'اشتراك', 'تفعيل', 'استئناف', 'ابدا'];
 
-        foreach ($stopWords as $word) {
-            if (str_contains($text, $word)) {
+        $words = preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $short = count($words) <= 3;
+
+        foreach ($stopPhrases as $phrase) {
+            if ($text === $phrase || ($short && str_contains($text, $phrase))) {
                 $contact->forceFill(['opted_out_at' => now(), 'opted_in_at' => null])->save();
 
                 return;
             }
         }
 
-        foreach ($resumeWords as $word) {
-            if ($text === $word) {
+        foreach ($resumePhrases as $phrase) {
+            if ($text === $phrase || ($short && str_contains($text, $phrase))) {
                 $contact->forceFill(['opted_out_at' => null, 'opted_in_at' => now()])->save();
 
                 return;
             }
         }
+    }
+
+    /**
+     * «موظف» — طلبُ إنسان.
+     *
+     * ═══ العطل الذي يمنعه ═══
+     *
+     * كلُّ ردٍّ آلي يُذيَّل بـ«للتحدث مع موظف اكتب: موظف». وكان لا أحد
+     * يقرأ تلك الكلمة: يكتبها العميل، فيردّ عليه الآليُّ ثانيةً بنفس
+     * الذيل، فيكتبها ثانيةً. وعدٌ في رسالةٍ باسم المكتب لا يفي به
+     * النظام — وقد يكون الرجل في ميعادٍ يسقط.
+     *
+     * فصارت الكلمةُ تُقرأ: يُختم الخيطُ بالتحويل (فيصمت الآليُّ
+     * بـaiMayReply)، ويُنبَّه الموظّف، ويُطمأنُ العميل بأنّ طلبه وصل.
+     *
+     * وتُقاس بنفس ميزان «إيقاف»: تعليمةٌ لا موضوع. فمن كتب «تعاملتُ مع
+     * موظف عندكم أمس» لا يُحوَّل خيطُه ولا يُنبَّه أحدٌ بلا سبب.
+     *
+     * والردُّ حرٌّ داخل النافذة بلا قالب: العميل راسلَنا في هذه اللحظة،
+     * فالنافذةُ مفتوحةٌ بالضرورة.
+     */
+    protected function honourHandoffRequest(WhatsAppConversation $conversation, ?string $body): void
+    {
+        // محوَّلٌ أصلاً: لا يُعاد التنبيه ولا التطمين مع كل رسالة
+        if ($conversation->handoff_at !== null) {
+            return;
+        }
+
+        $text = self::normalizeArabic((string) $body);
+
+        if ($text === '') {
+            return;
+        }
+
+        // بعد التوحيد: «موظّفة» تصير «موظفه»، و«إنسان» تصير «انسان»
+        $phrases = ['موظف', 'موظفه', 'محامي', 'انسان', 'بشري', 'human', 'agent'];
+
+        $words = preg_split('/\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $short = count($words) <= 3;
+        $asked = false;
+
+        foreach ($phrases as $phrase) {
+            if ($text === $phrase || ($short && str_contains($text, $phrase))) {
+                $asked = true;
+                break;
+            }
+        }
+
+        if (!$asked) {
+            return;
+        }
+
+        $conversation->forceFill([
+            'handoff_at' => now(),
+            'status' => WhatsAppConversation::STATUS_OPEN,
+        ])->save();
+
+        $this->notifyHandoff($conversation);
+
+        // ومن سجّل رفضَ المراسلة لا يُطمأن آلياً: التحويلُ والتنبيهُ
+        // تمّا، فيتولّاه إنسانٌ يقرّر. والرفضُ لا تنقضه رسالةٌ يكتبها
+        // النظامُ من عنده.
+        if (!$conversation->contact?->acceptsNotifications()) {
+            return;
+        }
+
+        $confirmation = $this->queueOutgoing(
+            $conversation,
+            'text',
+            'وصلَنا طلبكم. سيتواصل معكم أحد موظّفي المكتب في أقرب وقت خلال ساعات العمل.',
+        );
+
+        // الدفعُ بعد الالتزام لا داخله: عاملُ الطابور يقرأ من نفس
+        // القاعدة، فمهمّةٌ تُدفع داخل معاملةٍ لم تُلتزم بعد قد يلتقطها
+        // العامل قبل وجود صفّ الرسالة فيسقط ويُعاد بلا داعٍ
+        DB::afterCommit(function () use ($confirmation) {
+            \App\Jobs\SendWhatsAppMessage::dispatch($confirmation->id);
+        });
+    }
+
+    /** تنبيهُ من يتابع الخيط — أو أوّلِ محامٍ نشط إن لم يُسنَد بعد. */
+    protected function notifyHandoff(WhatsAppConversation $conversation): void
+    {
+        $assignee = $conversation->assigned_to
+            ?? User::whereIn('role', ['admin', 'lawyer'])->where('is_active', true)->value('id');
+
+        if (!$assignee) {
+            return;
+        }
+
+        Notify::send(
+            userId: (int) $assignee,
+            titleKey: 'app.notif_wa_handoff_title',
+            messageKey: 'app.notif_wa_handoff_body',
+            params: ['name' => $conversation->contact?->displayName() ?? 'مستفسر'],
+            type: 'warning',
+        );
+    }
+
+    /**
+     * توحيدُ العربية قبل المقارنة.
+     *
+     * «إلغاء» و«الغاء» و«الغــاء» كلمةٌ واحدة يكتبها الناس بثلاث صور،
+     * ومقارنةٌ حرفيّةٌ تقبل واحدةً وترفض اثنتين — فيكتب الموكّل طلب
+     * الإيقاف ولا يُسمع.
+     */
+    public static function normalizeArabic(string $value): string
+    {
+        $text = mb_strtolower(trim($value));
+
+        $text = strtr($text, [
+            'أ' => 'ا', 'إ' => 'ا', 'آ' => 'ا', 'ٱ' => 'ا',
+            'ة' => 'ه', 'ى' => 'ي', 'ـ' => '',
+        ]);
+
+        // التشكيل وعلاماتُ الترقيم لا تُغيّر المعنى ولا تُقارَن
+        $text = (string) preg_replace('/[\x{064B}-\x{0652}]/u', '', $text);
+        $text = (string) preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $text);
+
+        return trim((string) preg_replace('/\s+/u', ' ', $text));
     }
 
     /** إشعارٌ داخلي لمن أرسل رسالةً فشل تسليمُها. */
@@ -405,13 +611,41 @@ class InboxService
         );
     }
 
+    /**
+     * طابعُ Meta الزمني بتوقيت التطبيق — لا بـUTC.
+     *
+     * ═══ العطل الذي وُضع له ═══
+     *
+     * ‏createFromTimestamp تُرجع لحظةً بإزاحة ‎+00:00‎، وما يُكتب في
+     * قاعدة البيانات هو ساعةُ الحائط لا اللحظة. فبينما تكتب now()
+     * ساعةَ مسقط ‎(+04:00)‎، يُحفظ الوارد متأخّراً أربعَ ساعات — وتُقاس
+     * عليه نافذةُ الأربع والعشرين ساعة، فتصير عشرين. ويُمنع المحامي من
+     * الردّ الحرّ وMeta ما زالت تقبله.
+     */
     protected function timestamp(mixed $unix): \Illuminate\Support\Carbon
     {
         if (is_numeric($unix) && (int) $unix > 0) {
-            return \Illuminate\Support\Carbon::createFromTimestamp((int) $unix);
+            return \Illuminate\Support\Carbon::createFromTimestamp((int) $unix)
+                ->setTimezone(config('app.timezone'));
         }
 
         return now();
+    }
+
+    /** هل هذا النوع ضمن ما تقبله Meta وما أعلنّاه في الإعدادات؟ */
+    protected function mimeAllowed(?string $mime): bool
+    {
+        if ($mime === null || $mime === '') {
+            return false;
+        }
+
+        foreach ((array) config('whatsapp.media', []) as $type) {
+            if (in_array($mime, (array) ($type['mimes'] ?? []), true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** امتدادٌ آمن من نوع المحتوى — لا يُؤخذ من اسمٍ يرسله الطرف الآخر. */

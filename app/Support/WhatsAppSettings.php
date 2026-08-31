@@ -34,6 +34,7 @@ class WhatsAppSettings
     public const KEY_LAST_SYNC_AT = 'wa_last_sync_at';
     public const KEY_LAST_WEBHOOK_AT = 'wa_last_webhook_at';
     public const KEY_LAST_ERROR = 'wa_last_error';
+    public const KEY_DISCONNECTED = 'wa_disconnected';
 
     // إعدادات السلوك — لا أسرار
     public const KEY_NOTIFY_SESSIONS = 'wa_notify_sessions';
@@ -49,7 +50,24 @@ class WhatsAppSettings
     /** هل يستطيع هذا المكتب الإرسال فعلاً؟ */
     public static function isConnected(): bool
     {
-        return self::accessToken() !== null && self::phoneNumberId() !== null;
+        return !self::isDisconnected()
+            && self::accessToken() !== null
+            && self::phoneNumberId() !== null;
+    }
+
+    /**
+     * فصلٌ صريح — يتقدّم على أيّ رجوعٍ لملف البيئة.
+     *
+     * ═══ العطل الذي وُضع له ═══
+     *
+     * الرمزُ ومعرّفُ الرقم يرجعان إلى services.whatsapp.* حين لا يكون
+     * للمكتب اعتمادٌ خاص. فمكتبٌ على خادمٍ فيه تلك القيم يضغط «فصل
+     * الرقم» فتُمحى إعداداتُه — ويبقى مُرسِلاً كما كان، والشاشةُ تقول
+     * «مفصول». وواجهةٌ تكذب على المدير أسوأ من غياب الزرّ أصلاً.
+     */
+    public static function isDisconnected(): bool
+    {
+        return self::plain(self::KEY_DISCONNECTED) === '1';
     }
 
     /**
@@ -149,6 +167,9 @@ class WhatsAppSettings
 
         Setting::set(self::KEY_CONNECTED_AT, now()->toIso8601String(), self::GROUP);
         Setting::set(self::KEY_LAST_ERROR, '', self::GROUP);
+        // ربطٌ جديد يرفع علامةَ الفصل — وإلا بقي المكتب صامتاً بعد أن
+        // أعاد الربط، بلا سببٍ يظهر في أيّ شاشة
+        Setting::set(self::KEY_DISCONNECTED, '0', self::GROUP);
     }
 
     /** ما يُعرفه المزوّد عن الرقم — يُحفظ بعد كل فحص اتصال ناجح. */
@@ -170,14 +191,33 @@ class WhatsAppSettings
         Setting::set(self::KEY_LAST_WEBHOOK_AT, now()->toIso8601String(), self::GROUP);
     }
 
+    /**
+     * تدوينُ سببِ آخر إخفاق — بعد تنقيته من كلّ سرّ.
+     *
+     * ═══ لماذا تنقيةٌ خاصّة هنا ═══
+     *
+     * ‏MailIdentity::scrub تعرف اعتماداتِ البريد وحدها، ولا تعرف رمزَ
+     * واتساب ولا سرَّ التطبيق. وهذا النصّ يُعرض في صفحة الإعدادات
+     * ويُرسَل في التشخيص — فلو حمل رمزاً يوماً لقُرئ من الشاشة.
+     *
+     * فتُحجب هنا ثلاثة: رمزُ هذا المكتب وسرُّه حرفياً إن ظهرا، وأيُّ
+     * سلسلةٍ على هيئة رمز Meta (يبدأ بـEAA ويطول) ولو لم تكن رمزَنا —
+     * فقد يعود في نصّ خطأٍ من عندهم. والحجبُ قبل القصّ لا بعده: القصُّ
+     * أوّلاً قد يقطع الرمز نصفين فينجو نصفُه من الاستبدال.
+     */
     public static function recordError(string $reason): void
     {
-        // الرسالة تُقصّ وتُنظَّف: نصُّ خطأ Meta قد يحمل الرمز نفسه
-        Setting::set(
-            self::KEY_LAST_ERROR,
-            mb_substr(MailIdentity::scrub($reason), 0, 300),
-            self::GROUP
-        );
+        $clean = MailIdentity::scrub($reason);
+
+        foreach ([self::secret(self::KEY_TOKEN), self::secret(self::KEY_APP_SECRET)] as $secret) {
+            if ($secret !== null && $secret !== '') {
+                $clean = str_replace($secret, '[محجوب]', $clean);
+            }
+        }
+
+        $clean = (string) preg_replace('/\bEAA[A-Za-z0-9_\-]{20,}/', '[محجوب]', $clean);
+
+        Setting::set(self::KEY_LAST_ERROR, mb_substr($clean, 0, 300), self::GROUP);
     }
 
     /**
@@ -192,6 +232,8 @@ class WhatsAppSettings
                   self::KEY_WABA_ID, self::KEY_TOKEN_HINT, self::KEY_CONNECTED_AT] as $key) {
             Setting::set($key, '', self::GROUP);
         }
+
+        Setting::set(self::KEY_DISCONNECTED, '1', self::GROUP);
     }
 
     /** لمحةُ الحالة للواجهة — بلا أيّ سرّ. */

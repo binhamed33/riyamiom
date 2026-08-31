@@ -1249,8 +1249,20 @@ SYSTEM;
                     $failures[] = 'الواتساب: رمز الحالة ' . $response->status();
                 }
             } catch (\Throwable $e) {
-                Log::error('Portal invite whatsapp failed: ' . $e->getMessage());
-                $failures[] = 'الواتساب: ' . $e->getMessage();
+                // ═══ نصُّ الاستثناء لا يُعرَض للمستخدم ═══
+                //
+                // الرمزُ هنا جزءٌ من المسار: `/sendMessage/{token}`. ورسالةُ
+                // Guzzle عند التعذّر تحمل العنوانَ كاملاً — فكان عرضُها في
+                // الاستجابة يُظهر رمزَ المكتب لكلِّ من يفتح الصفحة، ويُثبته
+                // في سجلِّ المتصفّح وفي أيّ لقطةِ شاشة تُرسَل للدعم.
+                //
+                // ويُشطَب من السجلّ أيضاً: ملفُّ السجلّ يُقرأ ويُنسَخ.
+                Log::error('Portal invite whatsapp failed: ' . str_replace(
+                    $waToken,
+                    '[محجوب]',
+                    $e->getMessage(),
+                ));
+                $failures[] = 'الواتساب: تعذّر الاتصال بمزوّد الإرسال';
             }
         }
 

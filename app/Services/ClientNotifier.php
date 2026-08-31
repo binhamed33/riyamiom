@@ -115,6 +115,30 @@ class ClientNotifier
     }
 
     /**
+     * هل طلب صاحبُ هذا الرقم إيقافَ المراسلة؟
+     *
+     * يُسأل قبل كلّ إرسال — بالطريق الجديد والقديم معاً. وغيابُ سجلٍّ
+     * لجهة الاتصال يعني أنّه لم يُسجَّل رفضٌ، وهو مسموح.
+     */
+    private static function hasOptedOut(string $phone): bool
+    {
+        try {
+            $waId = \App\Models\WhatsAppContact::normalizeWaId($phone);
+
+            if ($waId === '') {
+                return false;
+            }
+
+            return \App\Models\WhatsAppContact::where('wa_id', $waId)
+                ->whereNotNull('opted_out_at')
+                ->exists();
+        } catch (\Throwable) {
+            // جدولٌ غير مهاجَر بعد: لا رفضَ مسجَّلاً، ولا يُعطَّل الإشعار
+            return false;
+        }
+    }
+
+    /**
      * كتابةُ الإشعار في خيط واتساب ودفعُه للطابور.
      *
      * يعيد null إن تعذّر — فيسقط النداءُ إلى المسار القديم بدل أن
@@ -205,8 +229,24 @@ class ClientNotifier
             return false;
         }
 
-        if (\App\Services\WhatsApp\WhatsAppManager::isConnected()
-            && \App\Support\WhatsAppSettings::flag(\App\Support\WhatsAppSettings::KEY_NOTIFY_CASE_UPDATES)) {
+        // ═══ الرفضُ والإطفاءُ يحكمان كلَّ الطرق لا الطريقَ الجديد وحده ═══
+        //
+        // كان المسارُ القديم (النداء المباشر إلى Meta من ملف البيئة)
+        // يُنفَّذ حين لا يتحقّق شرطُ المسار الجديد — فمكتبٌ أطفأ إشعارات
+        // تحديث القضايا يظلّ يرسلها، وموكّلٌ كتب «إيقاف» يظلّ يتلقّاها.
+        //
+        // وتجاهلُ الرفض ليس خطأً في الأدب فحسب: البلاغاتُ عنه تُنزل
+        // تقييمَ جودة الرقم عند Meta وقد تُقيّد إرسالَه كلَّه، فيُحرَم
+        // كلُّ موكّلي المكتب من إشعاراتهم بسبب واحد.
+        if (!\App\Support\WhatsAppSettings::flag(\App\Support\WhatsAppSettings::KEY_NOTIFY_CASE_UPDATES)) {
+            return false;
+        }
+
+        if (self::hasOptedOut($phone)) {
+            return false;
+        }
+
+        if (\App\Services\WhatsApp\WhatsAppManager::isConnected()) {
             $queued = self::queueThroughInbox($phone, $case);
 
             if ($queued !== null) {

@@ -45,6 +45,7 @@ class WhatsAppMessage extends Model
         'sent_by',
         'is_internal',
         'template_name',
+        'session_id',
         'sent_at',
         'delivered_at',
         'read_at',

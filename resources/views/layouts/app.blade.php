@@ -981,8 +981,13 @@
             </a>
 
             {{-- واتساب — يظهر لمن يملك صلاحية قراءته وحده. عنصرُ قائمةٍ
-                 يقود إلى 403 أسوأ من غيابه: يوحي بميزةٍ مُنعت عمداً. --}}
-            @if(Auth::user()->isDeveloper() || Auth::user()->isAdmin() || Auth::user()->hasPermission('whatsapp.view'))
+                 يقود إلى 403 أسوأ من غيابه: يوحي بميزةٍ مُنعت عمداً.
+
+                 وحسابُ الموكّل مستثنًى صراحةً هنا كما في RoleMiddleware:
+                 لو مُنح `whatsapp.view` بالخطأ (وشاشةُ الصلاحيات لا
+                 تمنع ذلك) لرأى الرابطَ في قائمته، ولعدّ الوسمُ له
+                 محادثاتِ موكّلين آخرين — رقماً هو في ذاته تسريب. --}}
+            @if(!Auth::user()->isClient() && (Auth::user()->isDeveloper() || Auth::user()->isAdmin() || Auth::user()->hasPermission('whatsapp.view')))
             <a href="{{ route('whatsapp.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('whatsapp.*') ? 'active' : '' }}">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
@@ -2198,7 +2203,43 @@
         var t = document.createElement('div');
         t.id = 'notifToast';
         t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:99998;background:linear-gradient(135deg,rgba(255,255,255,0.95),rgba(251,249,245,0.95));backdrop-filter:blur(12px);border:1px solid rgba(212,175,55,0.3);color:#111827;padding:16px 24px;border-radius:16px;font-size:14px;font-weight:500;box-shadow:0 12px 48px rgba(0,0,0,0.45);max-width:420px;text-align:center;direction:rtl;opacity:0;transition:all 0.4s cubic-bezier(0.22,1,0.36,1);';
-        t.innerHTML = '<div style="display:flex;align-items:center;gap:12px"><div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#D4AF37,#E5C158);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(212,175,55,0.3)">🔔</div><div style="flex:1;text-align:right"><div style="font-weight:700;color:#A98218;margin-bottom:4px">' + title + '</div><div style="font-size:12px;color:#A98218">' + msg + '</div></div></div>';
+        // ═══ نصُّ الإشعار يُكتب كنصّ لا كترميز ═══
+        //
+        // كان العنوانُ والمتنُ يُلصقان في innerHTML. ومنذ صار واتساب
+        // مصدرَ إشعارات، صار في المتن اسمُ ملفّ المُرسِل — وهو نصٌّ
+        // يكتبه من يراسل المكتب كما يشاء، ولا يمرّ بأيّ استمارة عندنا.
+        // فاسمٌ يحمل وسمَ صورةٍ بمعالجِ خطأ كان يُنفَّذ في متصفّح كلّ
+        // موظّفٍ يفتح النظام، داخل جلسته وبصلاحياته — تسريبٌ للجلسة
+        // بمجرّد رسالةِ واتساب لا يردّ عليها أحد.
+        //
+        // (ولا يُكتب هنا مثالٌ حرفيّ: هذا التعليق يُرسَل مع كلّ صفحة،
+        //  فيصير النصُّ التوضيحيُّ نفسُه ما يبحث عنه فحصُ XSS.)
+        //
+        // فالهيكلُ ثابتٌ يُبنى هنا، والنصّان يوضعان بـtextContent —
+        // فيُعرضان حرفاً بحرف ولا يُفسَّران ترميزاً مهما كان محتواهما.
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;align-items:center;gap:12px';
+
+        var icon = document.createElement('div');
+        icon.style.cssText = 'flex-shrink:0;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#D4AF37,#E5C158);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(212,175,55,0.3)';
+        icon.textContent = '🔔';
+
+        var col = document.createElement('div');
+        col.style.cssText = 'flex:1;text-align:right';
+
+        var head = document.createElement('div');
+        head.style.cssText = 'font-weight:700;color:#A98218;margin-bottom:4px';
+        head.textContent = title == null ? '' : String(title);
+
+        var line = document.createElement('div');
+        line.style.cssText = 'font-size:12px;color:#A98218';
+        line.textContent = msg == null ? '' : String(msg);
+
+        col.appendChild(head);
+        col.appendChild(line);
+        wrap.appendChild(icon);
+        wrap.appendChild(col);
+        t.appendChild(wrap);
         document.body.appendChild(t);
         requestAnimationFrame(function() {
             t.style.transform = 'translateX(-50%) translateY(0)';

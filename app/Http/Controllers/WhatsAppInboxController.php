@@ -13,7 +13,7 @@ use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\InboxService;
 use App\Services\WhatsApp\WhatsAppManager;
 use App\Support\WhatsAppSettings;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -45,41 +45,41 @@ class WhatsAppInboxController extends Controller
         $search = trim((string) $request->query('q', ''));
 
         $query = WhatsAppConversation::query()
-            ->with(['contact.client', 'assignee', 'case'])
-            ->withCount('messages');
+            ->with(['contact.client', 'assignee', 'case']);
 
         // الترشيح بالبحث: الاسمُ والرقمُ ونصُّ الرسائل. الرقمُ يُطبَّع
         // قبل المقارنة — من يكتب «+968 9123 4567» يقصد «96891234567».
         if ($search !== '') {
             $digits = preg_replace('/\D+/', '', $search) ?? '';
 
-            // اسمُ الموكّل مشفَّرٌ في قاعدة البيانات فلا يُطابقه LIKE.
-            // يُفكّ في PHP وتُجمع المعرّفات — والقائمة محدودةٌ بعددِ
-            // موكّلي مكتبٍ واحد، لا بعدد موكّلي المنصّة كلّها.
-            $matchedClientIds = Client::query()
-                ->get(['id', 'name'])
-                ->filter(fn ($c) => mb_stripos((string) $c->name, $search) !== false)
-                ->pluck('id');
+            // اسمُ الموكّل يُطابَق في قاعدة البيانات كأيّ عمودٍ آخر.
+            //
+            // ═══ تصحيحُ مقدّمةٍ خاطئة ═══
+            //
+            // كان هنا تحميلُ جدول الموكّلين كلِّه إلى الذاكرة والترشيحُ
+            // في PHP، بحجّة أنّ الاسم مشفَّر فلا يُطابقه LIKE. والاسمُ
+            // ليس مشفَّراً: Client::$encryptable هي phone وemail
+            // وaddress وnational_id وcompany_name — لا name. فكان كلُّ
+            // بحثٍ يجرّ آلافَ الصفوف بلا سبب.
+            $like = $this->likeTerm($search);
 
             // كلُّ شروط البحث في مجموعةٍ واحدة: لو خرج أحدُها منها
             // لصار «أو» يشمل كلَّ المحادثات فيُبطل ترشيحَ الحالة بعده
-            $query->where(function ($q) use ($search, $digits, $matchedClientIds) {
-                $q->whereHas('contact', function ($c) use ($search, $digits, $matchedClientIds) {
-                    $c->where(function ($inner) use ($search, $digits, $matchedClientIds) {
-                        $inner->where('profile_name', 'like', '%' . $search . '%');
+            $query->where(function ($q) use ($like, $digits) {
+                $q->whereHas('contact', function ($c) use ($like, $digits) {
+                    $c->where(function ($inner) use ($like, $digits) {
+                        $inner->where('profile_name', 'like', '%' . $like . '%');
 
                         if ($digits !== '') {
                             $inner->orWhere('wa_id', 'like', '%' . $digits . '%');
                         }
 
-                        if ($matchedClientIds->isNotEmpty()) {
-                            $inner->orWhereIn('client_id', $matchedClientIds);
-                        }
+                        $inner->orWhereHas('client', fn ($cl) => $cl->where('name', 'like', '%' . $like . '%'));
                     });
-                })->orWhereHas('messages', function ($m) use ($search) {
+                })->orWhereHas('messages', function ($m) use ($like) {
                     // الملاحظات الداخلية تُبحث أيضاً: هي جزءٌ من سجلّ
                     // الفريق، ولا تخرج من هذه الشاشة إلى أحد
-                    $m->where('body', 'like', '%' . $search . '%');
+                    $m->where('body', 'like', '%' . $like . '%');
                 });
             });
         }
@@ -101,12 +101,23 @@ class WhatsAppInboxController extends Controller
             ->paginate(25)
             ->withQueryString();
 
-        // آخرُ رسالةٍ لكل محادثة — استعلامٌ واحد لا استعلامٌ لكل صفّ
-        $lastMessages = WhatsAppMessage::query()
+        // آخرُ رسالةٍ لكل محادثة — خمسةٌ وعشرون صفّاً لا كلُّ الخيوط.
+        //
+        // ═══ العطل الذي وُضع له ═══
+        //
+        // كان الاستعلامُ يجلب كلَّ رسائل المحادثات الخمس والعشرين ثمّ
+        // يُرشّح في PHP بـunique(). مكتبٌ خيوطُه طويلة يحمّل عشراتِ
+        // آلاف الصفوف إلى الذاكرة ليرسم خمسةً وعشرين سطرَ معاينة —
+        // وتزداد كلَّ يوم. الآن: معرّفاتُ آخر الرسائل أوّلاً، ثمّ صفوفُها
+        // وحدها. ويعمل على MySQL وSQLite معاً.
+        $lastIds = WhatsAppMessage::query()
             ->whereIn('conversation_id', $conversations->pluck('id'))
-            ->orderByDesc('id')
+            ->groupBy('conversation_id')
+            ->pluck(DB::raw('MAX(id)'));
+
+        $lastMessages = WhatsAppMessage::query()
+            ->whereIn('id', $lastIds)
             ->get()
-            ->unique('conversation_id')
             ->keyBy('conversation_id');
 
         return view('whatsapp.index', [
@@ -153,9 +164,15 @@ class WhatsAppInboxController extends Controller
             'templates' => WhatsAppTemplate::where('status', WhatsAppTemplate::APPROVED)
                 ->orderBy('name')->get(),
             'cases' => $this->casesFor($conversation),
-            'clients' => Client::orderBy('name')->limit(500)->get(['id', 'name']),
+            // بلا سقفٍ صامت: مكتبٌ تجاوز خمسمئة موكّل كان يعجز عن ربط
+            // محادثةٍ بالباقين ولا تقول له الشاشةُ لماذا. والقائمةُ
+            // محدودةٌ بموكّلي مكتبٍ واحد، وعمودان منها فقط.
+            'clients' => Client::orderBy('name')->get(['id', 'name']),
+            // أدوارُ هذا النظام: developer/admin/lawyer/staff/client —
+            // ولا وجود لدور «employee». كان اسمُه هنا يعني أنّ موظّفي
+            // المكتب لا يظهرون في قائمة الإسناد إطلاقاً.
             'staff' => User::where('is_active', true)
-                ->whereIn('role', ['admin', 'lawyer', 'employee'])
+                ->whereIn('role', ['admin', 'lawyer', 'staff'])
                 ->orderBy('name')->get(['id', 'name']),
             'snapshot' => WhatsAppSettings::snapshot(),
         ]);
@@ -405,6 +422,17 @@ class WhatsAppInboxController extends Controller
     }
 
     // ── داخلي ────────────────────────────────────────────────────
+
+    /**
+     * تهريبُ محارف LIKE الخاصّة.
+     *
+     * بحثٌ عن «%» كان يطابق كلَّ المحادثات، و«_» يطابق أيَّ محرف —
+     * فيرى الموظّف نتائجَ لا علاقة لها بما كتب ويظنّ البحث معطوباً.
+     */
+    private function likeTerm(string $term): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $term);
+    }
 
     /** قضايا الموكّل المرتبط وحده — لا كلُّ قضايا المكتب. */
     private function casesFor(WhatsAppConversation $conversation)
