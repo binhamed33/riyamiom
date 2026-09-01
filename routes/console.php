@@ -17,6 +17,11 @@ Schedule::command('backup:daily')->dailyAt('14:00')->timezone('Asia/Muscat');
 // له، لا بساعة تشغيل الأمر.
 Schedule::command('hr:close-attendance')->dailyAt('23:50')->timezone('Asia/Muscat');
 
+// سقفُ المناوبة كلَّ ساعة: من مضى على حضوره ثمانٍ بلا انصراف يُقفل
+// سجلُّه. ولو انتُظر به آخرُ الليل لظهر «حاضراً» طولَ اليوم، ولبقي
+// سجلُّ من دخل الأحد مفتوحاً إلى الخميس.
+Schedule::command('hr:close-attendance --cap')->hourly()->withoutOverlapping();
+
 // التذكير الشهري بالنسخة — أول كل شهر ٩ صباحاً بتوقيت مسقط.
 //
 // مديرٌ لا يعرف أين نسخته ولا كيف يستعيدها يكتشف ذلك يومَ الكارثة.

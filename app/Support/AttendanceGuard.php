@@ -159,6 +159,83 @@ class AttendanceGuard
         return (string) Setting::get('hr_auto_close', '0') === '1';
     }
 
+    /**
+     * سقفُ المناوبة: ثماني ساعاتٍ من الحضور ثمّ يُقفل السجلّ.
+     *
+     * ═══ ما يُصلحه ═══
+     *
+     * الانصرافُ بزرّه وحده — وهذه قاعدةٌ تبقى. لكنّ الغالب أن يُغلق
+     * الموظّفُ المتصفّح ويمضي، فيبقى سجلُّه مفتوحاً إلى الأبد: لا
+     * انصرافَ ولا دقائقَ محسوبة، ويُعرض في كشف الشهر «لم يُسجَّل».
+     * ومن دخل الأحد يبقى «مفتوحاً» يوم الخميس.
+     *
+     * فالسقفُ حدٌّ لا تخمين: بعد ثماني ساعاتٍ من الحضور يُقفل السجلّ
+     * على «حضورٌ + ثماني ساعات» — يومُ دوامٍ كامل، لا لحظةَ آخر نقرة.
+     * ولا يُقاس بنشاطه في الشاشة: المحامي يكتب ويقابل بعيداً عنها.
+     *
+     * ═══ ولماذا وسمٌ مستقلّ ═══
+     *
+     * `auto_capped` يقول للمدير: هذا وقتٌ بلغ السقف، لا وقتٌ ضغطه
+     * صاحبُه. فمن نسي الانصراف يُراجَع سجلُّه ويُصحَّح، ولا يُقرأ
+     * الرقمُ كأنّه شهادةُ حضورٍ موقّعة.
+     */
+    public const SHIFT_CAP_HOURS = 8;
+
+    public static function capHours(): int
+    {
+        $value = (int) Setting::get('hr_shift_cap_hours', (string) self::SHIFT_CAP_HOURS);
+
+        // سقفٌ صفرٌ أو سالبٌ يُقفل كلَّ سجلٍّ لحظةَ فتحه، وسقفُ يومين
+        // لا يقفل شيئاً. فيُحبَس بين ساعةٍ وأربعٍ وعشرين.
+        return max(1, min(24, $value));
+    }
+
+    /**
+     * إقفالُ ما تجاوز السقف — يعمل مجدولاً كلَّ ساعة.
+     *
+     * ولا يُشترط له إعدادُ الإقفال الليليّ: ذاك يخترع وقتاً من آخر
+     * نقرة، وهذا حدٌّ معلومٌ مقدَّماً يعرفه الموظّف والمدير معاً.
+     *
+     * @return int عددُ ما أُقفل
+     */
+    public static function closeOvertimeRecords(): int
+    {
+        $cap = self::capHours();
+        $closed = 0;
+
+        try {
+            $records = HrAttendance::whereNull('check_out_at')
+                ->where('check_in_at', '<=', now()->subHours($cap))
+                ->get();
+        } catch (\Throwable $e) {
+            Log::warning('attendance cap sweep failed', ['error' => $e->getMessage()]);
+
+            return 0;
+        }
+
+        foreach ($records as $record) {
+            try {
+                $out = $record->check_in_at->copy()->addHours($cap);
+
+                $record->update([
+                    'check_out_at' => $out,
+                    'minutes' => $cap * 60,
+                    'status' => 'completed',
+                    'source' => 'auto_capped',
+                ]);
+
+                $closed++;
+            } catch (\Throwable $e) {
+                Log::warning('attendance cap close failed', [
+                    'record_id' => $record->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $closed;
+    }
+
     public static function closeStaleRecords(?CarbonInterface $for = null, bool $force = false): int
     {
         if (! $force && ! self::autoCloseEnabled()) {

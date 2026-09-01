@@ -1107,6 +1107,18 @@
                 </span>
             </label>
 
+            <div class="mb-5">
+                <label for="hr_shift_cap_hours" class="block text-sm font-semibold text-gray-800 mb-1.5">سقف المناوبة (ساعة)</label>
+                <input id="hr_shift_cap_hours" type="number" name="hr_shift_cap_hours" min="1" max="24"
+                       value="{{ \App\Support\AttendanceGuard::capHours() }}"
+                       class="w-32 px-3 py-2 rounded-lg border border-gray-200 text-sm">
+                <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                    من مضى على حضوره هذا العدد بلا انصراف يُقفل سجلُّه على «حضورٌ + المدّة»،
+                    ويُوسم بأنّ الوقت بلغ السقف لا أنّ صاحبَه ضغطه. حدٌّ معلومٌ مقدَّماً لا
+                    استنتاجٌ من آخر نشاط — ولولاه بقي سجلُّ من أغلق المتصفّح مفتوحاً أياماً.
+                </p>
+            </div>
+
             <div>
                 <label for="maintenance_note" class="block text-sm font-semibold text-gray-800 mb-1.5">ملاحظة صفحة الصيانة</label>
                 <textarea id="maintenance_note" name="maintenance_note" rows="2" maxlength="300"

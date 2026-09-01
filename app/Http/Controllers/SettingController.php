@@ -41,6 +41,10 @@ class SettingController extends Controller
             // لا تظهر أبداً.
             'hr_auto_checkin'    => 'nullable',
             'hr_auto_close'      => 'nullable',
+            // رقمٌ لا خانة: غيابُه «لم يُرسَل» لا «صفر». والحلقةُ
+            // العامّة أدناه تكتبه متى جاء، فلا يُصفّره حفظٌ من نموذجٍ
+            // لا يعرضه — وسقفُ صفرٍ يُقفل كلَّ سجلٍّ لحظةَ فتحه
+            'hr_shift_cap_hours' => 'nullable|integer|min:1|max:24',
             'maintenance_note'   => 'nullable|string|max:300',
         ]);
 
@@ -94,6 +98,7 @@ class SettingController extends Controller
             'client_portal_welcome' => 'client_portal',
             'hr_auto_checkin'    => 'hr',
             'hr_auto_close'      => 'hr',
+            'hr_shift_cap_hours' => 'hr',
             'maintenance_note'   => 'system',
         ];
 
