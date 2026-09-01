@@ -117,6 +117,24 @@ class ClientAccessController extends Controller
             ->with('portal_otp_tab', true);
     }
 
+    /**
+     * رجوعٌ لتغيير الرقم.
+     *
+     * الهاتفُ يبقى في الجلسة حتى ينجح التحقّق، وذلك صحيحٌ للأمان —
+     * لكنه كان بلا بابِ خروج: من أخطأ رقمَه وقف أمام حقل رمزٍ لن
+     * يصله شيءٌ فيه، بلا رجوعٍ إلا انتهاءُ الجلسة. الرمزُ المخزَّن
+     * لا يُحرق هنا: صلاحيتُه خمسُ دقائقَ تُنهيه، والتحقّقُ لا يقرأ
+     * إلا هاتفَ الجلسة الذي مُحي للتوّ.
+     */
+    public function otpReset(Request $request): RedirectResponse
+    {
+        abort_unless(ClientPortal::enabled(), 404);
+
+        $request->session()->forget(['portal_otp_phone', 'portal_otp_at']);
+
+        return redirect()->route('client.access', ['otp' => 1]);
+    }
+
     public function otpVerify(Request $request): RedirectResponse
     {
         abort_unless(ClientPortal::enabled(), 404);

@@ -89,6 +89,8 @@ Route::post('/client-access/otp', [App\Http\Controllers\ClientAccessController::
     ->middleware('throttle:6,10')->name('client.access.otp');
 Route::post('/client-access/otp/verify', [App\Http\Controllers\ClientAccessController::class, 'otpVerify'])
     ->middleware('throttle:20,10')->name('client.access.otp.verify');
+Route::post('/client-access/otp/reset', [App\Http\Controllers\ClientAccessController::class, 'otpReset'])
+    ->middleware('throttle:20,10')->name('client.access.otp.reset');
 Route::post('/client-access/logout', [App\Http\Controllers\ClientAccessController::class, 'logout'])->name('client.access.logout');
 
 Route::middleware('client.portal')->prefix('client-access')->group(function () {

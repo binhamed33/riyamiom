@@ -225,4 +225,39 @@ class PortalOtpLoginTest extends TestCase
         $this->assertStringContainsString('أرسل الرمز', $otp);
         $this->assertStringContainsString('الدخول برقم الهويّة', $otp);
     }
+
+    /**
+     * رابطُ الهويّة يفكّ أسرَ تبويب الرمز.
+     *
+     * الهاتفُ يبقى في الجلسة حتى ينجح التحقّق — فكان الرابطُ يعيد
+     * إلى تبويب الرمز نفسِه: محبوسٌ في طريقةٍ اختار غيرَها.
+     */
+    public function test_the_id_link_escapes_the_code_step(): void
+    {
+        $this->fakeBridge();
+        $this->post(route('client.access.otp'), ['phone' => '91234567']);
+
+        // بلا طلبٍ صريح: الجلسةُ تُبقي تبويبَ الرمز — وهذا صحيح
+        $trapped = $this->get(route('client.access'))->assertOk()->getContent();
+        $this->assertStringContainsString('رمز التحقّق', $trapped);
+
+        // ومع الطلب الصريح: الهويّةُ تظهر مهما قالت الجلسة
+        $html = $this->get(route('client.access', ['id' => 1]))->assertOk()->getContent();
+        $this->assertStringContainsString('national_id', $html);
+        $this->assertStringNotContainsString('رمز التحقّق', $html);
+    }
+
+    /** «تغيير الرقم» يعيد إلى حقل الهاتف — رقمٌ خاطئٌ لم يعد سجناً. */
+    public function test_change_number_returns_to_the_phone_field(): void
+    {
+        $this->fakeBridge();
+        $this->post(route('client.access.otp'), ['phone' => '91234567']);
+
+        $this->post(route('client.access.otp.reset'))
+            ->assertRedirect(route('client.access', ['otp' => 1]))
+            ->assertSessionMissing('portal_otp_phone');
+
+        $html = $this->get(route('client.access', ['otp' => 1]))->assertOk()->getContent();
+        $this->assertStringContainsString('أرسل الرمز', $html, 'بقي محبوساً أمام حقل الرمز');
+    }
 }

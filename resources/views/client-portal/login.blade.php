@@ -97,7 +97,12 @@
             // الدخول برمز واتساب: الهاتفُ محفوظٌ في الجلسة بعد الطلب —
             // فوجودُه يعني «أدخل الرمزَ الذي وصلك»
             $otpPhone = session('portal_otp_phone');
-            $otpTab = $otpPhone || session('portal_otp_tab') || request()->boolean('otp');
+
+            // طلبُ الهويّة الصريح يغلب رقمَ الجلسة: الرقمُ يبقى محفوظاً
+            // حتى ينجح التحقّق، فكان رابطُ «برقم الهويّة بدلاً من ذلك»
+            // يعيد الزائرَ إلى تبويب الرمز نفسِه — محبوسٌ لا رجوعَ له
+            $forceId = request()->boolean('id');
+            $otpTab = !$forceId && ($otpPhone || session('portal_otp_tab') || request()->boolean('otp'));
             $otpWaitLeft = $otpPhone
                 ? max(0, \App\Services\ClientPortal\PortalOtp::RESEND_SECONDS - (now()->timestamp - (int) session('portal_otp_at', 0)))
                 : 0;
@@ -148,9 +153,17 @@
                         <span data-resend-label>@if($otpWaitLeft > 0)رمزٌ جديد بعد {{ $otpWaitLeft }} ث@else أرسل رمزاً جديداً @endif</span>
                     </button>
                 </form>
+
+                {{-- رقمٌ أُدخل خطأً كان يحبس صاحبَه أمام «رمزٍ» لن يصل --}}
+                <form method="POST" action="{{ route('client.access.otp.reset') }}" style="margin-top:.4rem">
+                    @csrf
+                    <button class="p-hint" style="width:100%;background:none;border:0;cursor:pointer;text-align:center">
+                        تغيير الرقم
+                    </button>
+                </form>
             @endif
 
-            <a href="{{ route('client.access') }}" class="p-hint" style="display:block;text-align:center;margin-top:1.1rem">
+            <a href="{{ route('client.access', ['id' => 1]) }}" class="p-hint" style="display:block;text-align:center;margin-top:1.1rem">
                 الدخول برقم الهويّة بدلاً من ذلك
             </a>
         @elseif ($step === 1)
