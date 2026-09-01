@@ -153,6 +153,24 @@ class WhatsAppDiagnosticsTest extends TestCase
         $this->assertTrue($this->limitsJson()['notifications_master']);
     }
 
+
+    /**
+     * اتصالُ الطابور في التقرير — لأنّ sync يفسّر ما لا يُفسَّر.
+     *
+     * «صفرُ مهامٍّ تنتظر» مع رسائلَ عالقةٍ منذ ساعة تناقضٌ لا يُحلّ
+     * إلا بمعرفته: لا طابورَ أصلاً، فالإرسالُ في طلب الويب، والمحجوزُ
+     * ضمن حدود الأمان لا يُطلقه إلا المُجدوِل.
+     */
+    public function test_the_report_names_the_queue_connection(): void
+    {
+        config()->set('queue.default', 'sync');
+
+        $this->assertSame('sync', $this->limitsJson()['queue']);
+
+        Artisan::call('whatsapp:limits');
+        $this->assertStringContainsString('لا طابور', Artisan::output());
+    }
+
     // ══════════ التتبّع ══════════
 
     /** المفتاحُ الرئيسي مطفأ: تُسمّى الحلقةُ ولا يُقال «عطلٌ في الربط». */

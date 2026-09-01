@@ -142,6 +142,14 @@ class WhatsAppLimits extends Command
                 ClientEvents::types(),
                 static fn (string $type): bool => ClientEvents::chosen($type),
             )),
+            // ═══ لماذا يُذكر اتصالُ الطابور هنا ═══
+            //
+            // ‏sync يعني لا طابور: الإرسالُ يجري داخل طلب الويب، فلا
+            // إعادةَ محاولةٍ لرسالةٍ أخفقت، ويقف حفظُ القضية على ردّ
+            // خادمٍ بعيد. والأخطر أنّ الرسالة المحجوزة ضمن حدود
+            // الأمان لا يُطلقها إلا المُجدوِل — فبلا طابورٍ ولا
+            // مُجدوِلٍ تبقى «في الانتظار» إلى الأبد بلا خطأٍ يُرى.
+            'queue' => (string) config('queue.default'),
             'provider' => (string) config('whatsapp.default', 'meta'),
             'connected' => WhatsAppSettings::isConnected(),
             'policy_ok' => $drift === [],
@@ -186,6 +194,10 @@ class WhatsAppLimits extends Command
             : (string) $r['notification_types_on']);
 
         $this->row('الرقم مربوط', $yes((bool) $r['connected']));
+
+        $this->row('اتصال الطابور', $r['queue'] === 'sync'
+            ? '<fg=red>sync — لا طابور: الإرسال داخل طلب الويب بلا إعادة محاولة</>'
+            : (string) $r['queue']);
 
         $this->newLine();
 
