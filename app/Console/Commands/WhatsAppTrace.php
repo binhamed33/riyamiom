@@ -2,12 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\SendClientNotification;
 use App\Models\Client;
 use App\Models\ClientNotification;
 use App\Models\LegalCase;
 use App\Models\WhatsAppContact;
 use App\Models\WhatsAppConversation;
 use App\Models\WhatsAppMessage;
+use App\Services\WhatsApp\InboxService;
 use App\Services\WhatsApp\SendingGuard;
 use App\Support\ClientEvents;
 use App\Support\WhatsAppSettings;
@@ -38,7 +40,8 @@ class WhatsAppTrace extends Command
     protected $signature = 'whatsapp:trace
         {--case= : رقم القضية التي يُتوقَّع إشعارُها}
         {--client= : رقم الموكّل}
-        {--type=case_created : نوع الحدث}';
+        {--type=case_created : نوع الحدث}
+        {--run : تنفيذُ الإشعار المعلَّق الآن وإظهارُ ما يقع}';
 
     protected $description = 'تتبُّعُ سلسلة إشعار الموكّل حلقةً حلقة حتى أوّل ما انقطع';
 
@@ -97,15 +100,26 @@ class WhatsAppTrace extends Command
 
         // ── ٣) رقمُ الموكّل ────────────────────────────────────
         $waId = WhatsAppContact::normalizeWaId((string) $client->phone);
-        $hasPhone = mb_strlen($waId) >= 9;
-        $this->step('للموكّل رقمٌ صالح', $hasPhone, $hasPhone
-            ? '+' . $waId . ($this->isOman($waId) ? '  (عُمان)' : '  (خارج عُمان)')
-            : 'لا رقم — أو رقمٌ لا يُقرأ');
+        $hasPhone = WhatsAppContact::isSendable($waId);
+
+        $this->step('للموكّل رقمٌ صالح', $hasPhone, $waId === ''
+            ? 'لا رقم'
+            : '+' . $waId . ($this->isOman($waId) ? '  (عُمان)' : '  (خارج عُمان)'));
 
         if (! $hasPhone) {
+            // ═══ الخطأُ الذي لا يُرى ═══
+            //
+            // تسعُ خاناتٍ في مكتبٍ عُمانيّ ليست رقماً دولياً: هي رقمٌ
+            // محلّيٌّ زادت فيه خانة. و«٩٧٧٤٧٧٤٦٨» يقرؤها واتساب
+            // «٩٧٧» — نيبال — فتذهب الرسالةُ إلى بلدٍ آخر ولا يُخطئ
+            // شيءٌ في النظام: يُقال «صُفَّت» ولا تصل أبداً.
             $this->breakAt(
-                'الموكّل بلا رقمٍ صالح',
-                'صفحة الموكّل ← الهاتف: 9xxxxxxx أو ‎+968 9xxxxxxx',
+                $waId !== '' && mb_strlen($waId) < WhatsAppContact::MIN_INTERNATIONAL
+                    ? 'رقمُ الموكّل ' . mb_strlen($waId) . ' خاناتٍ — لا يصلح رقماً دولياً،'
+                        . ' وأوّلُ ثلاثٍ منه تُقرأ مفتاحَ دولة'
+                    : 'الموكّل بلا رقمٍ صالح',
+                'صفحة الموكّل ← الهاتف: ثماني خاناتٍ للعُماني (9xxxxxxx)،'
+                    . ' أو الرقم كاملاً بمفتاح دولته لغيره',
             );
         }
 
@@ -169,8 +183,12 @@ class WhatsAppTrace extends Command
         if ($state === ClientNotification::PENDING && $notification->notified_at === null) {
             $this->breakAt(
                 'الإشعارُ مقيَّدٌ ولم تلتقطه المهمّة — الطابورُ لا يُصرَّف',
-                'php artisan queue:work --stop-when-empty  (وراجع جدولة المُجدوِل)',
+                'للسبب الحقيقي لا العَرَض: php artisan whatsapp:trace --run',
             );
+
+            if ($this->option('run')) {
+                $this->runNow($notification);
+            }
         }
 
         if ($state === ClientNotification::SKIPPED) {
@@ -271,6 +289,55 @@ class WhatsAppTrace extends Command
         return [$last?->client, $last?->case, $last ? (string) $last->type : $type];
     }
 
+    /**
+     * تنفيذُ الإشعار المعلَّق هنا والآن — بلا طابور.
+     *
+     * ═══ لماذا ═══
+     *
+     * «الطابورُ لا يُصرَّف» تشخيصٌ ناقص: قد يكون العاملُ متوقّفاً، وقد
+     * يكون الدفعُ نفسُه يرمي فلا تدخل المهمّةُ الطابورَ أصلاً — وهذا
+     * الثاني يُلتقط في `ClientNotifications` فيُكتب سطرٌ في السجلّ
+     * ويمضي، ولا يبقى منه أثرٌ في جدول المهامّ ولا في المخفقة. وهما
+     * يُنتجان المشهدَ نفسه: إشعارٌ معلَّقٌ وصفرُ مهامّ.
+     *
+     * فيُشغَّل هنا بيدنا: إن نجح فالعلّةُ في العامل وحده، وإن رمى
+     * فالاستثناءُ نفسُه هو الجواب — مكتوباً لا مستنتَجاً.
+     *
+     * ويُرسل رسالةً حقيقية، فلا يعمل إلا بطلبٍ صريح.
+     */
+    private function runNow(ClientNotification $notification): void
+    {
+        $this->newLine();
+        $this->line('<options=bold>تنفيذٌ مباشرٌ بلا طابور…</>');
+
+        try {
+            (new SendClientNotification($notification->id))->handle(app(InboxService::class));
+        } catch (\Throwable $e) {
+            $this->line('  <fg=red>رمى:</> ' . get_class($e) . ' — ' . $e->getMessage());
+            $this->line('  <fg=yellow>' . $e->getFile() . ':' . $e->getLine() . '</>');
+
+            $this->breakAt(
+                'المهمّةُ نفسُها ترمي: ' . $e->getMessage(),
+                'هذا هو السبب — لا عاملُ الطابور',
+            );
+
+            return;
+        }
+
+        $notification->refresh();
+
+        $this->row('حالتُها بعده', match ((string) $notification->channel_state) {
+            ClientNotification::QUEUED => '<fg=green>صُفَّت رسالتُه</>',
+            ClientNotification::SKIPPED => '<fg=yellow>تُخطّي: ' . (string) $notification->channel_reason . '</>',
+            default => (string) $notification->channel_state,
+        });
+
+        if ((string) $notification->channel_state === ClientNotification::QUEUED) {
+            $this->line('  <fg=green>المهمّةُ سليمة</> — فالعلّةُ في عامل الطابور وحده:'
+                . ' راجع جدولة schedule:run كلَّ دقيقة.');
+        }
+    }
+
     /** لماذا حُجزت — تُقرأ حالةُ الحارس الآن، فالسببُ لا يُخزَّن. */
     private function holdReason(WhatsAppMessage $message): string
     {
@@ -293,6 +360,14 @@ class WhatsAppTrace extends Command
     {
         $this->newLine();
         $this->line('<options=bold>الطابور</>');
+
+        // ═══ لماذا يُذكر الاتصال ═══
+        //
+        // «صفرُ مهامٍّ تنتظر» مع رسائلَ عالقةٍ منذ ساعة تناقضٌ لا يُفسَّر
+        // إلا بأنّ المهمّة لم تدخل الطابور أصلاً: اتصالٌ لا يستقبل
+        // يرمي عند الدفع، فيُلتقط ويُكتب سطرٌ في السجلّ ويمضي كلُّ
+        // شيءٍ كأن شيئاً لم يكن — لا في جدول المهامّ ولا في المخفقة.
+        $this->row('الاتصال', (string) config('queue.default'));
 
         if (Schema::hasTable('jobs')) {
             $waiting = DB::table('jobs')->count();

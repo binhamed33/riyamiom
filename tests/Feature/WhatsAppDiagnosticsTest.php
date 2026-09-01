@@ -216,6 +216,88 @@ class WhatsAppDiagnosticsTest extends TestCase
         $this->assertStringContainsString('96891234567', Artisan::output());
     }
 
+
+    // ══════════ رقمٌ زادت فيه خانة ══════════
+
+    /**
+     * ═══ ما وقع فعلاً على مكتبٍ حيّ ═══
+     *
+     * كُتب رقمُ الموكّل «٩٧٧٤٧٧٤٦٨» — تسعُ خاناتٍ لرقمٍ ثمانيّ. ولأنّه
+     * ليس ثمانياً لم يُكمَّل بـ٩٦٨ فمرّ كما هو، وواتساب يقرأ أوّلَ
+     * ثلاثٍ مفتاحَ دولة: ٩٧٧ — نيبال.
+     *
+     * فكان يُقال «صُفَّت الرسالة» وتذهب إلى بلدٍ آخر ولا تصل أحداً،
+     * ولا يُخطئ شيءٌ في النظام فيُفتَّش عن العلّة في الطابور والربط.
+     */
+    public function test_a_nine_digit_number_is_refused_not_sent_abroad(): void
+    {
+        $this->assertFalse(WhatsAppContact::isSendable('977477468'));
+        $this->assertTrue(WhatsAppContact::isSendable('96897747468'));
+
+        // والثمانيُّ المحلّي يُكمَّل فيصلح
+        $this->assertTrue(WhatsAppContact::isSendable(
+            WhatsAppContact::normalizeWaId('97747468'),
+        ));
+    }
+
+    /** والمهمّةُ تردّه بسببٍ مكتوبٍ لا تُرسله. */
+    public function test_the_job_skips_a_number_that_is_too_short(): void
+    {
+        Queue::fake();
+        ClientEvents::setMasterEnabled(true);
+
+        $short = Client::create([
+            'name' => 'موكّل برقمٍ ناقص',
+            'phone' => '977477468',
+            'national_id' => '55667788',
+            'type' => 'individual',
+        ]);
+
+        LegalCase::create([
+            'case_number' => '2026/901', 'title' => 'قضية', 'type' => 'civil',
+            'description' => 'وصف', 'court' => 'الابتدائية', 'opponent' => 'خصم',
+            'status' => 'active', 'priority' => 'medium', 'client_id' => $short->id,
+        ]);
+
+        $notification = ClientNotification::where('client_id', $short->id)->firstOrFail();
+
+        (new \App\Jobs\SendClientNotification($notification->id))
+            ->handle(app(\App\Services\WhatsApp\InboxService::class));
+
+        $notification->refresh();
+
+        $this->assertSame(ClientNotification::SKIPPED, $notification->channel_state);
+        $this->assertStringContainsString('خاناتٍ', (string) $notification->channel_reason);
+        $this->assertSame(0, WhatsAppMessage::where('direction', WhatsAppMessage::OUT)->count(),
+            'أُرسلت رسالةٌ إلى رقمٍ لا يصلح');
+    }
+
+    /** والتتبّعُ يسمّيها بدل أن يشير إلى الطابور. */
+    public function test_the_trace_names_the_bad_number(): void
+    {
+        Queue::fake();
+        ClientEvents::setMasterEnabled(true);
+
+        $short = Client::create([
+            'name' => 'موكّل برقمٍ ناقص',
+            'phone' => '977477468',
+            'national_id' => '55667789',
+            'type' => 'individual',
+        ]);
+
+        $case = LegalCase::create([
+            'case_number' => '2026/902', 'title' => 'قضية', 'type' => 'civil',
+            'description' => 'وصف', 'court' => 'الابتدائية', 'opponent' => 'خصم',
+            'status' => 'active', 'priority' => 'medium', 'client_id' => $short->id,
+        ]);
+
+        Artisan::call('whatsapp:trace', ['--case' => $case->id]);
+        $output = Artisan::output();
+
+        $this->assertStringContainsString('9 خاناتٍ', $output);
+        $this->assertStringContainsString('مفتاحَ دولة', $output);
+    }
+
     /** ولا يسقط الأمرُ حين لا يُسمّى شيء: يأخذ آخرَ إشعارٍ قُيّد. */
     public function test_the_trace_falls_back_to_the_latest_notification(): void
     {

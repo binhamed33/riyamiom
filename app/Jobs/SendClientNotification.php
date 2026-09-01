@@ -71,8 +71,14 @@ class SendClientNotification implements ShouldQueue
 
         $waId = WhatsAppContact::normalizeWaId((string) $client->phone);
 
-        if (mb_strlen($waId) < 9) {
-            $this->skip($notification, 'الموكّل بلا رقم صالح');
+        // تسعُ خاناتٍ ليست رقماً دولياً: هي رقمٌ محلّيٌّ زادت فيه خانة،
+        // وواتساب يقرأ أوّلَ ثلاثٍ منه مفتاحَ دولة — فتذهب الرسالةُ إلى
+        // بلدٍ آخر ويُقال «تمّ». وردُّها هنا بسببٍ مكتوبٍ خيرٌ من
+        // إرسالها إلى مجهول.
+        if (! WhatsAppContact::isSendable($waId)) {
+            $this->skip($notification, $waId === ''
+                ? 'الموكّل بلا رقم'
+                : 'رقمُ الموكّل ' . mb_strlen($waId) . ' خاناتٍ — لا يصلح رقماً دولياً');
 
             return;
         }
