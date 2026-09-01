@@ -495,4 +495,34 @@ class WhatsAppSafetyTest extends TestCase
 
         $this->assertSame(WhatsAppMessage::STATUS_SENT, $message->fresh()->status);
     }
+
+    /**
+     * ═══ اللغم: خانةٌ تعرض المتدرّجَ فتحفظه مكان المضبوط ═══
+     *
+     * أثناء تدرّج ما بعد الاقتران كانت خانتا «في اليوم/في الساعة»
+     * تعرضان القيمةَ المتدرّجة (٢١ لا ١٠٠). فإن حفظ المطوّرُ الصفحةَ
+     * لأيّ سببٍ كُتب ٢١ مكان المئة نهائياً — وتقلّص السقفُ مع كلّ
+     * حفظةٍ تالية. الخانةُ تعرض المضبوطَ، والتدرّجُ يُقال جملةً.
+     */
+    public function test_the_limit_fields_show_the_configured_not_the_warmed_values(): void
+    {
+        \App\Models\Setting::set(\App\Services\WhatsApp\SendingGuard::KEY_PER_DAY, '100', 'whatsapp');
+        \App\Models\Setting::set(\App\Services\WhatsApp\SendingGuard::KEY_PER_HOUR, '15', 'whatsapp');
+
+        // اقترن أمس: النافذُ أقلُّ من المضبوط
+        \App\Models\Setting::set(\App\Services\WhatsApp\SendingGuard::KEY_PAIRED_AT, now()->subDay()->toIso8601String(), 'whatsapp');
+
+        $this->assertTrue(\App\Services\WhatsApp\SendingGuard::warmingUp());
+        $this->assertLessThan(100, \App\Services\WhatsApp\SendingGuard::perDay());
+
+        $developer = \App\Models\User::factory()->create(['role' => 'developer', 'is_active' => true]);
+        $html = $this->actingAs($developer)->get(route('settings.index'))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/name="wa_guard_per_day"[^>]*value="100"/',
+            $html,
+            'خانةُ اليوم لا تعرض المضبوطَ — حفظُها يكتب المتدرّجَ مكانه',
+        );
+        $this->assertStringContainsString('تدرّج ما بعد الاقتران', $html, 'التدرّجُ لا يُقال جملةً');
+    }
 }

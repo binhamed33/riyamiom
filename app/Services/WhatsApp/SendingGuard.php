@@ -193,6 +193,34 @@ class SendingGuard
         return self::warmed((int) self::setting(self::KEY_PER_DAY, (string) self::DEFAULT_PER_DAY));
     }
 
+    /**
+     * المضبوطُ كما كُتب — لا المتدرّج.
+     *
+     * ═══ اللغم الذي وُضعا له ═══
+     *
+     * شاشةُ الإعدادات كانت تملأ خانات الحدود بـperDay()/perHour()،
+     * وهما يعيدان القيمةَ **بعد التدرّج**: مكتبٌ سقفُه مئةٌ واقترن
+     * أمس تعرض خانتُه «٢١». فإن حفظ المطوّرُ الصفحةَ — لأيّ سببٍ
+     * آخر — كُتبت ٢١ مكان المئة إلى الأبد، وتقلّص السقفُ يوماً بعد
+     * يومٍ مع كلّ حفظة. الخانةُ تعرض المضبوطَ، والتدرّجُ يُقال جملةً.
+     */
+    public static function configuredPerHour(): int
+    {
+        return max(1, (int) self::setting(self::KEY_PER_HOUR, (string) self::DEFAULT_PER_HOUR));
+    }
+
+    public static function configuredPerDay(): int
+    {
+        return max(1, (int) self::setting(self::KEY_PER_DAY, (string) self::DEFAULT_PER_DAY));
+    }
+
+    /** أما زال رقمُ المكتب في تدرّج ما بعد الاقتران؟ */
+    public static function warmingUp(): bool
+    {
+        return self::perDay() < self::configuredPerDay()
+            || self::perHour() < self::configuredPerHour();
+    }
+
     public static function minGap(): int
     {
         return max(3, (int) self::setting(self::KEY_MIN_GAP, (string) self::DEFAULT_MIN_GAP));

@@ -465,14 +465,17 @@
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
                         <label class="text-[11px] font-bold text-gray-500">في الساعة</label>
+                        {{-- المضبوطُ لا المتدرّج: perHour() تعيد قيمةَ
+                             التدرّج، وحفظُها هنا كان يكتبها مكان
+                             المضبوطة فيتقلّص السقف مع كل حفظة --}}
                         <input type="number" name="wa_guard_per_hour" min="1" max="200"
-                               value="{{ \App\Services\WhatsApp\SendingGuard::perHour() }}"
+                               value="{{ \App\Services\WhatsApp\SendingGuard::configuredPerHour() }}"
                                class="{{ $waNumCls }}" @disabled($waLocked)>
                     </div>
                     <div>
                         <label class="text-[11px] font-bold text-gray-500">في اليوم</label>
                         <input type="number" name="wa_guard_per_day" min="1" max="1000"
-                               value="{{ \App\Services\WhatsApp\SendingGuard::perDay() }}"
+                               value="{{ \App\Services\WhatsApp\SendingGuard::configuredPerDay() }}"
                                class="{{ $waNumCls }}" @disabled($waLocked)>
                     </div>
                     <div>
@@ -493,6 +496,15 @@
                         </div>
                     </div>
                 </div>
+
+                @if(\App\Services\WhatsApp\SendingGuard::warmingUp())
+                    <p class="text-[11px] text-amber-600 mt-1.5">
+                        الرقمُ في تدرّج ما بعد الاقتران: النافذُ اليوم
+                        {{ \App\Services\WhatsApp\SendingGuard::perDay() }} في اليوم
+                        و{{ \App\Services\WhatsApp\SendingGuard::perHour() }} في الساعة،
+                        ويرتفع يومياً حتى يبلغ المضبوطَ أعلاه.
+                    </p>
+                @endif
                 @if($waLocked)
                     <p class="text-[11px] text-gray-400 mt-1.5">هذه الحدود يضبطها المطوّر — تُعرض لك ولا تُعدَّل من هنا.</p>
                 @endif
@@ -562,7 +574,7 @@
                             @if($cnLocked)<span class="text-[10px] font-normal text-gray-400">— يضبطها المطوّر</span>@endif
                         </span>
                         <span class="block text-[11px] text-gray-500 leading-relaxed">
-                            مطفأةٌ حتى تشغّلها. وقبل تشغيلها لا تصل الموكّلين رسالةٌ واحدة، ولا يُقيَّد لهم إشعارٌ في البوابة.
+                            مشغّلةٌ لكل مكتبٍ تلقائياً — وإطفاؤها بيد المطوّر وحده. المكتبُ غيرُ المربوط برقمٍ يُقيَّد إشعارُه في البوابة فقط.
                         </span>
                     </span>
                 </label>
