@@ -106,7 +106,11 @@ class AttendanceOnlyByButtonTest extends TestCase
     public function test_the_scheduled_command_declines_when_disabled(): void
     {
         $user = $this->staff();
-        $record = $this->openRecord($user);
+
+        // حضورٌ قريبٌ عمداً: سقفُ المناوبة (٨ ساعات) آليّةٌ أخرى تعمل
+        // دائماً وتُختبر في ملفّها — وحضورُ الثامنة صباحاً يبلغ السقفَ
+        // متى شُغّلت الاختباراتُ مساءً فيُقفل بحقٍّ ويكسر هذا الاختبار
+        $record = $this->openRecord($user, now()->subHours(2)->format('H:i'));
 
         $this->artisan('hr:close-attendance')
             ->expectsOutputToContain('بزرّ الخروج وحده')
