@@ -181,21 +181,40 @@ class WhatsAppTrace extends Command
         });
 
         if ($state === ClientNotification::PENDING && $notification->notified_at === null) {
-            $this->breakAt(
-                'الإشعارُ مقيَّدٌ ولم تلتقطه المهمّة — الطابورُ لا يُصرَّف',
-                'للسبب الحقيقي لا العَرَض: php artisan whatsapp:trace --run',
-            );
-
+            // يُجرَّب أولاً ثمّ يُحكَم: نجاحُ التنفيذ المباشر يعني أنّ
+            // العلّة كانت في العامل وحده، فلا يُعلَن انقطاعٌ زال
             if ($this->option('run')) {
                 $this->runNow($notification);
+                $state = (string) $notification->refresh()->channel_state;
+            }
+
+            if ($state === ClientNotification::PENDING) {
+                $this->breakAt(
+                    'الإشعارُ مقيَّدٌ ولم تلتقطه المهمّة — الطابورُ لا يُصرَّف',
+                    'للسبب الحقيقي لا العَرَض: php artisan whatsapp:trace --run',
+                );
             }
         }
 
         if ($state === ClientNotification::SKIPPED) {
-            $this->breakAt(
-                'المهمّةُ تخطّت الإشعار: ' . (string) $notification->channel_reason,
-                'أصلِح السببَ أعلاه ثمّ كرِّر الحدث',
-            );
+            // ═══ لماذا يُعاد المتخطَّى ═══
+            //
+            // التخطّي يُختم بـnotified_at كي لا يتكرّر الإرسال — لكنّ
+            // حدثَ «إنشاء القضية» لا يقع مرّتين: من أُصلح رقمُه بعد
+            // التخطّي لن تصله رسالةُ قضيّته أبداً بغير هذا الباب.
+            // وإعادتُه آمنة: التخطّي قرارٌ لم يُرسل شيئاً قطّ.
+            if ($this->option('run')) {
+                $this->runNow($notification);
+                $state = (string) $notification->refresh()->channel_state;
+            }
+
+            if ($state === ClientNotification::SKIPPED) {
+                $this->breakAt(
+                    'المهمّةُ تخطّت الإشعار: ' . (string) $notification->channel_reason,
+                    'أصلِح السببَ أعلاه ثمّ أعِده: php artisan whatsapp:trace --run'
+                        . ' — التخطّي لم يُرسل شيئاً فإعادتُه لا تكرّر رسالة',
+                );
+            }
         }
 
         // ── ٧) رسالةُ واتساب ──────────────────────────────────
@@ -309,6 +328,18 @@ class WhatsAppTrace extends Command
     {
         $this->newLine();
         $this->line('<options=bold>تنفيذٌ مباشرٌ بلا طابور…</>');
+
+        // خاتمُ التخطّي يمنع المهمّةَ من العمل ثانيةً — وهو صوابٌ في
+        // الطابور وحاجزٌ هنا: يُفكّ للمتخطَّى وحده. أمّا ما صُفَّت
+        // رسالتُه فلا يُفكّ أبداً: إعادتُه تكرّر رسالةً وصلت.
+        if ($notification->notified_at !== null
+            && (string) $notification->channel_state === ClientNotification::SKIPPED) {
+            $notification->forceFill([
+                'notified_at' => null,
+                'channel_state' => ClientNotification::PENDING,
+                'channel_reason' => null,
+            ])->save();
+        }
 
         try {
             (new SendClientNotification($notification->id))->handle(app(InboxService::class));

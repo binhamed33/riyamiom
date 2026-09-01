@@ -316,6 +316,72 @@ class WhatsAppDiagnosticsTest extends TestCase
         $this->assertStringContainsString('مفتاحَ دولة', $output);
     }
 
+
+    /**
+     * ═══ الفجوةُ التي وُضع لها --run ═══
+     *
+     * إشعارُ «قضيةٌ جديدة» تُخطّي لرقمٍ ناقص، ثمّ أُصلح الرقم. والحدثُ
+     * لا يقع مرّتين — القضيةُ لا تُنشأ ثانيةً — فبغير بابِ الإعادة لن
+     * تصل رسالتُها أبداً. والإعادةُ آمنة: التخطّي لم يُرسل شيئاً قطّ.
+     */
+    public function test_run_retries_a_skipped_notification_after_the_cause_is_fixed(): void
+    {
+        Queue::fake();
+        ClientEvents::setMasterEnabled(true);
+
+        $client = Client::create([
+            'name' => 'موكّلٌ أُصلح رقمُه',
+            'phone' => '977477468',
+            'national_id' => '11224433',
+            'type' => 'individual',
+        ]);
+
+        $case = LegalCase::create([
+            'case_number' => '2026/903', 'title' => 'قضية', 'type' => 'civil',
+            'description' => 'وصف', 'court' => 'الابتدائية', 'opponent' => 'خصم',
+            'status' => 'active', 'priority' => 'medium', 'client_id' => $client->id,
+        ]);
+
+        $notification = ClientNotification::where('client_id', $client->id)->firstOrFail();
+
+        // المحاولةُ الأولى تُخطّي وتُختم — الرقمُ تسعُ خانات
+        (new \App\Jobs\SendClientNotification($notification->id))
+            ->handle(app(\App\Services\WhatsApp\InboxService::class));
+        $this->assertSame(ClientNotification::SKIPPED, $notification->refresh()->channel_state);
+
+        // يُصلَح الرقمُ ثمّ يُعاد من التتبّع
+        $client->update(['phone' => '97747468']);
+
+        Artisan::call('whatsapp:trace', ['--case' => $case->id, '--run' => true]);
+        $output = Artisan::output();
+
+        $this->assertSame(ClientNotification::QUEUED, $notification->refresh()->channel_state,
+            'أُصلح السببُ وأُعيد — فبقي متخطًّى');
+        $this->assertSame(1, WhatsAppMessage::where('direction', WhatsAppMessage::OUT)->count(),
+            'لم تُصَفَّ رسالة');
+        $this->assertStringContainsString('صُفَّت', $output);
+    }
+
+    /** وما صُفَّت رسالتُه لا يُعاد: الإعادةُ هناك تكرارٌ لا إصلاح. */
+    public function test_run_never_resends_a_notification_that_was_queued(): void
+    {
+        Queue::fake();
+        ClientEvents::setMasterEnabled(true);
+
+        $case = $this->makeCase();
+        $notification = ClientNotification::firstOrFail();
+
+        (new \App\Jobs\SendClientNotification($notification->id))
+            ->handle(app(\App\Services\WhatsApp\InboxService::class));
+        $this->assertSame(ClientNotification::QUEUED, $notification->refresh()->channel_state);
+        $this->assertSame(1, WhatsAppMessage::where('direction', WhatsAppMessage::OUT)->count());
+
+        Artisan::call('whatsapp:trace', ['--case' => $case->id, '--run' => true]);
+
+        $this->assertSame(1, WhatsAppMessage::where('direction', WhatsAppMessage::OUT)->count(),
+            'أُعيد إرسالُ ما سبق إرسالُه');
+    }
+
     /** ولا يسقط الأمرُ حين لا يُسمّى شيء: يأخذ آخرَ إشعارٍ قُيّد. */
     public function test_the_trace_falls_back_to_the_latest_notification(): void
     {
