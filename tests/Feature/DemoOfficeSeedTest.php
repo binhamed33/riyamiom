@@ -17,6 +17,7 @@ use App\Models\Session as CourtSession;
 use App\Models\Setting;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\WhatsAppContact;
 use App\Support\ClientPortal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -124,6 +125,26 @@ class DemoOfficeSeedTest extends TestCase
         $this->assertSame(0, ClientNotification::count());
         Http::assertNothingSent();
         Mail::assertNothingSent();
+
+        // والأرقامُ الوهمية مقيَّدةٌ «إيقاف المراسلة» — لو رُبط واتساب المكتب
+        // غداً لا تصل رسالةٌ إلى غريبٍ صادف رقمُه رقماً مختلَقاً
+        $this->assertSame(13, WhatsAppContact::whereNotNull('opted_out_at')->count());
+        $heroWaId = WhatsAppContact::normalizeWaId((string) Client::first()->phone);
+        $this->assertNull(WhatsAppContact::where('wa_id', $heroWaId)->value('opted_out_at'), 'هاتفُ العارض نفسُه قُيِّد — لن يرى الإشعار الذي جاء ليعرضه');
+    }
+
+    /** مكتبٌ بُذر قبل قاعدة التقييد يشملها بإعادة التشغيل — بلا تكرار. */
+    public function test_rerunning_restricts_numbers_seeded_before_the_rule(): void
+    {
+        $args = ['--site' => 'testrer.riyami.om', '--cases' => 1, '--password' => 'x', '--my-phone' => '96871730036'];
+        $this->artisan('office:demo-seed', $args)->assertSuccessful();
+
+        // كأنّ التشغيلَ الأوّل جرى بنسخةٍ لا تعرف القاعدة
+        WhatsAppContact::query()->delete();
+
+        $this->artisan('office:demo-seed', $args)->assertSuccessful();
+        $this->assertSame(13, WhatsAppContact::whereNotNull('opted_out_at')->count());
+        $this->assertSame(14, Client::count());
     }
 
     /** التشغيلُ الثاني لا يكرّر ولا يحذف. */

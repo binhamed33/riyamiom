@@ -25,6 +25,7 @@ use App\Models\Session as CourtSession;
 use App\Models\Setting;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\WhatsAppContact;
 use App\Support\ClientPortal;
 use App\Support\Notify;
 use Illuminate\Console\Command;
@@ -268,6 +269,23 @@ class DemoOfficeSeed extends Command
 
             $new += $fresh ? 1 : 0;
             $this->clients[] = $client;
+
+            // ═══ أرقامٌ وهمية لا تُراسَل أبداً ═══
+            //
+            // رقمٌ مختلَق قد يصادف هاتفَ إنسانٍ حقيقي. فكلُّ موكّلٍ في
+            // العرض — إلا البطل صاحبَ هاتف العارض — يُقيَّد «طلب إيقاف
+            // المراسلة»، والمرسِلُ يحترم ذلك قبل أيّ إعداد. يُطبَّق في كلّ
+            // تشغيلٍ لا عند الإنشاء وحده: مكتبٌ بُذر قبل هذه القاعدة
+            // يشملها بإعادة التشغيل.
+            $isHero = $i === 0 && $myPhone;
+            $waId = WhatsAppContact::normalizeWaId((string) $client->phone);
+
+            if (!$isHero && WhatsAppContact::isSendable($waId)) {
+                $contact = WhatsAppContact::firstOrCreate(['wa_id' => $waId], ['client_id' => $client->id]);
+                if ($contact->acceptsNotifications()) {
+                    $contact->forceFill(['opted_out_at' => now(), 'opted_in_at' => null])->save();
+                }
+            }
         }
 
         $this->counts['clients'] = $new;
