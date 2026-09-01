@@ -424,9 +424,17 @@ class GeminiProvider implements AiProvider
 
                 $response = $this->post($model, array_merge($payload, ['generationConfig' => $config]));
 
+                // ═══ لماذا أيُّ 400 لا كلمةُ «thinking» ═══
+                //
+                // ‏flash-lite-latest يرفض thinkingBudget برسالةٍ عامة:
+                // «Request contains an invalid argument.» — لا حرفَ
+                // «thinking» فيها، فما كان السُلّم ينطلق وماتت الطلبات
+                // بـhttp_400 يوماً كاملاً والحلُّ درجةٌ واحدةٌ تحته.
+                // فصار كلُّ 400 يجرّب الدرجةَ التالية أولاً — رخيصةٌ
+                // ومجرَّبة، وما بقي 400 بعد آخر درجةٍ فهو رفضٌ حقيقي
+                // يخرج لقفزة النماذج.
                 if ($response->status() === 400
-                    && $this->thinkingStep < count(self::THINKING_LADDER) - 1
-                    && stripos((string) $response->body(), 'thinking') !== false) {
+                    && $this->thinkingStep < count(self::THINKING_LADDER) - 1) {
                     $this->thinkingStep++;
 
                     continue;

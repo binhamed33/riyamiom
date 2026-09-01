@@ -385,4 +385,33 @@ class AiResilienceTest extends TestCase
 
         $this->assertSame('المفتاح الاحتياطي أجاب', $reply, 'مفتاحٌ ميّتٌ أنهى الرحلة والحيُّ بجانبه');
     }
+
+    /**
+     * ═══ الجريمة كما أُمسكت حيّةً على خادم Google ═══
+     *
+     * ‏flash-lite-latest يرفض thinkingBudget برسالةٍ عامة لا حرفَ
+     * «thinking» فيها — فما كان سُلّم التنازل ينطلق، وماتت الطلبات
+     * بـhttp_400 يوماً كاملاً والحلُّ درجةٌ تحته: نفسُ النموذج بلا
+     * حقل التفكير يجيب فوراً.
+     */
+    public function test_a_generic_400_steps_down_the_thinking_ladder_on_the_same_model(): void
+    {
+        config()->set('services.gemini.api_key', null);
+        config()->set('ai.providers.gemini.fallback_models', []);
+
+        $bodies = [];
+        Http::fake(function ($request) use (&$bodies) {
+            $bodies[] = $request->body();
+
+            return str_contains($request->body(), 'thinkingConfig')
+                ? Http::response(['error' => ['code' => 400, 'message' => 'Request contains an invalid argument.']], 400)
+                : Http::response($this->text('أجاب بعد نزول السلم'), 200);
+        });
+
+        $reply = (new GeminiProvider())->chat([['role' => 'user', 'content' => 'س']], 'نظام');
+
+        $this->assertSame('أجاب بعد نزول السلم', $reply,
+            'رسالةُ 400 العامة لم تنزل السلم — وهذا عين ما قتل يوماً كاملاً');
+        $this->assertStringNotContainsString('thinkingConfig', end($bodies));
+    }
 }

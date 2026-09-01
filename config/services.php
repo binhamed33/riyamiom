@@ -57,7 +57,11 @@ return [
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-flash-latest'),
-        'fallback_models' => array_values(array_filter(array_map('trim', explode(',', (string) env('GEMINI_FALLBACK_MODELS', 'gemini-3.6-flash,gemini-flash-latest'))))),
+        // ‏gemini-3.1-flash-lite أولاً: جُرّب حيّاً بحمولة النظام
+        // كاملةً وأجاب، بينما flash-latest يغرق بـ503 في الذروة
+        // و2.5 «لم تعد متاحةً للمشاريع الجديدة». والقديم هنا كان
+        // فيه «gemini-3.6-flash» — اسمٌ لا وجود له أصلاً.
+        'fallback_models' => array_values(array_filter(array_map('trim', explode(',', (string) env('GEMINI_FALLBACK_MODELS', 'gemini-3.1-flash-lite,gemini-flash-lite-latest,gemini-flash-latest'))))),
     ],
 
     'whatsapp' => [
