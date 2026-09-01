@@ -44,6 +44,9 @@
                     <h2 class="text-base font-bold text-gray-800">اشتراك النظام</h2>
                     <p class="text-xs text-gray-500 mt-0.5">يُدار من قبل المطور</p>
                 </div>
+                @if(\App\Support\PlanLimits::planName())
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gold/12 text-gold-dark border border-gold/25">{{ \App\Support\PlanLimits::planName() }}</span>
+                @endif
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold {{ \App\Services\SubscriptionService::colorClasses($subInfo['color']) }}">{{ $subInfo['label'] }}</span>
             </div>
 
@@ -75,6 +78,37 @@
             @else
                 <div class="bg-gray-50 rounded-lg px-4 py-3 text-sm text-gray-500">
                     لا يوجد اشتراك مفعّل لهذا النظام حاليًا. يرجى التواصل مع المطور لتفعيل الوصول الكامل.
+                </div>
+            @endif
+
+            {{-- سعةُ الباقة: «كم بقي لي» بعين المكتب لا بسؤال أحد.
+                 الحدودُ تنزل من اللوحة مع النبضة، والاستهلاكُ يُحسب من
+                 قاعدة المكتب نفسِه — فالرقمان صادقان معاً. --}}
+            @php $capLimits = \App\Support\PlanLimits::all(); @endphp
+            @if($capLimits !== [])
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <p class="text-xs font-bold text-gray-500 mb-3">سعة الباقة</p>
+                    <div class="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+                        @foreach(\App\Support\PlanLimits::RESOURCES as $capKey => $capLabel)
+                            @php
+                                $capLimit = $capLimits[$capKey] ?? null;
+                                $capUsed = \App\Support\PlanLimits::used($capKey);
+                                $capPct = $capLimit ? min(100, (int) round($capUsed / max(1, $capLimit) * 100)) : 0;
+                                $capUnit = $capKey === 'storage_gb' ? ' GB' : '';
+                            @endphp
+                            <div>
+                                <div class="flex justify-between text-[11px] text-gray-500 mb-1">
+                                    <span>{{ $capLabel }}</span>
+                                    <span class="font-semibold {{ $capPct >= 90 ? 'text-red-600' : ($capPct >= 70 ? 'text-amber-600' : 'text-gray-600') }}" dir="ltr">
+                                        {{ number_format($capUsed) }}{{ $capUnit }} / {{ $capLimit ? number_format($capLimit) . $capUnit : '∞' }}
+                                    </span>
+                                </div>
+                                <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div class="h-full rounded-full {{ $capPct >= 90 ? 'bg-red-500' : ($capPct >= 70 ? 'bg-amber-500' : 'bg-gradient-to-l from-gold-light to-gold-dark') }}" style="width: {{ max(2, $capPct) }}%"></div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             @endif
         </div>

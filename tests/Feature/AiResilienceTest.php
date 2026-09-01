@@ -258,4 +258,61 @@ class AiResilienceTest extends TestCase
         $this->assertSame(1, \App\Models\AssistantMessage::where('user_id', $mine->id)->where('role', 'user')->count());
         $this->assertSame('سؤال غيري', $theirs->fresh()->content, 'مُسّت رسالة مستخدمٍ آخر');
     }
+
+    // ══════════ سلسلة المفاتيح ══════════
+
+    /**
+     * ═══ «ما أريده يتوقف أبداً» ═══
+     *
+     * مفتاحُ المكتب نفدت حصّتُه — 429 على كلّ نموذج، والحصّةُ للمفتاح
+     * لا للنموذج فلن ينفع نموذجٌ آخر. وفي .env مفتاحٌ مركزيٌّ مدفوعٌ
+     * قاعدٌ لا يُمسّ.
+     *
+     * فيُعاد المشوارُ به في الطلب نفسِه: السائلُ يرى الجواب، ولا يعلم
+     * أنّ مفتاحاً نفد ومفتاحاً أنقذ.
+     */
+    public function test_a_drained_office_key_falls_back_to_the_central_key(): void
+    {
+        config()->set('services.gemini.api_key', 'AIzaCentralPaid456');
+        config()->set('ai.retry.attempts_per_model', 1);
+
+        $keysSeen = [];
+        Http::fake(function ($request) use (&$keysSeen) {
+            $key = $request->header('X-goog-api-key')[0] ?? '';
+            $keysSeen[] = $key;
+
+            return $key === 'AIzaCentralPaid456'
+                ? Http::response($this->text('الجواب من المفتاح المركزي'), 200)
+                : Http::response(['error' => ['code' => 429, 'message' => 'quota exceeded']], 429);
+        });
+
+        $reply = (new GeminiProvider())->chat(
+            [['role' => 'user', 'content' => 'سؤال']],
+            'أنت مساعد قانوني.'
+        );
+
+        $this->assertSame('الجواب من المفتاح المركزي', $reply, 'لم يجرَّب المفتاحُ المركزي');
+        $this->assertContains('AIzaTestKey123', $keysSeen, 'تخطّى مفتاحَ المكتب — واختيارُه يُحترم أولاً');
+        $this->assertContains('AIzaCentralPaid456', $keysSeen);
+    }
+
+    /** ولا مفتاحَ مركزيّ: يفشل بهدوء الرسالة المعهودة لا باستثناءٍ غريب. */
+    public function test_without_a_central_key_the_failure_stays_graceful(): void
+    {
+        config()->set('services.gemini.api_key', null);
+        config()->set('ai.retry.attempts_per_model', 1);
+
+        Http::fake(['*' => Http::response(['error' => ['code' => 429, 'message' => 'quota']], 429)]);
+
+        $provider = new GeminiProvider();
+        $reply = $provider->chat([['role' => 'user', 'content' => 'سؤال']], 'نظام');
+
+        $this->assertNull($reply);
+
+        // رسالةٌ عربيةٌ هادئة تعِد بالمحاولة — لا استثناءٌ ولا نصٌّ تقني
+        $this->assertMatchesRegularExpression(
+            '/تُعاد المحاولة|حُفظ سؤالك/',
+            (string) $provider->getLastError(),
+        );
+    }
 }

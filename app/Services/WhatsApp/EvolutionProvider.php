@@ -174,6 +174,43 @@ class EvolutionProvider implements WhatsAppProviderInterface
         return $response->successful();
     }
 
+    /**
+     * إحياءُ اقترانٍ سقط — بلا رمزٍ يُمسح وبلا يدِ أحد.
+     *
+     * ═══ «ما ينفصل أبداً إلا إذا المكتب فصله» ═══
+     *
+     * جلسةُ واتساب ويب تسقط أحياناً: الجسرُ يُعاد تشغيله، أو الاتصال
+     * ينقطع لحظةً، فتصير الحالة close والاعتمادُ عند الخادم ما زال
+     * صالحاً. كان المكتب يبقى مفصولاً حتى يفتح أحدُهم الإعدادات
+     * صدفةً — والرسائلُ تُقيَّد «في البوابة» أياماً.
+     *
+     * فيُنادى `connect`: الاعتمادُ الصالح يُعيد الفتح فوراً بلا رمز،
+     * والساقطُ فعلاً يبقى ساقطاً — إعادةُ المسح قرارُ المكتب وحده،
+     * ولا يُمسح اقترانُه من طرفنا بحال.
+     */
+    public function reconnect(): string
+    {
+        if (!$this->isConfigured()) {
+            return 'close';
+        }
+
+        try {
+            $this->http()->get($this->url('instance/connect/' . WhatsAppSettings::evolutionInstance()));
+        } catch (\Throwable) {
+            // الجسرُ نفسُه لا يردّ: الحالةُ التالية ستقول ذلك
+        }
+
+        try {
+            $state = $this->connectionState();
+        } catch (\Throwable) {
+            return WhatsAppSettings::evolutionState();
+        }
+
+        WhatsAppSettings::setEvolutionState($state);
+
+        return $state;
+    }
+
     // ── الإرسال ──────────────────────────────────────────────────
 
     public function sendText(string $to, string $body): SendResult

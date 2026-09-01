@@ -87,6 +87,29 @@ class AiSettings
         return is_string($key) && $key !== '' ? $key : null;
     }
 
+    /**
+     * سلسلةُ المفاتيح بالترتيب: مفتاحُ المكتب ثم المركزيُّ من .env.
+     *
+     * ═══ لماذا سلسلةٌ لا مفتاحٌ واحد ═══
+     *
+     * مكتبٌ وضع مفتاحَه المجانيَّ فنفدت حصّتُه ظهراً — والمساعدُ
+     * مسوَّقٌ به فلا يجوز أن يقول «اصبر». والمفتاحُ المركزيُّ المدفوع
+     * قاعدٌ في .env لا يُمسّ لأنّ مفتاحَ المكتب «يتقدّم».
+     *
+     * فالتقدّمُ يبقى — مفتاحُ المكتب أوّلاً احتراماً لاختياره — لكنّ
+     * نفادَ حصّته لم يعد نهايةَ الطريق: يجرَّب المركزيُّ بعده في
+     * الطلب نفسِه، ولا يعرف السائلُ أنّ شيئاً حدث.
+     *
+     * @return array<int, string>
+     */
+    public static function keyChain(): array
+    {
+        return array_values(array_unique(array_filter([
+            self::apiKey(),
+            self::envFallbackKey(),
+        ])));
+    }
+
     public static function isConfigured(): bool
     {
         return self::apiKey() !== null;

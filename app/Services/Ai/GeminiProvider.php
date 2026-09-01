@@ -233,11 +233,27 @@ class GeminiProvider implements AiProvider
             return null;
         }
 
-        $models = array_values(array_unique(array_filter([
+        $modelChain = array_values(array_unique(array_filter([
             $this->model,
             ...config('ai.providers.gemini.fallback_models', []),
         ])));
 
+        // ═══ سلسلةُ المفاتيح فوق سلسلة النماذج ═══
+        //
+        // النماذجُ كلُّها على مفتاحٍ نفدت حصّتُه تفشل معاً: الحصّةُ
+        // للمفتاح لا للنموذج وحده. فبعد استنفاد النماذج على المفتاح
+        // الأوّل يُعاد المشوارُ على الذي يليه — مفتاحُ المكتب أوّلاً
+        // احتراماً لاختياره، ثم المركزيُّ المدفوع من .env.
+        $keys = \App\Support\AiSettings::keyChain();
+
+        if ($this->apiKey && !in_array($this->apiKey, $keys, true)) {
+            array_unshift($keys, $this->apiKey);
+        }
+
+        $keyQueue = $keys === [] ? [$this->apiKey] : $keys;
+        $this->apiKey = array_shift($keyQueue);
+
+        $models = $modelChain;
         $tried = [];
         $startedAt = microtime(true);
         $elapsed = fn (): int => (int) ((microtime(true) - $startedAt) * 1000);
@@ -253,6 +269,8 @@ class GeminiProvider implements AiProvider
         // القائمة تُستهلك لا تُدار بـforeach: النموذج الذي يسمّيه المزوّد
         // بديلاً يُضاف إلى آخرها أثناء التنفيذ، فيُجرَّب في نفس الطلب
         // بدل أن ينتظر تعديلاً منّا.
+        nextKey:
+
         while (($model = array_shift($models)) !== null) {
             if (in_array($model, $tried, true)) {
                 continue;
@@ -324,6 +342,18 @@ class GeminiProvider implements AiProvider
                     }
                 }
             }
+        }
+
+        // نفدت النماذجُ على هذا المفتاح وثمّة مفتاحٌ بعده والميزانيّةُ
+        // تتّسع: يُعاد المشوارُ به. الحصصُ مستقلّةٌ بين المفاتيح، فما
+        // فشل بالأوّل لسقفه قد ينجح بالثاني من أوّل محاولة.
+        if ($keyQueue !== [] && $elapsed() < $budgetMs) {
+            $this->apiKey = array_shift($keyQueue);
+            $models = $modelChain;
+            $tried = [];
+            $lastTransientError = null;
+
+            goto nextKey;
         }
 
         if ($lastTransientError === null || $this->lastError === null || $this->lastStatus === 429 || $this->lastWasEmpty) {

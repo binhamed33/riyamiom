@@ -58,6 +58,39 @@ class WhatsAppSweep extends Command
      * والشرطُ ضيّق: نصُّ الخطأ بعينه، وبلا معرّف رسالةٍ عند المزوّد —
      * أي أنّها لم تُرسَل فعلاً. فلا يُعاد إرسالُ ما وصل.
      */
+    /**
+     * جلسةُ الجسر سقطت والاعتمادُ صالح: تُفتح من جديد بلا يد أحد.
+     *
+     * ═══ «ما ينفصل أبداً إلا إذا المكتب فصله» ═══
+     *
+     * ثلاثةُ شروطٍ كلُّها تُحترم: المكتبُ على الجسر، ولم يفصل بيده
+     * (الفصلُ الصريح مقدَّس — لا نعيد وصلَ من قرّر الفصل)، وسبق أن
+     * اقترن فعلاً (من لم يقترن قطُّ لا شيءَ يُحيا له). ويعمل هذا كلَّ
+     * دورة كنسٍ — فالانقطاعُ العابر يُجبر في دقائق لا حين يفتح أحدُهم
+     * الإعدادات صدفةً بعد أيام.
+     */
+    protected function revivePairing(): void
+    {
+        if (! \App\Support\WhatsAppSettings::usingEvolution()
+            || \App\Support\WhatsAppSettings::isDisconnected()
+            || (string) \App\Models\Setting::get(\App\Support\WhatsAppSettings::KEY_CONNECTED_AT, '') === ''
+            || \App\Support\WhatsAppSettings::evolutionState() === 'open') {
+            return;
+        }
+
+        try {
+            $state = (new \App\Services\WhatsApp\EvolutionProvider())->reconnect();
+        } catch (\Throwable $e) {
+            $this->line('  تعذّر إحياء الاقتران: ' . $e->getMessage());
+
+            return;
+        }
+
+        $this->line($state === 'open'
+            ? '  أُعيد وصلُ الرقم تلقائياً.'
+            : '  الاقتران ما زال ' . $state . ' — إن طال فالهاتف يحتاج مسحَ الرمز.');
+    }
+
     protected function releaseHeld(): void
     {
         if (! Schema::hasColumn('whatsapp_messages', 'hold_until')) {
@@ -116,6 +149,9 @@ class WhatsAppSweep extends Command
         // فيُمحى دفترُ اليوم كلُّه بما فيه ما لم يُعالَج بعد
         $retentionDays = max(1, (int) config('whatsapp.event_retention_days', 14));
         $retentionCutoff = now()->subDays($retentionDays);
+
+        // ── ٠۰) اقترانٌ سقط يُعاد وصلُه — «ما ينفصل إلا بيد المكتب» ──
+        $this->revivePairing();
 
         // ── ٠) الرسائلُ المحجوزة التي حان موعدها ──────────────
         //

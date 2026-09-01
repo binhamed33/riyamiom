@@ -131,6 +131,47 @@ class PanelReporter
                         $plan['limits'],
                     );
                 }
+
+                // الاشتراكُ كاملاً: نهايتُه ومدّتُه وحالتُه — تُحفظ
+                // ليعرضها المكتبُ لصاحبه في صفحته، فلا يسأل أحداً
+                // «متى ينتهي اشتراكي وكم بقي لي»
+                if (is_array($plan)) {
+                    foreach ([
+                        'sub_ends_at' => $plan['ends_at'] ?? null,
+                        'sub_period_months' => $plan['period_months'] ?? null,
+                        'sub_status' => $plan['subscription_status'] ?? null,
+                    ] as $key => $value) {
+                        if ($value !== null && $value !== '') {
+                            \App\Models\Setting::set($key, (string) $value, 'subscription');
+                        }
+                    }
+                }
+
+                // أوامرُ اللوحة تركب الردَّ نفسَه: تُطبَّق هنا بيد
+                // المكتب ويُقَرّ بكلٍّ منها — طُبِّق أو تعذّر وبمَ
+                foreach ((array) $response->json('directives', []) as $directive) {
+                    if (!is_array($directive) || !isset($directive['id'])) {
+                        continue;
+                    }
+
+                    $result = \App\Support\PanelDirectives::apply($directive);
+
+                    try {
+                        Http::timeout((int) config('panel.ingest_timeout', 8))
+                            ->withHeaders(['X-Mudawala-Token' => config('panel.ingest_token')])
+                            ->acceptJson()
+                            ->post(rtrim((string) config('panel.ingest_url'), '/') . '/ingest/directive-ack', [
+                                'directive_id' => (int) $directive['id'],
+                                'ok' => $result['ok'],
+                                'message' => mb_substr($result['message'], 0, 190),
+                            ]);
+                    } catch (\Throwable $e) {
+                        // إقرارٌ لم يصل: الأمرُ يبقى معلَّقاً في اللوحة
+                        // فيُعاد مع النبضة التالية — والتطبيقُ نفسُه
+                        // آمنُ التكرار (رتبةٌ هي نفسُها تقول ذلك)
+                        Log::warning('PanelReporter: directive ack unreachable — ' . $e->getMessage());
+                    }
+                }
             }
 
             return $response->successful();
