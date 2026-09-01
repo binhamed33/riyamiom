@@ -54,8 +54,13 @@ class WhatsAppSessionReminders extends Command
         $this->line(str_repeat('─', 52));
 
         // ── الشروطُ قبل أيّ استعلام ────────────────────────────
-        if (! WhatsAppSettings::flag(WhatsAppSettings::KEY_NOTIFY_SESSIONS)) {
-            $this->line('تذكير الجلسات مُطفأ في إعدادات المكتب — لا شيء يُرسَل.');
+        //
+        // البوابةُ من الباب الواحد لا من العلَم القديم: «تذكير قبل
+        // الجلسة» نوعٌ في منظومة إشعارات الموكّل يُدار من قسمها،
+        // والعلَمُ القديم wa_notify_sessions أُغلق بهجرةٍ — ولو بقي
+        // هو الحاكم لَطُفئ التذكيرُ إلى الأبد رغم تشغيل النوع.
+        if (! \App\Support\ClientEvents::enabled(\App\Support\ClientEvents::SESSION_REMINDER)) {
+            $this->line('نوع «تذكير قبل الجلسة» مُطفأ في إشعارات الموكّل — لا شيء يُرسَل.');
 
             return self::SUCCESS;
         }

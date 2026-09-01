@@ -46,7 +46,10 @@ class WhatsAppRemindersTest extends TestCase
 
         Setting::set(WhatsAppSettings::KEY_TOKEN, Crypt::encryptString('EAA-token-value-for-testing'), 'whatsapp');
         Setting::set(WhatsAppSettings::KEY_PHONE_ID, '111222333', 'whatsapp');
-        Setting::set(WhatsAppSettings::KEY_NOTIFY_SESSIONS, '1', 'whatsapp');
+        // البوابةُ صارت من الباب الواحد: المفتاحُ الرئيسي (تشغّله هجرةُ
+        // «الباب الواحد» في كل مكتبٍ حقيقي) ثم نوعُ «تذكير قبل الجلسة»
+        \App\Support\ClientEvents::setMasterEnabled(true);
+        \App\Support\ClientEvents::setEnabled(\App\Support\ClientEvents::SESSION_REMINDER, true);
         Setting::set(WhatsAppSettings::KEY_SESSION_TEMPLATE, 'session_reminder', 'whatsapp');
         Setting::set(WhatsAppSettings::KEY_REMINDER_HOURS, '24', 'whatsapp');
 
@@ -156,17 +159,21 @@ class WhatsAppRemindersTest extends TestCase
     {
         Queue::fake();
 
-        WhatsAppContact::create([
-            'wa_id' => '96891234567',
-            'client_id' => $this->client->id,
-            'opted_out_at' => now(),
-        ]);
+        // قد تكون جهةُ الاتصال وُلدت في التهيئة (إشعارُ إنشاء القضية
+        // ينفَّذ متزامناً هناك) — فيُختم الرفضُ على القائمة لا تُنشأ ثانية
+        WhatsAppContact::updateOrCreate(
+            ['wa_id' => '96891234567'],
+            ['client_id' => $this->client->id, 'opted_out_at' => now()],
+        );
 
         $this->hearing(now()->addHours(24)->format('Y-m-d H:i:s'));
 
         $this->artisan('whatsapp:session-reminders')->assertSuccessful();
 
-        $this->assertSame(0, WhatsAppMessage::count());
-        Queue::assertNothingPushed();
+        // رسالةُ التذكير وحدها المحروسةُ هنا — وهي ما يحمل session_id.
+        // (إشعارُ إنشاء القضية في التهيئة كتب رسالتَه قبل ختم الرفض،
+        // ورفضُ المستقبَل يُفحص في مهمّة الإرسال نفسِها باختباراتها)
+        $this->assertSame(0, WhatsAppMessage::whereNotNull('session_id')->count());
+        Queue::assertNotPushed(\App\Jobs\SendWhatsAppMessage::class);
     }
 }

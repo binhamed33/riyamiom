@@ -137,6 +137,10 @@ class ClientEvents
     public static function masterEnabled(): bool
     {
         try {
+            // الافتراضُ في الكود مغلقٌ عمداً — فإن تعذّرت قراءةُ
+            // الإعدادات يوماً فُقد الإرسالُ لا انفلت. والتشغيلُ لكل
+            // مكتبٍ حقيقيٍّ تكتبه هجرةُ «الباب الواحد» صراحةً، بقرار
+            // صاحب المنظومة: «ما أريد غير هذا الشيء فقط»
             return Setting::get(self::KEY_MASTER, '0') === '1';
         } catch (\Throwable) {
             return false;

@@ -66,10 +66,9 @@ class WhatsAppSettingsController extends Controller
             $validated['wa_app_id'] ?? null,
         );
 
-        WhatsAppSettings::setFlag(WhatsAppSettings::KEY_NOTIFY_SESSIONS, $request->boolean('wa_notify_sessions'));
-        WhatsAppSettings::setFlag(WhatsAppSettings::KEY_NOTIFY_INVOICES, $request->boolean('wa_notify_invoices'));
-        WhatsAppSettings::setFlag(WhatsAppSettings::KEY_NOTIFY_CASE_UPDATES, $request->boolean('wa_notify_case_updates'));
-        WhatsAppSettings::setFlag(WhatsAppSettings::KEY_AI_REPLY, $request->boolean('wa_ai_reply'));
+        // الأبوابُ القديمة الأربعة أُغلقت بهجرةٍ ولا تُكتب من نموذج:
+        // نموذجٌ يعيد فتحَها يعيد رسالتين عن الحدث الواحد ويعيد ردّاً
+        // آلياً قرّر صاحبُ المنظومة إغلاقَه نصّاً
 
         foreach ([
             WhatsAppSettings::KEY_SESSION_TEMPLATE => $validated['wa_session_template'] ?? null,

@@ -103,7 +103,10 @@ class ClientNotifier
                 new ClientCaseMail(MailKind::CaseUpdated, $case, (string) $client->name),
             );
 
-            self::sendWhatsApp($client->phone, $case);
+            // واتسابُ الموكّل من بابه الواحد وحده (منظومة الإشعارات
+            // برابط البوابة) — المسارُ القديم هنا كان يرسل رسالةً
+            // ثانية عن الحدث نفسِه، وأُغلق بقرارٍ نصّي: «ما أريد غير
+            // هذا الشيء فقط». البريدُ يبقى من هنا كما هو.
         } catch (\Throwable $e) {
             Log::error('Client update notification failed for case ' . $case->id . ': ' . $e->getMessage());
         }

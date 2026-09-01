@@ -640,29 +640,11 @@
                 </p>
             </div>
 
-            <div class="pt-2 border-t border-gray-100 grid sm:grid-cols-2 gap-3">
-                <label class="flex items-center gap-2 text-xs text-gray-700">
-                    <input type="checkbox" name="wa_notify_sessions" value="1" class="rounded border-gray-300"
-                           @checked(\App\Support\WhatsAppSettings::flag(\App\Support\WhatsAppSettings::KEY_NOTIFY_SESSIONS))>
-                    {{ __('app.wa_notify_sessions') }}
-                </label>
-                <label class="flex items-center gap-2 text-xs text-gray-700">
-                    <input type="checkbox" name="wa_notify_case_updates" value="1" class="rounded border-gray-300"
-                           @checked(\App\Support\WhatsAppSettings::flag(\App\Support\WhatsAppSettings::KEY_NOTIFY_CASE_UPDATES))>
-                    {{ __('app.wa_notify_case_updates') }}
-                </label>
-                <label class="flex items-center gap-2 text-xs text-gray-700">
-                    <input type="checkbox" name="wa_notify_invoices" value="1" class="rounded border-gray-300"
-                           @checked(\App\Support\WhatsAppSettings::flag(\App\Support\WhatsAppSettings::KEY_NOTIFY_INVOICES))>
-                    {{ __('app.wa_notify_invoices') }}
-                </label>
-                <label class="flex items-center gap-2 text-xs text-gray-700">
-                    <input type="checkbox" name="wa_ai_reply" value="1" class="rounded border-gray-300"
-                           @checked(\App\Support\WhatsAppSettings::flag(\App\Support\WhatsAppSettings::KEY_AI_REPLY))>
-                    {{ __('app.wa_ai_reply') }}
-                </label>
-            </div>
-            <p class="text-[11px] text-gray-400 leading-relaxed">{{ __('app.wa_ai_reply_hint') }}</p>
+            {{-- كانت هنا أربعُ خاناتٍ قديمة: ثلاثةُ أبوابِ إشعارٍ سبقت
+                 المنظومةَ الموحّدة (وصارت أنواعاً داخلها — وبقاؤها
+                 مفاتيحَ مستقلّةً يعني رسالتين عن الحدث الواحد)، وردٌّ
+                 آليٌّ قرّر صاحبُ المنظومة إغلاقَه نصّاً: «ما أريد رداً
+                 آلياً ولا شيء». أُغلقت كلُّها بهجرة، ولا تُعرض. --}}
 
             <div class="grid md:grid-cols-3 gap-4">
                 <div>
