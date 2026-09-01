@@ -262,16 +262,39 @@ class AiResilienceTest extends TestCase
     // ══════════ سلسلة المفاتيح ══════════
 
     /**
+     * ═══ «كأنهم يكتبون لحسابي وهو يردّ عليهم» ═══
+     *
+     * حسابُ صاحب المنظومة (المركزيُّ في .env) هو رأسُ السلسلة: أوّلُ
+     * نداءٍ يخرج به، ولا يُمسّ مفتاحُ المكتب ما دام المركزيُّ يجيب.
+     */
+    public function test_the_owner_account_answers_first(): void
+    {
+        config()->set('services.gemini.api_key', 'AIzaCentralPaid456');
+
+        $keysSeen = [];
+        Http::fake(function ($request) use (&$keysSeen) {
+            $keysSeen[] = $request->header('X-goog-api-key')[0] ?? '';
+
+            return Http::response($this->text('الجواب من حساب المالك'), 200);
+        });
+
+        $reply = (new GeminiProvider())->chat(
+            [['role' => 'user', 'content' => 'سؤال']],
+            'أنت مساعد قانوني.'
+        );
+
+        $this->assertSame('الجواب من حساب المالك', $reply);
+        $this->assertSame('AIzaCentralPaid456', $keysSeen[0], 'أوّلُ نداءٍ ليس بحساب المالك');
+    }
+
+    /**
      * ═══ «ما أريده يتوقف أبداً» ═══
      *
-     * مفتاحُ المكتب نفدت حصّتُه — 429 على كلّ نموذج، والحصّةُ للمفتاح
-     * لا للنموذج فلن ينفع نموذجٌ آخر. وفي .env مفتاحٌ مركزيٌّ مدفوعٌ
-     * قاعدٌ لا يُمسّ.
-     *
-     * فيُعاد المشوارُ به في الطلب نفسِه: السائلُ يرى الجواب، ولا يعلم
-     * أنّ مفتاحاً نفد ومفتاحاً أنقذ.
+     * نفدت حصّةُ حساب المالك — 429 على كلّ نموذج، والحصّةُ للمفتاح لا
+     * للنموذج. فيُعاد المشوارُ بمفتاح المكتب الاحتياطيّ في الطلب
+     * نفسِه: السائلُ يرى الجواب ولا يعلم أنّ مفتاحاً نفد ومفتاحاً أنقذ.
      */
-    public function test_a_drained_office_key_falls_back_to_the_central_key(): void
+    public function test_a_drained_owner_key_falls_back_to_the_office_key(): void
     {
         config()->set('services.gemini.api_key', 'AIzaCentralPaid456');
         config()->set('ai.retry.attempts_per_model', 1);
@@ -281,8 +304,8 @@ class AiResilienceTest extends TestCase
             $key = $request->header('X-goog-api-key')[0] ?? '';
             $keysSeen[] = $key;
 
-            return $key === 'AIzaCentralPaid456'
-                ? Http::response($this->text('الجواب من المفتاح المركزي'), 200)
+            return $key === 'AIzaTestKey123'
+                ? Http::response($this->text('الجواب من مفتاح المكتب'), 200)
                 : Http::response(['error' => ['code' => 429, 'message' => 'quota exceeded']], 429);
         });
 
@@ -291,9 +314,9 @@ class AiResilienceTest extends TestCase
             'أنت مساعد قانوني.'
         );
 
-        $this->assertSame('الجواب من المفتاح المركزي', $reply, 'لم يجرَّب المفتاحُ المركزي');
-        $this->assertContains('AIzaTestKey123', $keysSeen, 'تخطّى مفتاحَ المكتب — واختيارُه يُحترم أولاً');
-        $this->assertContains('AIzaCentralPaid456', $keysSeen);
+        $this->assertSame('الجواب من مفتاح المكتب', $reply, 'لم يجرَّب الاحتياطيُّ بعد نفاد المالك');
+        $this->assertSame('AIzaCentralPaid456', $keysSeen[0], 'لم يبدأ بحساب المالك');
+        $this->assertContains('AIzaTestKey123', $keysSeen);
     }
 
     /** ولا مفتاحَ مركزيّ: يفشل بهدوء الرسالة المعهودة لا باستثناءٍ غريب. */

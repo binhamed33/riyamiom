@@ -93,7 +93,67 @@
             <span class="lg-step-label">{{ __('portal.login.step_of', ['current' => $step, 'total' => 2]) }}</span>
         </div>
 
-        @if ($step === 1)
+        @php
+            // الدخول برمز واتساب: الهاتفُ محفوظٌ في الجلسة بعد الطلب —
+            // فوجودُه يعني «أدخل الرمزَ الذي وصلك»
+            $otpPhone = session('portal_otp_phone');
+            $otpTab = $otpPhone || session('portal_otp_tab') || request()->boolean('otp');
+            $otpWaitLeft = $otpPhone
+                ? max(0, \App\Services\ClientPortal\PortalOtp::RESEND_SECONDS - (now()->timestamp - (int) session('portal_otp_at', 0)))
+                : 0;
+        @endphp
+
+        @if ($step === 1 && $otpTab)
+            <h1 class="p-h1">{{ __('portal.login.welcome') }}</h1>
+
+            @if (session('portal_notice'))
+                <p class="p-hint" style="margin-bottom:.7rem">{{ session('portal_notice') }}</p>
+            @endif
+
+            @if (!$otpPhone)
+                <p class="p-lede" style="margin-bottom:1.5rem">أدخل رقم هاتفك المسجَّل لدى المكتب — يصلك رمزُ الدخول على واتساب.</p>
+
+                <form method="POST" action="{{ route('client.access.otp') }}" data-portal-form novalidate>
+                    @csrf
+                    <label class="p-label" for="otp-phone">رقم الهاتف</label>
+                    <input id="otp-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
+                           class="p-field" required autofocus maxlength="20" dir="ltr" style="text-align:start"
+                           placeholder="9xxxxxxx">
+                    <p class="p-hint">الرقم نفسُه المسجَّل في ملفّك لدى المكتب.</p>
+
+                    <button class="p-btn" style="width:100%;margin-top:1.3rem" data-submit>
+                        <span data-label>أرسل الرمز</span>
+                    </button>
+                </form>
+            @else
+                <p class="p-lede" style="margin-bottom:1rem">أدخل الرمزَ المكوَّن من ستّة أرقامٍ الذي وصلك على واتساب.</p>
+
+                <form method="POST" action="{{ route('client.access.otp.verify') }}" data-portal-form novalidate>
+                    @csrf
+                    <label class="p-label" for="otp-code">رمز التحقّق</label>
+                    <input id="otp-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+                           class="p-field" required autofocus maxlength="6" pattern="[0-9]{6}" dir="ltr"
+                           style="text-align:center;letter-spacing:.5em;font-size:1.3rem">
+
+                    <button class="p-btn" style="width:100%;margin-top:1.3rem" data-submit>
+                        <span data-label>دخول</span>
+                    </button>
+                </form>
+
+                <form method="POST" action="{{ route('client.access.otp') }}" style="margin-top:.7rem">
+                    @csrf
+                    <input type="hidden" name="phone" value="{{ $otpPhone }}">
+                    <button class="p-btn p-btn-ghost" style="width:100%" data-otp-resend
+                            @if($otpWaitLeft > 0) disabled data-wait="{{ $otpWaitLeft }}" @endif>
+                        <span data-resend-label>@if($otpWaitLeft > 0)رمزٌ جديد بعد {{ $otpWaitLeft }} ث@else أرسل رمزاً جديداً @endif</span>
+                    </button>
+                </form>
+            @endif
+
+            <a href="{{ route('client.access') }}" class="p-hint" style="display:block;text-align:center;margin-top:1.1rem">
+                الدخول برقم الهويّة بدلاً من ذلك
+            </a>
+        @elseif ($step === 1)
             <h1 class="p-h1">{{ __('portal.login.welcome') }}</h1>
             <p class="p-lede" style="margin-bottom:1.5rem">{{ $welcome ?? __('portal.login.intro') }}</p>
 
@@ -109,6 +169,10 @@
                     <span data-label>{{ __('portal.login.continue') }}</span>
                 </button>
             </form>
+
+            <a href="{{ route('client.access', ['otp' => 1]) }}" class="p-hint" style="display:block;text-align:center;margin-top:1.1rem">
+                الدخول برقم الهاتف — يصلك رمزٌ على واتساب
+            </a>
         @else
             <h1 class="p-h1">{{ __('portal.login.verify_title') }}</h1>
             <p class="p-lede">{{ __('portal.login.verify_intro') }}</p>
@@ -150,6 +214,24 @@
 @push('scripts')
 <script nonce="{{ $cspNonce ?? '' }}">
 (function () {
+    // ---- عدّادُ «رمزٌ جديد»: الزرُّ معطَّلٌ دقيقتين ويَعُدّ أمام العين —
+    // بلا عدٍّ ظاهرٍ يظنّ الزائرُ العطبَ ويهجر الصفحة
+    var resend = document.querySelector('[data-otp-resend][data-wait]');
+    if (resend) {
+        var left = parseInt(resend.dataset.wait, 10) || 0;
+        var label = resend.querySelector('[data-resend-label]');
+        var tick = setInterval(function () {
+            left--;
+            if (left <= 0) {
+                clearInterval(tick);
+                resend.disabled = false;
+                if (label) label.textContent = 'أرسل رمزاً جديداً';
+            } else if (label) {
+                label.textContent = 'رمزٌ جديد بعد ' + left + ' ث';
+            }
+        }, 1000);
+    }
+
     // ---- حالة الإرسال: قفل ضد النقر المزدوج ومؤشّر واضح
     document.querySelectorAll('[data-portal-form]').forEach(function (form) {
         form.addEventListener('submit', function () {

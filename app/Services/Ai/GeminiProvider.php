@@ -246,6 +246,8 @@ class GeminiProvider implements AiProvider
         // احتراماً لاختياره، ثم المركزيُّ المدفوع من .env.
         $keys = \App\Support\AiSettings::keyChain();
 
+        // مفتاحٌ مُرّر يدوياً للمنشئ (اختبارُ اتصالٍ بمفتاحٍ بعينه)
+        // يتقدّم؛ وفي التشغيل العاديّ رأسُ السلسلة هو حسابُ المالك
         if ($this->apiKey && !in_array($this->apiKey, $keys, true)) {
             array_unshift($keys, $this->apiKey);
         }

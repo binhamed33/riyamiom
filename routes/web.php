@@ -83,6 +83,12 @@ Route::post('/client-access', [App\Http\Controllers\ClientAccessController::clas
     ->middleware('throttle:20,10')->name('client.access.lookup');
 Route::post('/client-access/verify', [App\Http\Controllers\ClientAccessController::class, 'verify'])
     ->middleware('throttle:20,10')->name('client.access.verify');
+
+// الدخول برمز واتساب: طلبُ الرمز محدودٌ بشدّة — الإرسالُ رسالةٌ حقيقية
+Route::post('/client-access/otp', [App\Http\Controllers\ClientAccessController::class, 'otpSend'])
+    ->middleware('throttle:6,10')->name('client.access.otp');
+Route::post('/client-access/otp/verify', [App\Http\Controllers\ClientAccessController::class, 'otpVerify'])
+    ->middleware('throttle:20,10')->name('client.access.otp.verify');
 Route::post('/client-access/logout', [App\Http\Controllers\ClientAccessController::class, 'logout'])->name('client.access.logout');
 
 Route::middleware('client.portal')->prefix('client-access')->group(function () {

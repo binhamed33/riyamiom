@@ -90,6 +90,61 @@ class ClientAccessController extends Controller
         return back()->with('portal_error', __('portal.login.failed'));
     }
 
+    /**
+     * طلبُ رمز الدخول على واتساب.
+     *
+     * الهاتفُ يُحفظ في الجلسة لا في النموذج التالي: التحقّقُ يقرأ
+     * رقمَ الجلسة، فلا يستطيع زائرٌ أن يطلب رمزاً لرقمٍ ويتحقّق
+     * برقمٍ آخر.
+     */
+    public function otpSend(Request $request): RedirectResponse
+    {
+        abort_unless(ClientPortal::enabled(), 404);
+
+        $request->validate(['phone' => 'required|string|max:20']);
+
+        $result = \App\Services\ClientPortal\PortalOtp::request((string) $request->input('phone'));
+
+        if ($result['ok']) {
+            $request->session()->put('portal_otp_phone', (string) $request->input('phone'));
+            $request->session()->put('portal_otp_at', now()->timestamp);
+
+            return redirect()->route('client.access')->with('portal_notice', $result['message']);
+        }
+
+        return redirect()->route('client.access')
+            ->with('portal_error', $result['message'])
+            ->with('portal_otp_tab', true);
+    }
+
+    public function otpVerify(Request $request): RedirectResponse
+    {
+        abort_unless(ClientPortal::enabled(), 404);
+
+        $request->validate(['code' => 'required|string|max:10']);
+
+        $phone = (string) $request->session()->get('portal_otp_phone', '');
+
+        if ($phone === '') {
+            return redirect()->route('client.access')
+                ->with('portal_error', 'ابدأ بطلب الرمز أولاً.')
+                ->with('portal_otp_tab', true);
+        }
+
+        $result = \App\Services\ClientPortal\PortalOtp::verify($phone, (string) $request->input('code'));
+
+        if (!$result['ok']) {
+            return redirect()->route('client.access')
+                ->with('portal_error', $result['message'])
+                ->with('portal_otp_tab', true);
+        }
+
+        $request->session()->forget(['portal_otp_phone', 'portal_otp_at']);
+        $this->auth->establish($request, $result['client']);
+
+        return redirect()->route('client.portal.home')->with('portal_welcome', true);
+    }
+
     public function logout(Request $request): RedirectResponse
     {
         $this->auth->logout($request);
