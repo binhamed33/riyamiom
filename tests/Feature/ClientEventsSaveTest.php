@@ -39,6 +39,7 @@ class ClientEventsSaveTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+    private User $developer;
     private Client $client;
 
     protected function setUp(): void
@@ -46,6 +47,7 @@ class ClientEventsSaveTest extends TestCase
         parent::setUp();
 
         $this->admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $this->developer = User::factory()->create(['role' => 'developer', 'is_active' => true]);
 
         Setting::set(WhatsAppSettings::KEY_TOKEN, Crypt::encryptString('EAA-token-for-testing-0123456789'), 'whatsapp');
         Setting::set(WhatsAppSettings::KEY_PHONE_ID, '111222333', 'whatsapp');
@@ -86,7 +88,7 @@ class ClientEventsSaveTest extends TestCase
     {
         $this->assertFalse(ClientEvents::masterEnabled(), 'المفتاحُ الرئيسي مطفأٌ افتراضاً');
 
-        $html = $this->actingAs($this->admin)->get(route('settings.index'))->assertOk()->getContent();
+        $html = $this->actingAs($this->developer)->get(route('settings.index'))->assertOk()->getContent();
 
         $this->assertContains(ClientEvents::CASE_CREATED, $this->checkedTypes($html),
             'خانةُ «قضيةٌ جديدة» غيرُ مؤشَّرة — وحفظُ الصفحة كما هي يمسحها');
@@ -102,11 +104,11 @@ class ClientEventsSaveTest extends TestCase
     {
         Queue::fake();
 
-        $html = $this->actingAs($this->admin)->get(route('settings.index'))->getContent();
+        $html = $this->actingAs($this->developer)->get(route('settings.index'))->getContent();
         $checked = $this->checkedTypes($html);
 
         // ما يرسله المتصفّح: المؤشَّرُ وحده، والمفتاحُ الرئيسي الذي أشّره
-        $this->actingAs($this->admin)->post(route('settings.whatsapp.update'), [
+        $this->actingAs($this->developer)->post(route('settings.whatsapp.update'), [
             'cn_section' => '1',
             'cn_enabled' => '1',
             'cn_evt' => $checked,
@@ -132,7 +134,7 @@ class ClientEventsSaveTest extends TestCase
         ClientEvents::setMasterEnabled(true);
         ClientEvents::setEnabled(ClientEvents::CASE_CREATED, true);
 
-        $this->actingAs($this->admin)->post(route('settings.whatsapp.update'), [
+        $this->actingAs($this->developer)->post(route('settings.whatsapp.update'), [
             'wa_phone_number_id' => '111222333',
         ])->assertRedirect();
 
@@ -143,7 +145,7 @@ class ClientEventsSaveTest extends TestCase
     /** والإطفاءُ الصريح يبقى إطفاءً: المكتبُ صاحبُ القرار. */
     public function test_an_office_can_still_turn_a_single_type_off(): void
     {
-        $this->actingAs($this->admin)->post(route('settings.whatsapp.update'), [
+        $this->actingAs($this->developer)->post(route('settings.whatsapp.update'), [
             'cn_section' => '1',
             'cn_enabled' => '1',
             'cn_evt' => [ClientEvents::CASE_CREATED],
@@ -197,6 +199,61 @@ class ClientEventsSaveTest extends TestCase
         $this->assertTrue(ClientEvents::enabled(ClientEvents::SESSION_NEW));
         $this->assertFalse(ClientEvents::enabled(ClientEvents::CASE_CREATED),
             'الهجرةُ ألغت إطفاءً اختاره المكتب');
+    }
+
+
+    // ══════════ القفل على المطوّر ══════════
+
+    /**
+     * مديرُ المكتب يرى القسمَ ولا يبدّله.
+     *
+     * ═══ ولماذا الحارسُ عند المتحكّم لا في الشاشة ═══
+     *
+     * الخانةُ المعطَّلة لا تُرسَل أصلاً، فلو كان الحارسُ في الشاشة
+     * وحدها لكان حفظُ المدير يقرأ «لم يختر شيئاً» فيمسح العشرةَ —
+     * وهو العطلُ نفسُه بابٍ آخر.
+     */
+    public function test_an_office_admin_cannot_change_the_section_and_cannot_wipe_it(): void
+    {
+        $this->actingAs($this->developer)->post(route('settings.whatsapp.update'), [
+            'cn_section' => '1',
+            'cn_enabled' => '1',
+            'cn_evt' => [ClientEvents::CASE_CREATED, ClientEvents::SESSION_NEW],
+        ])->assertRedirect();
+
+        // المديرُ يحفظ الصفحةَ وقسمُها معطَّل: لا خانةَ تُرسَل
+        $this->actingAs($this->admin)->post(route('settings.whatsapp.update'), [
+            'cn_section' => '1',
+        ])->assertRedirect();
+
+        $this->assertTrue(ClientEvents::masterEnabled(), 'حفظُ المدير أطفأ المفتاح');
+        $this->assertTrue(ClientEvents::enabled(ClientEvents::CASE_CREATED), 'حفظُ المدير مسح الأنواع');
+        $this->assertTrue(ClientEvents::enabled(ClientEvents::SESSION_NEW));
+    }
+
+    /** ولا يشغّلها بنموذجٍ مصنوعٍ باليد. */
+    public function test_an_office_admin_cannot_turn_it_on_by_hand(): void
+    {
+        $this->actingAs($this->admin)->post(route('settings.whatsapp.update'), [
+            'cn_section' => '1',
+            'cn_enabled' => '1',
+            'cn_evt' => array_keys(ClientEvents::catalogue()),
+        ])->assertRedirect();
+
+        $this->assertFalse(ClientEvents::masterEnabled());
+    }
+
+    /** والشاشةُ تقول للمدير إنّها ليست له. */
+    public function test_the_screen_tells_the_admin_the_section_is_the_developers(): void
+    {
+        $html = $this->actingAs($this->admin)->get(route('settings.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('إشعارات الموكّل يضبطها المطوّر', $html);
+        $this->assertMatchesRegularExpression(
+            '/<input[^>]*name="cn_evt\[\]"[^>]*disabled/',
+            $html,
+            'خاناتُ الأنواع غيرُ معطَّلة على المدير',
+        );
     }
 
     private function repair(): void

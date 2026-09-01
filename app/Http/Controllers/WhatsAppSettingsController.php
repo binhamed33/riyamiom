@@ -132,7 +132,10 @@ class WhatsAppSettingsController extends Controller
         // فالعلامةُ المخفيّة تفصل بينهما: لا حضورَ لها ⇐ لا قرار.
         $chosen = [];
 
-        if ($request->has('cn_section')) {
+        // والقفلُ عند المتحكّم لا في الشاشة: الخانةُ المعطَّلة لا
+        // تُرسَل، ونموذجٌ مصنوعٌ باليد يُرسل ما شاء — فلو كان الحارسُ
+        // في الشاشة وحدها لكان لا حارس.
+        if ($request->has('cn_section') && !\App\Support\ClientEvents::lockedForOffice()) {
             \App\Support\ClientEvents::setMasterEnabled($request->boolean('cn_enabled'));
 
             $chosen = (array) ($validated['cn_evt'] ?? []);

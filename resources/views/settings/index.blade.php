@@ -508,15 +508,19 @@
                     <span class="text-[11px] text-gray-400">تنبيهٌ قصير + رابطٌ آمن للبوابة — بلا تفاصيل في الرسالة</span>
                 </div>
 
+                @php $cnLocked = \App\Support\ClientEvents::lockedForOffice(); @endphp
+
                 {{-- المفتاحُ الرئيسي: لا يُراسَل موكّلٌ واحد قبل تشغيله.
                      وحالتُه ظاهرةٌ كما هي — لا خاناتٌ مؤشَّرة على ميزةٍ
                      لا تعمل. --}}
-                <label class="flex items-start gap-2.5 p-3 rounded-lg border-2 mb-3 cursor-pointer
+                <label class="flex items-start gap-2.5 p-3 rounded-lg border-2 mb-3 {{ $cnLocked ? 'cursor-not-allowed' : 'cursor-pointer' }}
                               {{ \App\Support\ClientEvents::masterEnabled() ? 'border-gold/50 bg-gold/5' : 'border-gray-200' }}">
                     <input type="checkbox" name="cn_enabled" value="1" class="mt-0.5 rounded border-gray-300"
-                           @checked(\App\Support\ClientEvents::masterEnabled())>
+                           @checked(\App\Support\ClientEvents::masterEnabled()) @disabled($cnLocked)>
                     <span class="min-w-0">
-                        <span class="block text-sm font-bold text-gray-800">تشغيل إشعارات الموكّل</span>
+                        <span class="block text-sm font-bold text-gray-800">تشغيل إشعارات الموكّل
+                            @if($cnLocked)<span class="text-[10px] font-normal text-gray-400">— يضبطها المطوّر</span>@endif
+                        </span>
                         <span class="block text-[11px] text-gray-500 leading-relaxed">
                             مطفأةٌ حتى تشغّلها. وقبل تشغيلها لا تصل الموكّلين رسالةٌ واحدة، ولا يُقيَّد لهم إشعارٌ في البوابة.
                         </span>
@@ -534,9 +538,9 @@
 
                 <div class="grid sm:grid-cols-2 gap-2 {{ \App\Support\ClientEvents::masterEnabled() ? '' : 'opacity-50' }}">
                     @foreach(\App\Support\ClientEvents::catalogue() as $evtKey => $evt)
-                        <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-gray-200 cursor-pointer hover:border-gold/40">
+                        <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-gray-200 {{ $cnLocked ? 'bg-gray-50 cursor-not-allowed' : 'cursor-pointer hover:border-gold/40' }}">
                             <input type="checkbox" name="cn_evt[]" value="{{ $evtKey }}" class="mt-0.5 rounded border-gray-300"
-                                   @checked(\App\Support\ClientEvents::chosen($evtKey))>
+                                   @checked(\App\Support\ClientEvents::chosen($evtKey)) @disabled($cnLocked)>
                             <span class="min-w-0">
                                 <span class="block text-xs font-semibold text-gray-800">{{ $evt['label'] }}</span>
                                 <span class="block text-[11px] text-gray-500 leading-relaxed">{{ $evt['hint'] }}</span>
@@ -546,18 +550,23 @@
                 </div>
 
                 <div class="mt-3 grid sm:grid-cols-2 gap-3 items-end">
-                    <label class="flex items-center gap-2 text-xs text-gray-700">
+                    <label class="flex items-center gap-2 text-xs text-gray-700 {{ $cnLocked ? 'cursor-not-allowed' : '' }}">
                         <input type="checkbox" name="cn_links_enabled" value="1" class="rounded border-gray-300"
-                               @checked(\App\Services\ClientPortal\PortalLinks::enabled())>
+                               @checked(\App\Services\ClientPortal\PortalLinks::enabled()) @disabled($cnLocked)>
                         رابط دخولٍ مباشر في الرسالة
                     </label>
                     <div>
                         <label class="text-xs font-bold text-gray-500">صلاحية الرابط (ساعة)</label>
                         <input type="number" name="cn_links_ttl_hours" min="1" max="720"
                                value="{{ \App\Services\ClientPortal\PortalLinks::ttlHours() }}"
-                               class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm">
+                               class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm{{ $cnLocked ? ' bg-gray-50 text-gray-500 cursor-not-allowed' : '' }}"
+                               @disabled($cnLocked)>
                     </div>
                 </div>
+
+                @if($cnLocked)
+                    <p class="text-[11px] text-gray-500 mt-2">إشعارات الموكّل يضبطها المطوّر — للتغيير راسله.</p>
+                @endif
 
                 <p class="text-[11px] text-gray-500 leading-relaxed mt-2 bg-gray-50 border border-gray-200 rounded-lg p-2.5">
                     الرابط يُستعمل <span class="font-semibold">مرّةً واحدة</span> وتنتهي صلاحيته بالمدّة أعلاه.
