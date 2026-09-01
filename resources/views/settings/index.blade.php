@@ -523,11 +523,20 @@
                     </span>
                 </label>
 
+                {{-- علامةُ حضور القسم.
+
+                     نموذجٌ لا يحمل هذه الخانة لا يُبدّل اختياراتِ
+                     الأنواع: بلا هذه العلامة كان أيُّ حفظٍ من نموذجٍ
+                     لا يعرض هذا القسم يقرأ «لم يُختر شيء» فيكتب
+                     صفراً على العشرة — وهو ما أطفأ حدودَ الأمان من
+                     قبل بنفس الطريقة. --}}
+                <input type="hidden" name="cn_section" value="1">
+
                 <div class="grid sm:grid-cols-2 gap-2 {{ \App\Support\ClientEvents::masterEnabled() ? '' : 'opacity-50' }}">
                     @foreach(\App\Support\ClientEvents::catalogue() as $evtKey => $evt)
                         <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-gray-200 cursor-pointer hover:border-gold/40">
                             <input type="checkbox" name="cn_evt[]" value="{{ $evtKey }}" class="mt-0.5 rounded border-gray-300"
-                                   @checked(\App\Support\ClientEvents::enabled($evtKey))>
+                                   @checked(\App\Support\ClientEvents::chosen($evtKey))>
                             <span class="min-w-0">
                                 <span class="block text-xs font-semibold text-gray-800">{{ $evt['label'] }}</span>
                                 <span class="block text-[11px] text-gray-500 leading-relaxed">{{ $evt['hint'] }}</span>

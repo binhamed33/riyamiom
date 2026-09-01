@@ -277,6 +277,32 @@ class WhatsAppEvolutionTest extends TestCase
         $this->assertFalse($result->retryable);
     }
 
+    /**
+     * السببُ الحقيقي يُخزَّن لا كلمةُ «Bad Request».
+     *
+     * ═══ لماذا يهمّ ═══
+     *
+     * جسمُ الخطأ عند Evolution يضع النصَّ في response.message، وفي
+     * أعلاه «error»: «Bad Request» لا غير. فكان يُخزَّن ذلك ويُعرض
+     * للمكتب حين يسأل «لماذا لم تصل؟» — وهو لا يفرّق بين رقمٍ ليس
+     * على واتساب وبين اتصالٍ انقطع.
+     */
+    public function test_the_real_reason_is_stored_not_the_generic_bad_request(): void
+    {
+        Http::fake(['*' => Http::response([
+            'status' => 400,
+            'error' => 'Bad Request',
+            'response' => ['message' => ['Connection Closed']],
+        ], 400)]);
+
+        $provider = new EvolutionProvider();
+        $result = $provider->sendText('96891234567', 'أهلاً');
+
+        $this->assertFalse($result->ok);
+        $this->assertStringContainsString('Connection Closed', (string) $provider->getLastError());
+        $this->assertStringNotContainsString('Bad Request', (string) $provider->getLastError());
+    }
+
     /** وانقطاعُ الشبكة عابر — تُعاد ولا تُسقَط رسالةُ موكّل. */
     public function test_a_network_drop_is_retryable(): void
     {

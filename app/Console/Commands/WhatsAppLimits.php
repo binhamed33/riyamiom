@@ -135,6 +135,13 @@ class WhatsAppLimits extends Command
             'remaining_today' => SendingGuard::remainingToday(),
             'held_now' => $held,
             'notifications_master' => ClientEvents::masterEnabled(),
+            // عددُ الأنواع المشغَّلة: مفتاحٌ مضيءٌ وصفرُ أنواعٍ هي
+            // بصمةُ المسح الذي كان يقع لحظةَ التشغيل — ومظهرُها
+            // للمكتب «كلُّ شيءٍ مفعَّل ولا تصل رسالة»
+            'notification_types_on' => count(array_filter(
+                ClientEvents::types(),
+                static fn (string $type): bool => ClientEvents::chosen($type),
+            )),
             'provider' => (string) config('whatsapp.default', 'meta'),
             'connected' => WhatsAppSettings::isConnected(),
             'policy_ok' => $drift === [],
@@ -173,6 +180,10 @@ class WhatsAppLimits extends Command
         $this->row('إشعارات الموكّل', $r['notifications_master']
             ? '<fg=green>مشغّلة</>'
             : '<fg=yellow>مطفأة — لا يصل الموكّلَ شيء</>');
+
+        $this->row('أنواعٌ مشغَّلة', $r['notifications_master'] && (int) $r['notification_types_on'] === 0
+            ? '<fg=red>لا شيء — مفتاحٌ مضيءٌ بلا نوعٍ واحد</>'
+            : (string) $r['notification_types_on']);
 
         $this->row('الرقم مربوط', $yes((bool) $r['connected']));
 

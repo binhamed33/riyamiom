@@ -559,7 +559,21 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
     protected function failureFrom(Response $response): void
     {
-        $message = $response->json('message') ?? $response->json('error') ?? '';
+        // ═══ النصُّ الحقيقي في response.message لا في message ═══
+        //
+        // جسمُ الخطأ عند Evolution v2 هكذا:
+        //   {"status":400,"error":"Bad Request",
+        //    "response":{"message":["Connection Closed"]}}
+        //
+        // فلا مفتاحَ «message» في الأعلى، وكان يقع الاختيارُ على
+        // «error» فيُخزَّن السببُ «Bad Request» — وهي لا تفرّق بين
+        // «الرقم ليس على واتساب» (عطلٌ دائم) و«انقطع الاتصال»
+        // (عابرٌ تُعاد معه المحاولة). وهذا هو ما يُعرض للمكتب حين
+        // يسأل: لماذا لم تصل؟
+        $message = $response->json('response.message')
+            ?? $response->json('message')
+            ?? $response->json('error')
+            ?? '';
 
         if (is_array($message)) {
             $message = implode(' — ', array_map(static fn ($m): string => (string) $m, $message));

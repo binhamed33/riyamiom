@@ -43,6 +43,7 @@ class WhatsAppSettingsController extends Controller
             'wa_guard_quiet_from' => ['nullable', 'integer', 'min:0', 'max:23'],
             'wa_guard_quiet_to' => ['nullable', 'integer', 'min:0', 'max:23'],
             'wa_inbox_visible' => ['nullable'],
+            'cn_section' => ['nullable'],
             'cn_enabled' => ['nullable'],
             'cn_evt' => ['nullable', 'array'],
             'cn_evt.*' => ['string', 'max:40'],
@@ -121,26 +122,40 @@ class WhatsAppSettingsController extends Controller
             }
         }
 
-        \App\Support\ClientEvents::setMasterEnabled($request->boolean('cn_enabled'));
+        // ═══ لا يُكتب قرارٌ عن قسمٍ لم يُرسَل ═══
+        //
+        // الخانةُ غيرُ المؤشَّرة لا تُرسَل في HTML، فغيابُ الاختيارات
+        // يحتمل معنيين: «أطفأ المكتبُ كلَّ نوع» و«النموذجُ لا يعرض
+        // هذا القسم أصلاً». وقراءةُ الثاني على أنّه الأوّل هي التي
+        // أطفأت الأنواعَ العشرة كلَّها لحظةَ تشغيل المفتاح الرئيسي.
+        //
+        // فالعلامةُ المخفيّة تفصل بينهما: لا حضورَ لها ⇐ لا قرار.
+        $chosen = [];
 
-        $chosen = (array) ($validated['cn_evt'] ?? []);
+        if ($request->has('cn_section')) {
+            \App\Support\ClientEvents::setMasterEnabled($request->boolean('cn_enabled'));
 
-        foreach (\App\Support\ClientEvents::types() as $eventType) {
-            \App\Support\ClientEvents::setEnabled($eventType, in_array($eventType, $chosen, true));
-        }
+            $chosen = (array) ($validated['cn_evt'] ?? []);
 
-        \App\Models\Setting::set(
-            \App\Services\ClientPortal\PortalLinks::KEY_ENABLED,
-            $request->boolean('cn_links_enabled') ? '1' : '0',
-            \App\Support\ClientEvents::GROUP,
-        );
+            foreach (\App\Support\ClientEvents::types() as $eventType) {
+                \App\Support\ClientEvents::setEnabled($eventType, in_array($eventType, $chosen, true));
+            }
 
-        if (isset($validated['cn_links_ttl_hours'])) {
+            // الرابطُ في القسم نفسِه، فيتبع حضورَه: نموذجٌ لا يعرضه
+            // لا يُطفئه
             \App\Models\Setting::set(
-                \App\Services\ClientPortal\PortalLinks::KEY_TTL_HOURS,
-                (string) $validated['cn_links_ttl_hours'],
+                \App\Services\ClientPortal\PortalLinks::KEY_ENABLED,
+                $request->boolean('cn_links_enabled') ? '1' : '0',
                 \App\Support\ClientEvents::GROUP,
             );
+
+            if (isset($validated['cn_links_ttl_hours'])) {
+                \App\Models\Setting::set(
+                    \App\Services\ClientPortal\PortalLinks::KEY_TTL_HOURS,
+                    (string) $validated['cn_links_ttl_hours'],
+                    \App\Support\ClientEvents::GROUP,
+                );
+            }
         }
 
         $this->audit('whatsapp_settings_updated', [
