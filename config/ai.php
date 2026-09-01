@@ -46,7 +46,7 @@ return [
             'implemented' => true,
             'driver' => \App\Services\Ai\GeminiProvider::class,
             'key_url' => 'https://aistudio.google.com/apikey',
-            'key_prefix_hint' => 'AIza…',
+            'key_prefix_hint' => 'AIza… أو AQ.…',
             'default_model' => env('GEMINI_MODEL', 'gemini-flash-latest'),
             // gemini-2.5-flash أُزيل من هذه القائمة عمداً: Google ردّت
             // حرفياً «no longer available to new users» — يظهر في قائمة
