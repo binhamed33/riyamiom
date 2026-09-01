@@ -239,9 +239,19 @@ class GeminiProvider implements AiProvider
             return null;
         }
 
+        // ═══ قائمةُ نجاةٍ محفورةٌ لا تُبتر ═══
+        //
+        // ملفّاتُ البيئة على المكاتب تحمل قوائمَ قديمة — وُجد فيها
+        // «gemini-3.6-flash» الذي لا وجود له و«gemini-2.5-flash»
+        // المتقاعدُ عن المشاريع الجديدة — فكانت تخنق افتراضَ الكود
+        // وتسدّ الرحلةَ كلَّها: غارقٌ ثم وهمٌ ثم متقاعدٌ ثم لا شيء.
+        // فالبيئةُ ترتّب أوّلَ السلسلة، وذيلُها المجرَّبُ الحيُّ لا
+        // يسقط بحال. (جُرّب حيّاً بحمولة النظام كاملةً وأجاب.)
         $modelChain = array_values(array_unique(array_filter([
             $this->model,
             ...config('ai.providers.gemini.fallback_models', []),
+            'gemini-3.1-flash-lite',
+            'gemini-flash-lite-latest',
         ])));
 
         // ═══ سلسلةُ المفاتيح فوق سلسلة النماذج ═══
