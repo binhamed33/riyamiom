@@ -243,17 +243,37 @@ class ClientEventsSaveTest extends TestCase
         $this->assertFalse(ClientEvents::masterEnabled());
     }
 
-    /** والشاشةُ تقول للمدير إنّها ليست له. */
+    /**
+     * والشاشةُ تقول للمدير إنّها ليست له — بلا حقلٍ واحدٍ يُرسله.
+     *
+     * ولا خانةٌ معطَّلة: المتصفّح يرسمها رماديةً مهما كانت مؤشَّرة،
+     * فيبدو المشغَّلُ مطفأً. والقفلُ معنىً غيرُ الإطفاء.
+     */
     public function test_the_screen_tells_the_admin_the_section_is_the_developers(): void
     {
+        ClientEvents::setMasterEnabled(true);
+
         $html = $this->actingAs($this->admin)->get(route('settings.index'))->assertOk()->getContent();
 
         $this->assertStringContainsString('إشعارات الموكّل يضبطها المطوّر', $html);
-        $this->assertMatchesRegularExpression(
-            '/<input[^>]*name="cn_evt\[\]"[^>]*disabled/',
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/<input[^>]*name="cn_evt\[\]"/',
             $html,
-            'خاناتُ الأنواع غيرُ معطَّلة على المدير',
+            'حقلٌ يُرسله المديرُ في قسمٍ ليس له',
         );
+
+        // والحالةُ مقروءةٌ رغم القفل: «قضيةٌ جديدة» مشغَّلة
+        $this->assertStringContainsString('aria-label="مشغَّل"', $html);
+    }
+
+    /** والمطوّرُ يرى الخاناتِ حقيقيّةً يبدّلها. */
+    public function test_the_developer_still_gets_real_checkboxes(): void
+    {
+        $html = $this->actingAs($this->developer)->get(route('settings.index'))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/<input[^>]*name="cn_evt\[\]"/', $html);
+        $this->assertStringNotContainsString('إشعارات الموكّل يضبطها المطوّر', $html);
     }
 
     private function repair(): void

@@ -513,10 +513,16 @@
                 {{-- المفتاحُ الرئيسي: لا يُراسَل موكّلٌ واحد قبل تشغيله.
                      وحالتُه ظاهرةٌ كما هي — لا خاناتٌ مؤشَّرة على ميزةٍ
                      لا تعمل. --}}
-                <label class="flex items-start gap-2.5 p-3 rounded-lg border-2 mb-3 {{ $cnLocked ? 'cursor-not-allowed' : 'cursor-pointer' }}
-                              {{ \App\Support\ClientEvents::masterEnabled() ? 'border-gold/50 bg-gold/5' : 'border-gray-200' }}">
-                    <input type="checkbox" name="cn_enabled" value="1" class="mt-0.5 rounded border-gray-300"
-                           @checked(\App\Support\ClientEvents::masterEnabled()) @disabled($cnLocked)>
+                @php $cnMaster = \App\Support\ClientEvents::masterEnabled(); @endphp
+
+                <label class="flex items-start gap-2.5 p-3 rounded-lg border-2 mb-3 {{ $cnLocked ? 'cursor-default' : 'cursor-pointer' }}
+                              {{ $cnMaster ? 'border-gold/50 bg-gold/5' : 'border-gray-200' }}">
+                    @if($cnLocked)
+                        @include('settings.partials.state-mark', ['on' => $cnMaster])
+                    @else
+                        <input type="checkbox" name="cn_enabled" value="1" class="mt-0.5 rounded border-gray-300"
+                               @checked($cnMaster)>
+                    @endif
                     <span class="min-w-0">
                         <span class="block text-sm font-bold text-gray-800">تشغيل إشعارات الموكّل
                             @if($cnLocked)<span class="text-[10px] font-normal text-gray-400">— يضبطها المطوّر</span>@endif
@@ -538,9 +544,24 @@
 
                 <div class="grid sm:grid-cols-2 gap-2 {{ \App\Support\ClientEvents::masterEnabled() ? '' : 'opacity-50' }}">
                     @foreach(\App\Support\ClientEvents::catalogue() as $evtKey => $evt)
-                        <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-gray-200 {{ $cnLocked ? 'bg-gray-50 cursor-not-allowed' : 'cursor-pointer hover:border-gold/40' }}">
-                            <input type="checkbox" name="cn_evt[]" value="{{ $evtKey }}" class="mt-0.5 rounded border-gray-300"
-                                   @checked(\App\Support\ClientEvents::chosen($evtKey)) @disabled($cnLocked)>
+                        @php $evtOn = \App\Support\ClientEvents::chosen($evtKey); @endphp
+
+                        {{-- اللونُ يتبع الحالةَ لا القفل.
+
+                             كان المقفولُ كلُّه رمادياً، فبدا المشغَّلُ
+                             مطفأً: «لونهم يوحي أنّهم غير فعّالين».
+                             والقفلُ يُقال بجملةٍ واحدة تحت القسم، أمّا
+                             البطاقةُ فتقول شيئاً واحداً: أمشغّلٌ هذا
+                             النوع أم لا. --}}
+                        <label class="flex items-start gap-2.5 p-2.5 rounded-lg border
+                                      {{ $evtOn ? 'border-gold/50 bg-gold/5' : 'border-gray-200' }}
+                                      {{ $cnLocked ? 'cursor-default' : 'cursor-pointer hover:border-gold/40' }}">
+                            @if($cnLocked)
+                                @include('settings.partials.state-mark', ['on' => $evtOn])
+                            @else
+                                <input type="checkbox" name="cn_evt[]" value="{{ $evtKey }}" class="mt-0.5 rounded border-gray-300"
+                                       @checked($evtOn)>
+                            @endif
                             <span class="min-w-0">
                                 <span class="block text-xs font-semibold text-gray-800">{{ $evt['label'] }}</span>
                                 <span class="block text-[11px] text-gray-500 leading-relaxed">{{ $evt['hint'] }}</span>
@@ -550,17 +571,28 @@
                 </div>
 
                 <div class="mt-3 grid sm:grid-cols-2 gap-3 items-end">
-                    <label class="flex items-center gap-2 text-xs text-gray-700 {{ $cnLocked ? 'cursor-not-allowed' : '' }}">
-                        <input type="checkbox" name="cn_links_enabled" value="1" class="rounded border-gray-300"
-                               @checked(\App\Services\ClientPortal\PortalLinks::enabled()) @disabled($cnLocked)>
+                    <label class="flex items-center gap-2 text-xs text-gray-700 {{ $cnLocked ? 'cursor-default' : '' }}">
+                        @if($cnLocked)
+                            @include('settings.partials.state-mark', ['on' => \App\Services\ClientPortal\PortalLinks::enabled(), 'top' => false])
+                        @else
+                            <input type="checkbox" name="cn_links_enabled" value="1" class="rounded border-gray-300"
+                                   @checked(\App\Services\ClientPortal\PortalLinks::enabled())>
+                        @endif
                         رابط دخولٍ مباشر في الرسالة
                     </label>
                     <div>
                         <label class="text-xs font-bold text-gray-500">صلاحية الرابط (ساعة)</label>
-                        <input type="number" name="cn_links_ttl_hours" min="1" max="720"
-                               value="{{ \App\Services\ClientPortal\PortalLinks::ttlHours() }}"
-                               class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm{{ $cnLocked ? ' bg-gray-50 text-gray-500 cursor-not-allowed' : '' }}"
-                               @disabled($cnLocked)>
+                        @if($cnLocked)
+                            {{-- رقمٌ يُقرأ لا حقلٌ معطَّل: الحقلُ الرمادي
+                                 يقول «لا قيمة»، والرقمُ يقول قيمتَه. --}}
+                            <p class="mt-1 px-3 py-2 text-sm font-semibold text-gray-800">
+                                {{ \App\Services\ClientPortal\PortalLinks::ttlHours() }}
+                            </p>
+                        @else
+                            <input type="number" name="cn_links_ttl_hours" min="1" max="720"
+                                   value="{{ \App\Services\ClientPortal\PortalLinks::ttlHours() }}"
+                                   class="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm">
+                        @endif
                     </div>
                 </div>
 
