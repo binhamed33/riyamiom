@@ -1023,7 +1023,10 @@ document.addEventListener('alpine:init', () => {
                         <option value="paid">{{ __('app.paid') }}</option>
                     </select>
                     <label class="flex items-center gap-2 text-[11px] text-gray-600 bg-white border border-gray-200 rounded-lg px-3 py-2">
-                        <input type="checkbox" name="client_visible" value="1" class="rounded border-gray-300 text-gold focus:ring-gold/40">
+                        {{-- مؤشَّرةٌ افتراضاً: الرسمُ يُضاف ليُطالَب به الموكّل،
+                             وإخفاؤه هو الاستثناءُ الذي يُقصَد قصداً --}}
+                        <input type="hidden" name="client_visible" value="0">
+                        <input type="checkbox" name="client_visible" value="1" checked class="rounded border-gray-300 text-gold focus:ring-gold/40">
                         {{ __('app.show_to_client') }}
                     </label>
                     <input type="text" name="description" maxlength="500" placeholder="{{ __('app.description') }}"

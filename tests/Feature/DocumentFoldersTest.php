@@ -174,6 +174,159 @@ class DocumentFoldersTest extends TestCase
         $this->assertNull($doc->fresh()->case_folder_id, 'لم يُنقل المستند');
     }
 
+
+    // ══════════ الشجرة: مجلدٌ داخل مجلد ══════════
+
+    /**
+     * «يضيف مجلداً، يدخله، يضيف فيه» — الرحلةُ كما طُلبت حرفاً حرفاً.
+     */
+    public function test_a_folder_is_born_inside_the_open_folder_and_is_entered(): void
+    {
+        $case = $this->makeCase();
+
+        $this->actingAs($this->lawyer)
+            ->post(route('case-folders.store', $case), ['name' => 'مذكرات']);
+
+        $parent = CaseFolder::where('name', 'مذكرات')->firstOrFail();
+
+        // من داخل «مذكرات» يُنشأ «استئناف» — فيولد فيها ويُفتح فوراً
+        $this->actingAs($this->lawyer)
+            ->post(route('case-folders.store', $case), [
+                'name' => 'استئناف',
+                'parent_id' => $parent->id,
+            ])
+            ->assertRedirect(route('documents.index', [
+                'case_id' => $case->id,
+                'folder_id' => CaseFolder::where('name', 'استئناف')->value('id'),
+            ]));
+
+        $child = CaseFolder::where('name', 'استئناف')->firstOrFail();
+        $this->assertSame($parent->id, (int) $child->parent_id);
+    }
+
+    /** كلُّ مستوىً يعرض أبناءه وحدهم — لا الشجرةَ مبسوطةً. */
+    public function test_each_level_lists_its_own_children_only(): void
+    {
+        $case = $this->makeCase();
+        $parent = CaseFolder::create(['case_id' => $case->id, 'name' => 'مذكرات', 'sort' => 1]);
+        $child = CaseFolder::create(['case_id' => $case->id, 'parent_id' => $parent->id, 'name' => 'استئنافات', 'sort' => 2]);
+
+        // الجذر: يُرى الأبُ ولا يُرى الابن
+        $root = $this->actingAs($this->lawyer)
+            ->get(route('documents.index', ['case_id' => $case->id]))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('مذكرات', $root);
+        $this->assertStringNotContainsString('استئنافات', $root);
+
+        // داخل الأب: يُرى الابنُ وشريطُ الموضع يسمّي المفتوح
+        $inside = $this->actingAs($this->lawyer)
+            ->get(route('documents.index', ['case_id' => $case->id, 'folder_id' => $parent->id]))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('استئنافات', $inside);
+        $this->assertStringContainsString('سيُحفظ داخل', $inside, 'الرفعُ لا يقول أين سيقع');
+    }
+
+    /** الرفعُ من داخل مجلدٍ يقع فيه — لا في «عام» ثم يُنقل يدوياً. */
+    public function test_an_upload_lands_in_the_open_folder(): void
+    {
+        $case = $this->makeCase();
+        $folder = CaseFolder::create(['case_id' => $case->id, 'name' => 'سندات', 'sort' => 1]);
+
+        $this->actingAs($this->lawyer)->post(route('documents.store'), [
+            'case_id' => $case->id,
+            'case_folder_id' => $folder->id,
+            'title' => 'سند قبض',
+            'file' => \Illuminate\Http\UploadedFile::fake()->create('receipt.pdf', 64, 'application/pdf'),
+            'access_level' => 'all',
+        ]);
+
+        $this->assertDatabaseHas('documents', [
+            'title' => 'سند قبض',
+            'case_folder_id' => $folder->id,
+        ]);
+    }
+
+    /** أبٌ من قضيةٍ أخرى يُرفض — شجرةُ قضيةٍ لا تطلّ على غيرها. */
+    public function test_a_parent_from_another_case_is_refused(): void
+    {
+        $caseA = $this->makeCase('قضية أ');
+        $caseB = $this->makeCase('قضية ب');
+        $foreign = CaseFolder::create(['case_id' => $caseB->id, 'name' => 'مجلد ب', 'sort' => 1]);
+
+        $this->actingAs($this->lawyer)
+            ->post(route('case-folders.store', $caseA), [
+                'name' => 'دخيل',
+                'parent_id' => $foreign->id,
+            ])
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseMissing('case_folders', ['name' => 'دخيل']);
+    }
+
+    /** والعمقُ محدود: بعد الطبقة الخامسة يُرفض بجملةٍ لا بصمت. */
+    public function test_nesting_stops_at_the_depth_cap(): void
+    {
+        $case = $this->makeCase();
+        $node = null;
+
+        for ($i = 1; $i <= CaseFolder::MAX_DEPTH; $i++) {
+            $node = CaseFolder::create([
+                'case_id' => $case->id,
+                'parent_id' => $node?->id,
+                'name' => 'طبقة ' . $i,
+                'sort' => $i,
+            ]);
+        }
+
+        $this->actingAs($this->lawyer)
+            ->post(route('case-folders.store', $case), [
+                'name' => 'أعمق من اللازم',
+                'parent_id' => $node->id,
+            ])
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseMissing('case_folders', ['name' => 'أعمق من اللازم']);
+    }
+
+    /** الاسمُ يتكرّر بين فرعين ويُمنع بين الإخوة — لبسُ الجيرة وحده لبس. */
+    public function test_the_same_name_lives_in_two_branches_but_not_twice_in_one(): void
+    {
+        $case = $this->makeCase();
+        $memos = CaseFolder::create(['case_id' => $case->id, 'name' => 'مذكرات', 'sort' => 1]);
+        $bonds = CaseFolder::create(['case_id' => $case->id, 'name' => 'سندات', 'sort' => 2]);
+
+        $this->actingAs($this->lawyer)
+            ->post(route('case-folders.store', $case), ['name' => '2026', 'parent_id' => $memos->id])
+            ->assertSessionHas('success');
+
+        $this->actingAs($this->lawyer)
+            ->post(route('case-folders.store', $case), ['name' => '2026', 'parent_id' => $bonds->id])
+            ->assertSessionHas('success');
+
+        $this->actingAs($this->lawyer)
+            ->post(route('case-folders.store', $case), ['name' => '2026', 'parent_id' => $memos->id])
+            ->assertSessionHas('error');
+
+        $this->assertSame(2, CaseFolder::where('name', '2026')->count());
+    }
+
+    /** حذفُ مجلدٍ وسيطٍ يرقّي محتواه إلى أبيه — لا إلى «عام» بعيداً. */
+    public function test_deleting_a_middle_folder_promotes_children_and_documents_to_its_parent(): void
+    {
+        $case = $this->makeCase();
+        $memos = CaseFolder::create(['case_id' => $case->id, 'name' => 'مذكرات', 'sort' => 1]);
+        $drafts = CaseFolder::create(['case_id' => $case->id, 'parent_id' => $memos->id, 'name' => 'مسودات', 'sort' => 2]);
+        $old = CaseFolder::create(['case_id' => $case->id, 'parent_id' => $drafts->id, 'name' => 'قديم', 'sort' => 3]);
+        $doc = $this->makeDoc($case, $drafts->id);
+
+        $this->actingAs($this->lawyer)->delete(route('case-folders.destroy', $drafts));
+
+        $this->assertSame($memos->id, (int) $doc->refresh()->case_folder_id, 'المستندُ لم يرتقِ إلى الجدّ');
+        $this->assertSame($memos->id, (int) $old->refresh()->parent_id, 'المجلدُ الفرعيُّ لم يرتقِ');
+    }
+
     public function test_the_documents_page_offers_both_explorer_views(): void
     {
         $case = $this->makeCase();
@@ -288,10 +441,15 @@ class DocumentFoldersTest extends TestCase
         $case = $this->makeCase();
         $from = route('documents.index', ['case_id' => $case->id]);
 
+        // الإنشاءُ يفتح المجلدَ فوراً: من أنشأه أنشأه ليضع فيه شيئاً
+        // الآن — لا ليبحث عنه في الشريط بعد إنشائه
         $this->actingAs($this->lawyer)
             ->from($from)
             ->post(route('case-folders.store', $case), ['name' => 'ملف القضية 123'])
-            ->assertRedirect($from)
+            ->assertRedirect(route('documents.index', [
+                'case_id' => $case->id,
+                'folder_id' => \App\Models\CaseFolder::where('name', 'ملف القضية 123')->value('id'),
+            ]))
             ->assertSessionHas('success');
 
         $this->assertDatabaseHas('case_folders', [

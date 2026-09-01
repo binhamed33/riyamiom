@@ -228,7 +228,13 @@ class FinanceController extends Controller
             'date' => 'required|date',
             'description' => 'nullable|string',
         ]);
-        $data['client_visible'] = (bool) ($data['client_visible'] ?? false);
+        // نموذجٌ لا يحمل الخانة لا يقرّر عنها: «?? false» هنا كان يخفي
+        // الرسمَ عن الموكّل مع كلِّ تعديلٍ من نموذجٍ بلا خانة — وهو
+        // نفسُ العطل الذي مسح أنواعَ الإشعارات لحظةَ تشغيلها
+        if (array_key_exists('client_visible', $data)) {
+            $data['client_visible'] = (bool) $data['client_visible'];
+        }
+
         $fee->update($data);
         return redirect()->route('finance.index', ['tab' => 'fees'])->with('success', 'تم تحديث الرسم');
     }

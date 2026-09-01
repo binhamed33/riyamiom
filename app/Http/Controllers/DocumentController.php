@@ -107,18 +107,36 @@ class DocumentController extends Controller
         $documentTypes = \App\Models\DocumentType::active()->pluck('name');
         $untypedCount = Document::where(fn ($q) => $q->whereNull('doc_type')->orWhere('doc_type', ''))->count();
 
-        // مجلدات القضية المختارة وحدها: المجلد ينتمي إلى قضية، فعرضُ مجلدات
-        // كل القضايا معاً يخلط تنظيم قضيةٍ بأخرى ويجعل «مجلد جديد» بلا وجهة.
-        // و`withCount` يمنع استعلاماً لكل مجلد عند عرض عدده.
-        $folders = $selectedCaseId > 0
-            ? \App\Models\CaseFolder::where('case_id', $selectedCaseId)
-                ->withCount('documents')
-                ->orderBy('sort')->orderBy('name')->get()
-            : collect();
-
         $selectedFolderId = $request->has('folder_id') && $request->input('folder_id') !== ''
             ? (int) $request->input('folder_id')
             : null;
+
+        // المجلدُ المفتوح — ويُتحقَّق أنّه من القضية المختارة: معرّفُ
+        // مجلدٍ من قضيةٍ أخرى في العنوان يُهمَل بصمت، لا يُعرض شريطُ
+        // موضعٍ لقضيةٍ غير التي في الفلتر
+        $currentFolder = ($selectedFolderId ?? 0) > 0 && $selectedCaseId > 0
+            ? \App\Models\CaseFolder::where('id', $selectedFolderId)
+                ->where('case_id', $selectedCaseId)
+                ->first()
+            : null;
+
+        if (($selectedFolderId ?? 0) > 0 && !$currentFolder) {
+            $selectedFolderId = null;
+        }
+
+        // مستوىً واحدٌ يُعرض لا الشجرةُ كلُّها: في الجذر مجلداتُ الجذر،
+        // وداخل مجلدٍ أبناؤه وحدهم — فالمكانُ الواحد لا يعرض إلا ما
+        // فيه، كما في أيّ مستكشف ملفات. و`withCount` يمنع استعلاماً
+        // لكل مجلد عند عرض عدده.
+        $folders = $selectedCaseId > 0
+            ? \App\Models\CaseFolder::where('case_id', $selectedCaseId)
+                ->where('parent_id', $currentFolder?->id)
+                ->withCount(['documents', 'children'])
+                ->orderBy('sort')->orderBy('name')->get()
+            : collect();
+
+        // سلسلةُ الموضع من الجذر إلى المجلد المفتوح — شريطُ «أين أنا»
+        $breadcrumb = $currentFolder?->breadcrumb() ?? [];
 
         // عدد ما لا مجلد له داخل القضية — ليُعرض بجانب «عام»
         $unfiledCount = $selectedCaseId > 0
@@ -127,7 +145,8 @@ class DocumentController extends Controller
 
         return view('documents.index', compact(
             'documents', 'cases', 'selectedCaseId', 'documentTypes', 'untypedCount',
-            'done', 'doneCount', 'folders', 'selectedFolderId', 'unfiledCount'
+            'done', 'doneCount', 'folders', 'selectedFolderId', 'unfiledCount',
+            'currentFolder', 'breadcrumb'
         ));
     }
 

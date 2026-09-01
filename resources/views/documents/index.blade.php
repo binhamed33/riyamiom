@@ -68,6 +68,20 @@
                 <form method="POST" action="{{ route('documents.store') }}" enctype="multipart/form-data" class="space-y-4">
                     @csrf
 
+                    {{-- الرفعُ يقع حيث تقف: المجلدُ المفتوحُ يُرفَق مع
+                         النموذج فيصل المستندُ إليه لا إلى «عام».
+
+                         كان النموذجُ لا يحمل المجلدَ أصلاً، فكلُّ رفعٍ
+                         يسقط في «عام» ثم يُنقل يدوياً — وإن بدّل الموظّفُ
+                         القضيةَ في القائمة أسقط الخادمُ المجلدَ الغريبَ
+                         عنها بصمتٍ ولم يخطئ التصنيف. --}}
+                    @if(($currentFolder ?? null) !== null)
+                        <input type="hidden" name="case_folder_id" value="{{ $currentFolder->id }}">
+                        <p class="text-[11px] text-gold-dark bg-gold/5 border border-gold/20 rounded-lg px-3 py-2">
+                            سيُحفظ داخل 📁 «{{ $currentFolder->name }}»
+                        </p>
+                    @endif
+
                     <div>
                         <label for="doc_title" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.title') }} <span class="text-red-500">*</span></label>
                         <input type="text" id="doc_title" name="title" value="{{ old('title') }}"
@@ -171,24 +185,43 @@
         <div class="mb-4 p-3 rounded-xl bg-gray-100 border border-gray-200" x-data="{ adding: false }">
             <div class="flex items-center justify-between gap-3 flex-wrap">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="text-[11px] font-bold text-gray-400 shrink-0">🗂 {{ __('app.folders') }}:</span>
-
+                    {{-- شريطُ الموضع: القضية ⟵ الأب ⟵ المجلد المفتوح.
+                         كلُّ حلقةٍ تُنقر فتصعد إليها — فالرجوعُ من عمق
+                         الشجرة نقرةٌ لا سلسلةُ «رجوع» --}}
                     <a href="{{ route('documents.index', $folderBase) }}"
                        class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition {{ ($selectedFolderId ?? null) === null ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700' }}">
-                        {{ __('app.all') }}
+                        🗂 {{ __('app.all') }}
                     </a>
 
-                    <a href="{{ route('documents.index', $folderBase + ['folder_id' => 0]) }}"
-                       class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition {{ ($selectedFolderId ?? null) === 0 ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700' }}">
-                        {{ __('app.general') }} ({{ $unfiledCount ?? 0 }})
-                    </a>
-
-                    @foreach($folders ?? [] as $folder)
-                        <a href="{{ route('documents.index', $folderBase + ['folder_id' => $folder->id]) }}"
-                           class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition {{ ($selectedFolderId ?? null) === $folder->id ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700' }}">
-                            {{ $folder->name }} ({{ $folder->documents_count }})
+                    @foreach(($breadcrumb ?? []) as $crumb)
+                        <span class="text-gray-300 text-[11px]">⟵</span>
+                        <a href="{{ route('documents.index', $folderBase + ['folder_id' => $crumb->id]) }}"
+                           class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition {{ ($currentFolder?->id ?? null) === $crumb->id ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700' }}">
+                            📁 {{ $crumb->name }}
                         </a>
                     @endforeach
+
+                    <span class="mx-1 text-gray-200">|</span>
+
+                    @if(($currentFolder ?? null) === null)
+                        <a href="{{ route('documents.index', $folderBase + ['folder_id' => 0]) }}"
+                           class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition {{ ($selectedFolderId ?? null) === 0 ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700' }}">
+                            {{ __('app.general') }} ({{ $unfiledCount ?? 0 }})
+                        </a>
+                    @endif
+
+                    {{-- أبناءُ المستوى المفتوح وحدهم: المكانُ لا يعرض إلا ما فيه --}}
+                    @forelse($folders ?? [] as $folder)
+                        <a href="{{ route('documents.index', $folderBase + ['folder_id' => $folder->id]) }}"
+                           class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition bg-white text-gray-600 border-gray-200 hover:border-gold/40 hover:text-gray-800">
+                            📁 {{ $folder->name }}
+                            <span class="text-gray-400">({{ $folder->documents_count }}{{ $folder->children_count > 0 ? ' · ' . $folder->children_count . ' 📁' : '' }})</span>
+                        </a>
+                    @empty
+                        @if(($currentFolder ?? null) !== null)
+                            <span class="text-[11px] text-gray-400">لا مجلدات فرعيةً هنا — أنشئ واحداً أو ارفع مستنداً مباشرة</span>
+                        @endif
+                    @endforelse
                 </div>
 
                 @if(in_array(auth()->user()->role, ['developer', 'admin', 'lawyer', 'staff'], true))
@@ -211,8 +244,12 @@
                       action="{{ route('case-folders.store', $selectedCaseId) }}"
                       class="mt-3 flex gap-2">
                     @csrf
+                    {{-- يولد المجلدُ حيث تقف: داخل المفتوح إن كنتَ داخل واحدٍ --}}
+                    @if(($currentFolder ?? null) !== null)
+                        <input type="hidden" name="parent_id" value="{{ $currentFolder->id }}">
+                    @endif
                     <input type="text" name="name" required maxlength="80"
-                           placeholder="{{ __('app.new_folder_name') }}"
+                           placeholder="{{ ($currentFolder ?? null) ? 'مجلدٌ فرعي داخل «' . $currentFolder->name . '»' : __('app.new_folder_name') }}"
                            class="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-900 focus:border-gold/40 focus:outline-none">
                     <button class="px-4 py-1.5 rounded-lg bg-gold/12 text-gold-dark border border-gold/25 text-xs font-bold hover:bg-gold/20 transition">
                         {{ __('app.add') }}

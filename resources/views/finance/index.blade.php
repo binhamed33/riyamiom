@@ -295,6 +295,18 @@
                 <textarea name="description" rows="2" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"></textarea>
             </div>
             <div>
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    {{-- خانةٌ صريحة الحالتين: الصفرُ المخفيّ يجعل «غير مؤشَّرة»
+                         قراراً يُرسَل، لا غياباً يُفسَّر — الغيابُ هو الذي جعل
+                         كلَّ فاتورةٍ تُنشأ خفيّةً فلا بوابةَ ولا إشعار --}}
+                    <input type="hidden" name="client_visible" value="0">
+                    <input type="checkbox" name="client_visible" value="1" checked
+                           class="rounded border-gray-300 text-gold focus:ring-gold/40">
+                    {{ __('app.show_to_client') }}
+                    <span class="text-[11px] text-gray-400">— تظهر في بوابته ويصله تنبيه</span>
+                </label>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">مرفق (اختياري)</label>
                 <input type="file" name="attachment" class="w-full text-gray-500 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gold/12 file:text-gold-dark">
             </div>
@@ -348,6 +360,16 @@
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">تغيير المرفق</label>
                 <input type="file" name="attachment" class="w-full text-gray-500 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gold/12 file:text-gold-dark">
             </div>
+            <div>
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="hidden" name="client_visible" value="0">
+                    <input type="checkbox" name="client_visible" value="1" x-model="inv.client_visible"
+                           class="rounded border-gray-300 text-gold focus:ring-gold/40">
+                    {{ __('app.show_to_client') }}
+                    <span class="text-[11px] text-gray-400">— إظهارُها لاحقاً يُرسل التنبيه حينَه</span>
+                </label>
+            </div>
+
             <div class="flex gap-3 pt-2">
                 <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold text-sm">حفظ</button>
                 <button type="button" @click="open = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium text-sm">إلغاء</button>
@@ -388,6 +410,18 @@
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">التاريخ <span class="text-red-700">*</span></label>
                     <input type="date" name="date" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required>
                 </div>
+            </div>
+            <div>
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    {{-- خانةٌ صريحة الحالتين: الصفرُ المخفيّ يجعل «غير مؤشَّرة»
+                         قراراً يُرسَل، لا غياباً يُفسَّر — الغيابُ هو الذي جعل
+                         كلَّ فاتورةٍ تُنشأ خفيّةً فلا بوابةَ ولا إشعار --}}
+                    <input type="hidden" name="client_visible" value="0">
+                    <input type="checkbox" name="client_visible" value="1" checked
+                           class="rounded border-gray-300 text-gold focus:ring-gold/40">
+                    {{ __('app.show_to_client') }}
+                    <span class="text-[11px] text-gray-400">— تظهر في بوابته ويصله تنبيه</span>
+                </label>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-1.5">الوصف</label>
