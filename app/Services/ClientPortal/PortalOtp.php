@@ -8,6 +8,7 @@ use App\Models\WhatsAppConversation;
 use App\Models\WhatsAppMessage;
 use App\Services\WhatsApp\WhatsAppManager;
 use App\Support\OfficeBrand;
+use App\Support\WhatsAppSettings;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -37,10 +38,41 @@ class PortalOtp
     public const RESEND_SECONDS = 120;
     public const MAX_ATTEMPTS = 5;
 
+    /**
+     * أمقترنٌ الرقمُ الآن فعلاً؟ — يُسأل الجسرُ لا الذاكرة.
+     *
+     * ═══ العطل الذي وقع ═══
+     *
+     * الذاكرةُ (wa_evo_state) قالت «close» قديمةً والرقمُ مقترنٌ
+     * يرسل، فرُدّ الموكّلُ بـ«غير متاح» وكلُّ شيءٍ سليم. البوابةُ
+     * واجهةُ بيعٍ: تُحكَم بالحقيقة الحيّة، والذاكرةُ تُشفى بما قاله
+     * الجسرُ في الطريق — فيستفيد بقيّةُ النظام من الجواب نفسِه.
+     */
+    private static function connectedNow(): bool
+    {
+        if (WhatsAppSettings::isDisconnected()) {
+            return false; // فصلٌ صريحٌ بيد المكتب — لا يُلتفّ عليه
+        }
+
+        if (!WhatsAppSettings::usingEvolution()) {
+            return WhatsAppManager::isConnected();
+        }
+
+        try {
+            $state = (string) WhatsAppManager::provider()?->connectionState();
+            WhatsAppSettings::setEvolutionState($state);
+
+            return $state === 'open';
+        } catch (\Throwable) {
+            // تعثّرت الشبكةُ نفسُها: الذاكرةُ أصدقُ ما بقي
+            return WhatsAppManager::isConnected();
+        }
+    }
+
     /** @return array{ok: bool, message: string, retry_after?: int} */
     public static function request(string $rawPhone): array
     {
-        if (!WhatsAppManager::isConnected()) {
+        if (!self::connectedNow()) {
             return [
                 'ok' => false,
                 'message' => 'الدخول برقم الهاتف غير متاحٍ حالياً — استخدم رقم الهويّة.',

@@ -293,8 +293,12 @@ class GeminiProvider implements AiProvider
                     return $text;
                 } catch (\RuntimeException $e) {
                     // الردّ الفارغ حالتُه ٢٠٠ ومع ذلك يُعاد عليه
+                    // ‏400 صار قابلاً للنجاة: قد يكون حقلاً يرفضه هذا
+                    // النموذجُ وحده، وقد يكون مفتاحاً أُبطل (API_KEY_INVALID
+                    // تصل 400) — وفي الحالين النموذجُ التالي ثم المفتاحُ
+                    // التالي أرجى من الاستسلام من أول رفض
                     $retryable = $this->lastWasEmpty
-                        || in_array($this->lastStatus, [404, 429, 500, 502, 503], true);
+                        || in_array($this->lastStatus, [400, 404, 429, 500, 502, 503], true);
                     if (!$retryable) {
                         \App\Support\AiHealth::record('error', 'gemini', $model, $elapsed(), 'http_' . ($this->lastStatus ?: 'x'), $this->lastProviderMessage);
 
@@ -313,6 +317,12 @@ class GeminiProvider implements AiProvider
                             $this->suggestedByProvider = null;
                         }
 
+                        break;
+                    }
+
+                    // ‏400 ثابتٌ لنفس الطلب على نفس النموذج — تكرارُه
+                    // على النموذج نفسِه حرقُ محاولاتٍ بلا أمل: يُقفز
+                    if ($this->lastStatus === 400) {
                         break;
                     }
 

@@ -49,6 +49,19 @@ class PortalOtpLoginTest extends TestCase
         ]);
     }
 
+
+    /** محاكاةُ الجسر: حالةٌ حيّة وإرسالٌ ناجح — في fake واحد. */
+    private function fakeBridge(string $liveState = 'open'): void
+    {
+        Http::fake(function ($request) use ($liveState) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => $liveState]], 200);
+            }
+
+            return Http::response(['key' => ['id' => 'OTP-' . uniqid()]], 200);
+        });
+    }
+
     private function code(): string
     {
         preg_match('/\b(\d{6})\b/u', (string) WhatsAppMessage::latest('id')->first()?->body, $m);
@@ -59,7 +72,7 @@ class PortalOtpLoginTest extends TestCase
     /** الرحلةُ كاملة: هاتف ⇐ رمزٌ يصل فوراً ⇐ دخول. */
     public function test_a_client_logs_in_with_a_whatsapp_code(): void
     {
-        Http::fake(['*' => Http::response(['key' => ['id' => 'OTP1']], 200)]);
+        $this->fakeBridge();
 
         $this->post(route('client.access.otp'), ['phone' => '91234567'])->assertRedirect();
 
@@ -78,7 +91,7 @@ class PortalOtpLoginTest extends TestCase
     public function test_the_code_ignores_quiet_hours(): void
     {
         $this->travelTo(now()->setTime(23, 30));
-        Http::fake(['*' => Http::response(['key' => ['id' => 'OTP2']], 200)]);
+        $this->fakeBridge();
 
         $this->post(route('client.access.otp'), ['phone' => '91234567']);
 
@@ -90,7 +103,7 @@ class PortalOtpLoginTest extends TestCase
     /** «من otp إلى otp دقيقتان» — حرفياً. */
     public function test_a_second_code_waits_two_minutes(): void
     {
-        Http::fake(['*' => Http::response(['key' => ['id' => 'OTP3']], 200)]);
+        $this->fakeBridge();
 
         $this->post(route('client.access.otp'), ['phone' => '91234567']);
         $this->assertSame(1, WhatsAppMessage::count());
@@ -108,8 +121,7 @@ class PortalOtpLoginTest extends TestCase
     /** المسجَّلُ وغيرُ المسجَّل يسمعان الجملةَ نفسَها — ولا رسالةَ للغريب. */
     public function test_an_unknown_phone_hears_the_same_sentence_and_gets_nothing(): void
     {
-        Http::fake();
-
+        $this->fakeBridge();
         $known = $this->post(route('client.access.otp'), ['phone' => '91234567']);
         $this->travel(121)->seconds();
         $unknown = $this->post(route('client.access.otp'), ['phone' => '99887766']);
@@ -125,7 +137,7 @@ class PortalOtpLoginTest extends TestCase
     /** خمسُ محاولاتٍ خاطئة تقفل الرمز — والصحيحُ بعدها لا يمرّ. */
     public function test_five_wrong_attempts_burn_the_code(): void
     {
-        Http::fake(['*' => Http::response(['key' => ['id' => 'OTP4']], 200)]);
+        $this->fakeBridge();
 
         $this->post(route('client.access.otp'), ['phone' => '91234567']);
         $code = $this->code();
@@ -143,7 +155,7 @@ class PortalOtpLoginTest extends TestCase
     /** والرمزُ يُحرق بالاستعمال: مرّةٌ تفتح، والثانية تُرَدّ. */
     public function test_a_code_works_exactly_once(): void
     {
-        Http::fake(['*' => Http::response(['key' => ['id' => 'OTP5']], 200)]);
+        $this->fakeBridge();
 
         $this->post(route('client.access.otp'), ['phone' => '91234567']);
         $code = $this->code();
@@ -167,7 +179,7 @@ class PortalOtpLoginTest extends TestCase
             'type' => 'individual',
         ]);
 
-        Http::fake();
+        $this->fakeBridge();
 
         $this->post(route('client.access.otp'), ['phone' => '91234567'])
             ->assertSessionHas('portal_notice');
@@ -178,10 +190,29 @@ class PortalOtpLoginTest extends TestCase
     /** ومكتبٌ غيرُ مربوطٍ يقولها صراحةً بدل صمتٍ محيّر. */
     public function test_an_unconnected_office_says_so(): void
     {
-        Setting::set(WhatsAppSettings::KEY_EVO_STATE, 'close', 'whatsapp');
+        $this->fakeBridge('close');
 
         $this->post(route('client.access.otp'), ['phone' => '91234567'])
             ->assertSessionHas('portal_error');
+    }
+
+    /**
+     * ═══ العطل الذي ظهر على الشاشة ═══
+     *
+     * الذاكرةُ تقول «close» قديمةً والجسرُ مفتوحٌ يرسل — فرُدّ
+     * الموكّل بـ«غير متاح» وكلُّ شيءٍ سليم. البوابةُ تسأل الجسرَ
+     * حيّاً، وتشفي الذاكرةَ بما سمعت.
+     */
+    public function test_a_stale_closed_cache_does_not_refuse_a_live_bridge(): void
+    {
+        Setting::set(WhatsAppSettings::KEY_EVO_STATE, 'close', 'whatsapp');
+        $this->fakeBridge('open');
+
+        $this->post(route('client.access.otp'), ['phone' => '91234567'])
+            ->assertSessionHas('portal_notice');
+
+        $this->assertSame(1, WhatsAppMessage::count(), 'ذاكرةٌ كاذبة ردّت موكّلاً والجسر مفتوح');
+        $this->assertSame('open', WhatsAppSettings::evolutionState(), 'الذاكرةُ لم تُشفَ بجواب الجسر');
     }
 
     /** والواجهةُ تعرض البابين. */

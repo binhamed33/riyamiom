@@ -338,4 +338,51 @@ class AiResilienceTest extends TestCase
             (string) $provider->getLastError(),
         );
     }
+
+    /**
+     * ═══ «http_400 أربع مرات واليوم ميّت» ═══
+     *
+     * ‏400 قد يكون حقلاً يرفضه هذا النموذجُ وحده، أو مفتاحاً أُبطل
+     * (API_KEY_INVALID تصل 400). كان يُعلن الفشلُ من أول رفضٍ —
+     * فصار يقفز إلى النموذج التالي ثم المفتاح التالي قبل أن يستسلم.
+     */
+    public function test_a_400_hops_to_the_next_model_instead_of_dying(): void
+    {
+        config()->set('services.gemini.api_key', null);
+        config()->set('ai.providers.gemini.fallback_models', ['gemini-flash-lite-latest']);
+
+        $models = [];
+        Http::fake(function ($request) use (&$models) {
+            preg_match('#/models/([^:]+):#', $request->url(), $m);
+            $models[] = $m[1] ?? '?';
+
+            return str_contains($request->url(), 'gemini-flash-lite-latest')
+                ? Http::response($this->text('نجا بالنموذج التالي'), 200)
+                : Http::response(['error' => ['code' => 400, 'message' => 'Invalid JSON payload field']], 400);
+        });
+
+        $reply = (new GeminiProvider())->chat([['role' => 'user', 'content' => 'س']], 'نظام');
+
+        $this->assertSame('نجا بالنموذج التالي', $reply, 'استسلم من أول 400');
+        $this->assertContains('gemini-flash-lite-latest', $models);
+    }
+
+    /** ومفتاحٌ أُبطل (400) يسلّم للمفتاح التالي في السلسلة. */
+    public function test_a_dead_key_400_hands_over_to_the_next_key(): void
+    {
+        config()->set('services.gemini.api_key', 'AIzaCentralPaid456');
+        config()->set('ai.providers.gemini.fallback_models', []);
+
+        Http::fake(function ($request) {
+            $key = $request->header('X-goog-api-key')[0] ?? '';
+
+            return $key === 'AIzaTestKey123'
+                ? Http::response($this->text('المفتاح الاحتياطي أجاب'), 200)
+                : Http::response(['error' => ['code' => 400, 'message' => 'API key not valid']], 400);
+        });
+
+        $reply = (new GeminiProvider())->chat([['role' => 'user', 'content' => 'س']], 'نظام');
+
+        $this->assertSame('المفتاح الاحتياطي أجاب', $reply, 'مفتاحٌ ميّتٌ أنهى الرحلة والحيُّ بجانبه');
+    }
 }
