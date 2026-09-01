@@ -12,6 +12,9 @@ class GeminiProvider implements AiProvider
     protected string $model;
     protected ?int $lastStatus = null;
     protected ?string $lastError = null;
+
+    /** جملةُ المزوّد الأخيرة كما وردت — تشخيصٌ لا عرض. */
+    protected ?string $lastProviderMessage = null;
     protected ?string $workingModel = null;
     protected ?string $suggestedByProvider = null;
 
@@ -293,7 +296,7 @@ class GeminiProvider implements AiProvider
                     $retryable = $this->lastWasEmpty
                         || in_array($this->lastStatus, [404, 429, 500, 502, 503], true);
                     if (!$retryable) {
-                        \App\Support\AiHealth::record('error', 'gemini', $model, $elapsed(), 'http_' . ($this->lastStatus ?: 'x'));
+                        \App\Support\AiHealth::record('error', 'gemini', $model, $elapsed(), 'http_' . ($this->lastStatus ?: 'x'), $this->lastProviderMessage);
 
                         throw $e;
                     }
@@ -366,7 +369,7 @@ class GeminiProvider implements AiProvider
         $errorType = $this->lastWasEmpty
             ? 'empty_' . ($this->lastEmptyReason ?: 'x')
             : 'exhausted_' . ($this->lastStatus ?: 'x');
-        \App\Support\AiHealth::record('error', 'gemini', $tried !== [] ? end($tried) : $this->model, $elapsed(), $errorType);
+        \App\Support\AiHealth::record('error', 'gemini', $tried !== [] ? end($tried) : $this->model, $elapsed(), $errorType, $this->lastProviderMessage);
 
         throw $lastTransientError
             ?? new \RuntimeException('Gemini API error — tried models: ' . implode(', ', $tried));
@@ -427,6 +430,15 @@ class GeminiProvider implements AiProvider
             if (!$response->successful()) {
                 $status = $response->status();
                 Log::error('Gemini API error (' . $model . '): ' . $status . ' - ' . $response->body());
+
+                // نصُّ الرفض كما قاله المزوّد — للطبيب لا للمستخدم:
+                // «http_400» وحدها تُطارَد أياماً، وجملةُ المزوّد تسمّي
+                // الحقلَ المرفوض أو الصلاحيةَ الناقصة باسمها
+                $this->lastProviderMessage = mb_substr(
+                    (string) ($response->json('error.message') ?? $response->body()),
+                    0,
+                    240,
+                );
 
                 if ($status === 404) {
                     $this->suggestedByProvider = $this->suggestedModel((string) $response->body());

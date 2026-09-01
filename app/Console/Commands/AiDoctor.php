@@ -47,6 +47,10 @@ class AiDoctor extends Command
         $err = $snap['last_error'] ?? null;
         if ($err) {
             $this->line('آخر خطأ:  <fg=yellow>' . ($err['type'] ?? '؟') . '</> في ' . ($err['at'] ?? '؟'));
+
+            if (!empty($err['message'])) {
+                $this->line('قال المزوّد: <fg=yellow>' . $err['message'] . '</>');
+            }
         }
 
         // ── ٣) أخطاء اليوم بأنواعها — النوع يقول السبب ─────────

@@ -17,7 +17,7 @@ class AiHealth
     public const LAST_SUCCESS = 'ai_last_success_at';
     public const LAST_ERROR = 'ai_last_error';
 
-    public static function record(string $status, string $provider, ?string $model, ?int $durationMs, ?string $errorType): void
+    public static function record(string $status, string $provider, ?string $model, ?int $durationMs, ?string $errorType, ?string $detail = null): void
     {
         try {
             DB::table('ai_requests')->insert([
@@ -35,6 +35,9 @@ class AiHealth
             } else {
                 Setting::set(self::LAST_ERROR, json_encode([
                     'type' => $errorType,
+                    // جملةُ المزوّد نفسُها: «http_400» تُطارَد أياماً،
+                    // وسطرُ المزوّد يسمّي المرفوضَ باسمه
+                    'message' => $detail !== null ? mb_substr($detail, 0, 240) : null,
                     'at' => now()->toIso8601String(),
                 ], JSON_UNESCAPED_UNICODE), 'ai');
             }
