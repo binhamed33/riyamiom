@@ -153,7 +153,10 @@ class GeminiProvider implements AiProvider
      */
     protected function suggestedModel(string $body): ?string
     {
-        if (!preg_match('#use\s+models/([A-Za-z0-9._-]+)#', $body, $m)) {
+        // الجسمُ JSON خام والشرطةُ فيه مهرَّبة: «models\/gemini-…» —
+        // فتعبيرٌ يشترط «models/» وحدها لا يمسك بديلاً أبداً، ويمضي
+        // الطلبُ إلى قائمتنا وقد سمّى المزوّدُ خليفتَه بالاسم
+        if (!preg_match('#use\s+models\\\\?/([A-Za-z0-9._-]+)#', $body, $m)) {
             return null;
         }
 
