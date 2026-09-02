@@ -525,4 +525,81 @@ class WhatsAppSafetyTest extends TestCase
         );
         $this->assertStringContainsString('تدرّج ما بعد الاقتران', $html, 'التدرّجُ لا يُقال جملةً');
     }
+
+    /**
+     * ردُّ المحامي الثاني لا يُحجَز — والفجوةُ تبقى على الآليّ.
+     *
+     * ═══ العطل الذي وُضع له ═══
+     *
+     * الفجوةُ حارسٌ ضدّ الرشّ الآليّ. وكانت تُطبَّق على يد الإنسان
+     * أيضاً: يكتب المحامي رسالتين متتاليتين فتُحجَز الثانيةُ ستَّ
+     * عشرةَ ثانيةً إلى أربعٍ وعشرين، والموكّلُ ينتظر والمحامي يظنّها
+     * أخفقت. وأسوأُ منه أنّ آخِرَ صادرٍ يُقاس على المكتب كلِّه: إشعارٌ
+     * آليٌّ لموكّلٍ كان يؤخّر ردَّ المحامي على موكّلٍ آخر.
+     */
+    public function test_a_humans_second_reply_is_not_held_by_the_gap(): void
+    {
+        $conversation = $this->conversation;
+
+        // إشعارٌ آليٌّ خرج للتوّ — يقيس عليه الحارسُ فجوتَه
+        WhatsAppMessage::create([
+            'conversation_id' => $conversation->id,
+            'direction' => WhatsAppMessage::OUT,
+            'type' => 'text',
+            'body' => 'إشعار آليّ',
+            'status' => WhatsAppMessage::STATUS_SENT,
+            'sent_at' => now(),
+        ]);
+
+        $byHuman = WhatsAppMessage::create([
+            'conversation_id' => $conversation->id,
+            'direction' => WhatsAppMessage::OUT,
+            'type' => 'text',
+            'body' => 'وهذه تكملةُ كلامي',
+            'status' => WhatsAppMessage::STATUS_QUEUED,
+            'sent_by' => \App\Models\User::factory()->create()->id,
+        ]);
+
+        $this->assertNull(SendingGuard::delayFor($byHuman), 'ردُّ إنسانٍ حُجز بفجوةٍ وُضعت للآليّ');
+
+        // وعلى الآليّ تبقى: هو الذي يُقرأ رشّاً فيُحظر الرقم
+        $auto = WhatsAppMessage::create([
+            'conversation_id' => $conversation->id,
+            'direction' => WhatsAppMessage::OUT,
+            'type' => 'text',
+            'body' => 'إشعار آليّ ثانٍ',
+            'status' => WhatsAppMessage::STATUS_QUEUED,
+        ]);
+
+        $this->assertNotNull(SendingGuard::delayFor($auto), 'الفجوةُ سقطت عن الإرسال الآليّ');
+    }
+
+    /** والسقوفُ تبقى على يد الإنسان — لا تتحوّل قناةَ بثّ. */
+    public function test_a_human_still_obeys_the_hourly_ceiling(): void
+    {
+        $conversation = $this->conversation;
+        $user = \App\Models\User::factory()->create();
+
+        for ($i = 0; $i < SendingGuard::perHour(); $i++) {
+            WhatsAppMessage::create([
+                'conversation_id' => $conversation->id,
+                'direction' => WhatsAppMessage::OUT,
+                'type' => 'text',
+                'body' => 'رسالة ' . $i,
+                'status' => WhatsAppMessage::STATUS_SENT,
+                'sent_at' => now()->subMinutes(2),
+            ]);
+        }
+
+        $extra = WhatsAppMessage::create([
+            'conversation_id' => $conversation->id,
+            'direction' => WhatsAppMessage::OUT,
+            'type' => 'text',
+            'body' => 'واحدةٌ فوق السقف',
+            'status' => WhatsAppMessage::STATUS_QUEUED,
+            'sent_by' => $user->id,
+        ]);
+
+        $this->assertNotNull(SendingGuard::delayFor($extra), 'السقفُ الساعيّ سقط عن يد الإنسان');
+    }
 }

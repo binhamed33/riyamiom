@@ -169,7 +169,20 @@ class MailQueueWorkerTest extends TestCase
     public function test_the_scheduler_carries_the_mail_worker(): void
     {
         $this->assertStringContainsString('--queue=mail', $this->scheduledCommands(), 'لا عامل بريد في المجدول');
-        $this->assertStringContainsString('--stop-when-empty', $this->scheduledCommands());
+
+        // ═══ سقفٌ زمنيّ لا خروجٌ عند الفراغ ═══
+        //
+        // كان هنا ‎--stop-when-empty‎ حارساً من عاملٍ لا يخرج. لكنّه
+        // يخرج عند خلوّ الطابور ممّا هو جاهزٌ **الآن**، والمؤجَّلُ ليس
+        // جاهزاً: رسالةٌ حجزها حارسُ الإيقاع عشرين ثانيةً لا يلتقطها
+        // أحدٌ حتى رأس الدقيقة التالية، فيصير التأخيرُ دقيقةً كاملة.
+        //
+        // فالحارسُ الآن ‎--max-time‎: يضمن الخروجَ يقيناً، ويُبقي
+        // العاملَ حيّاً ليرسل المؤجَّلَ في ثانيتِه.
+        $this->assertStringNotContainsString('--stop-when-empty', $this->scheduledCommands(),
+            'العاملُ يخرج قبل أن يحين وقتُ المؤجَّل — التأخيرُ دقيقةٌ بدل ثوانٍ');
+        $this->assertMatchesRegularExpression('/--max-time=([1-9]\d?)\b/', $this->scheduledCommands(),
+            'عاملٌ بلا سقفٍ زمنيّ قد يبقى إلى الأبد');
         $this->assertMatchesRegularExpression(
             '/--queue=[^ ]*mail[^\n]*\* \* \* \* \*/',
             $this->scheduledCommands(),
