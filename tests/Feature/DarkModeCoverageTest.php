@@ -32,7 +32,13 @@ class DarkModeCoverageTest extends TestCase
     private function lightClassesInViews(): array
     {
         $palette = 'gray|slate|zinc|neutral|stone|red|green|blue|yellow|amber|orange|purple|indigo|emerald|teal|pink|rose|cyan|sky|lime|violet';
-        $pattern = '/\b((?:bg|text|border|divide)-(?:' . $palette . ')-(?:50|100|200|300))\b/';
+
+        // ═══ والشفافيةُ جزءٌ من الاسم ═══
+        //
+        // ‏bg-green-50/60 صنفٌ مستقلٌّ عند Tailwind. وكان النمطُ يقف
+        // عند «50» فيقرأ bg-green-50 ويحسبه مغطّى — فمرّت بطاقاتُ
+        // قائمة التحقّق فاتحةً على صفحةٍ داكنةٍ واختبارٌ أخضر فوقها.
+        $pattern = '/\b((?:bg|text|border|divide)-(?:' . $palette . ')-(?:50|100|200|300)(?:\/\d{1,3})?)\b/';
 
         $found = [];
 

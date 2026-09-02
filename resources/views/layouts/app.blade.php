@@ -836,6 +836,22 @@
         [data-theme="dark"] .border-red-200 { border-color: rgba(220,38,38,0.35) !important; }
         /* حدُّ الفُسحة المحجوزة في شاشة المواعيد — أخفتُ من أخيه */
         [data-theme="dark"] .border-red-100 { border-color: rgba(220,38,38,0.22) !important; }
+
+        /* ═══ الأصنافُ ذاتُ الشفافية ═══
+
+           ‏bg-green-50/60 صنفٌ آخرُ عند Tailwind لا نسخةٌ من
+           bg-green-50 — فلم يشمله تعريفُ أخيه، وبقيت بطاقاتُ قائمة
+           التحقّق فاتحةً على صفحةٍ داكنة: صناديقُ رماديّةٌ ونصٌّ لا
+           يكاد يُقرأ. والشرطةُ تُهرَّب في CSS. */
+        [data-theme="dark"] .bg-gray-50\/60,
+        [data-theme="dark"] .bg-gray-50\/70 { background-color: rgba(13,17,27,0.65) !important; }
+        [data-theme="dark"] .bg-gray-200\/70 { background-color: rgba(30,41,59,0.75) !important; }
+        [data-theme="dark"] .border-gray-200\/60 { border-color: rgba(148,163,184,0.20) !important; }
+        [data-theme="dark"] .bg-green-50\/60,
+        [data-theme="dark"] .bg-green-50\/40 { background-color: rgba(22,163,74,0.12) !important; }
+        [data-theme="dark"] .bg-red-50\/70,
+        [data-theme="dark"] .bg-red-50\/60 { background-color: rgba(220,38,38,0.12) !important; }
+        [data-theme="dark"] .bg-blue-50\/40 { background-color: rgba(37,99,235,0.12) !important; }
         [data-theme="dark"] .border-red-300 { border-color: rgba(220,38,38,0.45) !important; }
         [data-theme="dark"] .text-red-600, [data-theme="dark"] .text-red-800 { color: #F87171 !important; }
 
