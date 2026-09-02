@@ -262,6 +262,41 @@
                             class="mt-1 text-xs font-bold px-4 py-2 rounded-lg bg-gold text-white hover:bg-gold-dark">
                         {{ $waState === 'open' ? 'إعادة الاقتران' : 'ابدأ الاقتران' }}
                     </button>
+
+                    {{-- ═══ البابُ الثاني: الربطُ بالرقم ═══
+
+                         واتساب يرفض ربطَ أجهزةٍ جديدةٍ أحياناً بعد
+                         محاولاتٍ متكرّرة («Can't link new devices right
+                         now») فيقف المكتبُ أمام رمزٍ صحيحٍ لا يُقبل.
+                         والربطُ بالرقم مسارٌ آخر عند واتساب نفسِه —
+                         وهو الخيارُ المعروض في شاشة المسح في الهاتف. --}}
+                    <div class="mt-3 pt-3 border-t border-gray-200">
+                        <button type="button" data-pair-phone-toggle
+                                class="text-[11px] text-gray-500 hover:text-gold-dark underline">
+                            تعذّر المسح؟ اربط برقم الهاتف بدلاً من ذلك
+                        </button>
+
+                        <div class="hidden mt-2 space-y-2" data-pair-phone-box>
+                            <label class="block text-[11px] text-gray-600" for="wa-pair-phone">
+                                رقم المكتب بصيغته الدولية بلا صفرٍ ولا زائد
+                            </label>
+                            <div class="flex gap-2">
+                                <input id="wa-pair-phone" type="tel" inputmode="numeric" dir="ltr" maxlength="20"
+                                       placeholder="96891234567" data-pair-phone
+                                       class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900">
+                                <button type="button" data-pair-phone-start
+                                        class="text-xs font-bold px-4 py-2 rounded-lg bg-gray-800 text-white hover:bg-black whitespace-nowrap">
+                                    اطلب رمزاً
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-gray-500 leading-relaxed">
+                                في الهاتف: واتساب ← الأجهزة المرتبطة ← ربط جهاز ←
+                                <span class="font-semibold">«الربط برقم الهاتف بدلاً من ذلك»</span> ← اكتب الرمز الظاهر هنا.
+                            </p>
+                            <div class="hidden text-center font-mono tracking-[0.35em] text-lg font-bold text-gray-900
+                                        bg-gray-50 border border-gray-200 rounded-lg py-3" data-pair-code></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1314,28 +1349,71 @@
         var start = pairBox.querySelector('[data-pair-start]');
         var poll = null;
 
-        start.addEventListener('click', function () {
-            start.disabled = true;
-            start.textContent = 'جارٍ التحضير…';
-            setStatus('يُنشأ الاتصال بالخادم…', 'wait');
+        var phoneToggle = pairBox.querySelector('[data-pair-phone-toggle]');
+        var phoneBox = pairBox.querySelector('[data-pair-phone-box]');
+        var phoneInput = pairBox.querySelector('[data-pair-phone]');
+        var phoneStart = pairBox.querySelector('[data-pair-phone-start]');
+        var codeBox = pairBox.querySelector('[data-pair-code]');
+
+        start.addEventListener('click', function () { request(null, start, 'أعد إحضار الرمز'); });
+
+        if (phoneToggle) {
+            phoneToggle.addEventListener('click', function () {
+                phoneBox.classList.toggle('hidden');
+                if (!phoneBox.classList.contains('hidden')) { phoneInput.focus(); }
+            });
+
+            phoneStart.addEventListener('click', function () {
+                var digits = (phoneInput.value || '').replace(/\D+/g, '');
+
+                if (digits.length < 10) {
+                    setStatus('اكتب الرقم بصيغته الدولية بلا صفرٍ ولا زائد — مثال: 96891234567', 'bad');
+
+                    return;
+                }
+
+                request(digits, phoneStart, 'اطلب رمزاً جديداً');
+            });
+        }
+
+        // طلبٌ واحدٌ للبابين: الفرقُ رقمٌ يُرسَل أو لا يُرسَل
+        function request(phone, button, doneLabel) {
+            button.disabled = true;
+            button.textContent = 'جارٍ التحضير…';
+            setStatus(phone ? 'يُطلب رمزُ الربط من واتساب…' : 'يُنشأ الاتصال بالخادم…', 'wait');
 
             fetch(pairBox.dataset.pairUrl, {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-                credentials: 'same-origin'
+                headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ phone: phone || '' })
             })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (data.state === 'open') { connected(); return; }
-                if (data.qr) { showQr(data.qr); startPolling(); }
-                else { setStatus(data.message || 'تعذّر إحضار الرمز.', 'bad'); }
+
+                if (data.code) { showCode(data.code); startPolling(); return; }
+                if (data.qr) { showQr(data.qr); startPolling(); return; }
+
+                setStatus(data.message || 'تعذّر إحضار الرمز.', 'bad');
             })
             .catch(function () { setStatus('تعذّر الاتصال بالخادم.', 'bad'); })
             .finally(function () {
-                start.disabled = false;
-                start.textContent = 'أعد إحضار الرمز';
+                button.disabled = false;
+                button.textContent = doneLabel;
             });
-        });
+        }
+
+        function showCode(code) {
+            codeBox.textContent = code;
+            codeBox.classList.remove('hidden');
+            phoneBox.classList.remove('hidden');
+            setStatus('اكتب هذا الرمز في هاتفك خلال دقيقة — بعدها اطلب غيره.', 'wait');
+        }
 
         function showQr(qr) {
             qrBox.textContent = '';

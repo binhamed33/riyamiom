@@ -306,7 +306,7 @@ class WhatsAppSettingsController extends Controller
      * يُنادى من شاشة الاقتران كلَّ ثوانٍ حتى تصير الحالة «open».
      * ولا يُعرض إلا حين يكون المزوّدُ Evolution: على Meta لا معنى له.
      */
-    public function pair(): JsonResponse
+    public function pair(Request $request): JsonResponse
     {
         if (!WhatsAppSettings::usingEvolution()) {
             return response()->json(['state' => 'close', 'message' => 'هذا المزوّد لا يُقترن بمسح رمز.'], 200);
@@ -318,8 +318,36 @@ class WhatsAppSettingsController extends Controller
             return response()->json(['state' => 'close', 'message' => 'جسر واتساب ويب غير مضبوط على الخادم.'], 200);
         }
 
-        $result = $provider->pair();
-        $this->audit('whatsapp_evolution_pair', ['state' => $result['state']]);
+        // ═══ البابُ الثاني: الربطُ بالرقم ═══
+        //
+        // واتساب يرفض ربطَ أجهزةٍ جديدةٍ أحياناً بعد محاولاتٍ متكرّرة
+        // («Can't link new devices right now») فيقف المكتبُ أمام رمزٍ
+        // صحيحٍ لا يُقبل. والربطُ بالرقم مسارٌ آخر عند واتساب نفسِه.
+        //
+        // ويُتحقَّق من الرقم هنا: رقمٌ ناقصٌ يُرسَل إلى الجسر فيطلب رمزَ
+        // ربطٍ لرقمٍ لا وجود له، فيُقال «تعذّر» بلا سبب.
+        $request->validate(
+            ['phone' => 'nullable|string|max:20'],
+            [],
+            ['phone' => 'رقم الهاتف'],
+        );
+
+        $phone = preg_replace('/\D+/', '', (string) $request->input('phone', ''));
+
+        if ($phone !== '' && mb_strlen($phone) < 10) {
+            return response()->json([
+                'qr' => null, 'code' => null, 'state' => 'close',
+                'message' => 'اكتب الرقم بصيغته الدولية بلا صفرٍ ولا زائد — مثال: 96891234567',
+            ], 200);
+        }
+
+        $result = $provider->pair($phone !== '' ? $phone : null);
+
+        // لا يُدوَّن الرقمُ ولا الرمز في سجلّ الحركات — أثرٌ يكفي
+        $this->audit('whatsapp_evolution_pair', [
+            'state' => $result['state'],
+            'method' => $phone !== '' ? 'phone_code' : 'qr',
+        ]);
 
         return response()->json($result, 200);
     }

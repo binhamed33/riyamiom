@@ -64,14 +64,18 @@ class EvolutionProvider implements WhatsAppProviderInterface
      *
      * @return array{qr: ?string, state: string, message: ?string}
      */
-    public function pair(): array
+    public function pair(?string $phone = null): array
     {
         $this->lastError = null;
+
+        // رقمُ المكتب — أرقامٌ بلا زائد كما يقبله الجسر. ووجودُه يعني
+        // البابَ الثاني: رمزٌ من ثمانية محارف يُكتب في الهاتف بدل المسح.
+        $phone = $phone === null ? null : (preg_replace('/\D+/', '', $phone) ?: null);
 
         if (!$this->isConfigured()) {
             $this->lastError = 'خادم Evolution غير مضبوط — العنوان أو المفتاح ناقص.';
 
-            return ['qr' => null, 'state' => 'close', 'message' => $this->lastError];
+            return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $this->lastError];
         }
 
         $instance = WhatsAppSettings::evolutionInstance();
@@ -82,7 +86,7 @@ class EvolutionProvider implements WhatsAppProviderInterface
         if ($state === 'open') {
             WhatsAppSettings::setEvolutionState('open');
 
-            return ['qr' => null, 'state' => 'open', 'message' => 'الرقم موصولٌ بالفعل.'];
+            return ['qr' => null, 'code' => null, 'state' => 'open', 'message' => 'الرقم موصولٌ بالفعل.'];
         }
 
         // ═══ الإنشاء يعيد الرمزَ بنفسه ═══
@@ -90,31 +94,31 @@ class EvolutionProvider implements WhatsAppProviderInterface
         // ‏instance/create عند Evolution 2 — مع qrcode:true — يفتح الجلسة
         // وينتظر خمسَ ثوانٍ ويعيد الرمزَ في جسم الردّ. فيُقرأ من هناك
         // بدل رحلةٍ ثانية قد تصادف نسخةً لم تُحمَّل بعد.
-        $created = $this->createInstance($instance);
+        $created = $this->createInstance($instance, $phone);
 
-        if ($created['qr'] !== null) {
-            return ['qr' => $created['qr'], 'state' => 'connecting', 'message' => null];
+        if ($created['qr'] !== null || $created['code'] !== null) {
+            return ['qr' => $created['qr'], 'code' => $created['code'], 'state' => 'connecting', 'message' => null];
         }
 
         // إخفاقٌ حقيقيٌّ في الإنشاء (لا «الاسم مستعمَل») يُقال ويُوقَف عنده
         if ($created['error'] !== null) {
             $this->lastError = $created['error'];
 
-            return ['qr' => null, 'state' => 'close', 'message' => $created['error']];
+            return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $created['error']];
         }
 
         // النسخةُ قائمةٌ من قبل: يُطلب الرمزُ منها
         $this->applyWebhook($instance);
-        $connect = $this->connectQr($instance);
+        $connect = $this->connectQr($instance, $phone);
 
-        if ($connect['qr'] !== null) {
-            return ['qr' => $connect['qr'], 'state' => 'connecting', 'message' => null];
+        if ($connect['qr'] !== null || $connect['code'] !== null) {
+            return ['qr' => $connect['qr'], 'code' => $connect['code'], 'state' => 'connecting', 'message' => null];
         }
 
         if ($connect['state'] === 'open') {
             WhatsAppSettings::setEvolutionState('open');
 
-            return ['qr' => null, 'state' => 'open', 'message' => 'الرقم موصولٌ بالفعل.'];
+            return ['qr' => null, 'code' => null, 'state' => 'open', 'message' => 'الرقم موصولٌ بالفعل.'];
         }
 
         // ═══ الطريقُ المسدود الذي كان يقتل الاقتران للأبد ═══
@@ -133,42 +137,45 @@ class EvolutionProvider implements WhatsAppProviderInterface
         // مفتوحةً ولا قيد الاتصال — فلا جلسةَ حيّةٌ تُقطع بحال.
         if ($connect['missing']) {
             $this->deleteInstance($instance);
-            $fresh = $this->createInstance($instance);
+            $fresh = $this->createInstance($instance, $phone);
 
-            if ($fresh['qr'] !== null) {
-                return ['qr' => $fresh['qr'], 'state' => 'connecting', 'message' => null];
+            if ($fresh['qr'] !== null || $fresh['code'] !== null) {
+                return ['qr' => $fresh['qr'], 'code' => $fresh['code'], 'state' => 'connecting', 'message' => null];
             }
 
             if ($fresh['error'] !== null) {
                 $this->lastError = $fresh['error'];
 
-                return ['qr' => null, 'state' => 'close', 'message' => $fresh['error']];
+                return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $fresh['error']];
             }
 
-            $retry = $this->connectQr($instance);
+            $retry = $this->connectQr($instance, $phone);
 
-            if ($retry['qr'] !== null) {
-                return ['qr' => $retry['qr'], 'state' => 'connecting', 'message' => null];
+            if ($retry['qr'] !== null || $retry['code'] !== null) {
+                return ['qr' => $retry['qr'], 'code' => $retry['code'], 'state' => 'connecting', 'message' => null];
             }
         }
 
         $this->lastError = $connect['error']
             ?? 'لم يُصدر الجسرُ رمزَ اقترانٍ الآن — أعد المحاولة بعد لحظات.';
 
-        return ['qr' => null, 'state' => 'close', 'message' => $this->lastError];
+        return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $this->lastError];
     }
 
     /**
      * طلبُ الرمز من نسخةٍ قائمة.
      *
-     * @return array{qr: ?string, state: string, missing: bool, error: ?string}
+     * @return array{qr: ?string, code: ?string, state: string, missing: bool, error: ?string}
      */
-    protected function connectQr(string $instance): array
+    protected function connectQr(string $instance, ?string $phone = null): array
     {
         try {
-            $response = $this->http()->get($this->url('instance/connect/' . $instance));
+            // الرقمُ يسافر في الاستعلام: الجسرُ يدمج معاملاتِ الاستعلام
+            // في بيانات النسخة، فيطلب رمزَ ربطٍ من واتساب بدل المسح
+            $response = $this->http()->get($this->url('instance/connect/' . $instance)
+                . ($phone !== null ? '?number=' . $phone : ''));
         } catch (\Throwable) {
-            return ['qr' => null, 'state' => 'close', 'missing' => false, 'error' => 'تعذّر الاتصال بخادم الجسر.'];
+            return ['qr' => null, 'code' => null, 'state' => 'close', 'missing' => false, 'error' => 'تعذّر الاتصال بخادم الجسر.'];
         }
 
         $body = (string) $response->body();
@@ -184,7 +191,7 @@ class EvolutionProvider implements WhatsAppProviderInterface
                 $this->failureFrom($response);
             }
 
-            return ['qr' => null, 'state' => 'close', 'missing' => $missing, 'error' => $missing ? null : $this->lastError];
+            return ['qr' => null, 'code' => null, 'state' => 'close', 'missing' => $missing, 'error' => $missing ? null : $this->lastError];
         }
 
         // حالةٌ مفتوحة تعود من connect نفسِه حين تكون الجلسةُ حيّة
@@ -192,6 +199,7 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
         return [
             'qr' => $this->qrFrom($response),
+            'code' => $this->pairingCodeFrom($response),
             'state' => $state === 'open' ? 'open' : 'connecting',
             'missing' => $missing,
             'error' => null,
@@ -510,33 +518,35 @@ class EvolutionProvider implements WhatsAppProviderInterface
      * عنوانِ استقبال — وكان ضبطُه بطلبٍ ثانٍ يفشل أحياناً فيُوقف
      * الاقترانَ كلَّه ويبقى المكتب بلا رمز.
      *
-     * @return array{qr: ?string, error: ?string}
+     * @return array{qr: ?string, code: ?string, error: ?string}
      */
-    protected function createInstance(string $instance): array
+    protected function createInstance(string $instance, ?string $phone = null): array
     {
         try {
-            $response = $this->http()->post($this->url('instance/create'), [
+            $response = $this->http()->post($this->url('instance/create'), array_filter([
                 'instanceName' => $instance,
                 'qrcode' => true,
                 'integration' => (string) config('whatsapp.evolution.integration', 'WHATSAPP-BAILEYS'),
                 'webhook' => $this->webhookPayload(),
-            ]);
+                // رقمٌ مُمرَّر ⇐ رمزُ ربطٍ بدل المسح
+                'number' => $phone,
+            ], static fn ($v) => $v !== null));
         } catch (\Throwable $e) {
             Log::warning('Evolution instance create failed: ' . $e->getMessage());
 
-            return ['qr' => null, 'error' => 'تعذّر الاتصال بخادم الجسر لإنشاء نسخة المكتب.'];
+            return ['qr' => null, 'code' => null, 'error' => 'تعذّر الاتصال بخادم الجسر لإنشاء نسخة المكتب.'];
         }
 
         if ($response->successful()) {
             // الرمزُ في جسم الإنشاء نفسِه (qrcode.base64) — يُقرأ الآن
-            return ['qr' => $this->qrFrom($response), 'error' => null];
+            return ['qr' => $this->qrFrom($response), 'code' => $this->pairingCodeFrom($response), 'error' => null];
         }
 
         $body = (string) $response->body();
 
         // «الاسم مستعمَل» = النسخةُ قائمة: لا رمزَ هنا ولا خطأ — يُطلب الرمزُ منها
         if (str_contains(mb_strtolower($body), 'already in use') || $response->status() === 409) {
-            return ['qr' => null, 'error' => null];
+            return ['qr' => null, 'code' => null, 'error' => null];
         }
 
         Log::warning('Evolution instance create rejected (' . $response->status() . '): ' . mb_substr($body, 0, 500));
@@ -558,7 +568,7 @@ class EvolutionProvider implements WhatsAppProviderInterface
         // واحد يترك المشغّل يجرّب على غير هدى.
         $probe = 'sudo bash scripts/install-evolution.sh status';
 
-        return ['qr' => null, 'error' => match (true) {
+        return ['qr' => null, 'code' => null, 'error' => match (true) {
             $response->status() === 401 || $response->status() === 403
                 => 'خادم الجسر رفض المفتاح — راجع EVOLUTION_API_KEY في ملفّ بيئة المكتب.',
             $response->status() === 404
@@ -672,6 +682,26 @@ class EvolutionProvider implements WhatsAppProviderInterface
             'number' => $number,
             'name' => (string) ($instance['profileName'] ?? $instance['profilename'] ?? ''),
         ];
+    }
+
+    /**
+     * رمزُ الربط بالرقم — بابٌ ثانٍ حين يتعذّر المسح.
+     *
+     * ═══ لماذا بابان ═══
+     *
+     * واتساب يرفض ربطَ أجهزةٍ جديدةٍ أحياناً («Can't link new devices
+     * right now») بعد محاولاتٍ متكرّرة، فيقف المكتبُ أمام رمزٍ صحيحٍ
+     * لا يُقبل. والربطُ بالرقم مسارٌ آخر عند واتساب نفسِه: ثمانيةُ
+     * محارفَ تُكتب في الهاتف، وهو الخيارُ المعروض في شاشة المسح
+     * («Link with phone number instead»).
+     */
+    protected function pairingCodeFrom(Response $response): ?string
+    {
+        $code = $response->json('pairingCode')
+            ?? $response->json('qrcode.pairingCode')
+            ?? $response->json('qr.pairingCode');
+
+        return is_string($code) && $code !== '' ? $code : null;
     }
 
     protected function qrFrom(Response $response): ?string

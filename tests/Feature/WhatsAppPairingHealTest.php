@@ -286,6 +286,75 @@ class WhatsAppPairingHealTest extends TestCase
         $this->assertFalse($result->retryable);
     }
 
+    /**
+     * البابُ الثاني: الربطُ برقم الهاتف حين يرفض واتساب مسحَ الرمز.
+     *
+     * «Can't link new devices right now» رسالةُ واتساب نفسِه بعد
+     * محاولاتٍ متكرّرة — فيقف المكتبُ أمام رمزٍ صحيحٍ لا يُقبل. والربطُ
+     * بالرقم مسارٌ آخر عنده: ثمانيةُ محارفَ تُكتب في الهاتف.
+     */
+    public function test_a_phone_number_asks_for_a_pairing_code(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            return Http::response([
+                'instance' => ['instanceName' => 'x', 'status' => 'connecting'],
+                'qrcode' => ['pairingCode' => 'WXYZ1234', 'code' => '2@A', 'base64' => 'iVBORw0KGgo='],
+            ], 201);
+        });
+
+        $result = (new EvolutionProvider())->pair('968 9123 4567');
+
+        $this->assertSame('WXYZ1234', $result['code'], 'لم يُطلب رمزُ الربط والبابُ الأوّل مغلق');
+
+        // والرقمُ يسافر إلى الجسر مجرّداً من الفواصل والزائد
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/instance/create')
+                && ($request->data()['number'] ?? null) === '96891234567';
+        });
+    }
+
+    /** ومسحُ الرمز يبقى الافتراض: بلا رقمٍ لا يُطلب رمزُ ربط. */
+    public function test_without_a_phone_the_journey_stays_a_qr_scan(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            return Http::response(['qrcode' => ['code' => '2@A', 'base64' => 'iVBORw0KGgo=']], 201);
+        });
+
+        $result = (new EvolutionProvider())->pair();
+
+        $this->assertNull($result['code']);
+        $this->assertNotNull($result['qr']);
+
+        Http::assertSent(function ($request) {
+            return !str_contains($request->url(), '/instance/create')
+                || !array_key_exists('number', $request->data());
+        });
+    }
+
+    /** ورقمٌ ناقصٌ يُردّ برسالةٍ تقول الصيغة — لا يُرسَل إلى الجسر. */
+    public function test_a_short_number_is_refused_before_the_bridge(): void
+    {
+        $admin = \App\Models\User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        \App\Models\Setting::set('whatsapp_provider', 'evolution', 'whatsapp');
+        Http::fake();
+
+        $this->actingAs($admin)
+            ->postJson(route('settings.whatsapp.pair'), ['phone' => '9123'])
+            ->assertOk()
+            ->assertJsonPath('code', null)
+            ->assertJsonFragment(['message' => 'اكتب الرقم بصيغته الدولية بلا صفرٍ ولا زائد — مثال: 96891234567']);
+
+        Http::assertNothingSent();
+    }
+
     /** وعطلُ الجسر الحقيقي يبقى مقروءاً — لا يُبتلع في رحلة الشفاء. */
     public function test_a_real_bridge_failure_is_still_named(): void
     {
