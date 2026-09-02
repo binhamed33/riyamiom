@@ -163,9 +163,15 @@
 
 
     @php
-        $__sortOptions = ['created' => __('app.sort_newest'), 'name' => __('app.name'), 'type' => __('app.file_type'), 'size' => __('app.file_size')];
+        $__sortOptions = ['created' => __('app.sort_newest'), 'name' => __('app.name'), 'type' => __('app.file_type'), 'size' => __('app.file_size'), 'case' => __('app.case'), 'uploader' => __('app.uploaded_by'), 'access' => __('app.table_access')];
         $__sortDefault = 'created';
     @endphp
+
+    {{-- ═══ منطقةُ الاستبدال ═══
+         تبدأ من شريط الترتيب وتنتهي بعد الترقيم: كلُّ ما تغيّره نقرةُ
+         ترتيبٍ داخلَها، فلا يبقى شريطٌ يقول «الأحدث» فوق جدولٍ رُتّب
+         بالحجم. والقائمةُ الجانبيةُ خارجَها فلا تُرسَم من جديد. --}}
+    <div data-live="documents">
 
     {{-- §3: المنجز خلف زرّه + §4: الترتيب --}}
     <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -370,7 +376,10 @@
         </div>
     @endif
 
-    {{-- §9: مستكشف الملفات — تفصيلي أو مصغّرات، والاختيار يُحفظ للمستخدم --}}
+    {{-- §9: مستكشف الملفات — تفصيلي أو مصغّرات، والاختيار يُحفظ للمستخدم
+
+         واختيارُ العرض محفوظٌ في localStorage يقرأه init بعد الاستبدال،
+         فلا يعود من رتّب في «التفصيلي» إلى «المصغّرات». --}}
     <div x-data="{
             view: 'details',
             init() {
@@ -459,13 +468,17 @@
         <table class="w-full text-sm">
             <thead class="text-gray-900">
                 <tr>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.title') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.case') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.uploaded_by') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.type') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.table_size') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.table_access') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.date') }}</th>
+                    @php
+                        $__s = request('sort', 'created');
+                        $__d = request('dir', in_array($__s, ['name', 'case', 'uploader'], true) ? 'asc' : 'desc');
+                    @endphp
+                    <x-th-sort key="name" :label="__('app.title')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="case" :label="__('app.case')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="uploader" :label="__('app.uploaded_by')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="type" :label="__('app.type')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="size" :label="__('app.table_size')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="access" :label="__('app.table_access')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="created" :label="__('app.date')" :sort="$__s" :dir="$__d" />
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.actions') }}</th>
                 </tr>
             </thead>
@@ -551,10 +564,12 @@
 
     @if ($documents->hasPages())
         <div class="mt-4">
-            {{ $documents->links() }}
+            <div data-live-nav>{{ $documents->links() }}</div>
         </div>
     @endif
     </div>
+
+    </div>{{-- /منطقةُ الاستبدال --}}
 </div>
 @endsection
 

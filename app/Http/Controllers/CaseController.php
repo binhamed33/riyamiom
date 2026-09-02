@@ -44,7 +44,9 @@ class CaseController extends Controller
             'status' => 'cases.status',
             'type' => 'cases.case_type',
             'court' => 'cases.court',
-            'opponent' => 'cases.opponent',
+            // «الخصم» مشفَّرٌ في القاعدة (LegalCase::$encryptable): ترتيبُه
+            // يرتّب النصَّ المشفَّر لا الاسم، فالنتيجةُ عشوائيةٌ تبدو
+            // ترتيباً. أُسقط، ولا يُعاد إلا إن زال التشفير.
             'client' => 'clients.name',
             'lawyer' => 'users.name',
         ];

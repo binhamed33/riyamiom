@@ -16,6 +16,7 @@
     'sort' => null,              // النشطُ الآن
     'dir' => 'desc',
     'align' => 'right',
+    'thClass' => null,           // بديلٌ كاملٌ لأصناف الترويسة حين يخالف الجدولُ المقاسَ العام
 ])
 
 @php
@@ -25,7 +26,7 @@
     $nextDir = ($isActive && $dir === 'asc') ? 'desc' : 'asc';
 @endphp
 
-<th {{ $attributes->merge(['class' => 'px-6 py-3 text-' . $align . ' font-semibold']) }}>
+<th {{ $attributes->merge(['class' => $thClass ?: 'px-6 py-3 text-' . $align . ' font-semibold']) }}>
     <a href="{{ request()->fullUrlWithQuery(['sort' => $key, 'dir' => $nextDir, 'page' => null]) }}"
        data-live-link
        class="inline-flex items-center gap-1 whitespace-nowrap transition-colors {{ $isActive ? 'text-gold-dark' : 'hover:text-gold-dark' }}"

@@ -101,9 +101,13 @@
         </div>
     </x-filter-panel>
     @php
-        $__sortOptions = ['created' => __('app.sort_newest'), 'due' => __('app.due_date'), 'priority' => __('app.priority'), 'status' => __('app.status'), 'title' => __('app.title')];
+        $__sortOptions = ['created' => __('app.sort_newest'), 'due' => __('app.due_date'), 'priority' => __('app.priority'), 'status' => __('app.status'), 'title' => __('app.title'), 'case' => __('app.case'), 'assignee' => __('app.task_assigned_to')];
         $__sortDefault = 'created';
     @endphp
+    {{-- منطقةُ الاستبدال: نقرةُ الترتيب تجلب هذا وحدَه، فلا تُرسَم
+         القائمةُ الجانبيةُ من جديد ولا تقفز. --}}
+    <div data-live="tasks">
+
     {{-- §3: المنجز خلف زرّه + §4: الترتيب --}}
     <div class="flex items-center justify-between gap-3 flex-wrap">
         <x-sort-bar :options="$__sortOptions" :default="$__sortDefault" :default-dir="$__sortDefaultDir ?? 'desc'" />
@@ -152,12 +156,13 @@
         <table class="w-full text-sm">
             <thead class=" text-gray-900">
                 <tr>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.title') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.case') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.task_assigned_to') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.status') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.priority') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.due_date') }}</th>
+                    @php $__s = request('sort', 'created'); $__d = request('dir', 'desc'); @endphp
+                    <x-th-sort key="title" :label="__('app.title')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="case" :label="__('app.case')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="assignee" :label="__('app.task_assigned_to')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="status" :label="__('app.status')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="priority" :label="__('app.priority')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="due" :label="__('app.due_date')" :sort="$__s" :dir="$__d" />
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.actions') }}</th>
                 </tr>
             </thead>
@@ -265,8 +270,10 @@
 
     @if ($tasks->hasPages())
         <div class="mt-4">
-            {{ $tasks->links() }}
+            <div data-live-nav>{{ $tasks->links() }}</div>
         </div>
     @endif
+
+    </div>{{-- /منطقةُ الاستبدال --}}
 </div>
 @endsection

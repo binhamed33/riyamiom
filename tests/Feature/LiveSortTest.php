@@ -112,18 +112,87 @@ class LiveSortTest extends TestCase
         $this->assertNotSame($asc, $desc, 'الاتجاهُ لا يغيّر شيئاً');
     }
 
-    /** وكلُّ منطقةٍ موسومةٍ لها إغلاقُها — وسمٌ مفتوحٌ يكسر الصفحة. */
-    public function test_every_live_region_is_balanced(): void
+    /**
+     * وكلُّ وسمٍ يُفتح يُغلق — في الحالتين: بترقيمٍ وبلا ترقيم.
+     *
+     * ═══ العطل الذي حرسه هذا ═══
+     *
+     * إغلاقُ منطقة الاستبدال كان مكتوباً داخل شرط الترقيم:
+     * @if($x->hasPages()) … </div> @endif — فجدولٌ يسع صفحةً واحدةً
+     * يخرج بوسمٍ مفتوح. والمتصفّحُ يتسامح فيغلقه عنه، فلا يُرى شيء —
+     * حتى يُضاف وسمٌ آخرُ يوماً فتنهار الصفحة بلا سببٍ ظاهر.
+     *
+     * والفحصُ يجري على الصفحة الفارغة تحديداً: هي الحالةُ التي كانت
+     * تُخرج الوسمَ المفتوح، وهي التي لا يفتحها أحدٌ وقتَ التطوير.
+     */
+    public function test_every_index_page_closes_every_tag(): void
     {
-        foreach (['cases', 'sessions'] as $page) {
-            $file = resource_path("views/{$page}/index.blade.php");
-            $html = (string) file_get_contents($file);
+        $pages = ['cases', 'sessions', 'tasks', 'clients', 'documents'];
 
-            $opens = substr_count($html, 'data-live="');
-            $this->assertGreaterThan(0, $opens, "لا منطقةَ في {$page}");
+        foreach ($pages as $page) {
+            $html = $this->actingAs($this->admin)->get(route($page . '.index'))->assertOk()->getContent();
 
-            // الصفحةُ تُعرض فعلاً — الميزانُ الحقيقيُّ عند لارافل لا عندنا
-            $this->actingAs($this->admin)->get(route($page . '.index'))->assertOk();
+            $this->assertStringContainsString('data-live="' . $page . '"', $html, "لا منطقةَ استبدالٍ في {$page}");
+
+            // <div> مفتوحةٌ = </div> مغلقة. الوسومُ المفردة لا تُعدّ هنا
+            $opens = preg_match_all('/<div\b/i', $html);
+            $closes = preg_match_all('/<\/div>/i', $html);
+
+            $this->assertSame($closes, $opens, "وسمُ div مفتوحٌ بلا إغلاقٍ في {$page} (فُتح {$opens} وأُغلق {$closes})");
+        }
+    }
+
+    /**
+     * والاستبدالُ يتحرّك: خفوتٌ ثم ظهورٌ ثم صعودُ الصفوف.
+     *
+     * كان يقع في إطارٍ واحد — صحيحٌ وناشف. والعينُ لا تتبع قفزةً،
+     * فيُقرأ الجدولُ وميضاً لا إعادةَ ترتيب.
+     */
+    public function test_the_swap_is_animated_and_respects_stillness(): void
+    {
+        $layout = (string) file_get_contents(resource_path('views/layouts/app.blade.php'));
+
+        foreach (['live-out', 'live-in', '@keyframes mdLiveIn', '@keyframes mdLiveRow'] as $piece) {
+            $this->assertStringContainsString($piece, $layout, "لا أثرَ لـ{$piece} في الحركة");
+        }
+
+        // المحرّكُ يضع الصنفين فعلاً — لا CSS بلا مَن يشغّلها
+        $this->assertStringContainsString("classList.add('live-out')", $layout);
+        $this->assertStringContainsString("classList.add('live-in')", $layout);
+
+        // الصفوفُ تصعد واحداً بعد واحد
+        $this->assertStringContainsString('animationDelay', $layout, 'لا تتابعَ بين الصفوف');
+
+        // ومن طلب تقليلَ الحركة لا يرى منها شيئاً — في CSS وفي المحرّك
+        $this->assertStringContainsString('prefers-reduced-motion', $layout);
+        $this->assertStringContainsString("matchMedia('(prefers-reduced-motion: reduce)')", $layout);
+    }
+
+    /**
+     * والعقدةُ المُبدَّلة تُوقظ Alpine — بشرطٍ يمنع التهيئةَ مرّتين.
+     *
+     * زرُّ «مصغّرات» في المستندات يعيش داخل منطقة الاستبدال: لو خرج
+     * مبدَّلاً بلا نطاقٍ صار زرّاً لا يستجيب — عطلٌ صامتٌ لا يُرى في
+     * سجلٍّ ولا في اختبارٍ خادمي. وتهيئةٌ ثانيةٌ لشجرةٍ حيّة تضاعف
+     * مستمعي الأحداث، فتصير النقرةُ نقرتين: الشرطُ يمنع الاثنين.
+     */
+    public function test_the_swapped_node_wakes_alpine_exactly_once(): void
+    {
+        $layout = (string) file_get_contents(resource_path('views/layouts/app.blade.php'));
+
+        $this->assertStringContainsString('wakeAlpine(node)', $layout, 'العقدةُ المُبدَّلة لا تُوقظ Alpine');
+        $this->assertStringContainsString('_x_dataStack', $layout, 'لا حارسَ ضدّ تهيئةٍ ثانية');
+        $this->assertStringContainsString('Alpine.initTree', $layout);
+    }
+
+    /** والترتيبُ الحيُّ يعمّ الجداولَ كلَّها لا الجلساتِ وحدَها. */
+    public function test_every_list_page_swaps_in_place(): void
+    {
+        foreach (['cases', 'sessions', 'tasks', 'clients', 'documents'] as $page) {
+            $html = $this->actingAs($this->admin)->get(route($page . '.index'))->assertOk()->getContent();
+
+            $this->assertStringContainsString('data-live="' . $page . '"', $html);
+            $this->assertStringContainsString('data-live-link', $html, "روابطُ الترتيب في {$page} بلا وسم");
         }
     }
 }

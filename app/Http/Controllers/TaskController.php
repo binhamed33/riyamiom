@@ -84,11 +84,24 @@ class TaskController extends Controller
             'status' => 'status',
             'title' => 'title',
         ];
+
+        // «القضية» و«المسند إليه» يعيشان في جدولين آخرين: يُبلَغ إليهما
+        // باستعلامٍ مرتبطٍ داخل ORDER BY لا بضمِّ الجدولين — الضمُّ
+        // يجعل status وpriority وid ملتبسةً فتسقط فلاتر الصفحة.
+        $sortSub = [
+            'case' => fn () => \App\Models\LegalCase::select('title')
+                ->whereColumn('cases.id', 'tasks.case_id')->limit(1),
+            'assignee' => fn () => User::select('name')
+                ->whereColumn('users.id', 'tasks.assigned_to')->limit(1),
+        ];
+
         $sort = (string) $request->get('sort', 'created');
-        $sort = array_key_exists($sort, $sortMap) ? $sort : 'created';
+        $sort = (isset($sortMap[$sort]) || isset($sortSub[$sort])) ? $sort : 'created';
         $dir = strtolower($request->get('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
-        $tasks = $query->orderBy($sortMap[$sort], $dir)->orderBy('id', 'desc')->paginate(15)->withQueryString();
+        $tasks = $query
+            ->orderBy(isset($sortSub[$sort]) ? $sortSub[$sort]() : $sortMap[$sort], $dir)
+            ->orderBy('tasks.id', 'desc')->paginate(15)->withQueryString();
 
         $doneCount = Task::where('status', 'completed')
             ->orWhereHas('case', fn ($c) => $c->whereIn('status', \App\Models\LegalCase::DONE_STATUSES))

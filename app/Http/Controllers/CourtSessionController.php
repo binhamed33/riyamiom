@@ -27,11 +27,35 @@ class CourtSessionController extends Controller
 
         // §4: ترتيب بمفاتيح معلومة — والافتراضي كما كان: الأقرب موعداً أولاً
         $sortMap = ['date' => 'date', 'created' => 'created_at', 'status' => 'status', 'location' => 'location'];
+
+        // ═══ أعمدةٌ لا تعيش في جدول الجلسات ═══
+        //
+        // «المحكمة» و«الموكّل» و«الخصم» تُقرأ من القضية وموكّلها، فلا
+        // يعرفها ORDER BY حتى يُبلَغ إليها. والضمُّ (JOIN) كان سيجعل
+        // «الحالة» و«المعرّف» و«تاريخ الإنشاء» ملتبسةً بين الجدولين
+        // فتسقط فلاتر الصفحة كلُّها بـambiguous column؛ فالوصولُ
+        // باستعلامٍ مرتبطٍ داخل ORDER BY وحدَه: لا يمسّ الاستعلامَ
+        // الأصليَّ بحرف، ولا يضاعف صفّاً، ولا يكسر عدَّ الترقيم.
+        //
+        // و«الخصم» ليس منها: LegalCase::$encryptable يضمّه، فهو مخزَّنٌ
+        // مشفَّراً بمتّجهٍ عشوائيٍّ لكلّ صفّ — ORDER BY عليه يرتّب
+        // نصّاً مشفَّراً، أي ترتيبٌ يختلف عن نفسه بين حفظٍ وحفظ. وهذا
+        // ما كان: ترويسةٌ تُنقر فتتحرّك الصفوف، والحركةُ محضُ صدفة.
+        $sortSub = [
+            'court' => fn () => LegalCase::select('court')
+                ->whereColumn('cases.id', 'court_sessions.case_id')->limit(1),
+            'client' => fn () => \App\Models\Client::select('clients.name')
+                ->join('cases', 'cases.client_id', '=', 'clients.id')
+                ->whereColumn('cases.id', 'court_sessions.case_id')->limit(1),
+        ];
+
         $sort = (string) $request->get('sort', 'date');
-        $sort = array_key_exists($sort, $sortMap) ? $sort : 'date';
+        $sort = (isset($sortMap[$sort]) || isset($sortSub[$sort])) ? $sort : 'date';
         $dir = strtolower($request->get('dir', $sort === 'date' ? 'asc' : 'desc')) === 'desc' ? 'desc' : 'asc';
 
-        $sessions = $query->orderBy($sortMap[$sort], $dir)->orderBy('id', 'asc')->paginate(15)->withQueryString();
+        $sessions = $query
+            ->orderBy(isset($sortSub[$sort]) ? $sortSub[$sort]() : $sortMap[$sort], $dir)
+            ->orderBy('court_sessions.id', 'asc')->paginate(15)->withQueryString();
 
         $doneCount = Session::whereHas('case', fn ($q) => $q->whereIn('status', \App\Models\LegalCase::DONE_STATUSES))->count();
 

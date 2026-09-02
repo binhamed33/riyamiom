@@ -235,7 +235,7 @@ document.addEventListener('alpine:init', () => {
                 <thead>
                     <tr class="border-b border-gray-200">
                         @php
-                            $sortableCols = ['number', 'court', 'client', 'opponent', 'type', 'lawyer', 'status', 'priority', 'created'];
+                            $sortableCols = ['number', 'court', 'client', 'type', 'lawyer', 'status', 'priority', 'created']; // «الخصم» مشفَّرٌ فلا يُرتَّب
                             $arrowCls = 'inline-flex items-center gap-1 font-bold whitespace-nowrap text-xs transition-colors';
                         @endphp
                         @foreach($sortableCols as $colKey)

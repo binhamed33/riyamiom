@@ -101,7 +101,7 @@
         </div>
     </x-filter-panel>
     @php
-        $__sortOptions = ['date' => __('app.date'), 'created' => __('app.sort_newest'), 'status' => __('app.status'), 'location' => __('app.location')];
+        $__sortOptions = ['date' => __('app.date'), 'created' => __('app.sort_newest'), 'status' => __('app.status'), 'location' => __('app.location'), 'court' => __('app.court'), 'client' => __('app.case_principal')];
         $__sortDefault = 'date';
         $__sortDefaultDir = 'asc';
     @endphp
@@ -156,13 +156,16 @@
         <table class="w-full text-sm">
             <thead class=" text-gray-900">
                 <tr>
-                    {{-- ما يعرف المتحكّمُ ترتيبَه يُنقر، وما لا يعرفه يبقى نصّاً:
-                         ترويسةٌ تُنقر ولا تفعل شيئاً أسوأُ من ترويسةٍ لا تُنقر. --}}
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.case_court_with_number') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.case_principal') }}</th>
+                    {{-- كلُّ عمودٍ يحمل معنى يُرتَّب بالنقر على نصّه. و«الإجراءات»
+                         وحدَه يبقى نصّاً: لا شيءَ فيه يُرتَّب به. --}}
+                    @php $__s = request('sort', 'date'); $__d = request('dir', $__s === 'date' ? 'asc' : 'desc'); @endphp
+                    <x-th-sort key="court" :label="__('app.case_court_with_number')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="client" :label="__('app.case_principal')" :sort="$__s" :dir="$__d" />
+                    {{-- «الخصم» مشفَّرٌ في القاعدة: ترتيبُه يرتّب النصَّ
+                         المشفَّر، فالصفوفُ تتحرّك بلا معنى. نصٌّ لا رابط. --}}
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.case_opponent') }}</th>
-                    <x-th-sort key="date" :label="__('app.date')" :sort="request('sort', 'date')" :dir="request('dir', 'asc')" />
-                    <x-th-sort key="status" :label="__('app.status')" :sort="request('sort', 'date')" :dir="request('dir', 'asc')" />
+                    <x-th-sort key="date" :label="__('app.date')" :sort="$__s" :dir="$__d" />
+                    <x-th-sort key="status" :label="__('app.status')" :sort="$__s" :dir="$__d" />
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.actions') }}</th>
                 </tr>
             </thead>
@@ -251,8 +254,11 @@
         <div class="mt-4">
             <div data-live-nav>{{ $sessions->links() }}</div>
         </div>
-
-    </div>{{-- /data-live --}}
     @endif
+
+    {{-- إغلاقُ منطقة الاستبدال: يقع دائماً، لا داخل شرط الترقيم.
+         كان داخله، فجدولٌ بصفحةٍ واحدةٍ يترك الوسمَ مفتوحاً ويأكل
+         إغلاقَ ما بعده — ترقيعٌ يعتمد على تسامح المتصفّح. --}}
+    </div>
 </div>
 @endsection

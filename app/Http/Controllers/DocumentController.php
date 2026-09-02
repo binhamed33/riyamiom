@@ -114,13 +114,32 @@ class DocumentController extends Controller
             });
         }
 
-        // §4: ترتيب — اسم، تاريخ، نوع، حجم
-        $sortMap = ['created' => 'created_at', 'name' => 'title', 'type' => 'file_type', 'size' => 'file_size'];
-        $sort = (string) $request->get('sort', 'created');
-        $sort = array_key_exists($sort, $sortMap) ? $sort : 'created';
-        $dir = strtolower($request->get('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+        // §4: ترتيب — كلُّ عمودٍ في الجدول يُرتَّب بالنقر على ترويسته
+        $sortMap = [
+            'created' => 'created_at',
+            'name' => 'title',
+            'type' => 'file_type',
+            'size' => 'file_size',
+            'access' => 'access_level',
+        ];
 
-        $documents = $query->orderBy($sortMap[$sort], $dir)->orderBy('id', 'desc')->paginate(15)->withQueryString();
+        // «القضية» و«الرافع» يعيشان في جدولين آخرين: يُبلَغ إليهما
+        // باستعلامٍ مرتبطٍ داخل ORDER BY لا بضمِّ الجدولين — الضمُّ
+        // يجعل title وcreated_at وid ملتبسةً فتسقط فلاتر الصفحة.
+        $sortSub = [
+            'case' => fn () => LegalCase::select('title')
+                ->whereColumn('cases.id', 'documents.case_id')->limit(1),
+            'uploader' => fn () => \App\Models\User::select('name')
+                ->whereColumn('users.id', 'documents.uploaded_by')->limit(1),
+        ];
+
+        $sort = (string) $request->get('sort', 'created');
+        $sort = (isset($sortMap[$sort]) || isset($sortSub[$sort])) ? $sort : 'created';
+        $dir = strtolower($request->get('dir', in_array($sort, ['name', 'case', 'uploader'], true) ? 'asc' : 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $documents = $query
+            ->orderBy(isset($sortSub[$sort]) ? $sortSub[$sort]() : $sortMap[$sort], $dir)
+            ->orderBy('documents.id', 'desc')->paginate(15)->withQueryString();
 
         $doneCount = Document::whereHas('case', fn ($q) => $q->whereIn('status', \App\Models\LegalCase::DONE_STATUSES))->count();
         $cases = LegalCase::with('client')->orderBy('office_case_number')->get();

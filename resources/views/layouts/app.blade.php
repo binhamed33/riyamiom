@@ -945,6 +945,38 @@
         [data-theme="dark"] .bg-indigo-200 { background-color: rgba(79,70,229,0.22) !important; }
         [data-theme="dark"] .bg-teal-100 { background-color: rgba(13,148,136,0.15) !important; }
         [data-theme="dark"] .text-teal-700 { color: #2DD4BF !important; }
+
+        /* ═══ حركةُ الاستبدال الحيّ ═══
+
+           الترتيبُ كان يقع دفعةً واحدة: صفٌّ يختفي وآخرُ مكانَه في
+           إطارٍ واحد — صحيحٌ وناشف. والعينُ لا تتبع قفزةً، فيبدو
+           الجدولُ كأنّه وميضٌ لا إعادةُ ترتيب.
+
+           فثلاثُ لحظاتٍ قصيرة: خفوتٌ للقديم، ثمّ ظهورٌ للجديد، ثمّ
+           صعودُ الصفوف صفّاً بعد صفٍّ بفارقٍ ضئيل — فتُقرأ الحركةُ
+           «أُعيد الترتيب» لا «تغيّرت الشاشة».
+
+           وكلُّ هذا زينة: من طلب تقليلَ الحركة في نظامه لا يرى منها
+           شيئاً، والجدولُ يصل إليه كاملاً في اللحظة نفسها. */
+        [data-live] { transition: opacity .14s ease, transform .14s ease; }
+        [data-live].live-out { opacity: .2; transform: translateY(-3px); }
+        [data-live].live-in { animation: mdLiveIn .26s cubic-bezier(.22,.61,.36,1) both; }
+        [data-live].live-in tbody > tr { animation: mdLiveRow .32s cubic-bezier(.22,.61,.36,1) both; }
+
+        @keyframes mdLiveIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes mdLiveRow { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+
+        @media (prefers-reduced-motion: reduce) {
+            [data-live],
+            [data-live].live-out,
+            [data-live].live-in,
+            [data-live].live-in tbody > tr {
+                transition: none !important;
+                animation: none !important;
+                opacity: 1 !important;
+                transform: none !important;
+            }
+        }
 </style>
     @stack('styles')
 </head>
@@ -2268,24 +2300,65 @@
     (function () {
         var busy = false;
 
+        // من طلب تقليلَ الحركة في نظامه يأخذ الجدولَ بلا زخرفة
+        var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // ═══ لماذا مهلةٌ دنيا للخفوت ═══
+        //
+        // الجلبُ قد يعود في ثلاثين جزءاً من الألف: فيبدأ الخفوتُ
+        // ويُقطع في منتصفه فتُرى رجفةٌ لا حركة. فلا يُستبدَل شيءٌ حتى
+        // يتمّ الخفوتُ ويصل الردُّ معاً — والانتظارُ لا يُضاف إلى وقت
+        // الشبكة بل يجري معه.
+        var OUT_MS = 140;
+
         function region(el) { return el.closest('[data-live]'); }
+
+        function settle(ms) {
+            return new Promise(function (done) { setTimeout(done, ms); });
+        }
+
+        // ═══ إيقاظُ Alpine في العقدة المُبدَّلة ═══
+        //
+        // مراقبُ الطفرات عند Alpine يهيّئ ما يُضاف إلى الصفحة وحدَه،
+        // فأزرارُ المستندات وقوائمُها تحيا بعد الاستبدال بلا تدخّل.
+        // وهذا احتياطٌ لِما لم يصله: زرٌّ مُبدَّلٌ لا يستجيب عطلٌ صامت
+        // لا يُرى في اختبار.
+        //
+        // والشرطُ على _x_dataStack ليس زينة: تهيئةٌ ثانيةٌ لشجرةٍ حيّة
+        // تُضاعف مستمعي الأحداث، فتصير النقرةُ الواحدة نقرتين.
+        function wakeAlpine(node) {
+            if (!window.Alpine || typeof window.Alpine.initTree !== 'function') { return; }
+
+            requestAnimationFrame(function () {
+                var roots = node.matches('[x-data]') ? [node] : [];
+                var inner = node.querySelectorAll('[x-data]');
+                for (var i = 0; i < inner.length; i++) { roots.push(inner[i]); }
+
+                for (var j = 0; j < roots.length; j++) {
+                    if (roots[j]._x_dataStack) { continue; }
+                    try { window.Alpine.initTree(roots[j]); } catch (e) {}
+                }
+            });
+        }
 
         function swap(host, url, push) {
             if (busy) { return; }
             busy = true;
-            host.style.opacity = '0.55';
+
+            if (!still) { host.classList.add('live-out'); }
             host.style.pointerEvents = 'none';
 
-            fetch(url, {
+            var fetched = fetch(url, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
                 credentials: 'same-origin',
-            })
-                .then(function (r) {
-                    if (!r.ok) { throw new Error('bad status'); }
-                    return r.text();
-                })
-                .then(function (html) {
-                    var doc = new DOMParser().parseFromString(html, 'text/html');
+            }).then(function (r) {
+                if (!r.ok) { throw new Error('bad status'); }
+                return r.text();
+            });
+
+            Promise.all([fetched, still ? null : settle(OUT_MS)])
+                .then(function (out) {
+                    var doc = new DOMParser().parseFromString(out[0], 'text/html');
                     var fresh = doc.querySelector('[data-live="' + host.dataset.live + '"]');
 
                     // المنطقةُ غير موجودةٍ في الردّ (جلسةٌ انتهت فرُدَّت
@@ -2293,9 +2366,38 @@
                     // عالقةٌ بلا تفسير
                     if (!fresh) { window.location.href = url; return; }
 
-                    host.replaceWith(document.importNode(fresh, true));
+                    var node = document.importNode(fresh, true);
+
+                    if (!still) {
+                        node.classList.add('live-in');
+
+                        // الصفوفُ تصعد واحداً بعد واحدٍ بفارقٍ ضئيل.
+                        // والفارقُ محدودٌ بأوّل عشرين صفّاً: بعدها يصير
+                        // الانتظارُ بطئاً لا أناقة.
+                        var rows = node.querySelectorAll('tbody > tr');
+                        for (var i = 0; i < rows.length && i < 20; i++) {
+                            rows[i].style.animationDelay = (i * 22) + 'ms';
+                        }
+                    }
+
+                    host.replaceWith(node);
+                    wakeAlpine(node);
                     if (push) { history.pushState({ live: true }, '', url); }
+
+                    // يُفتح البابُ فور الاستبدال لا بعد انتهاء الحركة:
+                    // نقرةٌ ثانيةٌ على ترويسةٍ أخرى تُلبَّى في حينها،
+                    // والحركةُ القديمة تموت مع عقدتها المنزوعة
                     busy = false;
+
+                    if (still) { return; }
+
+                    // تُنزع آثارُ الحركة بعد انتهائها: صنفٌ باقٍ يعيد
+                    // تشغيلَ الرسم كلَّما لمست المتصفّحَ إعادةُ طلاء
+                    setTimeout(function () {
+                        node.classList.remove('live-in');
+                        var done = node.querySelectorAll('tbody > tr');
+                        for (var j = 0; j < done.length; j++) { done[j].style.animationDelay = ''; }
+                    }, 900);
                 })
                 .catch(function () { window.location.href = url; });
         }

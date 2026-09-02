@@ -54,11 +54,26 @@ class ClientController extends Controller
             default => null,
         };
 
-        // §4: ترتيب — الاسم، الأحدث، عدد القضايا
-        $sortMap = ['created' => 'created_at', 'name' => 'name', 'cases' => 'cases_count'];
+        // ═══ §4: ترتيب — وما لا يُرتَّب ولماذا ═══
+        //
+        // الاسمُ والنوعُ وعددُ القضايا والتاريخ: أعمدةٌ تُقرأ كما كُتبت
+        // فتُرتَّب. أمّا الهاتفُ والبريد فمشفَّران في القاعدة (انظر
+        // Client::$encryptable): ORDER BY عليهما يرتّب النصَّ المشفَّر
+        // — أي ترتيبٌ عشوائيٌّ يبدو ترتيباً. وترويسةٌ تكذب أسوأُ من
+        // ترويسةٍ لا تُنقر، فتُركا نصّاً.
+        $sortMap = [
+            'created' => 'created_at',
+            'name' => 'name',
+            'cases' => 'cases_count',
+            'type' => 'type',
+        ];
         $sort = (string) $request->get('sort', 'created');
         $sort = array_key_exists($sort, $sortMap) ? $sort : 'created';
-        $dir = strtolower($request->get('dir', $sort === 'name' ? 'asc' : 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        // الحقولُ النصّية تبدأ صاعدةً: «أ ⇐ ي» ما يتوقّعه القارئ من اسمٍ
+        // أو نوع، بخلاف التاريخ والعدد اللذين يُقرآن من الأكبر
+        $textual = in_array($sort, ['name', 'type'], true);
+        $dir = strtolower($request->get('dir', $textual ? 'asc' : 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $clients = $query->orderBy($sortMap[$sort], $dir)->orderBy('id', 'desc')->paginate(15)->withQueryString();
 

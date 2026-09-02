@@ -63,9 +63,12 @@
         </div>
     </x-filter-panel>
     @php
-        $__sortOptions = ['created' => __('app.sort_newest'), 'name' => __('app.name'), 'cases' => __('app.cases')];
+        $__sortOptions = ['created' => __('app.sort_newest'), 'name' => __('app.name'), 'cases' => __('app.cases'), 'type' => __('app.type')];
         $__sortDefault = 'created';
     @endphp
+    {{-- منطقةُ الاستبدال: نقرةُ الترتيب تجلب هذا وحدَه --}}
+    <div data-live="clients">
+
     {{-- §4: الترتيب --}}
     <div class="flex items-center gap-3 flex-wrap">
         <x-sort-bar :options="$__sortOptions" :default="$__sortDefault" :default-dir="$__sortDefaultDir ?? 'desc'" />
@@ -105,12 +108,20 @@
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-gray-200">
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.name') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.type') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.phone') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.email') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.cases') }}</th>
-                        <th class="text-right px-6 py-4 text-sm font-semibold text-gold-dark">{{ __('app.actions') }}</th>
+                        @php
+                            $__s = request('sort', 'created');
+                            $__thCls = 'text-right px-6 py-4 text-sm font-semibold text-gold-dark';
+                            $__d = request('dir', in_array($__s, ['name', 'type'], true) ? 'asc' : 'desc');
+                        @endphp
+                        <x-th-sort key="name" :label="__('app.name')" :sort="$__s" :dir="$__d" :th-class="$__thCls" />
+                        <x-th-sort key="type" :label="__('app.type')" :sort="$__s" :dir="$__d" :th-class="$__thCls" />
+                        {{-- الهاتفُ والبريدُ مشفَّران في القاعدة: ترتيبُهما
+                             يرتّب النصَّ المشفَّر لا القيمة، فيبدو عشوائياً.
+                             وترويسةٌ تكذب أسوأُ من ترويسةٍ لا تُنقر. --}}
+                        <th class="{{ $__thCls }}">{{ __('app.phone') }}</th>
+                        <th class="{{ $__thCls }}">{{ __('app.email') }}</th>
+                        <x-th-sort key="cases" :label="__('app.cases')" :sort="$__s" :dir="$__d" :th-class="$__thCls" />
+                        <th class="{{ $__thCls }}">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -169,8 +180,10 @@
 
     @if(method_exists($clients, 'links'))
         <div class="mt-4">
-            {{ $clients->withQueryString()->links() }}
+            <div data-live-nav>{{ $clients->withQueryString()->links() }}</div>
         </div>
     @endif
+
+    </div>{{-- /منطقةُ الاستبدال --}}
 </div>
 @endsection
