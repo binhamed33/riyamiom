@@ -19,6 +19,7 @@
             $nextDir = $active ? ($dir === 'desc' ? 'asc' : 'desc') : 'desc';
         @endphp
         <a href="{{ request()->fullUrlWithQuery(['sort' => $key, 'dir' => $nextDir, 'page' => null]) }}"
+           data-live-link
            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition {{ $active ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600 hover:border-gray-300' }}"
            @if($active) aria-pressed="true" @endif>
             {{ $label }}

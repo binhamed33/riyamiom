@@ -2249,6 +2249,82 @@
     {{-- ألوان الرسوم: تُقرأ من الرموز وقت التشغيل، قبل أي سكربت يبني رسماً --}}
     @include('partials.chart-theme')
 
+    {{-- ═══ الترتيبُ والتصفّح بلا إعادة تحميل ═══
+
+         كلُّ نقرةٍ على ترويسة عمودٍ كانت تُعيد بناء الصفحة كاملة:
+         القائمةُ الجانبيةُ تُرسَم من جديد وتقفز إلى أعلاها، والشريطُ
+         يومض، ومن كان في أسفل جدولٍ طويلٍ عاد إلى رأسه. والمطلوبُ
+         من الخادم في الحقيقة صفٌّ واحد: الجدول.
+
+         فتُلتقَط النقرةُ ويُجلَب الجدولُ وحدَه ويُستبدَل في مكانه.
+         والقائمةُ الجانبيةُ خارج المنطقة فلا تُلمَس أصلاً — لا وميضَ
+         ولا قفزة.
+
+         وكلُّ هذا زينة: الرابطُ يبقى رابطاً حقيقياً بعنوانٍ صحيح، فمن
+         عطّل الجافاسكربت أو فشل الجلبُ عنده انتقل انتقالاً عادياً.
+         ولا يُلتقَط رابطٌ إلا وُسم صراحةً — فلا يُبتلع «عرض» ولا
+         «تعديل» ولا زرُّ حذفٍ في الطريق. --}}
+    <script nonce="{{ $cspNonce }}">
+    (function () {
+        var busy = false;
+
+        function region(el) { return el.closest('[data-live]'); }
+
+        function swap(host, url, push) {
+            if (busy) { return; }
+            busy = true;
+            host.style.opacity = '0.55';
+            host.style.pointerEvents = 'none';
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
+                credentials: 'same-origin',
+            })
+                .then(function (r) {
+                    if (!r.ok) { throw new Error('bad status'); }
+                    return r.text();
+                })
+                .then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    var fresh = doc.querySelector('[data-live="' + host.dataset.live + '"]');
+
+                    // المنطقةُ غير موجودةٍ في الردّ (جلسةٌ انتهت فرُدَّت
+                    // صفحةُ دخول، أو صفحةُ خطأ): انتقالٌ عاديّ لا شاشةٌ
+                    // عالقةٌ بلا تفسير
+                    if (!fresh) { window.location.href = url; return; }
+
+                    host.replaceWith(document.importNode(fresh, true));
+                    if (push) { history.pushState({ live: true }, '', url); }
+                    busy = false;
+                })
+                .catch(function () { window.location.href = url; });
+        }
+
+        document.addEventListener('click', function (e) {
+            if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { return; }
+
+            var link = e.target.closest('a[data-live-link], [data-live-nav] a[href]');
+            if (!link || !link.getAttribute('href') || link.target) { return; }
+
+            var host = region(link);
+            if (!host) { return; }
+
+            // روابطُ خارج الموقع تمضي كما هي
+            if (link.origin !== window.location.origin) { return; }
+
+            e.preventDefault();
+            swap(host, link.href, true);
+        });
+
+        // زرُّ «رجوع» في المتصفّح يُعيد الحالةَ السابقة بلا تحميلٍ كذلك
+        window.addEventListener('popstate', function (e) {
+            var host = document.querySelector('[data-live]');
+            if (!host || !e.state || !e.state.live) { return; }
+            swap(host, window.location.href, false);
+        });
+    })();
+    </script>
+
     @stack('scripts')
 
     <script nonce="{{ $cspNonce }}">

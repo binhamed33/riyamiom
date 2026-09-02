@@ -105,6 +105,13 @@
         $__sortDefault = 'date';
         $__sortDefaultDir = 'asc';
     @endphp
+    {{-- ═══ منطقةُ الاستبدال ═══
+
+         تبدأ من شريط الترتيب وتنتهي بعد الترقيم: كلُّ ما يتغيّر بنقرة
+         ترتيبٍ داخلَها، فلا يبقى شريطٌ يقول «التاريخ» فوق جدولٍ رُتّب
+         بالحالة. والقائمةُ الجانبيةُ خارجَها فلا تُرسَم من جديد. --}}
+    <div data-live="sessions">
+
     {{-- §3: المنجز خلف زرّه + §4: الترتيب --}}
     <div class="flex items-center justify-between gap-3 flex-wrap">
         <x-sort-bar :options="$__sortOptions" :default="$__sortDefault" :default-dir="$__sortDefaultDir ?? 'desc'" />
@@ -149,11 +156,13 @@
         <table class="w-full text-sm">
             <thead class=" text-gray-900">
                 <tr>
+                    {{-- ما يعرف المتحكّمُ ترتيبَه يُنقر، وما لا يعرفه يبقى نصّاً:
+                         ترويسةٌ تُنقر ولا تفعل شيئاً أسوأُ من ترويسةٍ لا تُنقر. --}}
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.case_court_with_number') }}</th>
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.case_principal') }}</th>
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.case_opponent') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.date') }}</th>
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.status') }}</th>
+                    <x-th-sort key="date" :label="__('app.date')" :sort="request('sort', 'date')" :dir="request('dir', 'asc')" />
+                    <x-th-sort key="status" :label="__('app.status')" :sort="request('sort', 'date')" :dir="request('dir', 'asc')" />
                     <th class="px-6 py-3 text-right font-semibold">{{ __('app.actions') }}</th>
                 </tr>
             </thead>
@@ -240,8 +249,10 @@
 
     @if ($sessions->hasPages())
         <div class="mt-4">
-            {{ $sessions->links() }}
+            <div data-live-nav>{{ $sessions->links() }}</div>
         </div>
+
+    </div>{{-- /data-live --}}
     @endif
 </div>
 @endsection

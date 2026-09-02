@@ -228,7 +228,8 @@ document.addEventListener('alpine:init', () => {
     </div>
 
     {{-- Cases Table --}}
-    <div class="hidden md:block bg-white rounded-xl border border-gold/15 overflow-hidden">
+    {{-- data-live: الجدولُ وحدَه يُجلَب عند الترتيب — لا الصفحةُ كلُّها --}}
+    <div data-live="cases" class="hidden md:block bg-white rounded-xl border border-gold/15 overflow-hidden">
         <div class="overflow-x-auto md-scroll-x">
             <table class="w-full text-sm text-right">
                 <thead>
@@ -255,6 +256,7 @@ document.addEventListener('alpine:init', () => {
                             @endphp
                             <th class="px-3 py-2 whitespace-nowrap text-xs">
                                 <a href="{{ request()->fullUrlWithQuery(['sort' => $colKey, 'dir' => $nextDir]) }}"
+                                    data-live-link
                                     class="{{ $arrowCls }} {{ $isActive ? 'text-gold-dark bg-gold/12/80 rounded-lg px-2 py-1' : 'text-gold-dark hover:text-gold-dark' }}">
                                     {{ $label }}
                                     @if($isActive)
@@ -407,7 +409,7 @@ document.addEventListener('alpine:init', () => {
         {{-- Pagination --}}
         @if(isset($cases) && $cases instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator && $cases->hasPages())
             <div class="px-4 py-3 border-t border-gray-200">
-                {{ $cases->withQueryString()->links() }}
+                <div data-live-nav>{{ $cases->withQueryString()->links() }}</div>
             </div>
         @endif
     </div>
