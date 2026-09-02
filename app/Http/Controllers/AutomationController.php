@@ -57,6 +57,10 @@ class AutomationController extends Controller
             'suggestions' => \App\Support\AutomationAdvisor::suggestions(),
             'automations' => $automations,
             'engineEnabled' => AutomationEngine::enabled(),
+
+            // مفتاحُ المحرّك في الإعدادات ولمدير المكتب: من لا يملكه
+            // لا يُدَلّ على بابٍ يُغلق في وجهه
+            'isOfficeManager' => in_array(auth()->user()->role, ['admin', 'developer'], true),
             'todayRuns' => $todayRuns,
             'failedRecently' => $failedRecently,
             'triggers' => AutomationEngine::triggers(),
@@ -266,15 +270,11 @@ class AutomationController extends Controller
         return back()->with('success', 'أُخفي الاقتراح ولن يظهر مجدداً.');
     }
 
-    public function toggleEngine(): RedirectResponse
-    {
-        $on = AutomationEngine::enabled();
-        Setting::set('automation_enabled', $on ? '0' : '1', 'automation');
-
-        return back()->with('success', $on
-            ? 'أُوقف محرك الأتمتة بالكامل — القواعد محفوظة ولن تعمل حتى إعادة التفعيل.'
-            : 'فُعّل محرك الأتمتة — القواعد النشطة ستعمل في الجولة المجدولة القادمة.');
-    }
+    // ═══ toggleEngine حُذف ═══
+    //
+    // مضى المفتاحُ إلى الإعدادات (SettingController::engines) لمدير
+    // المكتب وحدَه. وتُرك المتحكّمُ بلا نسخةٍ ثانيةٍ منه عمداً: مسارٌ
+    // مهجورٌ يبقى مفتوحاً لمن يعرف عنوانَه، وهو ما كنّا نغلقه.
 
     // ------------------------------------------------------------------
 

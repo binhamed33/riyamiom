@@ -14,6 +14,10 @@
         @endif
     </div>
 
+    {{-- ═══ منطقةُ الاستبدال ═══
+         نقرةُ ترتيبٍ أو صفحةٍ تجلب هذا وحدَه: القائمةُ الجانبيةُ لا
+         تُرسَم من جديد فلا تقفز، وموضعُ القارئ في الصفحة يبقى. --}}
+    <div data-live="notifications">
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         @forelse($notifications ?? [] as $notification)
             {{-- الإشعارُ رابطٌ يصل إلى ما يُخبر عنه.
@@ -60,8 +64,9 @@
 
     @if(isset($notifications) && method_exists($notifications, 'links'))
         <div class="mt-4">
-            {{ $notifications->links() }}
+            <div data-live-nav>{{ $notifications->links() }}</div>
         </div>
     @endif
+    </div>{{-- /notifications --}}
 </div>
 @endsection

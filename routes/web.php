@@ -409,7 +409,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::resource('users', UserController::class)->middleware(['role:developer,admin', 'feature:users']);
 
     // القوالب الذكية — للإدارة أو من يملك صلاحية templates.manage صراحةً
-    Route::middleware(['role:developer,admin,permission:templates.manage', 'feature:case_templates'])->group(function () {
+    Route::middleware(['role:developer,admin,permission:templates.manage', 'feature:case_templates', 'engine:templates'])->group(function () {
         Route::resource('case-templates', App\Http\Controllers\CaseTemplateController::class)
             ->only(['index', 'store', 'update', 'destroy']);
         Route::post('/case-templates/ai-draft', [App\Http\Controllers\CaseTemplateController::class, 'aiDraft'])->middleware('throttle:10,10')->name('case-templates.ai-draft');
@@ -426,7 +426,6 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::post('/', [App\Http\Controllers\AutomationController::class, 'store'])->name('automations.store');
         Route::get('/runs', [App\Http\Controllers\AutomationController::class, 'runs'])->name('automations.runs');
         Route::post('/seed-defaults', [App\Http\Controllers\AutomationController::class, 'seedDefaults'])->name('automations.seed');
-        Route::post('/toggle-engine', [App\Http\Controllers\AutomationController::class, 'toggleEngine'])->name('automations.engine');
         Route::post('/bulk', [App\Http\Controllers\AutomationController::class, 'bulkToggle'])->name('automations.bulk');
         Route::post('/ai-draft', [App\Http\Controllers\AutomationController::class, 'aiDraft'])->middleware('throttle:10,10')->name('automations.ai-draft');
         Route::post('/suggestions/accept', [App\Http\Controllers\AutomationController::class, 'acceptSuggestion'])->name('automations.suggestions.accept');
@@ -500,9 +499,14 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::post('/settings/whatsapp/templates', [App\Http\Controllers\WhatsAppSettingsController::class, 'syncTemplates'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.templates.sync');
 
     // إعدادات الذكاء الاصطناعي — خاصة بهذا المكتب، ومقصورة على من يدير الإعدادات
-    Route::post('/settings/ai', [App\Http\Controllers\AiSettingsController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.ai.update');
-    Route::delete('/settings/ai', [App\Http\Controllers\AiSettingsController::class, 'destroy'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.ai.destroy');
-    Route::post('/settings/ai/test', [App\Http\Controllers\AiSettingsController::class, 'test'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.ai.test');
+    // ═══ مفتاحُ الذكاء الاصطناعي: للمطوّر وحدَه ═══
+    //
+    // المساعدُ يعمل بمفتاح مُداوَلة المركزيّ في كلّ مكتب، فلا حاجةَ
+    // بصاحب المكتب إلى هذه المسارات. وإخفاءُ البطاقة من الشاشة لا
+    // يكفي: من عرف العنوان يرسل الطلبَ بلا زر. فالحدُّ هنا لا هناك.
+    Route::post('/settings/ai', [App\Http\Controllers\AiSettingsController::class, 'update'])->middleware(['role:developer', 'feature:settings'])->name('settings.ai.update');
+    Route::delete('/settings/ai', [App\Http\Controllers\AiSettingsController::class, 'destroy'])->middleware(['role:developer', 'feature:settings'])->name('settings.ai.destroy');
+    Route::post('/settings/ai/test', [App\Http\Controllers\AiSettingsController::class, 'test'])->middleware(['role:developer', 'feature:settings'])->name('settings.ai.test');
 
     // طلبات التسجيل من الموقع التعريفي
     Route::get('/register-requests', [MarketingPageController::class, 'requests'])->middleware(['role:developer,admin'])->name('marketing.requests');
@@ -520,6 +524,14 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::get('/chat/unread/count', [App\Http\Controllers\ChatController::class, 'unreadCount'])->name('chat.unread');
         Route::get('/chat/messages/{message}/attachment', [App\Http\Controllers\ChatController::class, 'attachment'])->name('chat.attachment');
     });
+
+    // ═══ مفتاحا «الأتمتة» و«القوالب الذكية» ═══
+    //
+    // لمدير المكتب وحدَه: كان مفتاحُ المحرّك داخل مركز الأتمتة، فمن
+    // يملك automations.manage — ولو موظّفاً — يُطفئ محرّكَ المكتب
+    // كلَّه. والباب هنا واحدٌ ولصاحبه.
+    Route::put('/settings/engines', [SettingController::class, 'engines'])
+        ->middleware(['role:developer,admin', 'feature:settings'])->name('settings.engines');
 
     // Backup - developer, admin (أو بصلاحية backup.manage)
     Route::get('/backup', [BackupController::class, 'index'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.index');

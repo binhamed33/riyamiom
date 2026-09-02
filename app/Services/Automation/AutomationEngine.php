@@ -44,9 +44,10 @@ class AutomationEngine
     /** حد إعادة المحاولة بعد الفشل */
     public const MAX_FAILURES = 3;
 
+    /** المفتاحُ يُقرأ من موضعٍ واحد: OfficeEngines — لا نسختين تفترقان. */
     public static function enabled(): bool
     {
-        return Setting::get('automation_enabled', '0') === '1';
+        return \App\Support\OfficeEngines::automationOn();
     }
 
     // ------------------------------------------------------------------

@@ -45,6 +45,17 @@ class CommandController extends Controller
             ]);
         }
 
+        // ═══ أقسامُ الموقع أوّلاً ═══
+        //
+        // البحثُ كان يقرأ الصفوفَ وحدَها، فمن كتب «مداولة» أو «مواعيد»
+        // أو «نسخ احتياطي» لم يجد شيئاً — والصفحةُ أمامه في القائمة.
+        // وهي أوّلُ المجموعات لأنّ من كتب اسمَ قسمٍ يريد القسمَ لا
+        // صفّاً صادف أنّ فيه الكلمة.
+        $pages = \App\Support\SearchPages::match($raw, $user);
+        if ($pages !== []) {
+            $groups['page'] = $pages;
+        }
+
         $canFull = in_array($user->role, ['developer', 'admin', 'lawyer', 'staff']);
 
         if ($canFull) {

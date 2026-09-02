@@ -3,24 +3,146 @@
 @section('title', __('app.page_settings'))
 
 @section('content')
-<div class="max-w-3xl mx-auto space-y-6">
-    <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-gold-dark">{{ __('app.settings') }}</h1>
+@php
+    $subService = app(\App\Services\SubscriptionService::class);
+    $isDev = auth()->user()->isDeveloper();
+    $subInfo = $isDev ? null : $subService->info();
+    $subKey = $subInfo['key'] ?? null;
+    $subPct = 0;
+    if ($subInfo && $subInfo['start_at'] && $subInfo['end_at']) {
+        $totalSecs = max(1, (int) $subInfo['start_at']->diffInSeconds($subInfo['end_at']));
+        $elapsedSecs = max(0, min($totalSecs, (int) $subInfo['start_at']->diffInSeconds(now())));
+        $subPct = (int) round($elapsedSecs / $totalSecs * 100);
+    }
+
+    // مديرُ المكتب وحدَه يفتح المحرّكات ويغلقها — والمطوّرُ معه
+    $isManager = $isDev || auth()->user()->role === 'admin';
+
+    // بطاقاتُ الفهرس. الترتيبُ ترتيبُ الاستعمال لا ترتيبُ الملفّ:
+    // ما يُفتح كلَّ أسبوعٍ قبل ما يُفتح مرّةً في العمر.
+    $secCards = array_values(array_filter([
+        ['key' => 'office', 'title' => 'معلومات المكتب', 'desc' => 'الاسم والبريد والهاتف والعنوان — تظهر في الفواتير والمراسلات',
+         'icon' => 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'],
+        ['key' => 'brand', 'title' => 'هوية المكتب', 'desc' => 'شعارُ مكتبك — يظهر في الشريط والفواتير والمستندات',
+         'icon' => 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'],
+        ['key' => 'whatsapp', 'title' => 'واتساب الأعمال', 'desc' => 'ربطُ رقم مكتبك وقوالبُ الرسائل وحدودُ الإرسال',
+         'icon' => 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 4v-4z'],
+        ['key' => 'mail', 'title' => 'بريد الموكّلين', 'desc' => 'ما الذي يصل الموكّل بريداً وواتساباً — ومتى',
+         'icon' => 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'],
+        ['key' => 'appointments', 'title' => 'المواعيد', 'desc' => 'أيامُ العمل وساعاتُه وطولُ الموعد ووقتُ التذكير',
+         'icon' => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'],
+        ['key' => 'notify', 'title' => 'الإشعارات', 'desc' => 'ما يصل فريقَك من تنبيهات المهام والمواعيد النهائية',
+         'icon' => 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'],
+        $isManager ? ['key' => 'engines', 'title' => 'الأتمتة والقوالب', 'desc' => 'فتحُ مركز الأتمتة والقوالب الذكية وإغلاقُهما — لمدير المكتب وحدَه',
+         'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'] : null,
+        ['key' => 'portal', 'title' => 'بوابة العملاء', 'desc' => 'ما يراه الموكّل حين يدخل بوابته وكيف يدخلها',
+         'icon' => 'M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4'],
+        ['key' => 'attendance', 'title' => 'الحضور والصيانة', 'desc' => 'تسجيلُ الحضور التلقائيّ وسقفُ المناوبة ونصُّ صفحة الصيانة',
+         'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
+        ['key' => 'system', 'title' => 'النظام', 'desc' => 'صيغةُ التاريخ وعددُ الصفوف في الصفحة الواحدة',
+         'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'],
+        ($isDev || $subInfo) ? ['key' => 'subscription', 'title' => 'الاشتراك', 'desc' => 'مدّةُ اشتراك مكتبك وحدودُ خطّتك',
+         'icon' => 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'] : null,
+        $isDev ? ['key' => 'ai', 'title' => 'الذكاء الاصطناعي', 'desc' => 'المزوّدُ والنموذجُ والمفتاح — للمطوّر وحدَه',
+         'icon' => 'M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z'] : null,
+        (auth()->user()->hasPermission('backup.manage') || in_array(auth()->user()->role, ['admin', 'developer']))
+            ? ['key' => 'backup', 'title' => 'النسخ الاحتياطي', 'desc' => 'نسخةٌ من قاعدة مكتبك — تُنشأ وتُنزَّل وتُستعاد', 'url' => route('backup.index'),
+               'icon' => 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4'] : null,
+    ]));
+
+    // مفاتيحُ الأقسام التي تُعرض داخل الصفحة — لا التي تفتح صفحةً أخرى
+    $secKeys = array_values(array_diff(array_column($secCards, 'key'), ['backup']));
+
+    // ═══ القسمُ يُحسب في الخادم أوّلاً ═══
+    //
+    // لو تُرك للمتصفّح وحدَه لصارت الصفحةُ كلُّها رهينةَ جافاسكربت:
+    // بطاقاتٌ تُنقر ولا تفتح شيئاً إن تعثّر التحميل. فالخادمُ يقرّر
+    // الظاهرَ أوّلاً، والبطاقاتُ روابطُ حقيقيةٌ بعناوينَ صحيحة،
+    // وAlpine يعترضها ليجعلها فوريّةً لا ليجعلها ممكنة.
+    //
+    // وربحٌ ثانٍ: الرابطُ المباشر يفتح على قسمه بلا ومضةٍ يُرى فيها
+    // الفهرسُ ثمّ يُستبدل.
+    $sec = in_array(request('sec'), $secKeys, true) ? request('sec') : 'home';
+    $inFormSecs = ['office', 'mail', 'notify', 'system', 'appointments', 'attendance', 'portal'];
+
+    // «مخفيٌّ ابتداءً» — يُلغيه Alpine حين يتولّى العرض
+    $hide = fn (string $key) => $sec === $key ? '' : ' style="display:none"';
+@endphp
+{{-- ═══ الإعداداتُ فهرسٌ لا لفافة ═══
+
+     كانت الصفحةُ عموداً واحداً فيه أحدَ عشرَ صندوقاً بلا عنوانٍ جامع:
+     من أراد وقتَ المواعيد نزل يقرأ الاشتراكَ والشعارَ والواتساب حتى
+     يجده، ومن حفظ عاد إلى الأعلى فبدأ النزولَ من جديد. والترتيبُ لم
+     يكن سيئاً — لم يكن موجوداً.
+
+     فصارت فهرساً: بطاقةٌ لكلّ باب، والنقرُ يدخل، و«رجوع» يخرج. ولم
+     يتغيّر إعدادٌ واحد ولا حقلٌ ولا مسار: الأقسامُ نفسُها في مواضعها،
+     ونموذجُ الحفظ واحدٌ كما كان — ما تغيّر أيُّها يُعرض.
+
+     والقسمُ في العنوان (#sec أو ?sec=): من نسخ الرابطَ لزميله فتح على
+     الباب نفسِه، وزرُّ الرجوع في المتصفّح يعمل، والحفظُ يعيد إلى حيث
+     كان لا إلى الفهرس. --}}
+<div class="max-w-3xl mx-auto space-y-6"
+     x-data="{
+        sec: @js($sec),
+        get inForm() { return ['office','mail','notify','system','appointments','attendance','portal'].includes(this.sec); },
+        go(next) {
+            this.sec = next;
+            try { history.pushState(null, '', next === 'home' ? location.pathname : location.pathname + '#' + next); } catch (e) {}
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        read() {
+            var q = new URLSearchParams(location.search).get('sec');
+            var h = location.hash.replace('#', '');
+            return @js($secKeys).includes(q) ? q : (@js($secKeys).includes(h) ? h : 'home');
+        },
+     }"
+     x-init="window.addEventListener('popstate', () => { sec = read(); })">
+
+    <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            {{-- الرجوعُ حيث تقع العينُ أوّلاً: يسارَ العنوان في صفحةٍ عربية --}}
+            <a href="{{ route('settings.index') }}" x-show="sec !== 'home'"{!! $sec === 'home' ? ' style="display:none"' : '' !!} x-on:click.prevent="go('home')"
+               class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-gold-dark hover:border-gold/40 transition text-sm font-semibold flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+                رجوع
+            </a>
+            <h1 class="text-3xl font-bold text-gold-dark truncate">
+                <span x-show="sec === 'home'"{!! $hide('home') !!}>{{ __('app.settings') }}</span>
+                @foreach($secCards as $card)
+                    <span x-show="sec === '{{ $card['key'] }}'"{!! $hide($card['key']) !!}>{{ $card['title'] }}</span>
+                @endforeach
+            </h1>
+        </div>
     </div>
 
-    @php
-        $subService = app(\App\Services\SubscriptionService::class);
-        $isDev = auth()->user()->isDeveloper();
-        $subInfo = $isDev ? null : $subService->info();
-        $subKey = $subInfo['key'] ?? null;
-        $subPct = 0;
-        if ($subInfo && $subInfo['start_at'] && $subInfo['end_at']) {
-            $totalSecs = max(1, (int) $subInfo['start_at']->diffInSeconds($subInfo['end_at']));
-            $elapsedSecs = max(0, min($totalSecs, (int) $subInfo['start_at']->diffInSeconds(now())));
-            $subPct = (int) round($elapsedSecs / $totalSecs * 100);
-        }
-    @endphp
+    {{-- الفهرس --}}
+    <div x-show="sec === 'home'"{!! $hide('home') !!} class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        @foreach($secCards as $card)
+            {{-- رابطٌ حقيقيٌّ بعنوانٍ صحيح، وAlpine يعترضه ليجعله
+                 فوريّاً. فمن تعثّر عنده جافاسكربت يتصفّح كما كان. --}}
+            <a href="{{ $card['url'] ?? route('settings.index', ['sec' => $card['key']]) }}"
+               @unless($card['url'] ?? null) x-on:click.prevent="go('{{ $card['key'] }}')" @endunless
+               class="group text-start bg-white rounded-xl border border-gray-200 p-4 hover:border-gold/50 hover:shadow-sm transition flex items-start gap-3">
+                <span class="w-10 h-10 rounded-xl bg-gold/12 text-gold-dark flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="{{ $card['icon'] }}"/>
+                    </svg>
+                </span>
+                <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-bold text-gray-800 group-hover:text-gold-dark transition">{{ $card['title'] }}</span>
+                    <span class="block text-[11px] text-gray-500 mt-0.5 leading-relaxed">{{ $card['desc'] }}</span>
+                </span>
+                <svg class="w-4 h-4 text-gray-300 flex-shrink-0 mt-1 group-hover:text-gold-dark transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+        @endforeach
+    </div>
 
+    <div x-show="sec === 'subscription'"{!! $hide('subscription') !!} class="space-y-6">
     @if($isDev)
         <a href="{{ route('developer.subscription.config') }}" class="block bg-white rounded-xl border border-gray-200 p-5 hover:border-gold/50 transition-colors">
             <div class="flex items-center gap-3">
@@ -113,7 +235,9 @@
             @endif
         </div>
     @endif
+    </div>
 
+    <div x-show="sec === 'brand'"{!! $hide('brand') !!} class="space-y-6">
     {{-- ===== هوية المكتب: شعار خاص بهذا المكتب وحده ===== --}}
     @php
         $officeLogoUrl = \App\Support\OfficeBrand::logoUrl();
@@ -195,8 +319,10 @@
             <span>هوية المنتج <b class="text-gold-dark">مُداوَلة</b> تبقى كما هي في النظام؛ شعارك يمثّل مكتبك أنت. ولا يمكن لأي مكتب آخر الوصول إلى شعارك.</span>
         </div>
     </div>
+    </div>
 
 
+    <div x-show="sec === 'whatsapp'"{!! $hide('whatsapp') !!} class="space-y-6">
     {{-- ===== واتساب الأعمال: رقم هذا المكتب وحده ===== --}}
     @php
         $wa = \App\Support\WhatsAppSettings::snapshot();
@@ -735,183 +861,202 @@
 
         <p class="mt-4 text-[11px] text-gray-400 leading-relaxed">{{ __('app.wa_pricing_note') }}</p>
     </div>
-
-
-    {{-- ===== الذكاء الاصطناعي: مفتاح ونموذج خاصان بهذا المكتب ===== --}}
-    @php
-        $aiProviders = \App\Support\AiSettings::availableProviders();
-        $aiProvider = \App\Support\AiSettings::provider();
-        $aiModel = \App\Support\AiSettings::model();
-        $aiMasked = \App\Support\AiSettings::maskedKey();
-        $aiFromEnv = \App\Support\AiSettings::usingEnvFallback();
-        $aiUpdated = \App\Support\AiSettings::updatedAt();
-        $aiKeyUrl = config("ai.providers.$aiProvider.key_url");
-        $aiModels = (array) config("ai.providers.$aiProvider.models", []);
-        $aiHealth = \App\Support\AiHealth::snapshot();
-    @endphp
-    <div class="bg-white rounded-xl border border-gray-200 p-5"
-         x-data="{ testing: false, result: null, ok: false,
-            async test() {
-                this.testing = true; this.result = null;
-                try {
-                    const r = await fetch('{{ route('settings.ai.test') }}', {
-                        method: 'POST',
-                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
-                        credentials: 'same-origin'
-                    });
-                    const d = await r.json();
-                    this.ok = !!d.ok; this.result = d.message || (d.ok ? 'الاتصال ناجح' : 'فشل الاتصال');
-                } catch (e) {
-                    this.ok = false; this.result = 'تعذّر تنفيذ الفحص. تحقق من اتصال الخادم.';
-                }
-                this.testing = false;
-            } }">
-        {{-- §88: صحة المساعد — أرقام حقيقية للإدارة، لا تظهر لغيرها --}}
-        @php
-            $aiTone = ['healthy' => ['نشط', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
-                       'warning' => ['متعثر', 'bg-yellow-50 text-yellow-700 border-yellow-200'],
-                       'offline' => ['غير مهيأ', 'bg-gray-100 text-gray-500 border-gray-200']][$aiHealth['status']];
-        @endphp
-        <div class="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
-            <span class="px-2.5 py-1 rounded-lg border font-bold {{ $aiTone[1] }}">{{ $aiTone[0] }}</span>
-            <span class="text-gray-500">النموذج: <b class="text-gray-700">{{ $aiHealth['model'] }}</b></span>
-            <span class="text-gray-500">آخر نجاح:
-                <b class="text-gray-700">{{ $aiHealth['last_success_at'] ? \Illuminate\Support\Carbon::parse($aiHealth['last_success_at'])->diffForHumans() : 'لم يُستعمل بعد' }}</b>
-            </span>
-            @if($aiHealth['last_error'])
-                <span class="text-gray-500">آخر خطأ:
-                    <b class="text-red-600">{{ $aiHealth['last_error']['type'] ?? '—' }}</b>
-                    <span class="text-gray-400">({{ ($aiHealth['last_error']['at'] ?? null) ? \Illuminate\Support\Carbon::parse($aiHealth['last_error']['at'])->diffForHumans() : '' }})</span>
-                </span>
-            @endif
-            <span class="text-gray-500">اليوم: <b class="text-gray-700">{{ $aiHealth['counts']['today'] }}</b> طلبًا
-                @if($aiHealth['counts']['today_errors'] > 0)<b class="text-red-600">({{ $aiHealth['counts']['today_errors'] }} خطأ)</b>@endif
-            </span>
-            <span class="text-gray-500">هذا الشهر: <b class="text-gray-700">{{ $aiHealth['counts']['month'] }}</b></span>
-            @if($aiHealth['avg_ms'] !== null)
-                <span class="text-gray-500">متوسط الرد:
-                    <b class="{{ $aiHealth['avg_ms'] > 15000 ? 'text-red-600' : ($aiHealth['avg_ms'] > 8000 ? 'text-amber-600' : 'text-gray-700') }}">{{ number_format($aiHealth['avg_ms'] / 1000, 1) }} ث</b>
-                    @if($aiHealth['last_ms'] !== null)<span class="text-gray-400">(آخر طلب {{ number_format($aiHealth['last_ms'] / 1000, 1) }} ث)</span>@endif
-                </span>
-            @endif
-        </div>
-
-        <div class="flex items-center gap-3 mb-1">
-            <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
-                </svg>
-            </div>
-            <div class="flex-1">
-                <h2 class="text-base font-bold text-gray-800">الذكاء الاصطناعي</h2>
-                <p class="text-xs text-gray-500 mt-0.5">
-                    @if($aiFromEnv)
-                        يعمل مكتبك بمفتاح مُداوَلة المركزي — جاهزٌ بلا إعداد، ولك أن تضع مفتاحك الخاص متى شئت.
-                    @else
-                        يعمل المساعد بحساب مُداوَلة المركزي. ومفتاحُ مكتبك — إن وضعتَه — احتياطٌ يُلجأ إليه، ومحادثاتُ مكتبك في قاعدته وحدها لا يراها غيرُه.
-                    @endif
-                </p>
-            </div>
-            @if($aiMasked)
-                <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">{{ $aiFromEnv ? 'يعمل — مفتاح مُداوَلة' : 'مُعدّ ✓' }}</span>
-            @else
-                <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 border border-gray-200 whitespace-nowrap">غير مُعدّ</span>
-            @endif
-        </div>
-
-        @if($aiFromEnv)
-            <div class="mt-4 flex items-start gap-2 text-[12px] leading-relaxed bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg px-3 py-2.5">
-                <span class="font-bold">✓</span>
-                <span>مساعدك يعمل بمفتاح مُداوَلة المركزي — لا إعداد مطلوب منك. وإن فضّلت مفتاحاً خاصاً بمكتبك (حصة واستهلاك مستقلَّان تماماً) فأضفه هنا، وسيتقدّم على المركزي فوراً.</span>
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('settings.ai.update') }}" class="mt-5 space-y-4">
-            @csrf
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label for="ai_provider" class="block text-sm font-medium text-gray-700 mb-2">المزوّد</label>
-                    <select id="ai_provider" name="ai_provider" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-gold/40 focus:border-gold outline-none">
-                        @foreach($aiProviders as $key => $cfg)
-                            <option value="{{ $key }}" @selected($aiProvider === $key)>{{ $cfg['label'] }}</option>
-                        @endforeach
-                    </select>
-                    <p class="text-[11px] text-gray-400 mt-1.5">تُعرض هنا المزوّدات المدعومة فعلياً فقط.</p>
-                    @error('ai_provider')<p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>@enderror
-                </div>
-
-                <div>
-                    <label for="ai_model" class="block text-sm font-medium text-gray-700 mb-2">النموذج</label>
-                    <select id="ai_model" name="ai_model" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-gold/40 focus:border-gold outline-none">
-                        @foreach($aiModels as $m)
-                            <option value="{{ $m }}" @selected($aiModel === $m)>{{ $m }}</option>
-                        @endforeach
-                    </select>
-                    @error('ai_model')<p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>@enderror
-                </div>
-            </div>
-
-            <div>
-                <label for="ai_api_key" class="block text-sm font-medium text-gray-700 mb-2">مفتاح الـ API</label>
-                @if($aiMasked)
-                    <div class="flex items-center gap-2 mb-2">
-                        <code class="text-sm font-mono tracking-wider text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2" dir="ltr">{{ $aiMasked }}</code>
-                        @if($aiUpdated)
-                            <span class="text-[11px] text-gray-400">حُدّث في {{ $aiUpdated }}</span>
-                        @endif
-                    </div>
-                @endif
-                <input type="password" id="ai_api_key" name="ai_api_key" dir="ltr" autocomplete="off"
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-gold/40 focus:border-gold outline-none"
-                       placeholder="{{ $aiMasked ? 'اتركه فارغاً للإبقاء على المفتاح الحالي، أو ألصق مفتاحاً جديداً لاستبداله' : (config("ai.providers.$aiProvider.key_prefix_hint") ?? 'ألصق المفتاح هنا') }}">
-                <p class="text-[11px] text-gray-400 mt-1.5">
-                    يُخزَّن مشفَّراً في قاعدة بيانات مكتبك ولا يُعرض بعد الحفظ.
-                    @if($aiKeyUrl)
-                        <a href="{{ $aiKeyUrl }}" target="_blank" rel="noopener" class="text-gold-dark font-semibold hover:underline">أنشئ مفتاحاً</a>
-                    @endif
-                </p>
-                @error('ai_api_key')<p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>@enderror
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2 pt-1">
-                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm">
-                    حفظ الإعدادات
-                </button>
-
-                <button type="button" x-on:click="test()" :disabled="testing"
-                        class="inline-flex items-center gap-2 border border-gray-300 text-gray-700 hover:border-gold hover:text-gold-dark px-4 py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-60 disabled:cursor-not-allowed">
-                    <svg x-show="testing" x-cloak class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" opacity="0.25"/>
-                        <path d="M21 12a9 9 0 00-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-                    </svg>
-                    <span x-text="testing ? 'جارٍ الفحص…' : 'اختبار الاتصال'"></span>
-                </button>
-            </div>
-
-            <div x-show="result" x-cloak x-transition
-                 class="text-sm font-semibold rounded-lg px-3.5 py-2.5 border"
-                 :class="ok ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'">
-                <span x-text="ok ? '✓ ' : '✕ '"></span><span x-text="result"></span>
-            </div>
-        </form>
-
-        @if($aiMasked && !$aiFromEnv)
-            <form method="POST" action="{{ route('settings.ai.destroy') }}" class="mt-4 pt-4 border-t border-gray-100"
-                  data-confirm="حذف مفتاح الذكاء الاصطناعي؟ ستتوقف ميزات الذكاء الاصطناعي في مكتبك حتى تضبط مفتاحاً جديداً.">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg transition">
-                    حذف المفتاح
-                </button>
-            </form>
-        @endif
     </div>
+
+
+    <div x-show="sec === 'ai'"{!! $hide('ai') !!} class="space-y-6">
+    {{-- ═══ الذكاء الاصطناعي: للمطوّر وحدَه ═══
+
+         المساعدُ يعمل بمفتاح مُداوَلة المركزيّ في كلّ مكتب، فلا شيءَ
+         هنا يحتاجه صاحبُ المكتب. وبقاؤه معروضاً له كلفةٌ بلا مقابل:
+         مفتاحٌ يُلصق خطأً أو يُحذف فيصمت المساعدُ في مكتبٍ يعمل،
+         وأرقامُ استهلاكٍ لا تعني قارئها.
+
+         والإخفاءُ وحدَه ليس حارساً: المساراتُ نفسُها صارت
+         role:developer، فزرٌّ مخفيٌّ لا يعني طلباً ممنوعاً.
+
+         ولم يُحذف شيء: الإعداداتُ والمفاتيحُ المحفوظةُ كما هي، ومن
+         دخل بحساب المطوّر رآها كاملةً في موضعها. --}}
+    @if($isDev)
+        {{-- ===== الذكاء الاصطناعي: مفتاح ونموذج خاصان بهذا المكتب ===== --}}
+        @php
+            $aiProviders = \App\Support\AiSettings::availableProviders();
+            $aiProvider = \App\Support\AiSettings::provider();
+            $aiModel = \App\Support\AiSettings::model();
+            $aiMasked = \App\Support\AiSettings::maskedKey();
+            $aiFromEnv = \App\Support\AiSettings::usingEnvFallback();
+            $aiUpdated = \App\Support\AiSettings::updatedAt();
+            $aiKeyUrl = config("ai.providers.$aiProvider.key_url");
+            $aiModels = (array) config("ai.providers.$aiProvider.models", []);
+            $aiHealth = \App\Support\AiHealth::snapshot();
+        @endphp
+        <div class="bg-white rounded-xl border border-gray-200 p-5"
+             x-data="{ testing: false, result: null, ok: false,
+                async test() {
+                    this.testing = true; this.result = null;
+                    try {
+                        const r = await fetch('{{ route('settings.ai.test') }}', {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
+                            credentials: 'same-origin'
+                        });
+                        const d = await r.json();
+                        this.ok = !!d.ok; this.result = d.message || (d.ok ? 'الاتصال ناجح' : 'فشل الاتصال');
+                    } catch (e) {
+                        this.ok = false; this.result = 'تعذّر تنفيذ الفحص. تحقق من اتصال الخادم.';
+                    }
+                    this.testing = false;
+                } }">
+            {{-- §88: صحة المساعد — أرقام حقيقية للإدارة، لا تظهر لغيرها --}}
+            @php
+                $aiTone = ['healthy' => ['نشط', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+                           'warning' => ['متعثر', 'bg-yellow-50 text-yellow-700 border-yellow-200'],
+                           'offline' => ['غير مهيأ', 'bg-gray-100 text-gray-500 border-gray-200']][$aiHealth['status']];
+            @endphp
+            <div class="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+                <span class="px-2.5 py-1 rounded-lg border font-bold {{ $aiTone[1] }}">{{ $aiTone[0] }}</span>
+                <span class="text-gray-500">النموذج: <b class="text-gray-700">{{ $aiHealth['model'] }}</b></span>
+                <span class="text-gray-500">آخر نجاح:
+                    <b class="text-gray-700">{{ $aiHealth['last_success_at'] ? \Illuminate\Support\Carbon::parse($aiHealth['last_success_at'])->diffForHumans() : 'لم يُستعمل بعد' }}</b>
+                </span>
+                @if($aiHealth['last_error'])
+                    <span class="text-gray-500">آخر خطأ:
+                        <b class="text-red-600">{{ $aiHealth['last_error']['type'] ?? '—' }}</b>
+                        <span class="text-gray-400">({{ ($aiHealth['last_error']['at'] ?? null) ? \Illuminate\Support\Carbon::parse($aiHealth['last_error']['at'])->diffForHumans() : '' }})</span>
+                    </span>
+                @endif
+                <span class="text-gray-500">اليوم: <b class="text-gray-700">{{ $aiHealth['counts']['today'] }}</b> طلبًا
+                    @if($aiHealth['counts']['today_errors'] > 0)<b class="text-red-600">({{ $aiHealth['counts']['today_errors'] }} خطأ)</b>@endif
+                </span>
+                <span class="text-gray-500">هذا الشهر: <b class="text-gray-700">{{ $aiHealth['counts']['month'] }}</b></span>
+                @if($aiHealth['avg_ms'] !== null)
+                    <span class="text-gray-500">متوسط الرد:
+                        <b class="{{ $aiHealth['avg_ms'] > 15000 ? 'text-red-600' : ($aiHealth['avg_ms'] > 8000 ? 'text-amber-600' : 'text-gray-700') }}">{{ number_format($aiHealth['avg_ms'] / 1000, 1) }} ث</b>
+                        @if($aiHealth['last_ms'] !== null)<span class="text-gray-400">(آخر طلب {{ number_format($aiHealth['last_ms'] / 1000, 1) }} ث)</span>@endif
+                    </span>
+                @endif
+            </div>
+
+            <div class="flex items-center gap-3 mb-1">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-base font-bold text-gray-800">الذكاء الاصطناعي</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        @if($aiFromEnv)
+                            يعمل مكتبك بمفتاح مُداوَلة المركزي — جاهزٌ بلا إعداد، ولك أن تضع مفتاحك الخاص متى شئت.
+                        @else
+                            يعمل المساعد بحساب مُداوَلة المركزي. ومفتاحُ مكتبك — إن وضعتَه — احتياطٌ يُلجأ إليه، ومحادثاتُ مكتبك في قاعدته وحدها لا يراها غيرُه.
+                        @endif
+                    </p>
+                </div>
+                @if($aiMasked)
+                    <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">{{ $aiFromEnv ? 'يعمل — مفتاح مُداوَلة' : 'مُعدّ ✓' }}</span>
+                @else
+                    <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 border border-gray-200 whitespace-nowrap">غير مُعدّ</span>
+                @endif
+            </div>
+
+            @if($aiFromEnv)
+                <div class="mt-4 flex items-start gap-2 text-[12px] leading-relaxed bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg px-3 py-2.5">
+                    <span class="font-bold">✓</span>
+                    <span>مساعدك يعمل بمفتاح مُداوَلة المركزي — لا إعداد مطلوب منك. وإن فضّلت مفتاحاً خاصاً بمكتبك (حصة واستهلاك مستقلَّان تماماً) فأضفه هنا، وسيتقدّم على المركزي فوراً.</span>
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('settings.ai.update') }}" class="mt-5 space-y-4">
+                @csrf
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="ai_provider" class="block text-sm font-medium text-gray-700 mb-2">المزوّد</label>
+                        <select id="ai_provider" name="ai_provider" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-gold/40 focus:border-gold outline-none">
+                            @foreach($aiProviders as $key => $cfg)
+                                <option value="{{ $key }}" @selected($aiProvider === $key)>{{ $cfg['label'] }}</option>
+                            @endforeach
+                        </select>
+                        <p class="text-[11px] text-gray-400 mt-1.5">تُعرض هنا المزوّدات المدعومة فعلياً فقط.</p>
+                        @error('ai_provider')<p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
+                        <label for="ai_model" class="block text-sm font-medium text-gray-700 mb-2">النموذج</label>
+                        <select id="ai_model" name="ai_model" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-gold/40 focus:border-gold outline-none">
+                            @foreach($aiModels as $m)
+                                <option value="{{ $m }}" @selected($aiModel === $m)>{{ $m }}</option>
+                            @endforeach
+                        </select>
+                        @error('ai_model')<p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <div>
+                    <label for="ai_api_key" class="block text-sm font-medium text-gray-700 mb-2">مفتاح الـ API</label>
+                    @if($aiMasked)
+                        <div class="flex items-center gap-2 mb-2">
+                            <code class="text-sm font-mono tracking-wider text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2" dir="ltr">{{ $aiMasked }}</code>
+                            @if($aiUpdated)
+                                <span class="text-[11px] text-gray-400">حُدّث في {{ $aiUpdated }}</span>
+                            @endif
+                        </div>
+                    @endif
+                    <input type="password" id="ai_api_key" name="ai_api_key" dir="ltr" autocomplete="off"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-gold/40 focus:border-gold outline-none"
+                           placeholder="{{ $aiMasked ? 'اتركه فارغاً للإبقاء على المفتاح الحالي، أو ألصق مفتاحاً جديداً لاستبداله' : (config("ai.providers.$aiProvider.key_prefix_hint") ?? 'ألصق المفتاح هنا') }}">
+                    <p class="text-[11px] text-gray-400 mt-1.5">
+                        يُخزَّن مشفَّراً في قاعدة بيانات مكتبك ولا يُعرض بعد الحفظ.
+                        @if($aiKeyUrl)
+                            <a href="{{ $aiKeyUrl }}" target="_blank" rel="noopener" class="text-gold-dark font-semibold hover:underline">أنشئ مفتاحاً</a>
+                        @endif
+                    </p>
+                    @error('ai_api_key')<p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 pt-1">
+                    <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm">
+                        حفظ الإعدادات
+                    </button>
+
+                    <button type="button" x-on:click="test()" :disabled="testing"
+                            class="inline-flex items-center gap-2 border border-gray-300 text-gray-700 hover:border-gold hover:text-gold-dark px-4 py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-60 disabled:cursor-not-allowed">
+                        <svg x-show="testing" x-cloak class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" opacity="0.25"/>
+                            <path d="M21 12a9 9 0 00-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                        <span x-text="testing ? 'جارٍ الفحص…' : 'اختبار الاتصال'"></span>
+                    </button>
+                </div>
+
+                <div x-show="result" x-cloak x-transition
+                     class="text-sm font-semibold rounded-lg px-3.5 py-2.5 border"
+                     :class="ok ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'">
+                    <span x-text="ok ? '✓ ' : '✕ '"></span><span x-text="result"></span>
+                </div>
+            </form>
+
+            @if($aiMasked && !$aiFromEnv)
+                <form method="POST" action="{{ route('settings.ai.destroy') }}" class="mt-4 pt-4 border-t border-gray-100"
+                      data-confirm="حذف مفتاح الذكاء الاصطناعي؟ ستتوقف ميزات الذكاء الاصطناعي في مكتبك حتى تضبط مفتاحاً جديداً.">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg transition">
+                        حذف المفتاح
+                    </button>
+                </form>
+            @endif
+        </div>
+    @endif
+    </div>
+
 
     <form method="POST" action="{{ route('settings.update') }}" class="space-y-6">
         @csrf
         @method('PUT')
 
+        <div x-show="sec === 'office'"{!! $hide('office') !!} class="space-y-6">
         <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
             <h2 class="text-lg font-semibold text-gold-dark border-b border-gray-200 pb-3">{{ __('app.office_info') }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -972,7 +1117,9 @@
                 </div>
             </div>
         </div>
+        </div>
 
+        <div x-show="sec === 'mail'"{!! $hide('mail') !!} class="space-y-6">
         {{-- بريد الموكّلين: ما الذي يصلهم فعلاً --}}
         <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
             <div class="border-b border-gray-200 pb-3">
@@ -1054,7 +1201,9 @@
                 </p>
             @endif
         </div>
+        </div>
 
+        <div x-show="sec === 'notify'"{!! $hide('notify') !!} class="space-y-6">
         <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
             <h2 class="text-lg font-semibold text-gold-dark border-b border-gray-200 pb-3">{{ __('app.notification_settings') }}</h2>
             <div class="space-y-4">
@@ -1090,7 +1239,9 @@
                 </label>
             </div>
         </div>
+        </div>
 
+        <div x-show="sec === 'system'"{!! $hide('system') !!} class="space-y-6">
         <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
             <h2 class="text-lg font-semibold text-gold-dark border-b border-gray-200 pb-3">{{ __('app.system_settings') }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1132,7 +1283,9 @@
                 </div>
             </div>
         </div>
+        </div>
 
+        <div x-show="sec === 'appointments'"{!! $hide('appointments') !!} class="space-y-6">
         {{-- ═══ أوقات المواعيد ═══
 
              شاشةُ الحجز تعرض الفُسَحَ من هذه القيم وحدها: بلا يوم عملٍ
@@ -1193,7 +1346,9 @@
                 وصولُ رسالة الموعد إلى الموكّل يحكمه قسمُ «إشعارات الموكّل» أعلاه — واتساباً وبريداً.
             </p>
         </div>
+        </div>
 
+        <div x-show="sec === 'attendance'"{!! $hide('attendance') !!} class="space-y-6">
         {{-- الحضور والصيانة: إعدادان كانا يُقرآن ولا تكتبهما واجهة — فبقي
              الحضور التلقائي مفروضاً بلا مفتاح إطفاء، وملاحظةُ الصيانة لا
              تظهر أبداً مهما احتاجها المكتب. --}}
@@ -1253,7 +1408,9 @@
                 @enderror
             </div>
         </div>
+        </div>
 
+        <div x-show="sec === 'portal'"{!! $hide('portal') !!} class="space-y-6">
         {{-- بوابة العملاء --}}
         @php $cp = \App\Support\ClientPortal::class; @endphp
         <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
@@ -1311,11 +1468,108 @@
                 «مرئي للعميل» من صفحة القضية. والمستندات الخاصة لا تظهر له مهما كان.
             </p>
         </div>
+        </div>
 
-        <div class="flex items-center gap-4">
+        {{-- زرُّ الحفظ لا يظهر إلا فوق قسمٍ من أقسام هذا النموذج:
+             زرُّ حفظٍ وحيدٌ تحت شاشةٍ فارغة يُربك، ونقرُه لا يحفظ شيئاً. --}}
+        <div x-show="inForm"{!! in_array($sec, $inFormSecs, true) ? '' : ' style="display:none"' !!} class="flex items-center gap-4">
+            {{-- القسمُ يُرسَل ليعود إليه المستخدم بعد الحفظ --}}
+            <input type="hidden" name="sec" :value="sec">
             <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">{{ __('app.save_settings') }}</button>
         </div>
     </form>
+
+    {{-- ═══ الأتمتة والقوالب الذكية — بابٌ واحدٌ لمديره ═══
+
+         كان مفتاحُ محرّك الأتمتة داخل مركز الأتمتة نفسِه: من يملك
+         automations.manage — ولو موظّفاً — يُطفئ محرّكَ المكتب كلَّه من
+         الصفحة التي جاء يعمل فيها. والإطفاءُ صامت: القواعدُ تبقى
+         معروضةً «نشطة» ولا تعمل، فيبحث المديرُ عن عطلٍ لا وجود له.
+
+         فصار البابُ هنا وحدَه، ولمدير المكتب وحدَه — والحدُّ على المسار
+         لا على إخفاء الزرّ. --}}
+    <div x-show="sec === 'engines'"{!! $hide('engines') !!} class="space-y-6">
+        @if($isManager)
+            @php
+                $autoOn = \App\Support\OfficeEngines::automationOn();
+                $tplOn = \App\Support\OfficeEngines::templatesOn();
+                $ruleCount = \App\Models\Automation::count();
+            @endphp
+
+            <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+                <div class="flex items-start gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-base font-bold text-gray-800">مركز الأتمتة</h2>
+                        <p class="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                            قواعدُ «متى ⇐ إذا ⇐ نفّذ» تعمل عن مكتبك: تذكيرٌ قبل الجلسة، مهمّةٌ تُفتح تلقائياً، تنبيهٌ لمتأخّر.
+                            وفتحُه ينزّل القواعدَ الجاهزة كاملةً، وإغلاقُه يُطفئها ولا يحذف منها شيئاً.
+                        </p>
+                    </div>
+                    <span class="text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap border {{ $autoOn ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200' }}">
+                        {{ $autoOn ? 'مفعّل' : 'مغلق' }}
+                    </span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-100">
+                    <form method="POST" action="{{ route('settings.engines') }}" class="mt-4"
+                          @if($autoOn) data-confirm="إغلاق مركز الأتمتة؟ ستتوقّف القواعد كلُّها عن العمل وتُطفأ — ولن يُحذف منها شيء، وتعود بضغطة تفعيل." @endif>
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="engine" value="automation">
+                        <input type="hidden" name="on" value="{{ $autoOn ? '0' : '1' }}">
+                        <button type="submit" class="px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors {{ $autoOn ? 'bg-white border border-red-200 text-red-700 hover:bg-red-50' : 'bg-primary hover:bg-primary-dark text-white' }}">
+                            {{ $autoOn ? 'إغلاق مركز الأتمتة' : 'تفعيل مركز الأتمتة' }}
+                        </button>
+                    </form>
+                    @if($autoOn)
+                        <a href="{{ route('automations.index') }}" class="mt-4 px-4 py-2.5 rounded-lg border border-gray-200 text-gray-600 hover:border-gold/40 hover:text-gold-dark font-semibold text-sm transition">
+                            فتح مركز الأتمتة ({{ $ruleCount }} قاعدة)
+                        </a>
+                    @endif
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+                <div class="flex items-start gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-base font-bold text-gray-800">القوالب الذكية</h2>
+                        <p class="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                            قالبٌ للقضية يضمّ مهامَّها وقائمةَ تحقّقها ومجلداتِ مستنداتها — تُفتح القضية فينزل معها كلُّ ذلك.
+                            مفتوحةٌ في كلّ مكتبٍ افتراضاً، وإغلاقُها يخفيها ولا يمسّ قالباً محفوظاً.
+                        </p>
+                    </div>
+                    <span class="text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap border {{ $tplOn ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200' }}">
+                        {{ $tplOn ? 'مفعّلة' : 'مغلقة' }}
+                    </span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-100">
+                    <form method="POST" action="{{ route('settings.engines') }}" class="mt-4"
+                          @if($tplOn) data-confirm="إغلاق القوالب الذكية؟ ستختفي من القائمة الجانبية — والقوالبُ المحفوظة تبقى كما هي وتعود بضغطة." @endif>
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="engine" value="templates">
+                        <input type="hidden" name="on" value="{{ $tplOn ? '0' : '1' }}">
+                        <button type="submit" class="px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors {{ $tplOn ? 'bg-white border border-red-200 text-red-700 hover:bg-red-50' : 'bg-primary hover:bg-primary-dark text-white' }}">
+                            {{ $tplOn ? 'إغلاق القوالب الذكية' : 'تفعيل القوالب الذكية' }}
+                        </button>
+                    </form>
+                    @if($tplOn)
+                        <a href="{{ route('case-templates.index') }}" class="mt-4 px-4 py-2.5 rounded-lg border border-gray-200 text-gray-600 hover:border-gold/40 hover:text-gold-dark font-semibold text-sm transition">
+                            فتح القوالب الذكية
+                        </a>
+                    @endif
+                </div>
+            </div>
+        @endif
+    </div>
+
 </div>
 @endsection
 

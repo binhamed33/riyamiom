@@ -16,6 +16,7 @@ class Document extends Model
 
     protected $fillable = [
         'case_id',
+        'client_id',
         'case_folder_id',
         'uploaded_by',
         'title',
@@ -27,6 +28,23 @@ class Document extends Model
         'access_level',
         'client_visible',
     ];
+
+    /** الشخصُ المنسوبُ إليه صراحةً — إن نُسب. */
+    public function client()
+    {
+        return $this->belongsTo(\App\Models\Client::class);
+    }
+
+    /**
+     * صاحبُ المستند: المنسوبُ صراحةً، وإلا موكّلُ قضيّته.
+     *
+     * الترتيبُ مقصود: نسبةٌ كتبها إنسانٌ تعلو نسبةً استنتجها النظام.
+     * ومن غيّر قضيةَ المستند لم يفقد الاسمَ الذي كتبه بيده.
+     */
+    public function ownerClient(): ?\App\Models\Client
+    {
+        return $this->client ?: $this->case?->client;
+    }
 
     protected function casts(): array
     {

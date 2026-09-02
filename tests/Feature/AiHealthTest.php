@@ -42,19 +42,29 @@ class AiHealthTest extends TestCase
         $this->assertTrue(true, 'لم يُرمَ استثناء رغم غياب الجدول');
     }
 
-    public function test_the_health_strip_shows_for_the_admin_only(): void
+    /**
+     * شريطُ صحّة المساعد للمطوّر وحدَه.
+     *
+     * كان يظهر لمدير المكتب، وأرقامُه لا تعنيه: المساعدُ يعمل بمفتاح
+     * مُداوَلة المركزيّ، فـ«آخرُ خطأ http_400» سطرٌ يُقلقه ولا يملك
+     * له فعلاً. ومضى مع بطاقة الذكاء الاصطناعيّ كلِّها إلى المطوّر.
+     */
+    public function test_the_health_strip_shows_for_the_developer_alone(): void
     {
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $staff = User::factory()->create(['role' => 'staff', 'is_active' => true]);
+        $dev = User::factory()->create(['role' => 'developer', 'is_active' => true]);
 
-        $this->actingAs($admin)->get('/settings')->assertOk()->assertSee('آخر نجاح', false);
+        $this->actingAs($dev)->get('/settings')->assertOk()->assertSee('آخر نجاح', false);
 
-        $response = $this->actingAs($staff)->get('/settings');
-        $this->assertTrue(
-            $response->getStatusCode() !== 200
-            || !str_contains($response->getContent(), 'آخر نجاح'),
-            'شريط الصحة يجب ألا يظهر لغير الإدارة'
-        );
+        foreach (['admin', 'staff'] as $role) {
+            $user = User::factory()->create(['role' => $role, 'is_active' => true]);
+            $response = $this->actingAs($user)->get('/settings');
+
+            $this->assertTrue(
+                $response->getStatusCode() !== 200
+                || !str_contains($response->getContent(), 'آخر نجاح'),
+                "شريط الصحة يجب ألا يظهر لـ{$role}"
+            );
+        }
     }
 
     public function test_the_assistant_is_rate_limited_per_user(): void

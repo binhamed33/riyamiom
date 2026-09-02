@@ -120,6 +120,34 @@
                         @enderror
                     </div>
 
+                    {{-- ═══ صاحبُ المستند ═══
+
+                         كان الصاحبُ يُستنتج من القضية وحدَها، فما لا قضيةَ
+                         له سقط في «غير منسوبة» مهما عرف الموظّفُ لمن هو:
+                         وكالةٌ قبل فتح الملفّ، هويةٌ، عقدٌ لموكّلٍ لم يخاصم
+                         أحداً بعد.
+
+                         والخانةُ اختيارية: «بلا نسبة» خيارٌ يُختار لا خانةٌ
+                         تُنسى. ومن اختار قضيةً ولم يختر شخصاً بقي صاحبُها
+                         مستنتَجاً كما كان. --}}
+                    <div>
+                        <label for="doc_client_id" class="block text-sm font-medium text-gray-700 mb-1">
+                            الشخص <span class="text-gray-400 font-normal text-xs">(اختياري)</span>
+                        </label>
+                        <select id="doc_client_id" name="client_id" class="ts w-full rounded-lg bg-white border border-gray-300 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold focus:border-gold @error('client_id') border-red-500 @enderror">
+                            <option value="">بلا نسبة — أو يُؤخذ من القضية</option>
+                            @foreach ($formClients as $fc)
+                                <option value="{{ $fc->id }}" {{ old('client_id', $selectedClientId ?: '') == $fc->id ? 'selected' : '' }}>
+                                    {{ $fc->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-[11px] text-gray-400">يُحفظ في ملفّ «مستندات ({{ 'اسم الشخص' }})». واتركه فارغاً لتبقى الورقة كما هي.</p>
+                        @error('client_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('app.document_access') }} <span class="text-red-500">*</span></label>
                         <div class="flex items-center gap-6">

@@ -132,7 +132,75 @@ class SettingController extends Controller
             Setting::set($key, $value, $groupMap[$key] ?? 'general');
         }
 
-        return redirect()->route('settings.index')
+        // ═══ العودةُ إلى القسم الذي حُفظ منه ═══
+        //
+        // الصفحةُ صارت أقساماً، والحفظُ يعيد إلى أوّلها. فمن ضبط
+        // «المواعيد» وحفظ وجد نفسَه في الفهرس يبحث عن موضعه مرّةً
+        // أخرى ليتأكّد أنّ ما كتبه ثبت. والقسمُ يعود معه.
+        return redirect()->route('settings.index', array_filter(['sec' => $this->section($request)]))
             ->with('success', 'تم حفظ الإعدادات بنجاح');
     }
+
+    /** القسمُ المُعاد إليه — من قائمةٍ معلومة، فلا يُحقن في الرابط ما شاء المرسل. */
+    private function section(Request $request): ?string
+    {
+        $sec = (string) $request->input('sec', '');
+
+        return in_array($sec, self::SECTIONS, true) ? $sec : null;
+    }
+
+    /**
+     * مفتاحا «مركز الأتمتة» و«القوالب الذكية».
+     *
+     * ═══ لماذا هنا لا في الميزتين ═══
+     *
+     * كان مفتاحُ المحرّك داخل مركز الأتمتة نفسِه، فمن يملك
+     * automations.manage — ولو موظّفاً — يُطفئ محرّكَ المكتب كلَّه من
+     * الصفحة التي جاء يعمل فيها. وصار البابُ واحداً ولمدير المكتب:
+     * الحدُّ على المسار (role:developer,admin) لا على إخفاء الزرّ.
+     */
+    public function engines(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'engine' => 'required|in:automation,templates',
+            'on' => 'required|in:0,1',
+        ]);
+
+        $on = $data['on'] === '1';
+
+        if ($data['engine'] === 'templates') {
+            \App\Support\OfficeEngines::setTemplates($on);
+
+            return redirect()->route('settings.index', ['sec' => 'engines'])->with(
+                'success',
+                $on ? 'فُتحت القوالب الذكية — تجدها في القائمة الجانبية.'
+                    : 'أُغلقت القوالب الذكية. القوالبُ المحفوظة كما هي، وتعود بضغطة.'
+            );
+        }
+
+        if ($on) {
+            $created = \App\Support\OfficeEngines::openAutomation(auth()->id());
+
+            return redirect()->route('settings.index', ['sec' => 'engines'])->with(
+                'success',
+                $created > 0
+                    ? "فُعّل مركز الأتمتة، ونزلت {$created} قاعدة جاهزة — راجعها وعدّلها كما تريد."
+                    : 'فُعّل مركز الأتمتة، وعادت قواعدُك النشطة إلى العمل.'
+            );
+        }
+
+        \App\Support\OfficeEngines::closeAutomation();
+
+        return redirect()->route('settings.index', ['sec' => 'engines'])->with(
+            'success',
+            'أُغلق مركز الأتمتة وأُطفئت قواعدُه. لم يُحذف شيء — تعود كلُّها بضغطة تفعيل.'
+        );
+    }
+
+    /** أقسامُ الصفحة — يعرفها المتحكّم ليتحقّق مما يصله في الرابط. */
+    private const SECTIONS = [
+        'subscription', 'brand', 'whatsapp', 'ai', 'office',
+        'mail', 'notify', 'system', 'appointments', 'attendance',
+        'portal', 'engines',
+    ];
 }

@@ -953,18 +953,22 @@
            الجدولُ كأنّه وميضٌ لا إعادةُ ترتيب.
 
            فثلاثُ لحظاتٍ قصيرة: خفوتٌ للقديم، ثمّ ظهورٌ للجديد، ثمّ
-           صعودُ الصفوف صفّاً بعد صفٍّ بفارقٍ ضئيل — فتُقرأ الحركةُ
+           ظهورُ الصفوف صفّاً بعد صفٍّ بفارقٍ ضئيل — فتُقرأ الحركةُ
            «أُعيد الترتيب» لا «تغيّرت الشاشة».
+
+           والشفافيةُ وحدَها: لا إزاحةَ ولا صعود. جرّبتُ رفعَ الصفّ
+           سبعَ نقاطٍ فبدا اهتزازاً لا انتقالاً — والعينُ تسامح
+           الخفوتَ ولا تسامح القفز.
 
            وكلُّ هذا زينة: من طلب تقليلَ الحركة في نظامه لا يرى منها
            شيئاً، والجدولُ يصل إليه كاملاً في اللحظة نفسها. */
-        [data-live] { transition: opacity .14s ease, transform .14s ease; }
-        [data-live].live-out { opacity: .2; transform: translateY(-3px); }
-        [data-live].live-in { animation: mdLiveIn .26s cubic-bezier(.22,.61,.36,1) both; }
-        [data-live].live-in tbody > tr { animation: mdLiveRow .32s cubic-bezier(.22,.61,.36,1) both; }
+        [data-live] { transition: opacity .14s ease; }
+        [data-live].live-out { opacity: .2; }
+        [data-live].live-in { animation: mdLiveIn .26s ease both; }
+        [data-live].live-in tbody > tr { animation: mdLiveRow .32s ease both; }
 
         @keyframes mdLiveIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes mdLiveRow { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+        @keyframes mdLiveRow { from { opacity: 0; } to { opacity: 1; } }
 
         @media (prefers-reduced-motion: reduce) {
             [data-live],
@@ -1240,7 +1244,10 @@
                 </a>
                 @endif
 
-                @if(Auth::user()->hasPermission('templates.manage') || in_array(Auth::user()->role, ['admin', 'developer']))
+                {{-- القوالبُ الذكية: مفتوحةٌ في كلّ مكتبٍ افتراضاً، ويغلقها
+                     مديرُ المكتب من الإعدادات وحدَها. والإخفاءُ هنا تهذيبٌ
+                     فوق الحارس: المسارُ نفسُه مغلقٌ بـengine:templates. --}}
+                @if(\App\Support\OfficeEngines::templatesOn() && (Auth::user()->hasPermission('templates.manage') || in_array(Auth::user()->role, ['admin', 'developer'])))
                 <a href="{{ route('case-templates.index') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm {{ request()->routeIs('case-templates.*') ? 'active' : '' }}">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1315,19 +1322,16 @@
             </a>
             @endif
 
-            <a href="{{ route('language.switch', app()->getLocale() === 'ar' ? 'en' : 'ar') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                </svg>
-                <span class="sidebar-footer-text">{{ app()->getLocale() === 'ar' ? __('app.switch_to_en') : __('app.switch_to_ar') }}</span>
-            </a>
+            {{-- ═══ اللغةُ والملفُّ الشخصيُّ ليسا هنا ═══
 
-            <a href="{{ route('profile.edit') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span class="sidebar-footer-text">{{ __('app.profile') }}</span>
-            </a>
+                 كلاهما مكرَّرٌ في الشريط العلويّ: كرةُ الأرض تبدّل
+                 اللغة، وقائمةُ الصورة الشخصية تفتح الملفّ. وتكرارُ
+                 المدخل في مكانين لا يزيد وصولاً — يزيد ضجيجاً في
+                 تذييلٍ موضوعُه المساعدةُ والتواصل لا حسابُ المستخدم.
+
+                 وحُذف المدخلان من هنا وحدَهما: المساران والصفحتان
+                 كما هما، فمن حفظ الرابط يصل، ومن بحث في الشريط
+                 العلويّ يجد. --}}
 
             <form method="POST" action="{{ route('logout') }}">
                 @csrf

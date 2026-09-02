@@ -3,8 +3,8 @@
     $palMsgNoResults = $_ar ? 'لا توجد نتائج مطابقة' : 'No matching results';
     $palMsgStartTyping = $_ar ? 'ابدأ الكتابة...' : 'Start typing...';
     $palGroupTitles = $_ar
-        ? ['case' => 'القضايا', 'client' => 'الموكلون', 'session' => 'الجلسات', 'task' => 'المهام', 'document' => 'المستندات', 'invoice' => 'الفواتير', 'activity' => 'النشاطات', 'recent-case' => 'أحدث القضايا', 'recent-session' => 'الجلسات القادمة', 'recent-task' => 'مهام متأخرة']
-        : ['case' => 'Cases', 'client' => 'Clients', 'session' => 'Sessions', 'task' => 'Tasks', 'document' => 'Documents', 'invoice' => 'Invoices', 'activity' => 'Activities', 'recent-case' => 'Recent cases', 'recent-session' => 'Upcoming sessions', 'recent-task' => 'Overdue tasks'];
+        ? ['page' => 'أقسام النظام', 'case' => 'القضايا', 'client' => 'الموكلون', 'session' => 'الجلسات', 'task' => 'المهام', 'document' => 'المستندات', 'invoice' => 'الفواتير', 'activity' => 'النشاطات', 'recent-case' => 'أحدث القضايا', 'recent-session' => 'الجلسات القادمة', 'recent-task' => 'مهام متأخرة']
+        : ['page' => 'Sections', 'case' => 'Cases', 'client' => 'Clients', 'session' => 'Sessions', 'task' => 'Tasks', 'document' => 'Documents', 'invoice' => 'Invoices', 'activity' => 'Activities', 'recent-case' => 'Recent cases', 'recent-session' => 'Upcoming sessions', 'recent-task' => 'Overdue tasks'];
 @endphp
 {{-- Command Palette - Lawyer OS --}}
 <div x-data="commandPalette()" class="relative min-w-0 flex-1 max-w-md">
@@ -25,7 +25,7 @@
                 {{-- Input row --}}
                 <div class="flex items-center gap-3 px-5" style="border-bottom: 1px solid rgba(212,175,55,0.12);">
                     <svg class="w-5 h-5 text-gold-light/80 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-                    <input x-ref="palInput" type="text" x-model="query" @input.debounce.250ms="run()" @keydown.enter="go()" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="{{ app()->getLocale() === 'ar' ? 'ابحث عن قضية، موكل، جلسة، مهمة... أو ابدأ بـ  >  للأوامر' : 'Search cases, clients, sessions... or start with  >  for commands' }}" class="w-full bg-transparent py-4 text-[15px] text-gold-light placeholder-gold-light/40 focus:outline-none">
+                    <input x-ref="palInput" type="text" x-model="query" @input.debounce.250ms="run()" @keydown.enter="go()" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="{{ app()->getLocale() === 'ar' ? 'ابحث عن قسم، قضية، موكل، جلسة، مهمة... أو ابدأ بـ  >  للأوامر' : 'Search sections, cases, clients, sessions... or start with  >  for commands' }}" class="w-full bg-transparent py-4 text-[15px] text-gold-light placeholder-gold-light/40 focus:outline-none">
                     <button type="button" @click="open = false" class="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-gold-light/50 hover:text-gold-light hover:bg-gold-light/10 transition" aria-label="{{ app()->getLocale() === 'ar' ? 'إغلاق' : 'Close' }}">
                         ESC
                     </button>

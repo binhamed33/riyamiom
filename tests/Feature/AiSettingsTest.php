@@ -16,6 +16,17 @@ use Tests\TestCase;
  * إعدادات الذكاء الاصطناعي لكل مكتب على حدة.
  * ما تحرسه هذه الاختبارات: العزل، تشفير المفتاح، عدم تسريبه للواجهة،
  * والصلاحيات — إضافة إلى بقاء المكاتب القائمة تعمل بلا تغيير.
+ *
+ * ═══ ولماذا صار الفاعلُ مطوّراً ═══
+ *
+ * كانت هذه المسارات مفتوحةً لمدير المكتب. والمساعدُ يعمل بمفتاح
+ * مُداوَلة المركزيّ في كلّ مكتب، فلا شيءَ هنا يحتاجه صاحبُ المكتب —
+ * وبقاؤه له كلفةٌ بلا مقابل: مفتاحٌ يُلصق خطأً أو يُحذف فيصمت
+ * المساعدُ في مكتبٍ يعمل. فصارت للمطوّر وحدَه (routes/web.php)،
+ * ومنعُ المدير مفحوصٌ في SettingsHubTest.
+ *
+ * وما تحرسه هذه الاختبارات لم يتغيّر حرفاً: التشفيرُ والكتمانُ
+ * والتحقّق — بالفاعل الذي يملك البابَ اليوم.
  */
 class AiSettingsTest extends TestCase
 {
@@ -23,7 +34,7 @@ class AiSettingsTest extends TestCase
 
     private function admin(): User
     {
-        return User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        return User::factory()->create(['role' => 'developer', 'is_active' => true]);
     }
 
     public function test_key_is_stored_encrypted_not_in_plain_text(): void

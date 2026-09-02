@@ -127,18 +127,16 @@ class LiveSortTest extends TestCase
      */
     public function test_every_index_page_closes_every_tag(): void
     {
-        $pages = ['cases', 'sessions', 'tasks', 'clients', 'documents'];
+        foreach (self::LIVE_PAGES as $route => $region) {
+            $html = $this->actingAs($this->admin)->get(route($route))->assertOk()->getContent();
 
-        foreach ($pages as $page) {
-            $html = $this->actingAs($this->admin)->get(route($page . '.index'))->assertOk()->getContent();
-
-            $this->assertStringContainsString('data-live="' . $page . '"', $html, "لا منطقةَ استبدالٍ في {$page}");
+            $this->assertStringContainsString('data-live="' . $region . '"', $html, "لا منطقةَ استبدالٍ في {$route}");
 
             // <div> مفتوحةٌ = </div> مغلقة. الوسومُ المفردة لا تُعدّ هنا
             $opens = preg_match_all('/<div\b/i', $html);
             $closes = preg_match_all('/<\/div>/i', $html);
 
-            $this->assertSame($closes, $opens, "وسمُ div مفتوحٌ بلا إغلاقٍ في {$page} (فُتح {$opens} وأُغلق {$closes})");
+            $this->assertSame($closes, $opens, "وسمُ div مفتوحٌ بلا إغلاقٍ في {$route} (فُتح {$opens} وأُغلق {$closes})");
         }
     }
 
@@ -185,14 +183,38 @@ class LiveSortTest extends TestCase
         $this->assertStringContainsString('Alpine.initTree', $layout);
     }
 
-    /** والترتيبُ الحيُّ يعمّ الجداولَ كلَّها لا الجلساتِ وحدَها. */
+    /**
+     * والاستبدالُ الحيُّ يعمّ قوائمَ الموقع كلَّها لا الجلساتِ وحدَها.
+     *
+     * صفحةٌ واحدةٌ تُعيد التحميل بين صفحاتٍ لا تُعيده تُقرأ عطلاً في
+     * الصفحة لا استثناءً في التصميم.
+     */
     public function test_every_list_page_swaps_in_place(): void
     {
-        foreach (['cases', 'sessions', 'tasks', 'clients', 'documents'] as $page) {
-            $html = $this->actingAs($this->admin)->get(route($page . '.index'))->assertOk()->getContent();
+        foreach (self::LIVE_PAGES as $route => $region) {
+            $html = $this->actingAs($this->admin)->get(route($route))->assertOk()->getContent();
 
-            $this->assertStringContainsString('data-live="' . $page . '"', $html);
-            $this->assertStringContainsString('data-live-link', $html, "روابطُ الترتيب في {$page} بلا وسم");
+            $this->assertStringContainsString('data-live="' . $region . '"', $html, "لا منطقةَ في {$route}");
+
+            // إمّا رابطُ ترتيبٍ وإمّا ترقيمٌ حيّ — وإلا فالمنطقةُ زينةٌ لا تُستعمل
+            $this->assertTrue(
+                str_contains($html, 'data-live-link') || str_contains($html, 'data-live-nav'),
+                "منطقةُ {$route} بلا رابطٍ حيٍّ يستعملها"
+            );
         }
     }
+
+    /** خريطةُ القوائم الحيّة: المسارُ ⇐ اسمُ منطقته. */
+    private const LIVE_PAGES = [
+        'cases.index' => 'cases',
+        'sessions.index' => 'sessions',
+        'tasks.index' => 'tasks',
+        'clients.index' => 'clients',
+        'documents.index' => 'documents',
+        'appointments.index' => 'appointments',
+        'notifications.index' => 'notifications',
+        'users.index' => 'users',
+        'audit-log.index' => 'audit-log',
+        'evaluations.index' => 'evaluations',
+    ];
 }

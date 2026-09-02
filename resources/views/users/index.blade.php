@@ -32,6 +32,10 @@
         </div>
     </form>
 
+    {{-- ═══ منطقةُ الاستبدال ═══
+         نقرةُ ترتيبٍ أو صفحةٍ تجلب هذا وحدَه: القائمةُ الجانبيةُ لا
+         تُرسَم من جديد فلا تقفز، وموضعُ القارئ في الصفحة يبقى. --}}
+    <div data-live="users">
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
@@ -114,8 +118,9 @@
 
     @if(method_exists($users, 'links'))
         <div class="mt-4">
-            {{ $users->withQueryString()->links() }}
+            <div data-live-nav>{{ $users->withQueryString()->links() }}</div>
         </div>
     @endif
+    </div>{{-- /users --}}
 </div>
 @endsection

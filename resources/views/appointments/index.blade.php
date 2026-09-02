@@ -26,9 +26,14 @@
         <div class="mb-4 rounded-xl border border-red-200 bg-red-50 text-red-800 text-sm px-4 py-3">{{ session('error') }}</div>
     @endif
 
+    {{-- ═══ منطقةُ الاستبدال ═══
+         نقرةُ ترتيبٍ أو صفحةٍ تجلب هذا وحدَه: القائمةُ الجانبيةُ لا
+         تُرسَم من جديد فلا تقفز، وموضعُ القارئ في الصفحة يبقى. --}}
+    <div data-live="appointments">
     {{-- المدى: القادم افتراضاً، ويومٌ بعينه، والماضي، وتقويمُ الأسبوع --}}
     <div class="flex flex-wrap items-center gap-2 mb-4">
         <a href="{{ route('appointments.index', array_filter(['view' => 'week', 'day' => $day->toDateString(), 'user_id' => request('user_id')])) }}"
+           data-live-link
            class="text-xs px-3 py-1.5 rounded-lg border {{ $view === 'week' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:border-gold/40' }}">
             🗓 تقويم الأسبوع
         </a>
@@ -36,6 +41,7 @@
 
         @foreach(['upcoming' => 'القادمة', 'day' => 'يومٌ بعينه', 'past' => 'الماضية'] as $key => $label)
             <a href="{{ route('appointments.index', array_filter(['scope' => $key, 'day' => $key === 'day' ? $day->toDateString() : null])) }}"
+               data-live-link
                class="text-xs px-3 py-1.5 rounded-lg border {{ $scope === $key ? 'bg-gold text-white border-gold' : 'bg-white text-gray-600 border-gray-200 hover:border-gold/40' }}">
                 {{ $label }}
             </a>
@@ -193,7 +199,8 @@
         </div>
     @endforelse
 
-    <div class="mt-4">{{ $appointments->links() }}</div>
+    <div class="mt-4"><div data-live-nav>{{ $appointments->links() }}</div></div>
+    </div>{{-- /appointments --}}
 </div>
 
 @push('scripts')

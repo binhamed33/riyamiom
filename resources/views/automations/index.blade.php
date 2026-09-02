@@ -53,13 +53,21 @@
                     {{ $engineEnabled ? '● يعمل' : '○ متوقف' }}
                 </p>
             </div>
-            <form method="POST" action="{{ route('automations.engine') }}"
-                  data-confirm="{{ $engineEnabled ? 'إيقاف محرك الأتمتة بالكامل؟ القواعد تبقى محفوظة.' : 'تفعيل محرك الأتمتة؟' }}">
-                @csrf
-                <button type="submit" class="text-xs font-bold px-3 py-1.5 rounded-lg border transition {{ $engineEnabled ? 'text-red-700 border-red-200 hover:bg-red-50' : 'text-green-700 border-green-300 hover:bg-green-50' }}">
-                    {{ $engineEnabled ? 'إيقاف' : 'تفعيل' }}
-                </button>
-            </form>
+            {{-- ═══ المفتاحُ ليس هنا ═══
+
+                 كان زرَّ إيقافٍ في متناول كلّ من يملك automations.manage —
+                 ولو موظّفاً — يُطفئ محرّكَ المكتب كلَّه من الصفحة التي جاء
+                 يعمل فيها. والإطفاءُ صامت: القواعدُ تبقى معروضةً «نشطة»
+                 ولا تعمل، فيبحث المديرُ عن عطلٍ لا وجود له.
+
+                 فبقيت الحالُ معروضةً هنا ومضى المفتاحُ إلى الإعدادات، لمدير
+                 المكتب وحدَه. --}}
+            @if($isOfficeManager ?? false)
+                <a href="{{ route('settings.index', ['sec' => 'engines']) }}"
+                   class="text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gold-dark hover:border-gold/40 transition whitespace-nowrap">
+                    المفتاح في الإعدادات ←
+                </a>
+            @endif
         </div>
 
         {{-- تفعيل/تعطيل كل القواعد.

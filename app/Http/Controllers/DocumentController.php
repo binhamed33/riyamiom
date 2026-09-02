@@ -69,11 +69,16 @@ class DocumentController extends Controller
             ? (int) $request->input('client_id')
             : null;
 
+        // النسبتان معاً: ما كُتب صراحةً (documents.client_id) وما
+        // يُستنتج من القضية. وقراءةُ واحدةٍ منهما تُخفي نصفَ الملفّ.
         if ($selectedClientId !== null) {
             $selectedClientId > 0
-                ? $query->whereHas('case', fn ($c) => $c->where('client_id', $selectedClientId))
-                : $query->where(fn ($q) => $q->whereNull('case_id')
-                    ->orWhereHas('case', fn ($c) => $c->whereNull('client_id')));
+                ? $query->where(fn ($q) => $q->where('documents.client_id', $selectedClientId)
+                    ->orWhere(fn ($qq) => $qq->whereNull('documents.client_id')
+                        ->whereHas('case', fn ($c) => $c->where('client_id', $selectedClientId))))
+                : $query->where(fn ($q) => $q->whereNull('documents.client_id')
+                    ->where(fn ($qq) => $qq->whereNull('case_id')
+                        ->orWhereHas('case', fn ($c) => $c->whereNull('client_id'))));
         }
 
         // فلترة بمجلد القضية. «0» تعني «عام» — ما لا مجلد له — وهي قيمة
@@ -146,6 +151,9 @@ class DocumentController extends Controller
         $selectedCaseId = (int) $request->query('case_id', 0);
 
         // الأنواع النشطة للقائمة، وعدد بلا نوع ليُعرض خيار «غير محدد»
+        // أشخاصُ المكتب لخانة النسبة في نموذج الرفع
+        $formClients = \App\Models\Client::orderBy('name')->get(['id', 'name']);
+
         $documentTypes = \App\Models\DocumentType::active()->pluck('name');
         $untypedCount = Document::where(fn ($q) => $q->whereNull('doc_type')->orWhere('doc_type', ''))->count();
 
@@ -202,12 +210,18 @@ class DocumentController extends Controller
         $showAll = $request->boolean('all');
 
         if ($selectedCaseId === 0 && $selectedClientId === null && !$showAll) {
-            // استعلامٌ واحدٌ يجمع العددَ لكلّ موكّل — لا واحدٌ لكلّ صفّ
+            // استعلامٌ واحدٌ يجمع العددَ لكلّ موكّل — لا واحدٌ لكلّ صفّ.
+            //
+            // والصاحبُ محسوبٌ بـCOALESCE: ما نُسب صراحةً أوّلاً، وإلا
+            // موكّلُ القضية. والضمُّ يساريٌّ لأنّ مستنداً بلا قضيةٍ قد
+            // يكون له صاحبٌ مكتوب — والضمُّ الداخليُّ كان يُسقطه.
+            $owner = 'COALESCE(documents.client_id, cases.client_id)';
+
             $counts = Document::query()
-                ->join('cases', 'documents.case_id', '=', 'cases.id')
-                ->whereNotNull('cases.client_id')
-                ->selectRaw('cases.client_id as client_id, COUNT(*) as total')
-                ->groupBy('cases.client_id')
+                ->leftJoin('cases', 'documents.case_id', '=', 'cases.id')
+                ->whereRaw($owner . ' is not null')
+                ->selectRaw($owner . ' as client_id, COUNT(*) as total')
+                ->groupBy(\Illuminate\Support\Facades\DB::raw($owner))
                 ->pluck('total', 'client_id');
 
             // بحثٌ في الأسماء: مكتبٌ بمئتي موكّلٍ لا يُقلَّب بالعين
@@ -223,8 +237,10 @@ class DocumentController extends Controller
 
             // «غير منسوبة»: ما لا قضيةَ له أو قضيتُه بلا موكّل — تبقى
             // كما هي بطلبٍ صريح، لكنّها تُجمع في مكانٍ واحدٍ يُعرف
-            $unassignedCount = Document::where(fn ($q) => $q->whereNull('case_id')
-                ->orWhereHas('case', fn ($c) => $c->whereNull('client_id')))->count();
+            $unassignedCount = Document::whereNull('client_id')
+                ->where(fn ($q) => $q->whereNull('case_id')
+                    ->orWhereHas('case', fn ($c) => $c->whereNull('client_id')))
+                ->count();
         }
 
         if (($selectedClientId ?? 0) > 0 && $selectedCaseId === 0) {
@@ -241,7 +257,7 @@ class DocumentController extends Controller
             'done', 'doneCount', 'folders', 'selectedFolderId', 'unfiledCount',
             'currentFolder', 'breadcrumb',
             'clientFolders', 'clientCases', 'selectedClient', 'selectedClientId', 'unassignedCount',
-            'showAll', 'folderSearch'
+            'showAll', 'folderSearch', 'formClients'
         ));
     }
 
@@ -257,6 +273,10 @@ class DocumentController extends Controller
 
         $validated = $request->validate([
             'case_id'        => 'nullable|exists:cases,id',
+            // نسبةٌ لشخصٍ بلا قضية: وكالةٌ قبل فتح الملفّ، هويةٌ، عقدٌ
+            // لموكّلٍ لم يخاصم أحداً بعد. اختياريّةٌ تماماً — و«بلا
+            // نسبة» خيارٌ صريحٌ لا نسيان.
+            'client_id'      => 'nullable|exists:clients,id',
             'case_folder_id' => 'nullable|integer|exists:case_folders,id',
             'title'          => 'required|string|max:255',
             'file'           => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:' . (self::MAX_SIZE / 1024),
@@ -301,6 +321,7 @@ class DocumentController extends Controller
 
                 return Document::create([
                     'case_id'      => $validated['case_id'] ?? null,
+                    'client_id'    => $validated['client_id'] ?? null,
                     'case_folder_id' => $folderId,
                     'uploaded_by'  => auth()->id(),
                     'title'        => $validated['title'],
