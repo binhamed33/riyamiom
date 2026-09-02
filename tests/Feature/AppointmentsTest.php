@@ -388,4 +388,59 @@ class AppointmentsTest extends TestCase
         $this->assertStringContainsString('09:00', $html);
         $this->assertStringContainsString('راشد بن سعيد الحبسي', $html);
     }
+
+    /**
+     * «مضى» ليس «محجوزاً» — والفرقُ يمنع شاشةً تبدو معطّلة.
+     *
+     * يومٌ انقضى دوامُه كان يُعرض كلُّه مشطوباً كأنّ المكتبَ محجوزٌ
+     * بالكامل، فيظنّ الموظّفُ العطلَ في النظام. الحالةُ تُسمّى الآن،
+     * ومعها أقربُ يومٍ فيه فُسحة.
+     */
+    public function test_a_finished_day_says_so_and_points_to_the_next_open_one(): void
+    {
+        // كلُّ أيّام الأسبوع عملٌ حتى لا يتعلّق الاختبارُ بيوم تشغيله
+        Setting::set(AppointmentSlots::KEY_DAYS, '0,1,2,3,4,5,6', 'appointments');
+
+        // الساعةُ بعد نهاية الدوام: كلُّ فُسَح اليوم مضت
+        $this->travelTo(now()->setTime(20, 0));
+
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('appointments.slots', ['day' => now()->toDateString()]))
+            ->assertOk();
+
+        $this->assertFalse($response->json('has_free'), 'يومٌ انقضى دوامُه عُرض وفيه فُسحة');
+        $this->assertSame(
+            ['past'],
+            array_values(array_unique(array_column($response->json('slots'), 'state'))),
+            'حالةُ الفُسحة الماضية لم تُسمَّ «مضى»',
+        );
+
+        // وأقربُ يومٍ فيه فُسحةٌ يُعرض وجهةً بديلة
+        $next = $response->json('next_open');
+        $this->assertNotNull($next, 'لا وجهةَ بديلةً ليومٍ انقضى');
+        $this->assertSame(now()->addDay()->toDateString(), $next['date']);
+        $this->assertSame('08:00', $next['time']);
+    }
+
+    /** والمحجوزُ يُسمّى «محجوزاً» لا «مضى». */
+    public function test_a_taken_slot_is_named_busy(): void
+    {
+        $day = $this->nextWorkday();
+
+        Appointment::create([
+            'client_id' => $this->client->id,
+            'user_id' => $this->admin->id,
+            'title' => 'محجوز',
+            'starts_at' => $day->copy()->setTime(9, 0),
+            'minutes' => 30,
+            'status' => Appointment::STATUS_SCHEDULED,
+        ]);
+
+        $slots = collect($this->actingAs($this->admin)
+            ->getJson(route('appointments.slots', ['day' => $day->toDateString(), 'user_id' => $this->admin->id]))
+            ->assertOk()->json('slots'));
+
+        $this->assertSame('busy', $slots->firstWhere('time', '09:00')['state']);
+        $this->assertSame('free', $slots->firstWhere('time', '10:00')['state']);
+    }
 }

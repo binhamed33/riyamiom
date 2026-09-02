@@ -122,21 +122,33 @@ class AppointmentSlots
                 break;
             }
 
-            $free = $cursor > $now;
+            // ═══ ثلاثُ حالاتٍ لا اثنتان ═══
+            //
+            // «مشغول» و«مضى» ليسا شيئاً واحداً: يومٌ انقضى دوامُه كان
+            // يُعرض كلُّه مشطوباً كأنّ المكتبَ محجوزٌ بالكامل، فيظنّ
+            // الموظّفُ الشاشةَ معطّلة. الحالةُ تُسمّى الآن، والشاشةُ
+            // تقول «انقضى دوام اليوم» بدل صفٍّ من الشطب.
+            $past = $cursor <= $now;
+            $busyWith = null;
 
-            if ($free) {
+            if (!$past) {
                 foreach ($taken as $busy) {
                     $busyEnd = $busy->starts_at->copy()->addMinutes(max(5, (int) $busy->minutes));
 
                     if ($cursor < $busyEnd && $slotEnd > $busy->starts_at) {
-                        $free = false;
+                        $busyWith = $busy;
 
                         break;
                     }
                 }
             }
 
-            $slots[] = ['time' => $cursor->format('H:i'), 'at' => $cursor->copy(), 'free' => $free];
+            $slots[] = [
+                'time' => $cursor->format('H:i'),
+                'at' => $cursor->copy(),
+                'free' => !$past && $busyWith === null,
+                'state' => $past ? 'past' : ($busyWith ? 'busy' : 'free'),
+            ];
             $cursor->addMinutes($slot);
         }
 
@@ -149,6 +161,29 @@ class AppointmentSlots
      * التداخلُ لا التطابق: موعدُ ساعةٍ في التاسعة يمنع التاسعةَ
      * والنصف أيضاً، ولو لم تكن فُسحةً مطابقة.
      */
+    /**
+     * أوّلُ يومٍ قادمٍ فيه فُسحةٌ شاغرة — أو null خلال أسبوعين.
+     *
+     * الشاشةُ تعرضه زراً حين ينقضي اليومُ الحاليّ: «انقضى دوامُ اليوم،
+     * أقربُ موعدٍ الأحدُ الساعة ٨:٠٠» أنفعُ من صفٍّ مشطوبٍ صامت.
+     */
+    public static function nextOpenDay(?int $userId = null, ?Carbon $from = null): ?array
+    {
+        $day = ($from ?? now())->copy()->startOfDay();
+
+        for ($i = 0; $i <= 14; $i++) {
+            $candidate = $day->copy()->addDays($i);
+
+            foreach (self::forDay($candidate, $userId) as $slot) {
+                if ($slot['free']) {
+                    return ['date' => $candidate, 'time' => $slot['time']];
+                }
+            }
+        }
+
+        return null;
+    }
+
     public static function isFree(Carbon $startsAt, int $minutes, ?int $userId, ?int $ignoreId = null): bool
     {
         if (!$userId) {

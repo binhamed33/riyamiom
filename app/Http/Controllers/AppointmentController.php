@@ -129,10 +129,24 @@ class AppointmentController extends Controller
 
         $slots = AppointmentSlots::forDay($day, $userId, $ignore);
 
+        $free = array_values(array_filter($slots, static fn ($s) => $s['free']));
+
+        // اليومُ الذي انقضى دوامُه: تُعرض وجهةٌ بديلةٌ لا صفٌّ مشطوب
+        $next = ($free === [] && AppointmentSlots::isWorkday($day))
+            ? AppointmentSlots::nextOpenDay($userId, $day->copy()->addDay())
+            : null;
+
         return response()->json([
             'workday' => AppointmentSlots::isWorkday($day),
             'day' => $day->toDateString(),
-            'slots' => array_map(static fn ($s) => ['time' => $s['time'], 'free' => $s['free']], $slots),
+            'has_free' => $free !== [],
+            'next_open' => $next ? ['date' => $next['date']->toDateString(), 'time' => $next['time'],
+                'label' => $next['date']->locale('ar')->isoFormat('dddd D MMMM')] : null,
+            'slots' => array_map(static fn ($s) => [
+                'time' => $s['time'],
+                'free' => $s['free'],
+                'state' => $s['state'],
+            ], $slots),
         ]);
     }
 

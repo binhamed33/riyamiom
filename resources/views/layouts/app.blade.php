@@ -834,6 +834,8 @@
         [data-theme="dark"] .bg-red-50 { background-color: rgba(220,38,38,0.10) !important; }
         [data-theme="dark"] .bg-red-200 { background-color: rgba(220,38,38,0.22) !important; }
         [data-theme="dark"] .border-red-200 { border-color: rgba(220,38,38,0.35) !important; }
+        /* حدُّ الفُسحة المحجوزة في شاشة المواعيد — أخفتُ من أخيه */
+        [data-theme="dark"] .border-red-100 { border-color: rgba(220,38,38,0.22) !important; }
         [data-theme="dark"] .border-red-300 { border-color: rgba(220,38,38,0.45) !important; }
         [data-theme="dark"] .text-red-600, [data-theme="dark"] .text-red-800 { color: #F87171 !important; }
 

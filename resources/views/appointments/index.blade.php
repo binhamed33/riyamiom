@@ -111,54 +111,87 @@
         </div>
     @endif
 
-    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        @forelse($appointments as $appointment)
-            @php
-                $tone = match($appointment->status) {
-                    'cancelled' => 'bg-gray-50 text-gray-500 border-gray-200',
-                    'completed' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                    'no_show'   => 'bg-red-50 text-red-700 border-red-200',
-                    default     => 'bg-amber-50 text-amber-800 border-amber-200',
-                };
-            @endphp
-            <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50/60">
-                <div class="w-28 shrink-0">
-                    <div class="text-sm font-bold text-gray-800">{{ $appointment->starts_at->format('H:i') }}</div>
-                    <div class="text-[11px] text-gray-500">{{ $appointment->starts_at->locale('ar')->isoFormat('ddd D MMM') }}</div>
-                </div>
+    {{-- ═══ الجدول: مجموعٌ بالأيّام ═══
 
-                <div class="flex-1 min-w-[12rem]">
-                    <div class="text-sm font-semibold text-gray-800">{{ $appointment->title }}</div>
-                    <div class="text-[11px] text-gray-500 mt-0.5">
-                        {{ $appointment->personName() }}@if($appointment->isGuest() && $appointment->guest_phone) <span class="text-gray-400" dir="ltr">{{ $appointment->guest_phone }}</span>@endif
-                        @if($appointment->user) · مع {{ $appointment->user->name }} @endif
-                        @if($appointment->case) · {{ $appointment->case->case_number }} @endif
-                        @if($appointment->location) · {{ $appointment->location }} @endif
-                        · {{ $appointment->minutes }} د
+         صفٌّ بعد صفٍّ بلا فاصلٍ يجعل «الخميس» و«الأحدَ القادم» كتلةً
+         واحدة، فيقرأ الموظّفُ التاريخَ في كلّ سطرٍ ليعرف أين هو.
+         ترويسةُ يومٍ واحدةٌ تكفي، والسطرُ تحتها للوقت والاسم. --}}
+    @php
+        $byDay = $appointments->getCollection()->groupBy(fn ($a) => $a->starts_at->toDateString());
+    @endphp
+
+    @forelse($byDay as $date => $dayItems)
+        @php $d = \Illuminate\Support\Carbon::parse($date); @endphp
+
+        <div class="mb-3">
+            <div class="flex items-center gap-2 mb-2 px-1">
+                <span class="text-xs font-bold {{ $d->isToday() ? 'text-gold-dark' : 'text-gray-700' }}">
+                    {{ $d->locale('ar')->isoFormat('dddd D MMMM') }}
+                </span>
+                @if($d->isToday())
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-gold/12 text-gold-dark border border-gold/25">اليوم</span>
+                @elseif($d->isTomorrow())
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">غداً</span>
+                @endif
+                <span class="text-[11px] text-gray-400">· {{ $dayItems->count() }} موعد</span>
+                <span class="flex-1 h-px bg-gray-100"></span>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                @foreach($dayItems as $appointment)
+                    @php
+                        $tone = match($appointment->status) {
+                            'cancelled' => 'bg-gray-50 text-gray-500 border-gray-200',
+                            'completed' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                            'no_show'   => 'bg-red-50 text-red-700 border-red-200',
+                            default     => 'bg-amber-50 text-amber-800 border-amber-200',
+                        };
+                        $muted = in_array($appointment->status, ['cancelled', 'no_show'], true);
+                    @endphp
+
+                    <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50/60 {{ $muted ? 'opacity-60' : '' }}">
+                        {{-- الوقتُ عمودٌ ثابتُ العرض: الأعينُ تمسحه رأسياً --}}
+                        <div class="w-16 shrink-0 text-center" dir="ltr">
+                            <div class="text-sm font-bold text-gray-800">{{ $appointment->starts_at->format('H:i') }}</div>
+                            <div class="text-[10px] text-gray-400">{{ $appointment->minutes }}د</div>
+                        </div>
+
+                        <div class="flex-1 min-w-[12rem]">
+                            <div class="text-sm font-semibold text-gray-800">{{ $appointment->title }}</div>
+                            <div class="text-[11px] text-gray-500 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                <span class="font-medium text-gray-600">{{ $appointment->personName() }}</span>
+                                @if($appointment->isGuest() && $appointment->guest_phone)
+                                    <a href="tel:{{ $appointment->guest_phone }}" class="text-gray-400 hover:text-gold-dark" dir="ltr">{{ $appointment->guest_phone }}</a>
+                                @endif
+                                @if($appointment->user)<span class="text-gray-300">·</span><span>مع {{ $appointment->user->name }}</span>@endif
+                                @if($appointment->case)<span class="text-gray-300">·</span><span>{{ $appointment->case->case_number }}</span>@endif
+                                @if($appointment->location)<span class="text-gray-300">·</span><span>{{ $appointment->location }}</span>@endif
+                            </div>
+                        </div>
+
+                        <span class="text-[11px] px-2 py-0.5 rounded-full border {{ $tone }}">{{ $appointment->statusLabel() }}</span>
+
+                        <div class="flex items-center gap-1">
+                            @if($appointment->status === 'scheduled')
+                                <form method="POST" action="{{ route('appointments.status', $appointment) }}">
+                                    @csrf @method('PATCH')
+                                    <input type="hidden" name="status" value="completed">
+                                    <button class="text-[11px] px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-700">تمّ</button>
+                                </form>
+                            @endif
+                            <a href="{{ route('appointments.edit', $appointment) }}"
+                               class="text-[11px] px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:border-gold/40">تعديل</a>
+                        </div>
                     </div>
-                </div>
-
-                <span class="text-[11px] px-2 py-0.5 rounded-full border {{ $tone }}">{{ $appointment->statusLabel() }}</span>
-
-                <div class="flex items-center gap-1">
-                    @if($appointment->status === 'scheduled')
-                        <form method="POST" action="{{ route('appointments.status', $appointment) }}">
-                            @csrf @method('PATCH')
-                            <input type="hidden" name="status" value="completed">
-                            <button class="text-[11px] px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-700">تمّ</button>
-                        </form>
-                    @endif
-                    <a href="{{ route('appointments.edit', $appointment) }}"
-                       class="text-[11px] px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:border-gold/40">تعديل</a>
-                </div>
+                @endforeach
             </div>
-        @empty
-            <div class="px-4 py-12 text-center text-sm text-gray-400">
-                لا مواعيد في هذا المدى.
-                <a href="{{ route('appointments.create') }}" class="text-gold-dark font-semibold">احجز موعداً</a>
-            </div>
-        @endforelse
-    </div>
+        </div>
+    @empty
+        <div class="bg-white rounded-2xl border border-gray-200 px-4 py-12 text-center text-sm text-gray-400">
+            لا مواعيد في هذا المدى.
+            <a href="{{ route('appointments.create') }}" class="text-gold-dark font-semibold">احجز موعداً</a>
+        </div>
+    @endforelse
 
     <div class="mt-4">{{ $appointments->links() }}</div>
 </div>

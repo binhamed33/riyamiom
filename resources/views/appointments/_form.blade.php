@@ -128,12 +128,16 @@
     <div class="md:col-span-2" data-appt-slots
          data-url="{{ route('appointments.slots') }}"
          data-ignore="{{ $appointment?->id }}">
-        <label class="block text-xs font-semibold text-gray-600 mb-1">الأوقات المتاحة</label>
-        <div class="rounded-xl border border-gray-200 bg-gray-50/60 p-3 min-h-[3.5rem] flex flex-wrap gap-1.5"
-             data-appt-slots-box>
+        <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-semibold text-gray-600">الأوقات المتاحة</label>
+            <span class="text-[11px] text-gray-400" data-appt-legend></span>
+        </div>
+
+        <div class="rounded-xl border border-gray-200 bg-gray-50/60 p-3 min-h-[4rem]" data-appt-slots-box>
             <span class="text-[11px] text-gray-400">اختر التاريخ لعرض الأوقات المتاحة.</span>
         </div>
-        <p class="text-[11px] text-gray-500 mt-1">
+
+        <p class="text-[11px] text-gray-500 mt-1.5">
             أوقاتُ الدوام تُضبط من: الإعدادات ← المواعيد. والوقتُ المحجوز لدى الموظّف نفسِه يُرفض عند الحفظ.
         </p>
     </div>
@@ -160,9 +164,65 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!wrap) { return; }
 
     var box = wrap.querySelector('[data-appt-slots-box]');
+    var legend = wrap.querySelector('[data-appt-legend]');
     var date = document.querySelector('[data-appt-date]');
     var user = document.querySelector('[data-appt-user]');
     var time = document.querySelector('[data-appt-time]');
+
+    function clear() { while (box.firstChild) { box.removeChild(box.firstChild); } }
+
+    function note(text, tone) {
+        var p = document.createElement('p');
+        p.className = 'text-[11px] ' + (tone === 'bad' ? 'text-red-600'
+            : tone === 'warn' ? 'text-amber-700' : 'text-gray-400');
+        p.textContent = text;
+        box.appendChild(p);
+        return p;
+    }
+
+    // ═══ شبكةٌ مرتّبةٌ لا رقائقُ متناثرة ═══
+    //
+    // الأوقاتُ أرقامٌ لاتينية: في سطرٍ عربيّ متدفّقٍ كانت تُقرأ من
+    // اليمين فتبدو غيرَ مرتّبة. شبكةٌ ثابتةُ الأعمدة بـdir=ltr تعيد
+    // الترتيبَ الطبيعيّ، وعنوانان يفصلان الصباحَ عن بعد الظهر.
+    function group(title, slots) {
+        if (!slots.length) { return; }
+
+        var head = document.createElement('div');
+        head.className = 'text-[10px] font-bold text-gray-400 mb-1.5 mt-2 first:mt-0';
+        head.textContent = title;
+        box.appendChild(head);
+
+        var grid = document.createElement('div');
+        grid.className = 'grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-1.5 mb-1';
+        grid.setAttribute('dir', 'ltr');
+
+        slots.forEach(function (slot) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = slot.time;
+            b.disabled = !slot.free;
+            b.title = slot.state === 'busy' ? 'محجوز' : (slot.state === 'past' ? 'مضى' : 'متاح');
+            b.className = 'text-[11px] py-1.5 rounded-lg border text-center transition ' + (
+                slot.state === 'free' ? 'bg-white text-gray-700 border-gray-200 hover:border-gold hover:text-gold-dark cursor-pointer'
+                : slot.state === 'busy' ? 'bg-red-50 text-red-400 border-red-100 line-through cursor-not-allowed'
+                : 'bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed');
+
+            if (slot.free) {
+                b.addEventListener('click', function () {
+                    time.value = slot.time;
+                    box.querySelectorAll('button').forEach(function (x) {
+                        x.classList.remove('ring-2', 'ring-gold', 'bg-gold/10');
+                    });
+                    b.classList.add('ring-2', 'ring-gold', 'bg-gold/10');
+                });
+            }
+
+            grid.appendChild(b);
+        });
+
+        box.appendChild(grid);
+    }
 
     function load() {
         if (!date.value) { return; }
@@ -171,57 +231,59 @@ document.addEventListener('DOMContentLoaded', function () {
             + '&user_id=' + encodeURIComponent(user ? user.value : '')
             + '&ignore=' + encodeURIComponent(wrap.dataset.ignore || '');
 
-        box.textContent = '';
-        var wait = document.createElement('span');
-        wait.className = 'text-[11px] text-gray-400';
-        wait.textContent = 'جارٍ الفحص…';
-        box.appendChild(wait);
+        clear();
+        legend.textContent = '';
+        note('جارٍ الفحص…');
 
         fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                box.textContent = '';
+                clear();
 
                 if (!data.workday) {
-                    var off = document.createElement('span');
-                    off.className = 'text-[11px] text-amber-700';
-                    off.textContent = 'هذا اليوم خارج أيّام العمل المضبوطة — يمكن الحجز فيه يدوياً بكتابة الوقت.';
-                    box.appendChild(off);
+                    note('هذا اليوم خارج أيّام العمل المضبوطة — يمكن الحجز فيه يدوياً بكتابة الوقت.', 'warn');
                     return;
                 }
 
                 if (!data.slots.length) {
-                    var none = document.createElement('span');
-                    none.className = 'text-[11px] text-gray-400';
-                    none.textContent = 'لا فُسَح في هذا اليوم.';
-                    box.appendChild(none);
+                    note('لا فُسَح في هذا اليوم.');
                     return;
                 }
 
-                data.slots.forEach(function (slot) {
-                    var b = document.createElement('button');
-                    b.type = 'button';
-                    b.textContent = slot.time;
-                    b.disabled = !slot.free;
-                    b.className = 'text-[11px] px-2.5 py-1.5 rounded-lg border ' + (slot.free
-                        ? 'bg-white text-gray-700 border-gray-200 hover:border-gold hover:text-gold-dark cursor-pointer'
-                        : 'bg-gray-100 text-gray-400 border-gray-100 line-through cursor-not-allowed');
-                    if (slot.free) {
-                        b.addEventListener('click', function () {
-                            time.value = slot.time;
-                            box.querySelectorAll('button').forEach(function (x) { x.classList.remove('ring-2', 'ring-gold'); });
-                            b.classList.add('ring-2', 'ring-gold');
+                // ═══ يومٌ انقضى دوامُه ═══
+                //
+                // كان يُعرض صفّاً مشطوباً كأنّ المكتبَ محجوزٌ بالكامل،
+                // فيظنّ الموظّفُ الشاشةَ معطّلة. يُقال السببُ، ويُعرض
+                // أقربُ يومٍ فيه فُسحةٌ زراً يُنقر.
+                if (!data.has_free) {
+                    var allPast = data.slots.every(function (s) { return s.state === 'past'; });
+                    note(allPast ? 'انقضى دوامُ هذا اليوم.' : 'كلُّ فُسَح هذا اليوم محجوزة.', 'warn');
+
+                    if (data.next_open) {
+                        var jump = document.createElement('button');
+                        jump.type = 'button';
+                        jump.className = 'mt-2 text-[11px] font-bold px-3 py-1.5 rounded-lg bg-gold text-white hover:bg-gold-dark';
+                        jump.textContent = 'أقرب موعد: ' + data.next_open.label + ' — ' + data.next_open.time;
+                        jump.addEventListener('click', function () {
+                            date.value = data.next_open.date;
+                            time.value = data.next_open.time;
+                            load();
                         });
+                        box.appendChild(jump);
                     }
-                    box.appendChild(b);
-                });
+
+                    return;
+                }
+
+                var freeCount = data.slots.filter(function (s) { return s.free; }).length;
+                legend.textContent = freeCount + ' فُسحة متاحة';
+
+                group('صباحاً', data.slots.filter(function (s) { return parseInt(s.time, 10) < 12; }));
+                group('بعد الظهر', data.slots.filter(function (s) { return parseInt(s.time, 10) >= 12; }));
             })
             .catch(function () {
-                box.textContent = '';
-                var bad = document.createElement('span');
-                bad.className = 'text-[11px] text-red-600';
-                bad.textContent = 'تعذّر جلب الأوقات — اكتب الوقت يدوياً.';
-                box.appendChild(bad);
+                clear();
+                note('تعذّر جلب الأوقات — اكتب الوقت يدوياً.', 'bad');
             });
     }
 
