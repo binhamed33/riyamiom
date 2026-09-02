@@ -31,6 +31,9 @@ enum MailKind: string
     /** إشعار الموكّل بمستندٍ أُتيح له. */
     case DocumentNotice = 'document_notice';
 
+    /** إشعار الموكّل بموعدٍ في المكتب — حجزاً أو تغييراً أو إلغاءً. */
+    case AppointmentNotice = 'appointment_notice';
+
     /** رسالة نظامٍ رسمية — نصُّها يُمرَّر عند الإرسال. */
     case SystemNotice = 'system_notice';
 
@@ -46,6 +49,7 @@ enum MailKind: string
             self::CaseUpdated => 'إشعار الموكّل عند تحديث قضيته',
             self::SessionNotice => 'إشعار الموكّل بالجلسات',
             self::DocumentNotice => 'إشعار الموكّل بالمستندات',
+            self::AppointmentNotice => 'إشعار الموكّل بالمواعيد',
             self::SystemNotice => 'رسائل النظام الرسمية',
         };
     }

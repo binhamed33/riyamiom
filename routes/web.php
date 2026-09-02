@@ -328,6 +328,14 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::resource('sessions', CourtSessionController::class);
         Route::get('/sessions/today/list', [CourtSessionController::class, 'today'])->name('sessions.today');
     });
+
+    // المواعيد — لقاءاتُ المكتب مع الأشخاص، غيرُ جلسات المحكمة
+    Route::middleware(['role:developer,admin,lawyer,staff', 'feature:appointments'])->group(function () {
+        // الفُسَحُ الشاغرة تُنادى من شاشة الحجز عند تغيّر اليوم أو الموظّف
+        Route::get('/appointments/slots', [\App\Http\Controllers\AppointmentController::class, 'slots'])->name('appointments.slots');
+        Route::patch('/appointments/{appointment}/status', [\App\Http\Controllers\AppointmentController::class, 'status'])->name('appointments.status');
+        Route::resource('appointments', \App\Http\Controllers\AppointmentController::class)->except(['show']);
+    });
     
     // Tasks - developer, admin, lawyer, staff
     Route::middleware(['role:developer,admin,lawyer,staff', 'feature:tasks'])->group(function () {

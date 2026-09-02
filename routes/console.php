@@ -106,6 +106,10 @@ Schedule::command('queue:prune-failed --hours=168')->weekly();
 */
 Schedule::command('whatsapp:sweep')->everyFiveMinutes()->withoutOverlapping();
 
+// تذكيرُ المواعيد — كلَّ ساعة، ونافذتُه من الآن إلى حدّ التذكير
+// المضبوط، و`reminded_at` يمنع تكرارَ الرسالة على الموعد نفسِه.
+Schedule::command('appointments:remind')->hourly()->withoutOverlapping();
+
 // تذكيرُ الجلسات — كلَّ ساعة، والأمرُ نفسه يقرّر أيَّ جلساتٍ حان
 // تذكيرُها وفق إعداد المكتب، ويرفض التكرار على نفس الجلسة.
 Schedule::command('whatsapp:session-reminders')->hourly()->withoutOverlapping();

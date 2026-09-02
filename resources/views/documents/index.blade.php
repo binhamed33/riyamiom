@@ -177,6 +177,69 @@
         </a>
     </div>
 
+    {{-- ═══ طبقةُ الشخص: الجذرُ مجلداتُ الموكّلين ═══
+
+         كانت الشاشةُ تُفتح على كومةٍ واحدةٍ لا يُعرف لمن كلُّ ورقةٍ
+         فيها. والآن: جذرٌ فيه «مستندات (فلان)» لكلّ موكّل، ثمّ قضاياه،
+         ثمّ مجلداتُ القضية كما كانت.
+
+         والمجلداتُ محسوبةٌ لا محفورةٌ في القاعدة: مجلدٌ باسم موكّلٍ
+         يكذب أوّلَ ما يُصحَّح اسمُه، والمحسوبُ يبقى صادقاً بلا صيانة. --}}
+    @if(($selectedCaseId ?? 0) === 0 && ($selectedClientId ?? null) === null)
+        @php $clientBase = request()->except(['client_id', 'case_id', 'folder_id', 'page']); @endphp
+        <div class="mb-4 p-3 rounded-xl bg-gray-100 border border-gray-200">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-[11px] font-bold text-gray-500 px-1">الملفّات بحسب الشخص:</span>
+
+                @forelse($clientFolders ?? [] as $folder)
+                    <a href="{{ route('documents.index', $clientBase + ['client_id' => $folder->id]) }}"
+                       class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition bg-white text-gray-600 border-gray-200 hover:border-gold/40 hover:text-gray-800">
+                        📁 {{ $folder->name }}
+                        <span class="text-gray-400">({{ $folder->count }})</span>
+                    </a>
+                @empty
+                    <span class="text-[11px] text-gray-400">لا مستنداتٍ منسوبةً إلى موكّلين بعد.</span>
+                @endforelse
+
+                @if(($unassignedCount ?? 0) > 0)
+                    <a href="{{ route('documents.index', $clientBase + ['client_id' => 0]) }}"
+                       class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition bg-white text-gray-500 border-gray-200 hover:border-gray-300">
+                        🗃 غير منسوبة <span class="text-gray-400">({{ $unassignedCount }})</span>
+                    </a>
+                @endif
+            </div>
+        </div>
+    @endif
+
+    {{-- داخلَ موكّل: قضاياه مجلداتٍ، ثمّ الدخولُ إلى القضية يعرض مجلداتها --}}
+    @if(($selectedClientId ?? 0) > 0 && ($selectedCaseId ?? 0) === 0)
+        @php $backBase = request()->except(['client_id', 'case_id', 'folder_id', 'page']); @endphp
+        <div class="mb-4 p-3 rounded-xl bg-gray-100 border border-gray-200">
+            <div class="flex items-center gap-1.5 flex-wrap">
+                <a href="{{ route('documents.index', $backBase) }}"
+                   class="text-[11px] font-bold rounded-lg px-2.5 py-1 border bg-white text-gray-500 border-gray-200 hover:text-gray-700">
+                    🗂 كل الأشخاص
+                </a>
+                <span class="text-gray-300 text-[11px]">⟵</span>
+                <span class="text-[11px] font-bold rounded-lg px-2.5 py-1 border bg-gold/12 text-gold-dark border-gold/25">
+                    📁 مستندات ({{ $selectedClient?->name ?? '—' }})
+                </span>
+
+                <span class="mx-1 text-gray-200">|</span>
+
+                @forelse($clientCases ?? [] as $case)
+                    <a href="{{ route('documents.index', $backBase + ['case_id' => $case->id]) }}"
+                       class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition bg-white text-gray-600 border-gray-200 hover:border-gold/40 hover:text-gray-800">
+                        📁 {{ $case->case_number }}
+                        <span class="text-gray-400">({{ $case->documents_count }})</span>
+                    </a>
+                @empty
+                    <span class="text-[11px] text-gray-400">لا قضايا لهذا الموكّل.</span>
+                @endforelse
+            </div>
+        </div>
+    @endif
+
     {{-- مجلدات القضية المختارة.
          كانت المجلدات لا تُرى إلا داخل صفحة القضية، فمن جاء يبحث عن ملفاته
          حيث يتوقّعها — صفحة المستندات — لم يعرف أن للنظام مجلدات أصلاً. --}}

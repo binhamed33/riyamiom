@@ -76,6 +76,30 @@
     <div class="p-card hm-stat"><b>{{ $summary['upcoming_sessions'] }}</b><span>{{ __('portal.home.upcoming') }}</span></div>
 </div>
 
+{{-- مواعيدُ المكتب — غيرُ جلسات المحكمة: هذه لقاءٌ في المكتب --}}
+@if (($appointments ?? collect())->isNotEmpty())
+    <section class="p-in p-in-2" id="appointments" style="margin-bottom:1.2rem">
+        <h2 class="p-h2">مواعيدك في المكتب</h2>
+        @foreach ($appointments as $appointment)
+            @php $at = $appointment->starts_at; @endphp
+            <div class="p-card hm-next" style="margin-bottom:.6rem">
+                <div class="hm-date">
+                    <span class="hm-day">{{ $at->format('d') }}</span>
+                    <span class="hm-month">{{ $at->translatedFormat('F') }}</span>
+                </div>
+                <div class="hm-next-body">
+                    <p class="hm-next-title">{{ $appointment->title }}</p>
+                    <p class="hm-next-meta">
+                        {{ $at->translatedFormat('l') }} · {{ $at->format('h:i A') }}
+                        @if ($appointment->location) <br>{{ $appointment->location }} @endif
+                        @if ($appointment->user) <br>مع: {{ $appointment->user->name }} @endif
+                    </p>
+                </div>
+            </div>
+        @endforeach
+    </section>
+@endif
+
 @if ($nextSession && $nextSession->date)
     @php
         $when = \Illuminate\Support\Carbon::parse($nextSession->date);

@@ -178,13 +178,25 @@ class ClientAccessController extends Controller
 
         $upcoming = $gateway->upcomingSessions(3);
 
+        $client = $this->auth->current($request);
+
         return view('client-portal.home', [
-            'client' => $this->auth->current($request),
+            'client' => $client,
             'summary' => $gateway->summary(),
             'nextSession' => $upcoming->first(),
             'upcoming' => $upcoming,
             'recent' => $gateway->recentlyUpdated(3),
             'dues' => $gateway->duesSummary(),
+
+            // ═══ مواعيدُ صاحب الجلسة وحدَه ═══
+            //
+            // الاستعلامُ مقيَّدٌ بمعرّف الموكّل الجالس، لا بما يصل في
+            // العنوان: البوابةُ تُقرأ من الجلسة وحدها، فلا يرى أحدٌ
+            // موعدَ غيره بتغيير رقمٍ في الرابط.
+            'appointments' => $client
+                ? \App\Models\Appointment::where('client_id', $client->id)
+                    ->upcoming()->with('user:id,name')->limit(5)->get()
+                : collect(),
         ]);
     }
 

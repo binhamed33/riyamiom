@@ -37,6 +37,10 @@ class ClientEvents
     public const SESSION_NEW = 'session_new';
     public const SESSION_MOVED = 'session_moved';
     public const SESSION_REMINDER = 'session_reminder';
+    public const APPOINTMENT_NEW = 'appointment_new';
+    public const APPOINTMENT_MOVED = 'appointment_moved';
+    public const APPOINTMENT_CANCELLED = 'appointment_cancelled';
+    public const APPOINTMENT_REMINDER = 'appointment_reminder';
     public const DOCUMENT_NEW = 'document_new';
     public const INVOICE_NEW = 'invoice_new';
     public const PAYMENT_NEW = 'payment_new';
@@ -104,6 +108,30 @@ class ClientEvents
                 'label' => 'تذكير قبل الجلسة',
                 'hint' => 'قبل الموعد بالمدّة المضبوطة',
                 'target' => 'sessions',
+                'default' => true,
+            ],
+            self::APPOINTMENT_NEW => [
+                'label' => 'موعد جديد',
+                'hint' => 'حين يُحجز للموكّل موعدٌ في المكتب',
+                'target' => 'appointments',
+                'default' => true,
+            ],
+            self::APPOINTMENT_MOVED => [
+                'label' => 'تغيّر موعد',
+                'hint' => 'تأجيلٌ أو تقديمٌ لموعدٍ محجوز',
+                'target' => 'appointments',
+                'default' => true,
+            ],
+            self::APPOINTMENT_CANCELLED => [
+                'label' => 'إلغاء موعد',
+                'hint' => 'حين يُلغى موعدٌ كان محجوزاً',
+                'target' => 'appointments',
+                'default' => true,
+            ],
+            self::APPOINTMENT_REMINDER => [
+                'label' => 'تذكير قبل الموعد',
+                'hint' => 'قبل الموعد بالمدّة المضبوطة في الإعدادات',
+                'target' => 'appointments',
                 'default' => true,
             ],
             self::DOCUMENT_NEW => [

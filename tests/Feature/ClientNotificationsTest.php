@@ -300,6 +300,13 @@ class ClientNotificationsTest extends TestCase
             ClientEvents::CASE_CREATED, ClientEvents::CASE_STATUS, ClientEvents::CASE_UPDATE,
             ClientEvents::SESSION_NEW, ClientEvents::SESSION_MOVED, ClientEvents::SESSION_REMINDER,
             ClientEvents::INVOICE_NEW,
+
+            // المواعيدُ الأربعة مشغّلةٌ افتراضاً: من يحجز موعداً في
+            // المكتب إنّما يحجزه ليحضر صاحبُه — وموعدٌ لا يعلم به
+            // صاحبُه ليس موعداً. وهو صريحُ ما طُلب: «لما يسوي موعد
+            // توصل رسالة واتساب وإيميل للموكّل».
+            ClientEvents::APPOINTMENT_NEW, ClientEvents::APPOINTMENT_MOVED,
+            ClientEvents::APPOINTMENT_CANCELLED, ClientEvents::APPOINTMENT_REMINDER,
         ];
 
         $off = [ClientEvents::DOCUMENT_NEW, ClientEvents::PAYMENT_NEW, ClientEvents::ANNOUNCEMENT];

@@ -46,6 +46,13 @@ class SettingController extends Controller
             // لا يعرضه — وسقفُ صفرٍ يُقفل كلَّ سجلٍّ لحظةَ فتحه
             'hr_shift_cap_hours' => 'nullable|integer|min:1|max:24',
             'maintenance_note'   => 'nullable|string|max:300',
+
+            // أوقاتُ المواعيد. أرقامٌ لا خانات: غيابُها «لم يُرسَل» لا
+            // «صفر» — وبدايةٌ صفريّةٌ تفتح الدوامَ من منتصف الليل
+            'appt_start'         => 'nullable|date_format:H:i',
+            'appt_end'           => 'nullable|date_format:H:i',
+            'appt_slot_minutes'  => 'nullable|integer|min:5|max:240',
+            'appt_remind_hours'  => 'nullable|integer|min:1|max:168',
         ]);
 
         // مفاتيح البوابة الثنائية: خانة غير مؤشَّرة تعني «لا»، والغياب
@@ -71,6 +78,18 @@ class SettingController extends Controller
         if ($request->has('hr_section')) {
             Setting::set('hr_auto_checkin', $request->boolean('hr_auto_checkin') ? '1' : '0', 'hr');
             Setting::set('hr_auto_close', $request->boolean('hr_auto_close') ? '1' : '0', 'hr');
+        }
+
+        // أيّامُ العمل: مصفوفةُ خاناتٍ تُخزَّن نصّاً واحداً. وغيابُ
+        // القسم كلِّه لا يمسّها — أمّا حضورُه بلا تأشيرٍ فيعني «كلُّ
+        // الأيام عطلة»، وهو قرارٌ صريحٌ يملكه المكتب.
+        if ($request->has('appt_section')) {
+            $days = array_values(array_unique(array_filter(
+                array_map('intval', (array) $request->input('appt_days', [])),
+                static fn ($d) => $d >= 0 && $d <= 6,
+            )));
+
+            Setting::set(\App\Support\AppointmentSlots::KEY_DAYS, implode(',', $days), 'appointments');
         }
 
         // أنواع البريد: يقرّر المكتب ما يصل موكّليه. تُقرأ من التعداد
@@ -100,6 +119,10 @@ class SettingController extends Controller
             'hr_auto_close'      => 'hr',
             'hr_shift_cap_hours' => 'hr',
             'maintenance_note'   => 'system',
+            'appt_start'         => 'appointments',
+            'appt_end'           => 'appointments',
+            'appt_slot_minutes'  => 'appointments',
+            'appt_remind_hours'  => 'appointments',
         ];
 
         foreach ($validated as $key => $value) {

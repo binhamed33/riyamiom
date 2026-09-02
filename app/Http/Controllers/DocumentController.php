@@ -53,6 +53,29 @@ class DocumentController extends Controller
             $query->where('case_id', $request->case_id);
         }
 
+        // ═══ طبقةُ الشخص فوق القضايا ═══
+        //
+        // المستندُ يعيش تحت قضية، والقضيةُ لموكّل — فمستنداتُ الشخص
+        // معروفةٌ ضمناً ولا يراها أحد: الشاشةُ كانت تفتح على كومةٍ
+        // واحدةٍ لا يُعرف لمن كلُّ ورقةٍ فيها.
+        //
+        // ولا تُنشأ مجلداتٌ باسم الأشخاص في القاعدة: مجلدٌ محفورٌ باسم
+        // موكّلٍ يكذب أوّلَ ما يُصحَّح اسمُه أو تُنقل قضيتُه، ويلزمه
+        // نقلُ آلافِ الصفوف في مكاتبَ تعمل. فالتجميعُ يُحسب من الرابط
+        // القائم (مستند ⇐ قضية ⇐ موكّل) ويبقى صادقاً بلا صيانة.
+        //
+        // و«0» تعني «بلا موكّل» — وهي قيمةٌ مقصودة لا غياب.
+        $selectedClientId = $request->has('client_id') && $request->input('client_id') !== ''
+            ? (int) $request->input('client_id')
+            : null;
+
+        if ($selectedClientId !== null) {
+            $selectedClientId > 0
+                ? $query->whereHas('case', fn ($c) => $c->where('client_id', $selectedClientId))
+                : $query->where(fn ($q) => $q->whereNull('case_id')
+                    ->orWhereHas('case', fn ($c) => $c->whereNull('client_id')));
+        }
+
         // فلترة بمجلد القضية. «0» تعني «عام» — ما لا مجلد له — وهي قيمة
         // مقصودة لا غياباً، فتُقرأ بـhas لا بـfilled.
         if ($request->has('folder_id') && $request->input('folder_id') !== '') {
@@ -143,10 +166,54 @@ class DocumentController extends Controller
             ? Document::where('case_id', $selectedCaseId)->whereNull('case_folder_id')->count()
             : 0;
 
+        // ═══ ما يُعرض في كلّ طبقة ═══
+        //
+        // الجذر: «مستندات (فلان)» لكلّ موكّلٍ له مستند، وكومةٌ واحدة
+        // لما لا موكّلَ له. داخلَ موكّل: قضاياه. داخلَ قضية: مجلداتها
+        // كما كانت. فلا شاشةَ تعرض كومةً بلا نسب.
+        $clientFolders = collect();
+        $clientCases = collect();
+        $selectedClient = null;
+        $unassignedCount = 0;
+
+        if ($selectedCaseId === 0 && $selectedClientId === null) {
+            // استعلامٌ واحدٌ يجمع العددَ لكلّ موكّل — لا واحدٌ لكلّ صفّ
+            $counts = Document::query()
+                ->join('cases', 'documents.case_id', '=', 'cases.id')
+                ->whereNotNull('cases.client_id')
+                ->selectRaw('cases.client_id as client_id, COUNT(*) as total')
+                ->groupBy('cases.client_id')
+                ->pluck('total', 'client_id');
+
+            $clientFolders = \App\Models\Client::whereIn('id', $counts->keys())
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn ($c) => (object) [
+                    'id' => $c->id,
+                    'name' => 'مستندات (' . $c->name . ')',
+                    'count' => (int) ($counts[$c->id] ?? 0),
+                ]);
+
+            // «غير منسوبة»: ما لا قضيةَ له أو قضيتُه بلا موكّل — تبقى
+            // كما هي بطلبٍ صريح، لكنّها تُجمع في مكانٍ واحدٍ يُعرف
+            $unassignedCount = Document::where(fn ($q) => $q->whereNull('case_id')
+                ->orWhereHas('case', fn ($c) => $c->whereNull('client_id')))->count();
+        }
+
+        if (($selectedClientId ?? 0) > 0 && $selectedCaseId === 0) {
+            $selectedClient = \App\Models\Client::find($selectedClientId);
+
+            $clientCases = LegalCase::where('client_id', $selectedClientId)
+                ->withCount('documents')
+                ->orderByDesc('id')
+                ->get();
+        }
+
         return view('documents.index', compact(
             'documents', 'cases', 'selectedCaseId', 'documentTypes', 'untypedCount',
             'done', 'doneCount', 'folders', 'selectedFolderId', 'unfiledCount',
-            'currentFolder', 'breadcrumb'
+            'currentFolder', 'breadcrumb',
+            'clientFolders', 'clientCases', 'selectedClient', 'selectedClientId', 'unassignedCount'
         ));
     }
 

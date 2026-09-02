@@ -84,6 +84,8 @@ class ClientLinkController extends Controller
                 ? route('client.portal.case', $id) . '#' . $target
                 : route('client.portal.cases'),
             'billing' => route('client.portal.home') . '#billing',
+            // المواعيدُ تُعرض في صدر الصفحة الرئيسة — لا صفحةَ لها وحدها
+            'appointments' => route('client.portal.home') . '#appointments',
             'notifications' => route('client.portal.notifications'),
             default => route('client.portal.home'),
         };

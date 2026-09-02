@@ -1133,6 +1133,67 @@
             </div>
         </div>
 
+        {{-- ═══ أوقات المواعيد ═══
+
+             شاشةُ الحجز تعرض الفُسَحَ من هذه القيم وحدها: بلا يوم عملٍ
+             واحدٍ لا تُعرض فُسحةٌ أبداً وتبدو الشاشةُ معطّلة، فالغيابُ
+             الكاملُ للأيّام يعود إلى أسبوع العمل الافتراضي. --}}
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <input type="hidden" name="appt_section" value="1">
+
+            <h2 class="text-lg font-bold text-gray-900 mb-1">المواعيد</h2>
+            <p class="text-sm text-gray-500 mb-5">
+                أوقاتُ الدوام التي تُعرض منها الفُسَح، وطولُ الموعد، ومتى يُذكَّر الموكّل قبله.
+            </p>
+
+            <div class="mb-5">
+                <span class="block text-sm font-semibold text-gray-800 mb-2">أيّام العمل</span>
+                <div class="flex flex-wrap gap-2">
+                    @php $activeDays = \App\Support\AppointmentSlots::days(); @endphp
+                    @foreach(\App\Support\AppointmentSlots::DAY_NAMES as $num => $name)
+                        <label class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm
+                                      {{ in_array($num, $activeDays, true) ? 'border-gold/50 bg-gold/5 text-gray-800' : 'border-gray-200 text-gray-500' }}">
+                            <input type="checkbox" name="appt_days[]" value="{{ $num }}"
+                                   @checked(in_array($num, $activeDays, true))
+                                   class="rounded border-gray-300 text-gold focus:ring-gold">
+                            <span>{{ $name }}</span>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-4 gap-4">
+                <div>
+                    <label for="appt_start" class="block text-sm font-semibold text-gray-800 mb-1.5">بداية الدوام</label>
+                    <input id="appt_start" type="time" name="appt_start"
+                           value="{{ \App\Support\AppointmentSlots::startTime() }}"
+                           class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label for="appt_end" class="block text-sm font-semibold text-gray-800 mb-1.5">نهاية الدوام</label>
+                    <input id="appt_end" type="time" name="appt_end"
+                           value="{{ \App\Support\AppointmentSlots::endTime() }}"
+                           class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label for="appt_slot_minutes" class="block text-sm font-semibold text-gray-800 mb-1.5">طول الفُسحة (دقيقة)</label>
+                    <input id="appt_slot_minutes" type="number" name="appt_slot_minutes" min="5" max="240" step="5"
+                           value="{{ \App\Support\AppointmentSlots::slotMinutes() }}"
+                           class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label for="appt_remind_hours" class="block text-sm font-semibold text-gray-800 mb-1.5">التذكير قبل (ساعة)</label>
+                    <input id="appt_remind_hours" type="number" name="appt_remind_hours" min="1" max="168"
+                           value="{{ \App\Support\AppointmentSlots::remindHours() }}"
+                           class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                </div>
+            </div>
+
+            <p class="text-xs text-gray-500 mt-4">
+                وصولُ رسالة الموعد إلى الموكّل يحكمه قسمُ «إشعارات الموكّل» أعلاه — واتساباً وبريداً.
+            </p>
+        </div>
+
         {{-- الحضور والصيانة: إعدادان كانا يُقرآن ولا تكتبهما واجهة — فبقي
              الحضور التلقائي مفروضاً بلا مفتاح إطفاء، وملاحظةُ الصيانة لا
              تظهر أبداً مهما احتاجها المكتب. --}}
