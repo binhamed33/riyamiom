@@ -328,6 +328,7 @@ return [
     'company' => 'Company',
     'add_client' => 'Add Client',
     'new_client' => 'New Client',
+    'documents_new' => 'new documents',
     'client_full_name' => 'Full Name',
     'client_name_placeholder' => 'Client name',
     'client_phone_placeholder' => 'Phone number',

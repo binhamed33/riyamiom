@@ -38,7 +38,15 @@ class DarkModeCoverageTest extends TestCase
         // ‏bg-green-50/60 صنفٌ مستقلٌّ عند Tailwind. وكان النمطُ يقف
         // عند «50» فيقرأ bg-green-50 ويحسبه مغطّى — فمرّت بطاقاتُ
         // قائمة التحقّق فاتحةً على صفحةٍ داكنةٍ واختبارٌ أخضر فوقها.
-        $pattern = '/\b((?:bg|text|border|divide)-(?:' . $palette . ')-(?:50|100|200|300)(?:\/\d{1,3})?)\b/';
+        // ═══ والحالةُ جزءٌ من الاسم كذلك ═══
+        //
+        // ‏hover:bg-gray-50 صنفٌ ثالثٌ لا نسخةٌ من bg-gray-50 ولا من
+        // شفافيّته. وكان النمطُ يبدأ عند «bg» فيقرأه bg-gray-50 ويحسبه
+        // مغطّى — فانقلب التحويمُ على سطرٍ في مركز الانتباه شريطاً
+        // رماديّاً فاتحاً يختفي فوقه النصُّ الأبيض، واختبارٌ أخضرُ فوقه.
+        $variant = 'hover|focus|focus-within|focus-visible|active|group-hover|peer-focus|disabled';
+        $pattern = '/(?<![\w:-])((?:(?:' . $variant . '):)?(?:bg|text|border|divide)-(?:' . $palette
+            . ')-(?:50|100|200|300)(?:\/\d{1,3})?)\b/';
 
         $found = [];
 
@@ -88,7 +96,18 @@ class DarkModeCoverageTest extends TestCase
             $m
         );
 
-        return array_map(fn ($c) => str_replace('\\', '', $c), $m[1]);
+        // القاعدةُ تُكتب `.hover\:bg-gray-50:hover` — الجزءُ الأخير
+        // حالةُ العنصر لا جزءٌ من اسم الصنف. وبلا نزعِه يُقارَن اسمٌ
+        // باسمٍ آخر فيُقال «غيرُ مغطّى» وهو مغطّى.
+        return array_map(function (string $class): string {
+            $class = str_replace('\\', '', $class);
+
+            return (string) preg_replace(
+                '/:(hover|focus|focus-within|focus-visible|active|disabled)$/',
+                '',
+                $class,
+            );
+        }, $m[1]);
     }
 
     public function test_every_light_utility_used_in_a_view_has_a_dark_definition(): void

@@ -34,8 +34,21 @@ class DashboardController extends Controller
         $documentBase = Document::query()
             ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)));
 
-        // === Case Statistics (cached 5 min) ===
-        $caseStats = Cache::remember('dashboard_case_stats' . ($isLawyer ? '_' . $user->id : ''), 300, fn () => [
+        // ═══ لماذا سقط الكاش عن الأعداد ═══
+        //
+        // كانت سبعةُ الأعداد محفوظةً خمسَ دقائق، وجاراتُها على الشاشة
+        // نفسِها حيّةً بلا حفظ. فمن أضاف قضيةً رأى «جديد هذا الشهر»
+        // يصير ١٩ و«إجمالي القضايا» باقياً ١٨ — لوحةٌ تناقض نفسَها،
+        // وجديدُ الشهر أكبرُ من الإجمالي.
+        //
+        // ولا مُبطِلَ للكاش في المنظومة كلِّها: لا عند إنشاء قضية ولا
+        // مهمّة ولا موكّل. فالخيارُ بين إبطالٍ يُنثر في عشرة متحكّمات
+        // ويُنسى في الحادي عشر، وبين عدٍّ حيٍّ لا يحتاج صيانة.
+        //
+        // والعدُّ رخيص: سبعةُ COUNT على عمودٍ مفهرَسٍ في جدولٍ سقفُه
+        // ألفان وخمسمئة صفّ (حدُّ الباقة) — أجزاءُ ميلي ثانية. الكاشُ
+        // هنا كان تحسيناً لم يُقَس، ثمنُه أرقامٌ متناقضة.
+        $caseStats = ((fn () => [
             'total' => (clone $caseBase)->count(),
             'active' => (clone $caseBase)->where('status', 'active')->count(),
             'overdue' => (clone $caseBase)->where('status', 'overdue')->count(),
@@ -43,7 +56,7 @@ class DashboardController extends Controller
             'won' => (clone $caseBase)->where('status', 'won')->count(),
             'lost' => (clone $caseBase)->where('status', 'lost')->count(),
             'pending' => (clone $caseBase)->where('status', 'pending')->count(),
-        ]);
+        ]))();
         $totalCases = $caseStats['total'];
         $activeCases = $caseStats['active'];
         $overdueCases = $caseStats['overdue'];
@@ -107,21 +120,24 @@ class DashboardController extends Controller
         $activeLawyers = User::where('role', 'lawyer')->where('is_active', true)->count();
 
         // === Charts Data (cached 5 min) ===
+        // الرسومُ تبقى محفوظةً دقيقةً واحدة: تجميعاتٌ أثقل من عدٍّ،
+        // ولا يجاورها على الشاشة رقمٌ حيٌّ تناقضه — ودقيقةٌ تكفي كي لا
+        // يظنّ من أضاف قضيةً أنّ الرسم عطل.
         $cacheSuffix = $isLawyer ? '_' . $user->id : '';
-        $casesByStatus = Cache::remember('dashboard_cases_by_status' . $cacheSuffix, 300, fn () =>
+        $casesByStatus = Cache::remember('dashboard_cases_by_status' . $cacheSuffix, 60, fn () =>
             (clone $caseBase)->selectRaw('status, count(*) as count')
                 ->groupBy('status')
                 ->pluck('count', 'status')
         );
 
-        $casesByPriority = Cache::remember('dashboard_cases_by_priority' . $cacheSuffix, 300, fn () =>
+        $casesByPriority = Cache::remember('dashboard_cases_by_priority' . $cacheSuffix, 60, fn () =>
             (clone $caseBase)->selectRaw('priority, count(*) as count')
                 ->groupBy('priority')
                 ->pluck('count', 'priority')
         );
 
         // Monthly cases trend (last 6 months)
-        $monthlyTrend = Cache::remember('dashboard_monthly_trend' . $cacheSuffix, 300, function () use ($now, $caseBase) {
+        $monthlyTrend = Cache::remember('dashboard_monthly_trend' . $cacheSuffix, 60, function () use ($now, $caseBase) {
             $trend = [];
             for ($i = 5; $i >= 0; $i--) {
                 $month = $now->copy()->subMonths($i);
@@ -140,7 +156,7 @@ class DashboardController extends Controller
         });
 
         // Cases by lawyer
-        $casesByLawyer = Cache::remember('dashboard_cases_by_lawyer' . $cacheSuffix, 300, fn () =>
+        $casesByLawyer = Cache::remember('dashboard_cases_by_lawyer' . $cacheSuffix, 60, fn () =>
             (clone $caseBase)->join('users', 'cases.lawyer_id', '=', 'users.id')
                 ->selectRaw('users.name, count(*) as count')
                 ->groupBy('users.name')

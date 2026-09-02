@@ -852,6 +852,59 @@
         [data-theme="dark"] .bg-red-50\/70,
         [data-theme="dark"] .bg-red-50\/60 { background-color: rgba(220,38,38,0.12) !important; }
         [data-theme="dark"] .bg-blue-50\/40 { background-color: rgba(37,99,235,0.12) !important; }
+
+        /* ═══ حالاتُ التحويم واللمس ═══
+
+           ‏hover:bg-gray-50 صنفٌ ثالثٌ لا نسخةٌ من bg-gray-50 ولا من
+           شفافيّته — وكلُّ واحدٍ منها يلزمه تعريفُه. وبلا هذا كان
+           التحويمُ على سطرٍ في مركز الانتباه يقلبه شريطاً رماديّاً
+           فاتحاً يختفي فوقه النصُّ الأبيض: السطرُ الذي تنظر إليه هو
+           وحدَه الذي لا يُقرأ.
+
+           والقاعدةُ واحدة: التحويمُ يرفع السطرَ عن أرضيّته قليلاً لا
+           يقلبه إلى النقيض. */
+        [data-theme="dark"] .hover\:bg-gray-50:hover,
+        [data-theme="dark"] .hover\:bg-gray-50\/60:hover,
+        [data-theme="dark"] .hover\:bg-gray-50\/70:hover,
+        [data-theme="dark"] .active\:bg-gray-50:active { background-color: rgba(148,163,184,0.10) !important; }
+        [data-theme="dark"] .hover\:bg-gray-100:hover { background-color: rgba(148,163,184,0.14) !important; }
+        [data-theme="dark"] .hover\:bg-gray-200:hover { background-color: rgba(148,163,184,0.20) !important; }
+        [data-theme="dark"] .hover\:bg-gray-300:hover { background-color: rgba(148,163,184,0.26) !important; }
+
+        [data-theme="dark"] .hover\:bg-green-50:hover,
+        [data-theme="dark"] .hover\:bg-emerald-50:hover { background-color: rgba(22,163,74,0.14) !important; }
+        [data-theme="dark"] .hover\:bg-green-100:hover { background-color: rgba(22,163,74,0.20) !important; }
+        [data-theme="dark"] .hover\:bg-green-200:hover,
+        [data-theme="dark"] .hover\:bg-emerald-200:hover { background-color: rgba(22,163,74,0.26) !important; }
+
+        [data-theme="dark"] .hover\:bg-red-50:hover { background-color: rgba(220,38,38,0.14) !important; }
+        [data-theme="dark"] .hover\:bg-red-100:hover { background-color: rgba(220,38,38,0.20) !important; }
+        [data-theme="dark"] .hover\:bg-red-200:hover { background-color: rgba(220,38,38,0.26) !important; }
+
+        [data-theme="dark"] .hover\:bg-blue-50:hover { background-color: rgba(37,99,235,0.14) !important; }
+        [data-theme="dark"] .hover\:bg-blue-100:hover { background-color: rgba(37,99,235,0.20) !important; }
+        [data-theme="dark"] .hover\:bg-blue-200:hover { background-color: rgba(37,99,235,0.26) !important; }
+
+        [data-theme="dark"] .hover\:bg-amber-50:hover,
+        [data-theme="dark"] .hover\:bg-yellow-100:hover { background-color: rgba(217,119,6,0.18) !important; }
+
+        [data-theme="dark"] .hover\:bg-indigo-50:hover,
+        [data-theme="dark"] .hover\:bg-purple-50:hover { background-color: rgba(124,58,237,0.14) !important; }
+        [data-theme="dark"] .hover\:bg-indigo-200:hover,
+        [data-theme="dark"] .hover\:bg-purple-200:hover { background-color: rgba(124,58,237,0.26) !important; }
+
+        /* النصُّ الفاتحُ على التحويم يبقى فاتحاً — لا يُقلب داكناً */
+        [data-theme="dark"] .hover\:text-gray-50:hover { color: #F1F5F9 !important; }
+        [data-theme="dark"] .hover\:text-red-200:hover { color: #FCA5A5 !important; }
+
+        /* الحدودُ عند التحويم: تظهر ولا تُبيَّض */
+        [data-theme="dark"] .hover\:border-gray-300:hover { border-color: rgba(148,163,184,0.35) !important; }
+        [data-theme="dark"] .hover\:border-green-300:hover,
+        [data-theme="dark"] .hover\:border-emerald-300:hover { border-color: rgba(22,163,74,0.50) !important; }
+        [data-theme="dark"] .hover\:border-red-300:hover { border-color: rgba(220,38,38,0.50) !important; }
+        [data-theme="dark"] .hover\:border-blue-300:hover { border-color: rgba(37,99,235,0.50) !important; }
+        [data-theme="dark"] .hover\:border-purple-300:hover { border-color: rgba(124,58,237,0.50) !important; }
+        [data-theme="dark"] .focus\:border-emerald-50:focus { border-color: rgba(22,163,74,0.45) !important; }
         [data-theme="dark"] .border-red-300 { border-color: rgba(220,38,38,0.45) !important; }
         [data-theme="dark"] .text-red-600, [data-theme="dark"] .text-red-800 { color: #F87171 !important; }
 
@@ -1627,8 +1680,11 @@
                                     @php
                                         $notifTitle = $notification->localizedTitle() ?: ($notification->type === 'chat' ? __('app.new_message') : null);
                                     @endphp
+                                        {{-- المقروءُ رابطٌ كغيره: الإشعارُ يُقرأ ثمّ يُنسى موضعُه،
+                                             فيبقى الوصولُ إليه من الجرس أقصرَ طريق. --}}
                                         @if($notification->is_read)
-                                        <div class="block px-4 py-3 transition" style="border-bottom: 1px solid rgba(212,175,55,0.04);">
+                                        <a href="{{ route('notifications.open', $notification->id) }}"
+                                           class="block px-4 py-3 transition hover:bg-gray-50" style="border-bottom: 1px solid rgba(212,175,55,0.04);">
                                             <div class="flex items-center justify-between">
                                                 <p class="text-sm font-medium text-gray-500">{{ $notifTitle }}</p>
                                                 @if($notification->message_count > 1)
@@ -1637,21 +1693,21 @@
                                             </div>
                                             <p class="text-sm text-gray-500">{{ $notification->localizedMessage() }}</p>
                                             <p class="text-xs text-gray-400 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
-                                        </div>
+                                        </a>
                                     @else
-                                        <form method="POST" action="{{ route('notifications.read', $notification->id) }}" class="block transition hover:bg-gray-50" style="border-bottom: 1px solid rgba(212,175,55,0.04);">
-                                            @csrf
-                                            <button type="submit" class="w-full text-right px-4 py-3">
-                                                <div class="flex items-center justify-between">
-                                                    <p class="text-sm font-medium text-gray-900">{{ $notifTitle }}</p>
-                                                    @if($notification->message_count > 1)
-                                                        <span class="text-[10px] text-gold-dark bg-gold/12 px-1.5 py-0.5 rounded-full">{{ $notification->message_count }}</span>
-                                                    @endif
-                                                </div>
-                                                <p class="text-sm text-gray-700">{{ $notification->localizedMessage() }}</p>
-                                                <p class="text-xs text-gray-400 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
-                                            </button>
-                                        </form>
+                                        {{-- كان نموذجاً يعلّمه مقروءاً ويقف مكانَه: تُقرأ
+                                             «أُسندت إليك مهمّة» ثمّ تُترك لتبحث عنها بنفسك. --}}
+                                        <a href="{{ route('notifications.open', $notification->id) }}"
+                                           class="block px-4 py-3 transition hover:bg-gray-50" style="border-bottom: 1px solid rgba(212,175,55,0.04);">
+                                            <div class="flex items-center justify-between">
+                                                <p class="text-sm font-medium text-gray-900">{{ $notifTitle }}</p>
+                                                @if($notification->message_count > 1)
+                                                    <span class="text-[10px] text-gold-dark bg-gold/12 px-1.5 py-0.5 rounded-full">{{ $notification->message_count }}</span>
+                                                @endif
+                                            </div>
+                                            <p class="text-sm text-gray-700">{{ $notification->localizedMessage() }}</p>
+                                            <p class="text-xs text-gray-400 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
+                                        </a>
                                     @endif
                                 @empty
                                     <div class="p-8 text-center text-gray-400 text-sm">

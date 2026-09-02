@@ -16,8 +16,14 @@
 
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         @forelse($notifications ?? [] as $notification)
-            <div class="px-6 py-4 border-b border-gray-100 {{ $notification->is_read ? 'bg-transparent' : 'bg-gold/10' }} hover:bg-gray-50 transition">
-                <div class="flex items-start gap-4">
+            {{-- الإشعارُ رابطٌ يصل إلى ما يُخبر عنه.
+                 كان نصّاً لا يفعل شيئاً عند نقره، فيبحث الموظّفُ عن
+                 المهمّة بنفسه في قائمةٍ من ستّين — والإشعارُ الذي لا
+                 يُوصل إلى موضوعه نصفُ إشعار. --}}
+            <div class="relative px-6 py-4 border-b border-gray-100 {{ $notification->is_read ? 'bg-transparent' : 'bg-gold/10' }} hover:bg-gray-50 transition">
+                <a href="{{ route('notifications.open', $notification->id) }}" class="absolute inset-0"
+                   aria-label="{{ $notification->localizedTitle() ?: __('app.notification_default') }}"></a>
+                <div class="relative flex items-start gap-4 pointer-events-none">
                     <div class="flex-shrink-0 mt-1">
                         @if(!$notification->is_read)
                             <span class="w-2.5 h-2.5 rounded-full bg-gold-dark block"></span>
@@ -35,7 +41,7 @@
                         <p class="text-gray-400 text-xs mt-2">{{ $notification->created_at?->diffForHumans() ?? '—' }}</p>
                     </div>
                     @if(!$notification->is_read)
-                        <form method="POST" action="{{ route('notifications.read', $notification->id) }}">
+                        <form method="POST" action="{{ route('notifications.read', $notification->id) }}" class="pointer-events-auto relative">
                             @csrf
                             <button type="submit" class="text-gray-400 hover:text-gold-dark transition text-xs whitespace-nowrap">{{ __('app.mark_as_read') }}</button>
                         </form>

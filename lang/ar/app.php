@@ -328,6 +328,7 @@ return [
     'company' => 'شركة',
     'add_client' => 'إضافة عميل',
     'new_client' => 'موكّل جديد',
+    'documents_new' => 'مستند جديد',
     'client_full_name' => 'الاسم الكامل',
     'client_name_placeholder' => 'اسم الموكل',
     'client_phone_placeholder' => 'رقم الهاتف',

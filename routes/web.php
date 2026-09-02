@@ -290,6 +290,10 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
         Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
+        // نقرةُ الإشعار: تُعلّمه مقروءاً وتنقل صاحبَه إلى ما يُخبر عنه.
+        // ‏GET لأنّها رابطٌ يُنقر في القائمة وفي الجرس معاً — والملكيّةُ
+        // تُفحص في المتحكّم فلا يفتح أحدٌ إشعارَ غيره.
+        Route::get('/notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
         Route::get('/notifications/count', [NotificationController::class, 'count'])->name('notifications.count');
         Route::get('/notifications/latest', [NotificationController::class, 'latest'])->name('notifications.latest');
     });

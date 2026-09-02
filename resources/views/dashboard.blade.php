@@ -178,7 +178,7 @@
         </x-kpi-card>
 
         <x-kpi-card :title="__('app.clients')" :value="$totalClients" accent="gold"
-            :delta="$clientsDelta" :sub="'+' . $newClientsThisMonth . ' ' . __('app.new_this_month') . ' · ' . $newDocumentsThisMonth . ' ' . __('app.document')">
+            :delta="$clientsDelta" :sub="'+' . $newClientsThisMonth . ' ' . __('app.new_this_month') . ' · ' . $totalDocuments . ' ' . __('app.document')">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
         </x-kpi-card>
     </div>
@@ -201,9 +201,16 @@
                     <span class="text-gray-400">{{ __('app.from_last_month') }}</span>
                 </p>
             </div>
+            {{-- ═══ بطاقةُ «جديد هذا الشهر» تعرض جديدَ الشهر ═══
+
+                 كانت تعرض **إجماليَّ** المستندات بجانب **جديدِ** الموكّلين،
+                 وبطاقةُ العملاء تعرض جديدَ المستندات بجانب إجمالي العملاء —
+                 رقمان متبادلان. فمن قرأ «٧١ مستند» تحت العملاء ظنّه رصيدَ
+                 المكتب، ومن قرأ «٧٣ مستند» تحت «جديد هذا الشهر» ظنّ أنّ
+                 ثلاثةً وسبعين مستنداً رُفعت هذا الشهر. --}}
             <div class="mt-2 flex items-center gap-3 text-xs text-gray-400">
                 <span>{{ $newClientsThisMonth }} {{ __('app.new_client') }}</span>
-                <span>{{ $totalDocuments }} {{ __('app.document') }}</span>
+                <span>{{ $newDocumentsThisMonth }} {{ __('app.documents_new') }}</span>
             </div>
         </div>
 

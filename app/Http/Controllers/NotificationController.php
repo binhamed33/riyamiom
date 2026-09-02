@@ -34,6 +34,29 @@ class NotificationController extends Controller
         return redirect()->route('notifications.index')->with('success', 'Notification marked as read.');
     }
 
+    /**
+     * نقرةُ الإشعار: يُعلَّم مقروءاً ثمّ يُنقَل صاحبُه إلى ما يُخبر عنه.
+     *
+     * وفعلان في نقرةٍ واحدة عمداً: من يقرأ الإشعارَ ثمّ يبحث عن
+     * موضوعه بنفسه يترك عشرةً غيرَ مقروءةٍ خلفه، فيصير الجرسُ رقماً
+     * لا يُنظر إليه.
+     *
+     * والوجهةُ قد تكون معدومة (كائنٌ حُذف، أو إشعارٌ عامّ) — فيعود
+     * إلى قائمة الإشعارات مقروءاً، لا إلى صفحة خطأ.
+     */
+    public function open(Notification $notification): RedirectResponse
+    {
+        if ($notification->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if (!$notification->is_read) {
+            $notification->update(['is_read' => true]);
+        }
+
+        return redirect()->to($notification->destination() ?? route('notifications.index'));
+    }
+
     public function markAllRead(): RedirectResponse
     {
         Notification::where('user_id', auth()->id())

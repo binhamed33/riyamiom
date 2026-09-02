@@ -46,6 +46,88 @@ class Notification extends Model
     }
 
     /**
+     * أين يذهب من نقر الإشعار.
+     *
+     * ═══ لماذا يلزم ═══
+     *
+     * الإشعارُ يقول «أُسندت إليك مهمّة» ثمّ لا يفعل شيئاً عند نقره —
+     * فيبحث الموظّفُ عن المهمّة بنفسه في قائمةٍ من ستّين. والإشعارُ
+     * الذي لا يُوصل إلى ما يُخبر عنه نصفُ إشعار.
+     *
+     * ═══ وكيف يُعرف المقصود ═══
+     *
+     * أوّلاً من الكائن المرتبط (notifiable) إن وُجد — وهو الأدقّ:
+     * مهمّةٌ بعينها، قضيةٌ بعينها. فإن لم يوجد فمن مفتاح العنوان:
+     * تذكيرُ النسخة الاحتياطية يذهب إلى صفحة النسخ، وتنبيهُ الاشتراك
+     * إلى الإعدادات — لا شيءَ يُترك بلا وجهة.
+     *
+     * ويُتحقّق من وجود الصفّ قبل بناء الرابط: كائنٌ حُذف بعد إشعاره
+     * كان يرمي 404 في وجه من نقر.
+     */
+    public function destination(): ?string
+    {
+        if ($url = $this->destinationFromSubject()) {
+            return $url;
+        }
+
+        return $this->destinationFromKey();
+    }
+
+    private function destinationFromSubject(): ?string
+    {
+        $type = (string) $this->notifiable_type;
+        $id = $this->notifiable_id;
+
+        if ($type === '' || !$id || !class_exists($type)) {
+            return null;
+        }
+
+        // الصفُّ قد يكون حُذف بعد إشعاره — رابطٌ إلى محذوفٍ يرمي 404
+        $subject = $type::query()->find($id);
+
+        if (!$subject) {
+            return null;
+        }
+
+        return match ($type) {
+            LegalCase::class => route('cases.show', $id),
+            Task::class => route('tasks.show', $id),
+            Session::class => $subject->case_id ? route('cases.show', $subject->case_id) . '#sessions' : route('sessions.index'),
+            CaseReminder::class => $subject->case_id ? route('cases.show', $subject->case_id) : route('cases.index'),
+            Appointment::class => route('appointments.index', ['day' => $subject->starts_at?->toDateString()]),
+            Document::class => $subject->case_id ? route('cases.show', $subject->case_id) . '#documents' : route('documents.index'),
+            Client::class => route('clients.show', $id),
+            Suggestion::class => route('suggestions.index'),
+            Conversation::class => route('chat.index'),
+            HrLeave::class => route('hr.index'),
+            FinanceInvoice::class => route('finance.index'),
+            default => null,
+        };
+    }
+
+    /** إشعارٌ بلا كائنٍ مرتبط — وجهتُه من موضوعه. */
+    private function destinationFromKey(): ?string
+    {
+        $key = (string) $this->title_key;
+
+        return match (true) {
+            str_contains($key, 'backup') => route('backup.index'),
+            str_contains($key, 'sub_') => route('settings.index'),
+            str_contains($key, 'wa_') => route('whatsapp.index'),
+            str_contains($key, 'auto_task') => route('tasks.index'),
+            str_contains($key, 'auto_rule') => route('automations.index'),
+            str_contains($key, 'remind') => route('cases.index'),
+            str_contains($key, 'task') => route('tasks.index'),
+            str_contains($key, 'session') => route('sessions.index'),
+            str_contains($key, 'leave') => route('hr.index'),
+            str_contains($key, 'suggestion') => route('suggestions.index'),
+            str_contains($key, 'chat') => route('chat.index'),
+            str_contains($key, 'case') => route('cases.index'),
+            default => null,
+        };
+    }
+
+    /**
      * عنوان الإشعار بلغة قارئه.
      *
      * الإشعارات الجديدة تُخزَّن مفتاحَ ترجمة ومعاملاتِه لا نصّاً جاهزاً،
