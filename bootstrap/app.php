@@ -88,6 +88,27 @@ return Application::configure(basePath: dirname(__DIR__))
                 || $e instanceof \Illuminate\Validation\ValidationException) {
                 return;
             }
+            // ═══ «419 PAGE EXPIRED» شاشةٌ بلا مخرج ═══
+            //
+            // صفحةٌ تُترك مفتوحةً ساعاتٍ ثمّ يُضغط زرُّها، فيكون رمزُ
+            // الحماية قد انتهى مع الجلسة. والردُّ الافتراضيّ صفحةٌ
+            // سوداءُ فيها رقمٌ وكلمتان بالإنجليزية — لا سببَ ولا رجوع،
+            // فيظنّ المحامي أنّ النظام سقط ويتصل بالدعم.
+            //
+            // ولا يُلتقَط بنوعه: لارافل يحوّل TokenMismatchException إلى
+            // HttpException(419) قبل أن يسأل معالجاتِنا. فيُلتقَط برمزه.
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+                && $e->getStatusCode() === 419) {
+                $message = 'انتهت صلاحية الصفحة لطول بقائها مفتوحة — أعد المحاولة الآن.';
+
+                // كلمةُ المرور لا تُعاد إلى النموذج ولا تُحفظ في الجلسة
+                return auth()->check()
+                    ? redirect()->to($request->fullUrl())
+                        ->withInput($request->except(['password', 'password_confirmation', '_token']))
+                        ->with('error', $message)
+                    : redirect()->route('login')->with('login_error', $message);
+            }
+
             // رفض صلاحية: رسالة تقول السبب بدل «حدث خطأ أثناء تنفيذ العملية»
             if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
                 && $e->getStatusCode() === 403) {
