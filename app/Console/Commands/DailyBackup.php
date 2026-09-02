@@ -63,9 +63,10 @@ class DailyBackup extends Command
             ? '"C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqldump.exe"'
             : (trim((string) shell_exec('command -v mariadb-dump')) ?: 'mysqldump');
 
-        // Use temp config file for mysqldump to avoid shell escaping issues
-        $configFile = tempnam(sys_get_temp_dir(), 'my') . '.cnf';
-        file_put_contents($configFile, "[client]\nhost={$host}\nport={$port}\nuser={$user}\npassword={$pass}\n");
+        // ملفٌّ مؤقّتٌ بدل تمرير كلمة المرور في سطر الأوامر (تُرى في ps).
+        // وبإذن 0600: كان يُكتب 0644 في /tmp المشترك كلَّ يوم — انظر
+        // MysqlCredentialsFile.
+        $configFile = \App\Support\MysqlCredentialsFile::write((string) $host, (string) $port, (string) $user, (string) $pass);
 
         $command = sprintf(
             '%s --defaults-extra-file=%s --no-tablespaces --single-transaction --routines --triggers %s > %s',

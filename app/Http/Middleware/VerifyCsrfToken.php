@@ -7,7 +7,10 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as BaseVerifier;
 class VerifyCsrfToken extends BaseVerifier
 {
     protected $except = [
-        'logout',
+        // «logout» كان هنا: صفحةٌ غريبةٌ تستطيع إخراجَ المستخدم من حسابه
+        // بنموذجٍ مخفيّ (CSRF logout) — ثمّ تُريه صفحةَ دخولٍ مزيّفة.
+        // كلُّ نماذج الخروج في التطبيق تحمل @csrf، وانتهاءُ الرمز يُعالَج
+        // بإعادة توجيهٍ لطيفة (معالج 419)، فلا حاجةَ إلى الاستثناء.
 
         // ويبهوك واتساب: Meta تنادي من خوادمها بلا جلسةٍ ولا رمز CSRF.
         // الاستثناء ليس ثغرة — البديلُ عن رمز الجلسة هنا توقيعُ

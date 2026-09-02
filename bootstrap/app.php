@@ -27,7 +27,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', \Illuminate\Http\Middleware\HandleCors::class);
         $middleware->replaceInGroup('web', \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \App\Http\Middleware\VerifyCsrfToken::class);
 
-        $middleware->trustProxies(at: '*');
+        // ═══ لا يُوثَق بكلّ وكيل ═══
+        //
+        // «*» يعني: أيُّ عميلٍ يرسل X-Forwarded-For يقرّر ما هو عنوانُه.
+        // فيتجاوز حدَّ المحاولات بالعنوان بتغيير ترويسةٍ في كلّ طلب،
+        // ويكتب في سجلّ التدقيق وتنبيهات القفل عنواناً من اختياره.
+        // وnginx هنا على الخادم نفسِه يخاطب PHP عبر FastCGI — لا وكيلَ
+        // أمامه يحتاج ثقة. فالافتراضُ المحلّيُّ وحدَه، ومن وضع Cloudflare
+        // يوماً كتب عناوينَه في TRUSTED_PROXIES.
+        $middleware->trustProxies(at: array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('TRUSTED_PROXIES', '127.0.0.1,::1'))
+        ))));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // ═══ لا يدخل السجلَّ سرٌّ ═══

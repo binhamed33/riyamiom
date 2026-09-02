@@ -61,12 +61,10 @@ class BackupController extends Controller
         return [$mysqldump, $mysql];
     }
 
+    /** ملفُّ بيانات الاتصال — بإذن 0600 لا 0644 (انظر MysqlCredentialsFile). */
     private function createMyCnf(array $db): string
     {
-        $tmp = tempnam(sys_get_temp_dir(), 'my_') . '.cnf';
-        $content = "[client]\nhost=\"{$db['host']}\"\nport={$db['port']}\nuser=\"{$db['username']}\"\npassword=\"{$db['password']}\"\n";
-        file_put_contents($tmp, $content);
-        return $tmp;
+        return \App\Support\MysqlCredentialsFile::write($db['host'], $db['port'], $db['username'], $db['password']);
     }
 
     public function index()
