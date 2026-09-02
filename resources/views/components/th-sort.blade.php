@@ -29,7 +29,7 @@
 <th {{ $attributes->merge(['class' => $thClass ?: 'px-6 py-3 text-' . $align . ' font-semibold']) }}>
     <a href="{{ request()->fullUrlWithQuery(['sort' => $key, 'dir' => $nextDir, 'page' => null]) }}"
        data-live-link
-       class="inline-flex items-center gap-1 whitespace-nowrap transition-colors {{ $isActive ? 'text-gold-dark' : 'hover:text-gold-dark' }}"
+       class="inline-flex items-center gap-1 whitespace-nowrap transition-colors text-gold-dark {{ $isActive ? 'bg-gold/12 rounded-lg px-2 py-1' : 'opacity-90 hover:opacity-100' }}"
        @if($isActive) aria-sort="{{ $dir === 'asc' ? 'ascending' : 'descending' }}" @endif>
         {{ $label }}
         @if($isActive)

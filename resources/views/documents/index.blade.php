@@ -199,7 +199,7 @@
          تبدأ من شريط الترتيب وتنتهي بعد الترقيم: كلُّ ما تغيّره نقرةُ
          ترتيبٍ داخلَها، فلا يبقى شريطٌ يقول «الأحدث» فوق جدولٍ رُتّب
          بالحجم. والقائمةُ الجانبيةُ خارجَها فلا تُرسَم من جديد. --}}
-    <div data-live="documents">
+    <div data-live="documents" class="space-y-6">
 
     {{-- §3: المنجز خلف زرّه + §4: الترتيب --}}
     <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -494,7 +494,7 @@
     <div x-show="view === 'details'" class="bg-white rounded-xl border border-gray-200">
         <div class="overflow-x-auto">
         <table class="w-full text-sm">
-            <thead class="text-gray-900">
+            <thead class="text-gold-dark">
                 <tr>
                     @php
                         $__s = request('sort', 'created');

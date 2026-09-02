@@ -106,7 +106,7 @@
     @endphp
     {{-- منطقةُ الاستبدال: نقرةُ الترتيب تجلب هذا وحدَه، فلا تُرسَم
          القائمةُ الجانبيةُ من جديد ولا تقفز. --}}
-    <div data-live="tasks">
+    <div data-live="tasks" class="space-y-6">
 
     {{-- §3: المنجز خلف زرّه + §4: الترتيب --}}
     <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -154,7 +154,7 @@
     <div class="hidden md:block bg-white rounded-xl border border-gray-200">
         <div class="overflow-x-auto md-scroll-x">
         <table class="w-full text-sm">
-            <thead class=" text-gray-900">
+            <thead class="text-gold-dark">
                 <tr>
                     @php $__s = request('sort', 'created'); $__d = request('dir', 'desc'); @endphp
                     <x-th-sort key="title" :label="__('app.title')" :sort="$__s" :dir="$__d" />

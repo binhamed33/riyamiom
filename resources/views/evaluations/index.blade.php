@@ -53,7 +53,7 @@
     {{-- ═══ منطقةُ الاستبدال ═══
          نقرةُ ترتيبٍ أو صفحةٍ تجلب هذا وحدَه: القائمةُ الجانبيةُ لا
          تُرسَم من جديد فلا تقفز، وموضعُ القارئ في الصفحة يبقى. --}}
-    <div data-live="evaluations">
+    <div data-live="evaluations" class="space-y-6">
     {{-- Rankings --}}
     <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
         @if(count($rows) === 0)

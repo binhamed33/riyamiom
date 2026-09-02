@@ -77,7 +77,7 @@
     {{-- ═══ منطقةُ الاستبدال ═══
          نقرةُ ترتيبٍ أو صفحةٍ تجلب هذا وحدَه: القائمةُ الجانبيةُ لا
          تُرسَم من جديد فلا تقفز، وموضعُ القارئ في الصفحة يبقى. --}}
-    <div data-live="audit-log">
+    <div data-live="audit-log" class="space-y-6">
     {{-- §4: الترتيب --}}
     <div class="flex items-center gap-3 flex-wrap">
         <x-sort-bar :options="$__sortOptions" :default="$__sortDefault" :default-dir="$__sortDefaultDir ?? 'desc'" />

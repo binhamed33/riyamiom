@@ -110,7 +110,7 @@
          تبدأ من شريط الترتيب وتنتهي بعد الترقيم: كلُّ ما يتغيّر بنقرة
          ترتيبٍ داخلَها، فلا يبقى شريطٌ يقول «التاريخ» فوق جدولٍ رُتّب
          بالحالة. والقائمةُ الجانبيةُ خارجَها فلا تُرسَم من جديد. --}}
-    <div data-live="sessions">
+    <div data-live="sessions" class="space-y-6">
 
     {{-- §3: المنجز خلف زرّه + §4: الترتيب --}}
     <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -154,7 +154,7 @@
     <div class="hidden md:block bg-white rounded-xl border border-gray-200">
         <div class="overflow-x-auto md-scroll-x">
         <table class="w-full text-sm">
-            <thead class=" text-gray-900">
+            <thead class="text-gold-dark">
                 <tr>
                     {{-- كلُّ عمودٍ يحمل معنى يُرتَّب بالنقر على نصّه. و«الإجراءات»
                          وحدَه يبقى نصّاً: لا شيءَ فيه يُرتَّب به. --}}

@@ -35,7 +35,7 @@
     {{-- ═══ منطقةُ الاستبدال ═══
          نقرةُ ترتيبٍ أو صفحةٍ تجلب هذا وحدَه: القائمةُ الجانبيةُ لا
          تُرسَم من جديد فلا تقفز، وموضعُ القارئ في الصفحة يبقى. --}}
-    <div data-live="users">
+    <div data-live="users" class="space-y-6">
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">

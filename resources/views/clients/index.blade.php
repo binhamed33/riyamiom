@@ -67,7 +67,7 @@
         $__sortDefault = 'created';
     @endphp
     {{-- منطقةُ الاستبدال: نقرةُ الترتيب تجلب هذا وحدَه --}}
-    <div data-live="clients">
+    <div data-live="clients" class="space-y-6">
 
     {{-- §4: الترتيب --}}
     <div class="flex items-center gap-3 flex-wrap">
@@ -139,8 +139,8 @@
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">{{ __('app.individual') }}</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-gray-700" dir="ltr">{{ $client->phone ?? '—' }}</td>
-                            <td class="px-6 py-4 text-gray-700">{{ $client->email ?? '—' }}</td>
+                            <td class="px-6 py-4 text-gray-700"><span dir="ltr" class="inline-block">{{ $client->phone ?? '—' }}</span></td>
+                            <td class="px-6 py-4 text-gray-700"><span dir="ltr" class="inline-block">{{ $client->email ?? '—' }}</span></td>
                             <td class="px-6 py-4">
                                 <span class="bg-gray-100 px-2.5 py-1 rounded-md text-gray-700 text-sm">{{ $client->cases_count ?? 0 }}</span>
                             </td>

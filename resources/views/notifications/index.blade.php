@@ -17,7 +17,7 @@
     {{-- ═══ منطقةُ الاستبدال ═══
          نقرةُ ترتيبٍ أو صفحةٍ تجلب هذا وحدَه: القائمةُ الجانبيةُ لا
          تُرسَم من جديد فلا تقفز، وموضعُ القارئ في الصفحة يبقى. --}}
-    <div data-live="notifications">
+    <div data-live="notifications" class="space-y-6">
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         @forelse($notifications ?? [] as $notification)
             {{-- الإشعارُ رابطٌ يصل إلى ما يُخبر عنه.

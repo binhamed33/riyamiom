@@ -39,9 +39,34 @@ class SettingsHubTest extends TestCase
         $this->assertStringContainsString("sec === 'home'", $html, 'لا فهرسَ يُفتح عليه');
         $this->assertStringContainsString('رجوع', $html, 'لا مخرجَ من القسم');
 
-        foreach (['office', 'brand', 'whatsapp', 'mail', 'appointments', 'notify', 'portal', 'attendance', 'system', 'engines'] as $sec) {
+        foreach (['office', 'brand', 'whatsapp', 'mail', 'notify', 'portal', 'system', 'engines'] as $sec) {
             $this->assertStringContainsString("go('{$sec}')", $html, "لا بطاقةَ للقسم «{$sec}»");
             $this->assertStringContainsString("sec === '{$sec}'", $html, "بطاقةٌ بلا قسمٍ خلفها: «{$sec}»");
+        }
+    }
+
+    /**
+     * المواعيدُ والحضورُ للمطوّر وحدَه — بطاقةً وقسماً معاً.
+     *
+     * إخفاءُ البطاقة وحدَه يترك القسمَ يُفتح بـ?sec= ويُرسَل حقولُه.
+     * والقيمُ المحفوظةُ لا تُمسّ: المتحكّمُ لا يكتب أيّامَ العمل ولا
+     * الحضورَ إلا إذا وصله القسمُ صراحةً (appt_section / hr_section).
+     */
+    public function test_appointments_and_attendance_belong_to_the_developer(): void
+    {
+        $admin = $this->actingAs($this->user('admin'))->get(route('settings.index', ['sec' => 'appointments']))->assertOk()->getContent();
+
+        foreach (['appointments', 'attendance'] as $sec) {
+            $this->assertStringNotContainsString("go('{$sec}')", $admin, "بطاقةُ «{$sec}» معروضةٌ لصاحب المكتب");
+            $this->assertStringNotContainsString("sec === '{$sec}'", $admin, "قسمُ «{$sec}» يُرسَم لصاحب المكتب");
+        }
+
+        // ومن طلبه بالرابط عاد إلى الفهرس لا إلى قسمٍ لا يملكه
+        $this->assertMatchesRegularExpression('/<div x-show="sec === \'home\'" class=/', $admin);
+
+        $dev = $this->actingAs($this->user('developer'))->get(route('settings.index'))->assertOk()->getContent();
+        foreach (['appointments', 'attendance'] as $sec) {
+            $this->assertStringContainsString("go('{$sec}')", $dev, "المطوّرُ فقد بطاقةَ «{$sec}»");
         }
     }
 
@@ -70,10 +95,10 @@ class SettingsHubTest extends TestCase
     {
         $admin = $this->user('admin');
 
-        $html = $this->actingAs($admin)->get(route('settings.index', ['sec' => 'appointments']))->assertOk()->getContent();
+        $html = $this->actingAs($admin)->get(route('settings.index', ['sec' => 'mail']))->assertOk()->getContent();
 
-        // قسمُ المواعيد ظاهرٌ ابتداءً، والفهرسُ مخفيٌّ ابتداءً — من الخادم
-        $this->assertMatchesRegularExpression('/<div x-show="sec === \'appointments\'" class=/', $html, 'قسمُ المواعيد مخفيٌّ رغم طلبه');
+        // قسمُ البريد ظاهرٌ ابتداءً، والفهرسُ مخفيٌّ ابتداءً — من الخادم
+        $this->assertMatchesRegularExpression('/<div x-show="sec === \'mail\'" class=/', $html, 'قسمُ البريد مخفيٌّ رغم طلبه');
         $this->assertMatchesRegularExpression('/<div x-show="sec === \'home\'" style="display:none"/', $html, 'الفهرسُ ظاهرٌ فوق القسم');
         $this->assertMatchesRegularExpression('/<div x-show="inForm" class=/', $html, 'زرُّ الحفظ مخفيٌّ في قسمٍ يُحفظ');
 
