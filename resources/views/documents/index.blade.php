@@ -185,29 +185,73 @@
 
          والمجلداتُ محسوبةٌ لا محفورةٌ في القاعدة: مجلدٌ باسم موكّلٍ
          يكذب أوّلَ ما يُصحَّح اسمُه، والمحسوبُ يبقى صادقاً بلا صيانة. --}}
-    @if(($selectedCaseId ?? 0) === 0 && ($selectedClientId ?? null) === null)
-        @php $clientBase = request()->except(['client_id', 'case_id', 'folder_id', 'page']); @endphp
-        <div class="mb-4 p-3 rounded-xl bg-gray-100 border border-gray-200">
-            <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-[11px] font-bold text-gray-500 px-1">الملفّات بحسب الشخص:</span>
+    @if(($selectedCaseId ?? 0) === 0 && ($selectedClientId ?? null) === null && !($showAll ?? false))
+        @php $clientBase = request()->except(['client_id', 'case_id', 'folder_id', 'page', 'all', 'folder_search']); @endphp
 
+        <div class="mb-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <h2 class="text-sm font-bold text-gray-700">ملفّات الموكّلين</h2>
+
+                <div class="flex items-center gap-2">
+                    {{-- بحثٌ في الأسماء: مئتا موكّلٍ لا يُقلَّبون بالعين --}}
+                    <form method="GET" action="{{ route('documents.index') }}" class="flex items-center gap-1.5">
+                        <input type="search" name="folder_search" value="{{ $folderSearch ?? '' }}"
+                               placeholder="ابحث باسم الموكّل…"
+                               class="text-xs rounded-lg border border-gray-200 px-3 py-2 w-44 focus:w-56 transition-all">
+                        <button class="text-xs px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-gold/40">بحث</button>
+                    </form>
+
+                    {{-- بابُ الكومة كلِّها: من يبحث عن ورقةٍ لا يعرف صاحبَها --}}
+                    <a href="{{ route('documents.index', ['all' => 1]) }}"
+                       class="text-xs font-bold px-3 py-2 rounded-lg border border-gray-800 bg-gray-800 text-white hover:bg-black">
+                        🗂 كل المستندات
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
                 @forelse($clientFolders ?? [] as $folder)
                     <a href="{{ route('documents.index', $clientBase + ['client_id' => $folder->id]) }}"
-                       class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition bg-white text-gray-600 border-gray-200 hover:border-gold/40 hover:text-gray-800">
-                        📁 {{ $folder->name }}
-                        <span class="text-gray-400">({{ $folder->count }})</span>
+                       class="group flex items-center gap-3 p-3 rounded-xl bg-white border border-gray-200 hover:border-gold/50 hover:shadow-sm transition">
+                        <span class="shrink-0 w-9 h-9 rounded-lg bg-gold/10 text-gold-dark grid place-items-center text-base">📁</span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-xs font-bold text-gray-800 truncate group-hover:text-gold-dark">{{ $folder->name }}</span>
+                            <span class="block text-[11px] text-gray-400">{{ $folder->count }} مستند</span>
+                        </span>
                     </a>
                 @empty
-                    <span class="text-[11px] text-gray-400">لا مستنداتٍ منسوبةً إلى موكّلين بعد.</span>
+                    <p class="col-span-full text-xs text-gray-400 py-6 text-center">
+                        @if(($folderSearch ?? '') !== '')
+                            لا موكّل باسم «{{ $folderSearch }}» له مستندات.
+                            <a href="{{ route('documents.index') }}" class="text-gold-dark font-semibold">أظهر الكل</a>
+                        @else
+                            لا مستنداتٍ منسوبةً إلى موكّلين بعد.
+                        @endif
+                    </p>
                 @endforelse
 
-                @if(($unassignedCount ?? 0) > 0)
+                @if(($unassignedCount ?? 0) > 0 && ($folderSearch ?? '') === '')
                     <a href="{{ route('documents.index', $clientBase + ['client_id' => 0]) }}"
-                       class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition bg-white text-gray-500 border-gray-200 hover:border-gray-300">
-                        🗃 غير منسوبة <span class="text-gray-400">({{ $unassignedCount }})</span>
+                       class="group flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-dashed border-gray-300 hover:border-gray-400 transition">
+                        <span class="shrink-0 w-9 h-9 rounded-lg bg-gray-200/70 text-gray-500 grid place-items-center text-base">🗃</span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-xs font-bold text-gray-600 truncate">غير منسوبة</span>
+                            <span class="block text-[11px] text-gray-400">{{ $unassignedCount }} مستند</span>
+                        </span>
                     </a>
                 @endif
             </div>
+        </div>
+    @endif
+
+    {{-- في وضع «كل المستندات»: طريقُ الرجوع إلى الملفّات ظاهرٌ دائماً --}}
+    @if($showAll ?? false)
+        <div class="mb-4 flex items-center gap-2">
+            <a href="{{ route('documents.index') }}"
+               class="text-xs font-bold px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-gold/40">
+                ← رجوع إلى ملفّات الموكّلين
+            </a>
+            <span class="text-[11px] text-gray-400">تُعرض الآن كلُّ المستندات بلا تجميع.</span>
         </div>
     @endif
 
@@ -218,7 +262,11 @@
             <div class="flex items-center gap-1.5 flex-wrap">
                 <a href="{{ route('documents.index', $backBase) }}"
                    class="text-[11px] font-bold rounded-lg px-2.5 py-1 border bg-white text-gray-500 border-gray-200 hover:text-gray-700">
-                    🗂 كل الأشخاص
+                    ← كل الأشخاص
+                </a>
+                <a href="{{ route('documents.index', ['all' => 1]) }}"
+                   class="text-[11px] font-bold rounded-lg px-2.5 py-1 border bg-white text-gray-500 border-gray-200 hover:text-gray-700">
+                    🗂 كل المستندات
                 </a>
                 <span class="text-gray-300 text-[11px]">⟵</span>
                 <span class="text-[11px] font-bold rounded-lg px-2.5 py-1 border bg-gold/12 text-gold-dark border-gold/25">

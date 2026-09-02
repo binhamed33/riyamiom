@@ -152,4 +152,42 @@ class DocumentsByPersonTest extends TestCase
 
         $this->assertStringContainsString('المرافعات', $html);
     }
+
+    /** زرُّ «كل المستندات» يعرض الكومةَ كلَّها بلا تجميع. */
+    public function test_the_all_documents_door_shows_everything_flat(): void
+    {
+        [$rashid, $rashidCase] = $this->clientWithCase('راشد الحبسي', '1111111', 'م/2026/1');
+        [$noura, $nouraCase] = $this->clientWithCase('نورة السيابية', '2222222', 'م/2026/2');
+
+        $this->documentFor($rashidCase, 'وكالة راشد');
+        $this->documentFor($nouraCase, 'وكالة نورة');
+        $this->documentFor(null, 'ورقةٌ بلا نسب');
+
+        $html = $this->actingAs($this->staff)
+            ->get(route('documents.index', ['all' => 1]))
+            ->assertOk()->getContent();
+
+        // الثلاثةُ معاً، وطريقُ الرجوع ظاهر
+        $this->assertStringContainsString('وكالة راشد', $html);
+        $this->assertStringContainsString('وكالة نورة', $html);
+        $this->assertStringContainsString('ورقةٌ بلا نسب', $html);
+        $this->assertStringContainsString('رجوع إلى ملفّات الموكّلين', $html);
+    }
+
+    /** والبحثُ يقصر الملفّات على من طابق اسمُه. */
+    public function test_searching_narrows_the_person_folders(): void
+    {
+        [$rashid, $rashidCase] = $this->clientWithCase('راشد الحبسي', '1111111', 'م/2026/1');
+        [$noura, $nouraCase] = $this->clientWithCase('نورة السيابية', '2222222', 'م/2026/2');
+
+        $this->documentFor($rashidCase, 'وكالة');
+        $this->documentFor($nouraCase, 'عقد');
+
+        $html = $this->actingAs($this->staff)
+            ->get(route('documents.index', ['folder_search' => 'نورة']))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('مستندات (نورة السيابية)', $html);
+        $this->assertStringNotContainsString('مستندات (راشد الحبسي)', $html);
+    }
 }

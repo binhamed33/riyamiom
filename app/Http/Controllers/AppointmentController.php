@@ -62,10 +62,46 @@ class AppointmentController extends Controller
         $appointments = ($scope === 'past' ? $query : $query->orderBy('starts_at'))
             ->paginate(20)->withQueryString();
 
+        // ═══ التقويم: أين الزحام ═══
+        //
+        // القائمةُ تقول «ما القادم»، ولا تقول «أيّ يومٍ ممتلئ وأيّه
+        // فارغ» — وهو أوّلُ ما يسأل عنه من يحجز. فالأسبوعُ يُعرض
+        // شبكةً: يومٌ في كلّ عمود، وموعدٌ في موضعه، ونسبةُ امتلاءٍ
+        // تحت اسم اليوم.
+        $weekStart = $day->copy()->startOfWeek(\Carbon\CarbonInterface::SUNDAY);
+        $week = [];
+
+        if ($request->query('view') === 'week' || $scope === 'day') {
+            $weekAppointments = Appointment::with(['client', 'user'])
+                ->whereBetween('starts_at', [$weekStart, $weekStart->copy()->addDays(7)])
+                ->whereIn('status', Appointment::BUSY_STATUSES)
+                ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', (int) $request->input('user_id')))
+                ->orderBy('starts_at')
+                ->get()
+                ->groupBy(fn ($a) => $a->starts_at->toDateString());
+
+            for ($i = 0; $i < 7; $i++) {
+                $d = $weekStart->copy()->addDays($i);
+                $slots = AppointmentSlots::forDay($d);
+                $items = $weekAppointments[$d->toDateString()] ?? collect();
+
+                $week[] = [
+                    'date' => $d,
+                    'workday' => AppointmentSlots::isWorkday($d),
+                    'items' => $items,
+                    // نسبةُ الامتلاء: المحجوزُ من فُسَح اليوم كلِّها
+                    'load' => count($slots) > 0 ? min(100, (int) round($items->count() / count($slots) * 100)) : 0,
+                ];
+            }
+        }
+
         return view('appointments.index', [
             'appointments' => $appointments,
             'day' => $day,
             'scope' => $scope,
+            'view' => $request->query('view') === 'week' ? 'week' : 'list',
+            'week' => $week,
+            'weekStart' => $weekStart,
             'staff' => $this->staff(),
             'todayCount' => Appointment::whereBetween('starts_at', [now()->startOfDay(), now()->endOfDay()])
                 ->where('status', Appointment::STATUS_SCHEDULED)->count(),
@@ -198,7 +234,12 @@ class AppointmentController extends Controller
     private function validated(Request $request): array
     {
         $data = $request->validate([
-            'client_id' => 'required|exists:clients,id',
+            // موكّلٌ مسجَّل أو شخصٌ باسمه ورقمه — أحدُهما يكفي، والقاعدةُ
+            // تحت تفرض ذلك برسالةٍ عربيةٍ صريحة بدل خطأِ قاعدةِ بيانات
+            'client_id' => 'nullable|exists:clients,id',
+            'guest_name' => 'nullable|string|max:190',
+            'guest_phone' => 'nullable|string|max:40',
+            'guest_email' => 'nullable|email|max:190',
             'case_id' => 'nullable|exists:cases,id',
             'user_id' => 'nullable|exists:users,id',
             'title' => 'required|string|max:190',
@@ -209,15 +250,34 @@ class AppointmentController extends Controller
             'notes' => 'nullable|string|max:2000',
         ], [], [
             'client_id' => 'الموكّل',
+            'guest_name' => 'اسم الشخص',
+            'guest_phone' => 'رقم الشخص',
             'title' => 'موضوع الموعد',
             'date' => 'التاريخ',
             'time' => 'الوقت',
         ]);
 
+        $client = $data['client_id'] ?? null;
+        $guestName = trim((string) ($data['guest_name'] ?? ''));
+        $guestPhone = preg_replace('/\s+/', '', (string) ($data['guest_phone'] ?? ''));
+
+        // ═══ لا موعدَ بلا صاحب ═══
+        //
+        // إمّا موكّلٌ من السجلّ، وإمّا شخصٌ باسمه ورقمه. وموعدٌ بلا
+        // أحدِهما صفٌّ لا يُعرف لمن هو ولا تصل رسالتُه أحداً.
+        if (!$client && ($guestName === '' || $guestPhone === '')) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'client_id' => 'اختر موكّلاً مسجَّلاً، أو اكتب اسم الشخص ورقمَه.',
+            ]);
+        }
+
         $starts = Carbon::parse($data['date'] . ' ' . $data['time']);
 
         return [
-            'client_id' => $data['client_id'],
+            'client_id' => $client,
+            'guest_name' => $client ? null : $guestName,
+            'guest_phone' => $client ? null : $guestPhone,
+            'guest_email' => $client ? null : ($data['guest_email'] ?? null),
             'case_id' => $data['case_id'] ?? null,
             'user_id' => $data['user_id'] ?? null,
             'title' => $data['title'],

@@ -310,4 +310,82 @@ class AppointmentsTest extends TestCase
 
         $this->assertNull(Appointment::firstOrFail()->case_id);
     }
+
+    /**
+     * موعدٌ مع شخصٍ لا ملفَّ له — وهو أكثرُ المواعيد الأولى.
+     *
+     * إلزامُ الموظّف بإنشاء موكّلٍ كاملٍ قبل أن يكتب موعداً يعني
+     * سجلَّ موكّلين ممتلئاً بمن لم يوكّل أحداً، أو مواعيدَ في ورقةٍ
+     * على الطاولة.
+     */
+    public function test_an_appointment_with_a_walk_in_person(): void
+    {
+        // رقمُ المكتب مربوطٌ — بلا ربطٍ لا رسالةَ تُكتب أصلاً وهو الصواب
+        config()->set('whatsapp.default', 'evolution');
+        config()->set('whatsapp.evolution.base_url', 'http://127.0.0.1:18080');
+        config()->set('whatsapp.evolution.api_key', 'test-key-0123456789');
+        Setting::set(\App\Support\WhatsAppSettings::KEY_EVO_STATE, 'open', 'whatsapp');
+        Setting::set(\App\Support\WhatsAppSettings::KEY_CONNECTED_AT, now()->toIso8601String(), 'whatsapp');
+
+        $day = $this->nextWorkday();
+
+        $this->actingAs($this->admin)->post(route('appointments.store'), [
+            'guest_name' => 'سالم بن علي',
+            'guest_phone' => '96899887766',
+            'title' => 'استشارة أولى',
+            'date' => $day->toDateString(),
+            'time' => '09:00',
+        ])->assertRedirect();
+
+        $appointment = Appointment::firstOrFail();
+
+        $this->assertNull($appointment->client_id, 'أُنشئ موكّلٌ لم يطلبه أحد');
+        $this->assertSame('سالم بن علي', $appointment->personName());
+        $this->assertSame('96899887766', $appointment->personPhone());
+        $this->assertTrue($appointment->isGuest());
+
+        // ورسالتُه تُكتب في دفتر المكتب وتُدفع للطابور — لا بوابةَ له
+        $message = \App\Models\WhatsAppMessage::latest('id')->first();
+        $this->assertNotNull($message, 'لم تُكتب رسالةُ تأكيدٍ للشخص');
+        $this->assertStringContainsString('استشارة أولى', (string) $message->body);
+        $this->assertNotNull($message->sent_by, 'الرسالةُ لم تُنسب إلى من حجز — فتُعامَل بثّاً آلياً');
+        $this->assertSame(0, ClientNotification::count(), 'قُيّد إشعارُ بوابةٍ لمن لا بوابةَ له');
+    }
+
+    /** ولا موعدَ بلا صاحب: لا موكّلٌ ولا اسمٌ ورقم. */
+    public function test_an_appointment_needs_someone(): void
+    {
+        $day = $this->nextWorkday();
+
+        $this->actingAs($this->admin)->post(route('appointments.store'), [
+            'title' => 'موعد بلا صاحب',
+            'date' => $day->toDateString(),
+            'time' => '09:00',
+        ])->assertSessionHasErrors('client_id');
+
+        $this->assertSame(0, Appointment::count());
+    }
+
+    /** التقويم يُري الأسبوعَ ونسبةَ ازدحام كلِّ يوم. */
+    public function test_the_week_calendar_shows_the_load(): void
+    {
+        $day = $this->nextWorkday();
+
+        Appointment::create([
+            'client_id' => $this->client->id,
+            'user_id' => $this->admin->id,
+            'title' => 'موعد في التقويم',
+            'starts_at' => $day->copy()->setTime(9, 0),
+            'minutes' => 30,
+            'status' => Appointment::STATUS_SCHEDULED,
+        ]);
+
+        $html = $this->actingAs($this->admin)
+            ->get(route('appointments.index', ['view' => 'week', 'day' => $day->toDateString()]))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('تقويم الأسبوع', $html);
+        $this->assertStringContainsString('09:00', $html);
+        $this->assertStringContainsString('راشد بن سعيد الحبسي', $html);
+    }
 }

@@ -34,9 +34,11 @@ return new class extends Migration
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
 
-            // الشخصُ صاحبُ الموعد. حذفُ الموكّل يحذف مواعيدَه معه:
-            // موعدٌ بلا صاحبٍ لا معنى له ولا يُراسَل به أحد.
-            $table->foreignId('client_id')->constrained()->cascadeOnDelete();
+            // صاحبُ الموعد: موكّلٌ مسجَّل — أو شخصٌ باسمه ورقمه في
+            // أعمدة guest_* (الهجرةُ التالية). أكثرُ المواعيد الأولى
+            // مع من لا ملفَّ له بعد، وإلزامُه بملفٍّ كاملٍ قبل أن
+            // يُكتب موعدُه يملأ سجلَّ الموكّلين بمن لم يوكّل أحداً.
+            $table->foreignId('client_id')->nullable()->constrained()->cascadeOnDelete();
 
             // القضيةُ اختيارية: استشارةٌ أولى لا قضيةَ لها بعد
             $table->foreignId('case_id')->nullable()->constrained('cases')->nullOnDelete();

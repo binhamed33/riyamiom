@@ -173,10 +173,16 @@ class DocumentController extends Controller
         // كما كانت. فلا شاشةَ تعرض كومةً بلا نسب.
         $clientFolders = collect();
         $clientCases = collect();
+        $folderSearch = trim((string) $request->input('folder_search', ''));
         $selectedClient = null;
         $unassignedCount = 0;
 
-        if ($selectedCaseId === 0 && $selectedClientId === null) {
+        // «كل المستندات» بابٌ صريح: من يبحث عن ورقةٍ لا يعرف صاحبَها
+        // يريد الكومةَ كلَّها أمامه، لا شجرةً يتنقّل فيها. وهو أيضاً
+        // مخرجُ الرجوع من داخل ملفّ شخص.
+        $showAll = $request->boolean('all');
+
+        if ($selectedCaseId === 0 && $selectedClientId === null && !$showAll) {
             // استعلامٌ واحدٌ يجمع العددَ لكلّ موكّل — لا واحدٌ لكلّ صفّ
             $counts = Document::query()
                 ->join('cases', 'documents.case_id', '=', 'cases.id')
@@ -185,7 +191,9 @@ class DocumentController extends Controller
                 ->groupBy('cases.client_id')
                 ->pluck('total', 'client_id');
 
+            // بحثٌ في الأسماء: مكتبٌ بمئتي موكّلٍ لا يُقلَّب بالعين
             $clientFolders = \App\Models\Client::whereIn('id', $counts->keys())
+                ->when($folderSearch !== '', fn ($q) => $q->where('name', 'like', '%' . $folderSearch . '%'))
                 ->orderBy('name')
                 ->get(['id', 'name'])
                 ->map(fn ($c) => (object) [
@@ -213,7 +221,8 @@ class DocumentController extends Controller
             'documents', 'cases', 'selectedCaseId', 'documentTypes', 'untypedCount',
             'done', 'doneCount', 'folders', 'selectedFolderId', 'unfiledCount',
             'currentFolder', 'breadcrumb',
-            'clientFolders', 'clientCases', 'selectedClient', 'selectedClientId', 'unassignedCount'
+            'clientFolders', 'clientCases', 'selectedClient', 'selectedClientId', 'unassignedCount',
+            'showAll', 'folderSearch'
         ));
     }
 

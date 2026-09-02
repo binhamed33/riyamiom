@@ -33,7 +33,8 @@ class Appointment extends Model
     ];
 
     protected $fillable = [
-        'client_id', 'case_id', 'user_id', 'title', 'starts_at',
+        'client_id', 'guest_name', 'guest_phone', 'guest_email',
+        'case_id', 'user_id', 'title', 'starts_at',
         'minutes', 'location', 'notes', 'status', 'created_by', 'reminded_at',
     ];
 
@@ -65,6 +66,38 @@ class Appointment extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * صاحبُ الموعد: الموكّلُ المسجَّل إن وُجد، وإلا الشخصُ باسمه.
+     *
+     * ثلاثةُ توابعَ لا ثلاثةُ شروطٍ متناثرة: الاسمُ يُطبع في التقويم
+     * وفي الرسالة وفي البريد، ولو تُرك لكلّ موضعٍ أن يقرّر لأظهر
+     * أحدُها «—» حيث يُظهر الآخرُ اسماً.
+     */
+    public function personName(): string
+    {
+        return (string) ($this->client?->name ?: ($this->guest_name ?: '—'));
+    }
+
+    public function personPhone(): ?string
+    {
+        $phone = $this->client?->phone ?: $this->guest_phone;
+
+        return filled($phone) ? (string) $phone : null;
+    }
+
+    public function personEmail(): ?string
+    {
+        $email = $this->client?->email ?: $this->guest_email;
+
+        return filled($email) ? (string) $email : null;
+    }
+
+    /** أموعدٌ مع شخصٍ خارج سجلّ الموكّلين؟ */
+    public function isGuest(): bool
+    {
+        return $this->client_id === null;
     }
 
     public function endsAt(): Carbon

@@ -8,19 +8,69 @@
     $selectedTime = old('time', $appointment?->starts_at?->format('H:i'));
 @endphp
 
-<div class="grid md:grid-cols-2 gap-4">
-    <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1" for="client_id">الموكّل <span class="text-red-500">*</span></label>
-        <select id="client_id" name="client_id" required
-                class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
-            <option value="">اختر الموكّل…</option>
-            @foreach($clients as $client)
-                <option value="{{ $client->id }}" @selected($selectedClient == $client->id)>{{ $client->name }}</option>
-            @endforeach
-        </select>
-        @error('client_id')<p class="text-[11px] text-red-600 mt-1">{{ $message }}</p>@enderror
+{{-- ═══ صاحبُ الموعد ═══
+
+     أكثرُ المواعيد الأولى مع من لا ملفَّ له بعد: يتّصل ويطلب استشارة.
+     فبابان: موكّلٌ من السجلّ، أو شخصٌ باسمه ورقمه — والرقمُ وحده يكفي
+     لتصله رسالةُ التأكيد. --}}
+<div class="mb-4 rounded-xl border border-gray-200 overflow-hidden"
+     x-data="{ mode: '{{ $selectedClient ? 'client' : (old('guest_name', $appointment?->guest_name) ? 'guest' : 'client') }}' }">
+    <div class="flex text-xs font-bold">
+        <button type="button" x-on:click="mode = 'client'"
+                :class="mode === 'client' ? 'bg-gold text-white' : 'bg-gray-50 text-gray-500'"
+                class="flex-1 py-2.5 transition">موكّل مسجَّل</button>
+        <button type="button" x-on:click="mode = 'guest'"
+                :class="mode === 'guest' ? 'bg-gold text-white' : 'bg-gray-50 text-gray-500'"
+                class="flex-1 py-2.5 transition">شخص جديد</button>
     </div>
 
+    <div class="p-4">
+        <div x-show="mode === 'client'">
+            <label class="block text-xs font-semibold text-gray-600 mb-1" for="client_id">الموكّل</label>
+            <select id="client_id" name="client_id" x-bind:disabled="mode !== 'client'"
+                    class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
+                <option value="">اختر الموكّل…</option>
+                @foreach($clients as $client)
+                    <option value="{{ $client->id }}" @selected($selectedClient == $client->id)>{{ $client->name }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div x-show="mode === 'guest'" x-cloak class="grid md:grid-cols-3 gap-3">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1" for="guest_name">اسم الشخص</label>
+                <input id="guest_name" name="guest_name" maxlength="190"
+                       value="{{ old('guest_name', $appointment?->guest_name) }}"
+                       x-bind:disabled="mode !== 'guest'"
+                       placeholder="سالم بن علي"
+                       class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1" for="guest_phone">رقم الهاتف</label>
+                <input id="guest_phone" name="guest_phone" type="tel" inputmode="tel" dir="ltr" maxlength="40"
+                       value="{{ old('guest_phone', $appointment?->guest_phone) }}"
+                       x-bind:disabled="mode !== 'guest'"
+                       placeholder="96891234567"
+                       class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1" for="guest_email">البريد (اختياري)</label>
+                <input id="guest_email" name="guest_email" type="email" maxlength="190" dir="ltr"
+                       value="{{ old('guest_email', $appointment?->guest_email) }}"
+                       x-bind:disabled="mode !== 'guest'"
+                       class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
+            </div>
+            <p class="md:col-span-3 text-[11px] text-gray-500">
+                يصله تأكيدُ الموعد على واتساب مباشرةً — ولا يُضاف إلى سجلّ الموكّلين.
+            </p>
+        </div>
+
+        @error('client_id')<p class="text-[11px] text-red-600 mt-2">{{ $message }}</p>@enderror
+        @error('guest_phone')<p class="text-[11px] text-red-600 mt-2">{{ $message }}</p>@enderror
+    </div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-4">
     <div>
         <label class="block text-xs font-semibold text-gray-600 mb-1" for="case_id">القضية (اختياري)</label>
         <select id="case_id" name="case_id" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
