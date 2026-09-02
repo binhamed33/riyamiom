@@ -85,49 +85,140 @@ class EvolutionProvider implements WhatsAppProviderInterface
             return ['qr' => null, 'state' => 'open', 'message' => 'الرقم موصولٌ بالفعل.'];
         }
 
-        // ═══ العطلُ الحقيقي لا صداه ═══
+        // ═══ الإنشاء يعيد الرمزَ بنفسه ═══
         //
-        // كان الإنشاءُ يُبتلع صامتاً، فيصل المكتبُ إلى `connect` ويجد
-        // ٤٠٤ فيُقال له «النسخة غير موجودة — أعد الاقتران». وهو يعيد
-        // ويعيد، والعلّةُ في خطوةٍ قبلها لم تُذكر قطّ.
-        //
-        // فيُقال سببُ الإنشاء نفسه، ويُتوقّف عنده.
+        // ‏instance/create عند Evolution 2 — مع qrcode:true — يفتح الجلسة
+        // وينتظر خمسَ ثوانٍ ويعيد الرمزَ في جسم الردّ. فيُقرأ من هناك
+        // بدل رحلةٍ ثانية قد تصادف نسخةً لم تُحمَّل بعد.
         $created = $this->createInstance($instance);
 
-        if ($created !== null) {
-            $this->lastError = $created;
-
-            return ['qr' => null, 'state' => 'close', 'message' => $created];
+        if ($created['qr'] !== null) {
+            return ['qr' => $created['qr'], 'state' => 'connecting', 'message' => null];
         }
 
-        if (!$this->applyWebhook($instance)) {
-            // ويبهوكٌ لم يُضبط يعني رمزاً يُمسح ثمّ صمتاً تامّاً: لا
-            // رسالةَ تصل ولا سبب. يُقال قبل المسح لا بعده.
-            $reason = $this->lastError ?: 'تعذّر ضبط عنوان الاستقبال على النسخة.';
-            $this->lastError = $reason;
+        // إخفاقٌ حقيقيٌّ في الإنشاء (لا «الاسم مستعمَل») يُقال ويُوقَف عنده
+        if ($created['error'] !== null) {
+            $this->lastError = $created['error'];
 
-            return ['qr' => null, 'state' => 'close', 'message' => $reason];
+            return ['qr' => null, 'state' => 'close', 'message' => $created['error']];
         }
 
+        // النسخةُ قائمةٌ من قبل: يُطلب الرمزُ منها
+        $this->applyWebhook($instance);
+        $connect = $this->connectQr($instance);
+
+        if ($connect['qr'] !== null) {
+            return ['qr' => $connect['qr'], 'state' => 'connecting', 'message' => null];
+        }
+
+        if ($connect['state'] === 'open') {
+            WhatsAppSettings::setEvolutionState('open');
+
+            return ['qr' => null, 'state' => 'open', 'message' => 'الرقم موصولٌ بالفعل.'];
+        }
+
+        // ═══ الطريقُ المسدود الذي كان يقتل الاقتران للأبد ═══
+        //
+        // حارسُ Evolution على «create» يقول «الاسم مستعمَل» إن وُجد صفُّ
+        // النسخة في قاعدته، بينما «connect» يقرأ النسخةَ من ذاكرة العملية
+        // فيقول «does not exist» إن لم تكن محمَّلة. وهما يجتمعان في حالٍ
+        // واحدة: نسخةٌ أُنشئت ولم يُمسح رمزُها قطّ ثم أُعيد تشغيل الجسر —
+        // فلا اعتمادَ محفوظاً يُحمَّل، والصفُّ باقٍ في القاعدة.
+        //
+        // فالمكتب يضغط «ابدأ الاقتران» فيُنشأ ⇐ ٤٠٣، ثمّ يُوصَل ⇐ ٤٠٠
+        // «النسخة غير موجودة» — أبداً، بلا رمزٍ ولا مخرج. وهذا ما كان.
+        //
+        // العلاجُ حذفُ الصفِّ الميت وإنشاءٌ نظيف. ولا يُفعل إلا هنا: بعد
+        // أن قال الجسرُ صراحةً إنّ النسخة غير موجودة عنده، وحالتُها ليست
+        // مفتوحةً ولا قيد الاتصال — فلا جلسةَ حيّةٌ تُقطع بحال.
+        if ($connect['missing']) {
+            $this->deleteInstance($instance);
+            $fresh = $this->createInstance($instance);
+
+            if ($fresh['qr'] !== null) {
+                return ['qr' => $fresh['qr'], 'state' => 'connecting', 'message' => null];
+            }
+
+            if ($fresh['error'] !== null) {
+                $this->lastError = $fresh['error'];
+
+                return ['qr' => null, 'state' => 'close', 'message' => $fresh['error']];
+            }
+
+            $retry = $this->connectQr($instance);
+
+            if ($retry['qr'] !== null) {
+                return ['qr' => $retry['qr'], 'state' => 'connecting', 'message' => null];
+            }
+        }
+
+        $this->lastError = $connect['error']
+            ?? 'لم يُصدر الجسرُ رمزَ اقترانٍ الآن — أعد المحاولة بعد لحظات.';
+
+        return ['qr' => null, 'state' => 'close', 'message' => $this->lastError];
+    }
+
+    /**
+     * طلبُ الرمز من نسخةٍ قائمة.
+     *
+     * @return array{qr: ?string, state: string, missing: bool, error: ?string}
+     */
+    protected function connectQr(string $instance): array
+    {
         try {
             $response = $this->http()->get($this->url('instance/connect/' . $instance));
         } catch (\Throwable) {
-            $this->lastError = 'تعذّر الاتصال بخادم Evolution.';
-
-            return ['qr' => null, 'state' => 'close', 'message' => $this->lastError];
+            return ['qr' => null, 'state' => 'close', 'missing' => false, 'error' => 'تعذّر الاتصال بخادم الجسر.'];
         }
+
+        $body = (string) $response->body();
+
+        // «غير موجودة» تأتي بـ٤٠٠ من المتحكّم وبـ٤٠٤ من الحارس، وقد
+        // تأتي بـ٢٠٠ وجسمٍ فيه error:true — فالنصُّ هو الفيصل لا الرمز
+        $missing = str_contains(mb_strtolower($body), 'does not exist')
+            || str_contains(mb_strtolower($body), 'not exist')
+            || $response->status() === 404;
 
         if (!$response->successful()) {
-            $this->failureFrom($response);
+            if (!$missing) {
+                $this->failureFrom($response);
+            }
 
-            return ['qr' => null, 'state' => 'close', 'message' => $this->lastError];
+            return ['qr' => null, 'state' => 'close', 'missing' => $missing, 'error' => $missing ? null : $this->lastError];
         }
+
+        // حالةٌ مفتوحة تعود من connect نفسِه حين تكون الجلسةُ حيّة
+        $state = (string) ($response->json('instance.state') ?? $response->json('state') ?? '');
 
         return [
             'qr' => $this->qrFrom($response),
-            'state' => 'connecting',
-            'message' => null,
+            'state' => $state === 'open' ? 'open' : 'connecting',
+            'missing' => $missing,
+            'error' => null,
         ];
+    }
+
+    /**
+     * حذفُ نسخةٍ ميتة — تمهيداً لإنشاءٍ نظيف.
+     *
+     * لا يُنادى إلا بعد أن يُقرّ الجسرُ أنّ النسخة غير موجودة عنده:
+     * حذفُ نسخةٍ حيّة يعني قطعَ اقترانِ مكتبٍ يعمل، وذلك ما لا نفعله
+     * من طرفنا أبداً.
+     */
+    protected function deleteInstance(string $instance): bool
+    {
+        try {
+            $response = $this->http()->delete($this->url('instance/delete/' . $instance));
+        } catch (\Throwable) {
+            return false;
+        }
+
+        if (!$response->successful()) {
+            // ‏٤٠٤ هنا نجاحٌ: لا صفَّ يُحذف أصلاً
+            return $response->status() === 404;
+        }
+
+        return true;
     }
 
     /** حالةُ الاقتران عند الخادم: open|connecting|close. */
@@ -408,29 +499,44 @@ class EvolutionProvider implements WhatsAppProviderInterface
      * ونسخةٌ موجودةٌ نجاحٌ لا إخفاق: المكتب يفتح الصفحة مرّتين، وأن
      * تكون النسخةُ قائمةً هو ما نريده أصلاً.
      */
-    protected function createInstance(string $instance): ?string
+    /**
+     * إنشاءُ النسخة — يعيد الرمزَ إن أُنشئت، أو سببَ الإخفاق، أو لا شيء
+     * إن كانت قائمةً من قبل.
+     *
+     * ═══ لماذا الويبهوك في جسم الإنشاء ═══
+     *
+     * ‏Evolution يقبل الويبهوك داخل «instance/create» ويضبطه في نفس
+     * اللحظة. وضبطُه هنا يعني أنّ نسخةً جديدةً لا تعيش لحظةً واحدة بلا
+     * عنوانِ استقبال — وكان ضبطُه بطلبٍ ثانٍ يفشل أحياناً فيُوقف
+     * الاقترانَ كلَّه ويبقى المكتب بلا رمز.
+     *
+     * @return array{qr: ?string, error: ?string}
+     */
+    protected function createInstance(string $instance): array
     {
         try {
             $response = $this->http()->post($this->url('instance/create'), [
                 'instanceName' => $instance,
                 'qrcode' => true,
                 'integration' => (string) config('whatsapp.evolution.integration', 'WHATSAPP-BAILEYS'),
+                'webhook' => $this->webhookPayload(),
             ]);
         } catch (\Throwable $e) {
             Log::warning('Evolution instance create failed: ' . $e->getMessage());
 
-            return 'تعذّر الاتصال بخادم الجسر لإنشاء نسخة المكتب.';
+            return ['qr' => null, 'error' => 'تعذّر الاتصال بخادم الجسر لإنشاء نسخة المكتب.'];
         }
 
         if ($response->successful()) {
-            return null;
+            // الرمزُ في جسم الإنشاء نفسِه (qrcode.base64) — يُقرأ الآن
+            return ['qr' => $this->qrFrom($response), 'error' => null];
         }
 
         $body = (string) $response->body();
 
-        // «الاسم مستعمَل» = النسخةُ قائمة، وهو المطلوب
+        // «الاسم مستعمَل» = النسخةُ قائمة: لا رمزَ هنا ولا خطأ — يُطلب الرمزُ منها
         if (str_contains(mb_strtolower($body), 'already in use') || $response->status() === 409) {
-            return null;
+            return ['qr' => null, 'error' => null];
         }
 
         Log::warning('Evolution instance create rejected (' . $response->status() . '): ' . mb_substr($body, 0, 500));
@@ -439,6 +545,7 @@ class EvolutionProvider implements WhatsAppProviderInterface
         // بياناته غير موصولة: النسخةُ صفٌّ في جدول، فبلا قاعدةٍ لا
         // تُنشأ. وقولُ «أخفق» وحدها يترك المشغّل يبحث في الرقم
         // والمفتاح، والعلّةُ في تنصيب الخادم لا في المكتب.
+        //
         // ═══ لماذا يُفرَّق بين ٤٠٤ و٥٠٠ هنا ═══
         //
         // ‏٤٠٤ على «instance/create» ليست «نسخةٌ غير موجودة» — المسارُ
@@ -451,7 +558,7 @@ class EvolutionProvider implements WhatsAppProviderInterface
         // واحد يترك المشغّل يجرّب على غير هدى.
         $probe = 'sudo bash scripts/install-evolution.sh status';
 
-        return match (true) {
+        return ['qr' => null, 'error' => match (true) {
             $response->status() === 401 || $response->status() === 403
                 => 'خادم الجسر رفض المفتاح — راجع EVOLUTION_API_KEY في ملفّ بيئة المكتب.',
             $response->status() === 404
@@ -462,7 +569,30 @@ class EvolutionProvider implements WhatsAppProviderInterface
                     . ' على الخادم: ' . $probe,
             default
                 => 'خادم الجسر رفض إنشاء النسخة (' . $response->status() . ').',
-        };
+        }];
+    }
+
+    /**
+     * حمولةُ الويبهوك بأسماء حقول Evolution 2.
+     *
+     * ═══ حرفان كلّفا وسائطَ الرسائل ═══
+     *
+     * كنّا نرسل webhookByEvents و webhookBase64 — وهي أسماءُ الإصدار
+     * الأوّل. ومخطَّطُ الثاني يسمّيهما byEvents و base64 ولا يرفض
+     * الزائد، فكان الطلبُ ينجح ٢٠١ والإعدادان لا يُضبطان: تصل صورةُ
+     * الموكّل بلا محتوى Base64 فلا تُحفظ.
+     *
+     * @return array<string, mixed>
+     */
+    protected function webhookPayload(): array
+    {
+        return [
+            'enabled' => true,
+            'url' => url('/webhooks/evolution/' . WhatsAppSettings::evolutionSecret()),
+            'byEvents' => false,
+            'base64' => true,
+            'events' => ['MESSAGES_UPSERT', 'MESSAGES_UPDATE', 'CONNECTION_UPDATE', 'QRCODE_UPDATED'],
+        ];
     }
 
     /**
@@ -474,46 +604,46 @@ class EvolutionProvider implements WhatsAppProviderInterface
      */
     protected function applyWebhook(string $instance): bool
     {
-        $url = url('/webhooks/evolution/' . WhatsAppSettings::evolutionSecret());
+        $v2 = $this->webhookPayload();
 
-        $payload = [
-            'webhook' => [
-                'enabled' => true,
-                'url' => $url,
-                'webhookByEvents' => false,
-                'webhookBase64' => true,
-                'events' => ['MESSAGES_UPSERT', 'MESSAGES_UPDATE', 'CONNECTION_UPDATE', 'QRCODE_UPDATED'],
-            ],
+        // الصيغةُ القديمة احتياطاً: جسورٌ لم تُرقَّ بعد تقرأ هذه وحدها
+        $legacy = [
+            'enabled' => $v2['enabled'],
+            'url' => $v2['url'],
+            'webhookByEvents' => false,
+            'webhookBase64' => true,
+            'events' => $v2['events'],
         ];
 
-        try {
-            $response = $this->http()->post($this->url('webhook/set/' . $instance), $payload);
-        } catch (\Throwable) {
-            return false;
-        }
+        // ثلاثُ صيغٍ تُجرَّب بالترتيب: مغلَّفةٌ بـv2، مغلَّفةٌ بالقديمة،
+        // ثمّ مسطّحة. ومخطَّطُ الإصدار الثاني يشترط الغلاف «webhook»،
+        // فالمسطّحةُ آخرُ ما يُجرَّب لا أوّلُه.
+        $last = null;
 
-        if (!$response->successful()) {
-            // ‏Evolution غيّر شكلَ هذه الحمولة بين إصداراته: تُجرَّب
-            // الصيغةُ المسطّحة قبل أن يُقال إنّها أخفقت
+        foreach ([['webhook' => $v2], ['webhook' => $legacy], $v2] as $payload) {
             try {
-                $response = $this->http()->post($this->url('webhook/set/' . $instance), $payload['webhook']);
+                $response = $this->http()->post($this->url('webhook/set/' . $instance), $payload);
             } catch (\Throwable) {
                 $this->lastError = 'تعذّر الاتصال بخادم الجسر لضبط عنوان الاستقبال.';
 
                 return false;
             }
+
+            if ($response->successful()) {
+                return true;
+            }
+
+            $last = $response;
         }
 
-        if (!$response->successful()) {
-            Log::warning('Evolution webhook set failed (' . $response->status() . '): '
-                . mb_substr((string) $response->body(), 0, 300));
+        $status = $last?->status() ?? 0;
 
-            $this->lastError = 'خادم الجسر رفض ضبط عنوان الاستقبال (' . $response->status() . ').';
+        Log::warning('Evolution webhook set failed (' . $status . '): '
+            . mb_substr((string) $last?->body(), 0, 300));
 
-            return false;
-        }
+        $this->lastError = 'خادم الجسر رفض ضبط عنوان الاستقبال (' . $status . ').';
 
-        return true;
+        return false;
     }
 
     /** @return array{number: string, name: string}|null */
@@ -584,7 +714,17 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
             // ‏401/403 اعتمادٌ خاطئ — إعادةُ المحاولة لا تُصلحه.
             // و404 نسخةٌ غير موجودة: تحتاج اقتراناً لا محاولةً أخرى.
-            $permanent = in_array($response->status(), [400, 401, 403, 404], true);
+            //
+            // ═══ لكنّ ٤٠٠ «Connection Closed» عابرةٌ لا دائمة ═══
+            //
+            // ‏Evolution يردّ بـ٤٠٠ حين تكون الجلسةُ ساقطةً لحظةَ الإرسال.
+            // وعدُّها دائمةً كان يقتل رسالةَ الموكّل نهائياً ويكتب
+            // «أخفق» — بينما الكنسُ يعيد وصلَ الرقم بعد دقيقة والرسالةُ
+            // ماتت بلا إعادة. فما كان سببُه سقوطَ الاتصال يُعاد.
+            $transient = $response->status() === 400
+                && preg_match('/connection closed|connection lost|not connected|closed connection|no session/i', (string) $this->lastError) === 1;
+
+            $permanent = !$transient && in_array($response->status(), [400, 401, 403, 404], true);
 
             return SendResult::failed((string) $response->status(), (string) $this->lastError, retryable: !$permanent);
         }
