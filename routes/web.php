@@ -537,8 +537,10 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::get('/backup', [BackupController::class, 'index'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.index');
     Route::post('/backup/create', [BackupController::class, 'create'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:30,10')->name('backup.create');
     Route::get('/backup/{filename}/download', [BackupController::class, 'download'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.download');
-    Route::post('/backup/upload-restore', [BackupController::class, 'uploadRestore'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:10,60')->name('backup.upload-restore');
-    Route::post('/backup/{filename}/restore', [BackupController::class, 'restore'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:10,60')->name('backup.restore');
+    // الاستعادةُ تكتب فوق قاعدة المكتب كلِّها: لمدير المكتب وحدَه، لا
+    // لموظّفٍ مُنح backup.manage ليُنشئ نسخةً ويُنزّلها
+    Route::post('/backup/upload-restore', [BackupController::class, 'uploadRestore'])->middleware('role:developer,admin', 'throttle:10,60')->name('backup.upload-restore');
+    Route::post('/backup/{filename}/restore', [BackupController::class, 'restore'])->middleware('role:developer,admin', 'throttle:10,60')->name('backup.restore');
     Route::delete('/backup/{filename}', [BackupController::class, 'destroy'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.destroy');
 
     // HR - all authenticated non-client users (controller handles per-role logic)

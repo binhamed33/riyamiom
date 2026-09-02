@@ -258,19 +258,38 @@ class BackupController extends Controller
             $sqlFile = $newPath;
         }
 
+        // ═══ الحارسُ الأوّل: الملفُّ يُفحص قبل أن يُصبّ ═══
+        //
+        // الاستعادةُ كانت تصبّ أيَّ SQL كما هو. ومن يملك الزرَّ يملك —
+        // بملفٍّ يكتبه بيده — أن يرفع نفسَه مطوّراً أو يزرع أمراً لا
+        // تحويه نسخةٌ احتياطيةٌ قطّ. (انظر RestoreGuard)
+        $sqlText = (string) file_get_contents($sqlFile);
+        if (($refusal = \App\Support\RestoreGuard::inspect($sqlText)) !== null) {
+            $this->removeDirectory($restoreDir);
+            Log::warning('backup restore refused', ['reason' => $refusal, 'by' => auth()->id(), 'file' => $displayName]);
+
+            return redirect()->route('backup.index')->with('error', $refusal);
+        }
+
+        // والأدوارُ تُلتقط قبل الصبّ لتُعاد بعده — الحارسُ الثاني
+        $rolesBefore = \App\Support\RestoreGuard::snapshotRoles();
+
         $db = $this->getDbConfig();
         [$_, $mysql] = $this->getMysqlPaths();
         $myCnf = $this->createMyCnf($db);
 
+        // --local-infile=0: يمنع LOAD DATA LOCAL من قراءة ملفّات الخادم
+        // عبر العميل مهما قال الملفّ. و--skip-... لا تكفي وحدَها.
         $cmd = $mysql
              . ' --defaults-extra-file=' . escapeshellarg($myCnf)
+             . ' --local-infile=0'
              . ' ' . escapeshellarg($db['database']);
 
         $process = proc_open($cmd, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
 
         $returnVar = -1;
         if (is_resource($process)) {
-            fwrite($pipes[0], file_get_contents($sqlFile));
+            fwrite($pipes[0], $sqlText);
             fclose($pipes[0]);
             $stdout = stream_get_contents($pipes[1]);
             fclose($pipes[1]);
@@ -280,6 +299,17 @@ class BackupController extends Controller
         }
 
         @unlink($myCnf);
+        unset($sqlText);
+
+        // ═══ الحارسُ الثاني: الأدوارُ تعود ═══
+        //
+        // مهما كُتب في الملفّ، مَن صار «مطوّراً» ولم يكن يعود إلى ما
+        // كان. يجري في الحالتين — نجح الصبُّ أو فشل في منتصفه — لأنّ
+        // فشلاً بعد نصف الملفّ قد يكون نفّذ السطرَ المقصود.
+        $reasserted = \App\Support\RestoreGuard::reassertRoles($rolesBefore);
+        if ($reasserted > 0) {
+            Log::warning('backup restore tried to mint a developer', ['reverted' => $reasserted, 'by' => auth()->id(), 'file' => $displayName]);
+        }
 
         if ($returnVar !== 0) {
             $this->removeDirectory($restoreDir);

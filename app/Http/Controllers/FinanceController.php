@@ -16,9 +16,21 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FinanceController extends Controller
 {
+    /**
+     * مَن يرى ماليّةَ المكتب كلَّها: المديرُ والمطوّر — لا أحدَ غيرُهما.
+     *
+     * ═══ الثغرة التي كانت هنا ═══
+     *
+     * القائمةُ كانت تضمّ المحاميَ والموظّفَ أيضاً، فتصير الدالةُ صادقةً
+     * لكلّ من يدخل القسم. وكلُّ فحوص الملكية أدناه مبنيّةٌ عليها:
+     * abort_unless($this->isAdmin() || صاحبُ القيد) — فتمرّ دائماً،
+     * ويعرض أيُّ موظّفٍ ويعدّل ويحذف أيَّ فاتورةٍ ومعاملةٍ وأتعابٍ في
+     * المكتب. والواجهةُ نفسُها كانت تعرف الصواب (isFinAdmin في العرض
+     * = developer وadmin فقط) فتخفي الأزرارَ — والمسارُ مفتوح.
+     */
     protected function isAdmin(): bool
     {
-        return in_array(auth()->user()->role, ['developer', 'admin', 'lawyer', 'staff']);
+        return in_array(auth()->user()->role, ['developer', 'admin'], true);
     }
 
     public function index(Request $request): View
@@ -310,13 +322,21 @@ class FinanceController extends Controller
      * الدخول إلى الماليّة. كان يُقدَّم من ‎/storage/…‎ بلا تحقّق، وكان
      * لا يُفتح أصلاً لأنّ الرابط الرمزيّ غير موجود.
      */
+    /**
+     * المرفقُ بحكم قيده: صفحةُ العرض تفحص الملكية، والمرفقُ كان يُقدَّم
+     * بلا فحص — فمن عرف الرقمَ نزّل وصلَ غيره.
+     */
     public function transactionAttachment(Request $request, FinanceTransaction $transaction): StreamedResponse
     {
+        abort_unless($this->isAdmin() || $transaction->user_id === auth()->id(), 403);
+
         return $this->serveAttachment($request, $transaction->attachment_path, $transaction->attachment_name);
     }
 
     public function invoiceAttachment(Request $request, FinanceInvoice $invoice): StreamedResponse
     {
+        abort_unless($this->isAdmin() || $invoice->user_id === auth()->id(), 403);
+
         return $this->serveAttachment($request, $invoice->attachment_path, $invoice->attachment_name);
     }
 
