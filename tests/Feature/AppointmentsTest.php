@@ -152,8 +152,15 @@ class AppointmentsTest extends TestCase
         $this->assertSame(2, Appointment::count());
     }
 
-    /** الفُسَح: من أوقات الدوام، والمحجوزُ يسقط منها. */
-    public function test_slots_follow_working_hours_and_drop_the_taken(): void
+    /**
+     * الفُسَح: اليومُ كلُّه يُعرض، والدوامُ يُميَّز، والمحجوزُ يُقفل.
+     *
+     * كان المسارُ يردّ ساعاتِ الدوام وحدَها ويردّ يومَ العطلة فارغاً،
+     * فلا يرى الموظّفُ ما حُجز خارجَ الدوام ويحجز فوقه. صار يردّ
+     * الثمانيَ والأربعين كلَّها، و'state' هو الذي يفرّق: free داخلَ
+     * الدوام، outside خارجَه (يُنقر)، busy لما حُجز (لا يُنقر).
+     */
+    public function test_slots_cover_the_whole_day_and_mark_office_hours(): void
     {
         $day = $this->nextWorkday();
 
@@ -173,22 +180,36 @@ class AppointmentsTest extends TestCase
         $slots = collect($response->json('slots'));
 
         $this->assertTrue($response->json('workday'));
-        $this->assertSame(8, $slots->count(), 'من الثامنة إلى الثانية عشرة بفُسحة نصف ساعة = ثمانٍ');
-        $this->assertFalse($slots->firstWhere('time', '09:00')['free'], 'المحجوزُ عُرض شاغراً');
-        $this->assertTrue($slots->firstWhere('time', '10:00')['free']);
+        $this->assertSame(48, $slots->count(), 'اليومُ لم يُعرض كاملاً');
 
-        // يومُ عطلةٍ لا فُسَحَ فيه
+        // ثمانِ فُسَحٍ داخل الدوام (٨ ⇐ ١٢)، إحداها محجوزة
+        $inHours = $slots->whereIn('state', ['free', 'busy']);
+        $this->assertSame(8, $inHours->count(), 'من الثامنة إلى الثانية عشرة بفُسحة نصف ساعة = ثمانٍ');
+
+        $this->assertFalse($slots->firstWhere('time', '09:00')['free'], 'المحجوزُ عُرض شاغراً');
+        $this->assertSame('busy', $slots->firstWhere('time', '09:00')['state']);
+        $this->assertTrue($slots->firstWhere('time', '10:00')['free']);
+        $this->assertSame('free', $slots->firstWhere('time', '10:00')['state']);
+
+        // وخارجُ الدوام يُعرض ويُنقر ويُعلَّم
+        $this->assertSame('outside', $slots->firstWhere('time', '19:00')['state']);
+        $this->assertTrue($slots->firstWhere('time', '19:00')['free'], 'خارجُ الدوام مُنع بلا سبب');
+
+        // يومُ عطلةٍ: يُعرض كاملاً بلا فُسحةِ دوامٍ واحدة
         Setting::set(AppointmentSlots::KEY_DAYS, '1', 'appointments');
         $off = $day->copy();
         while ($off->dayOfWeek === 1) {
             $off->addDay();
         }
 
-        $this->actingAs($this->admin)
+        $holiday = $this->actingAs($this->admin)
             ->getJson(route('appointments.slots', ['day' => $off->toDateString()]))
             ->assertOk()
             ->assertJsonPath('workday', false)
-            ->assertJsonPath('slots', []);
+            ->assertJsonPath('has_free', false)
+            ->assertJsonPath('has_bookable', true);
+
+        $this->assertCount(48, $holiday->json('slots'), 'يومُ العطلة رجع فارغاً');
     }
 
     /** تغييرُ الوقت يُخبر الموكّل، وتصحيحُ ملاحظةٍ لا يُخبره. */
@@ -408,12 +429,17 @@ class AppointmentsTest extends TestCase
             ->getJson(route('appointments.slots', ['day' => now()->toDateString()]))
             ->assertOk();
 
-        $this->assertFalse($response->json('has_free'), 'يومٌ انقضى دوامُه عُرض وفيه فُسحة');
-        $this->assertSame(
-            ['past'],
-            array_values(array_unique(array_column($response->json('slots'), 'state'))),
-            'حالةُ الفُسحة الماضية لم تُسمَّ «مضى»',
-        );
+        $this->assertFalse($response->json('has_free'), 'يومٌ انقضى دوامُه عُرض وفيه فُسحةُ دوام');
+
+        // ما مضى يُسمّى «مضى»، وما بقي من الليل «خارج الدوام» يُنقر:
+        // انقضاءُ الدوام لا يعني أنّ اليوم انتهى للحجز اليدويّ.
+        $states = array_values(array_unique(array_column($response->json('slots'), 'state')));
+        sort($states);
+        $this->assertSame(['outside', 'past'], $states, 'حالاتُ اليوم بعد انقضاء الدوام');
+
+        $byTime = collect($response->json('slots'))->keyBy('time');
+        $this->assertSame('past', $byTime['15:30']['state'], 'فُسحةُ دوامٍ مضت');
+        $this->assertSame('outside', $byTime['21:00']['state'], 'ساعةُ ليلٍ لم تُعرض للحجز');
 
         // وأقربُ يومٍ فيه فُسحةٌ يُعرض وجهةً بديلة
         $next = $response->json('next_open');

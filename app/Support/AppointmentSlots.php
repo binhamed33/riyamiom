@@ -89,19 +89,39 @@ class AppointmentSlots
     /**
      * فُسَحُ يومٍ لموظّف: كلُّ وقتٍ يبدأ فيه موعدٌ ولا يصطدم بمحجوز.
      *
-     * @return array<int, array{time: string, at: Carbon, free: bool}>
+     * ═══ $wholeDay: اليومُ كلُّه لا ساعاتُ الدوام ═══
+     *
+     * كانت الشاشةُ تُخفي كلَّ شيءٍ خارج الدوام: يومَ جمعةٍ لا وقتَ فيه
+     * البتّة، وساعةَ سبعةٍ مساءً لا تُعرض. وتقول للموظّف «اكتب الوقتَ
+     * يدوياً» — فيكتبه بلا أن يرى ما حُجز فيه، ويكتشف التعارضَ عند
+     * الحفظ لا قبله. وأسوأُ منه: موعدٌ حُجز في السابعة مساءً لا يظهر
+     * لأحدٍ بعده، فيُحجز فوقه مرّةً بعد مرّة.
+     *
+     * فالعرضُ صار اليومَ كلَّه حين يُطلب: ما كان خارجَ الدوام يُعلَّم
+     * «outside» ويبقى قابلاً للاختيار — المكتبُ يعمل خارجَ دوامه أحياناً،
+     * وليس من حقّ الشاشة أن تمنعه. والمحجوزُ يبقى مقفلاً في كلّ ساعةٍ
+     * من اليوم، وهذا هو المقصود.
+     *
+     * والافتراضُ false: الجدولُ الأسبوعيُّ يحسب نسبةَ الامتلاء من
+     * فُسَح الدوام وحدَها، و«أقربُ موعدٍ متاح» لا يقترح الثانيةَ فجراً.
+     *
+     * @return array<int, array{time: string, at: Carbon, free: bool, state: string}>
      */
-    public static function forDay(Carbon $day, ?int $userId = null, ?int $ignoreId = null): array
+    public static function forDay(Carbon $day, ?int $userId = null, ?int $ignoreId = null, bool $wholeDay = false): array
     {
         $day = $day->copy()->startOfDay();
+        $workday = self::isWorkday($day);
 
-        if (!self::isWorkday($day)) {
+        if (!$workday && !$wholeDay) {
             return [];
         }
 
         $slot = self::slotMinutes();
-        $cursor = self::at($day, self::startTime());
-        $end = self::at($day, self::endTime());
+        $openAt = self::at($day, self::startTime());
+        $closeAt = self::at($day, self::endTime());
+
+        $cursor = $wholeDay ? $day->copy() : $openAt->copy();
+        $end = $wholeDay ? $day->copy()->addDay() : $closeAt->copy();
 
         // ما حُجز في هذا اليوم — استعلامٌ واحدٌ لا واحدٌ لكلّ فُسحة
         $taken = Appointment::query()
@@ -122,12 +142,16 @@ class AppointmentSlots
                 break;
             }
 
-            // ═══ ثلاثُ حالاتٍ لا اثنتان ═══
+            // ═══ أربعُ حالاتٍ لا ثلاث ═══
             //
             // «مشغول» و«مضى» ليسا شيئاً واحداً: يومٌ انقضى دوامُه كان
             // يُعرض كلُّه مشطوباً كأنّ المكتبَ محجوزٌ بالكامل، فيظنّ
             // الموظّفُ الشاشةَ معطّلة. الحالةُ تُسمّى الآن، والشاشةُ
             // تقول «انقضى دوام اليوم» بدل صفٍّ من الشطب.
+            //
+            // و«خارج الدوام» رابعتُها: وقتٌ يُحجز فيه بقرار الموظّف،
+            // ويُعلَّم لئلّا يُحجز فيه سهواً. والمحجوزُ يعلوه: ساعةٌ
+            // خارجَ الدوام فيها موعدٌ مقفلةٌ كأيّ ساعةٍ فيها موعد.
             $past = $cursor <= $now;
             $busyWith = null;
 
@@ -143,11 +167,13 @@ class AppointmentSlots
                 }
             }
 
+            $outside = !$workday || $cursor < $openAt || $slotEnd > $closeAt;
+
             $slots[] = [
                 'time' => $cursor->format('H:i'),
                 'at' => $cursor->copy(),
                 'free' => !$past && $busyWith === null,
-                'state' => $past ? 'past' : ($busyWith ? 'busy' : 'free'),
+                'state' => $past ? 'past' : ($busyWith ? 'busy' : ($outside ? 'outside' : 'free')),
             ];
             $cursor->addMinutes($slot);
         }
@@ -175,7 +201,8 @@ class AppointmentSlots
             $candidate = $day->copy()->addDays($i);
 
             foreach (self::forDay($candidate, $userId) as $slot) {
-                if ($slot['free']) {
+                // 'free' لا مجرّد قابلٍ للحجز: لا يُقترح وقتٌ خارج الدوام
+                if ($slot['state'] === 'free') {
                     return ['date' => $candidate, 'time' => $slot['time']];
                 }
             }

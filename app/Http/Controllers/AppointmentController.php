@@ -127,12 +127,17 @@ class AppointmentController extends Controller
         $userId = (int) $request->query('user_id', 0) ?: null;
         $ignore = (int) $request->query('ignore', 0) ?: null;
 
-        $slots = AppointmentSlots::forDay($day, $userId, $ignore);
+        // اليومُ كلُّه لا ساعاتُ الدوام: ما خارجَها يُعرض معلَّماً ويبقى
+        // قابلاً للاختيار، والمحجوزُ منه مقفلٌ كأيّ محجوز — وهو المقصود.
+        $slots = AppointmentSlots::forDay($day, $userId, $ignore, wholeDay: true);
 
-        $free = array_values(array_filter($slots, static fn ($s) => $s['free']));
+        // «متاحٌ داخل الدوام» غيرُ «قابلٍ للحجز»: الأوّلُ يقرّر هل نعرض
+        // «أقربَ موعد»، والثاني هل في الشاشة ما يُنقر أصلاً.
+        $free = array_values(array_filter($slots, static fn ($s) => $s['state'] === 'free'));
+        $bookable = array_values(array_filter($slots, static fn ($s) => $s['free']));
 
         // اليومُ الذي انقضى دوامُه: تُعرض وجهةٌ بديلةٌ لا صفٌّ مشطوب
-        $next = ($free === [] && AppointmentSlots::isWorkday($day))
+        $next = $free === []
             ? AppointmentSlots::nextOpenDay($userId, $day->copy()->addDay())
             : null;
 
@@ -140,6 +145,8 @@ class AppointmentController extends Controller
             'workday' => AppointmentSlots::isWorkday($day),
             'day' => $day->toDateString(),
             'has_free' => $free !== [],
+            'has_bookable' => $bookable !== [],
+            'office_hours' => AppointmentSlots::startTime() . ' – ' . AppointmentSlots::endTime(),
             'next_open' => $next ? ['date' => $next['date']->toDateString(), 'time' => $next['time'],
                 'label' => $next['date']->locale('ar')->isoFormat('dddd D MMMM')] : null,
             'slots' => array_map(static fn ($s) => [

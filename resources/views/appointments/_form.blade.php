@@ -202,10 +202,14 @@ document.addEventListener('DOMContentLoaded', function () {
             b.type = 'button';
             b.textContent = slot.time;
             b.disabled = !slot.free;
-            b.title = slot.state === 'busy' ? 'محجوز' : (slot.state === 'past' ? 'مضى' : 'متاح');
+            b.title = slot.state === 'busy' ? 'محجوز — لا يُحجز فوقه'
+                : slot.state === 'past' ? 'مضى'
+                : slot.state === 'outside' ? 'خارج الدوام — يمكن الحجز فيه'
+                : 'متاح';
             b.className = 'text-[11px] py-1.5 rounded-lg border text-center transition ' + (
                 slot.state === 'free' ? 'bg-white text-gray-700 border-gray-200 hover:border-gold hover:text-gold-dark cursor-pointer'
                 : slot.state === 'busy' ? 'bg-red-50 text-red-400 border-red-100 line-through cursor-not-allowed'
+                : slot.state === 'outside' ? 'bg-white text-gray-400 border-dashed border-gray-300 hover:border-gold hover:text-gold-dark cursor-pointer'
                 : 'bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed');
 
             if (slot.free) {
@@ -240,14 +244,18 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (data) {
                 clear();
 
-                if (!data.workday) {
-                    note('هذا اليوم خارج أيّام العمل المضبوطة — يمكن الحجز فيه يدوياً بكتابة الوقت.', 'warn');
-                    return;
-                }
-
                 if (!data.slots.length) {
                     note('لا فُسَح في هذا اليوم.');
                     return;
+                }
+
+                // ═══ خارجَ الدوام تُعرض الأوقاتُ ولا تُخفى ═══
+                //
+                // كانت الشاشةُ تقول «اكتب الوقتَ يدوياً» ثمّ لا تُظهر
+                // شيئاً — فيكتبه الموظّفُ بلا أن يرى ما حُجز فيه،
+                // ويكتشف التعارضَ عند الحفظ لا قبله.
+                if (!data.workday) {
+                    note('هذا اليوم خارج أيّام العمل المضبوطة — الأوقاتُ معروضةٌ كلُّها، والمحجوزُ منها مُقفل.', 'warn');
                 }
 
                 // ═══ يومٌ انقضى دوامُه ═══
@@ -255,9 +263,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 // كان يُعرض صفّاً مشطوباً كأنّ المكتبَ محجوزٌ بالكامل،
                 // فيظنّ الموظّفُ الشاشةَ معطّلة. يُقال السببُ، ويُعرض
                 // أقربُ يومٍ فيه فُسحةٌ زراً يُنقر.
-                if (!data.has_free) {
+                if (!data.has_free && data.workday) {
                     var allPast = data.slots.every(function (s) { return s.state === 'past'; });
-                    note(allPast ? 'انقضى دوامُ هذا اليوم.' : 'كلُّ فُسَح هذا اليوم محجوزة.', 'warn');
+                    note(allPast ? 'انقضى دوامُ هذا اليوم.' : 'كلُّ فُسَح دوام هذا اليوم محجوزة.', 'warn');
 
                     if (data.next_open) {
                         var jump = document.createElement('button');
@@ -272,11 +280,19 @@ document.addEventListener('DOMContentLoaded', function () {
                         box.appendChild(jump);
                     }
 
-                    return;
+                    // ولا يُكتفى بالزرّ: ساعاتُ اليوم خارجَ الدوام تبقى
+                    // معروضةً تحته لمن أراد الحجزَ فيها بقراره
+                    if (!data.has_bookable) {
+                        return;
+                    }
                 }
 
-                var freeCount = data.slots.filter(function (s) { return s.free; }).length;
-                legend.textContent = freeCount + ' فُسحة متاحة';
+                var freeCount = data.slots.filter(function (s) { return s.state === 'free'; }).length;
+                var outsideCount = data.slots.filter(function (s) { return s.state === 'outside'; }).length;
+
+                legend.textContent = freeCount + ' فُسحة في الدوام'
+                    + (outsideCount ? ' · ' + outsideCount + ' خارجه' : '')
+                    + (data.office_hours ? ' (الدوام ' + data.office_hours + ')' : '');
 
                 group('صباحاً', data.slots.filter(function (s) { return parseInt(s.time, 10) < 12; }));
                 group('بعد الظهر', data.slots.filter(function (s) { return parseInt(s.time, 10) >= 12; }));
