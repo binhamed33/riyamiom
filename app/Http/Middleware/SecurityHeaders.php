@@ -37,7 +37,16 @@ class SecurityHeaders
             "base-uri 'self'",
             "form-action 'self'",
         ];
-        $response->headers->set('Content-Security-Policy', implode('; ', $csp));
+        // ═══ سياسةٌ وضعها المتحكّمُ لا تُستبدل ═══
+        //
+        // Attachments::respond تُقدّم المرفقَ بـ"default-src 'none'; sandbox"
+        // — عزلٌ مقصودٌ لملفٍّ رفعه غيرُ صاحب الصفحة. وهذا الوسيطُ يعمل
+        // بعد المتحكّم، فكان set() يستبدل ذلك العزلَ بسياسة التطبيق
+        // السخيّة في كلّ مرفق. والحارسُ نفسُه يستعمله لارافل في
+        // ServeFile: ما وُضع لا يُداس.
+        if (!$response->headers->has('Content-Security-Policy')) {
+            $response->headers->set('Content-Security-Policy', implode('; ', $csp));
+        }
 
         if (config('app.env') === 'production') {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');

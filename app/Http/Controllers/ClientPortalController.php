@@ -62,13 +62,20 @@ class ClientPortalController extends Controller
 
         $caseIds = LegalCase::where('client_id', $client->id)->pluck('id');
 
-        $documents = Document::where(function ($query) use ($caseIds) {
-            $query->whereIn('case_id', $caseIds)
-                ->where('access_level', 'all');
-        })->orWhere(function ($query) {
-            $query->where('uploaded_by', auth()->id())
-                ->where('access_level', 'private');
-        })->with(['case', 'uploader'])
+        // ═══ ما يراه الموكّل هو ما وُسم له صراحةً ═══
+        //
+        // كان الشرطُ access_level='all' وحدَه — و«all» تعني «كلُّ
+        // الفريق» لا «الموكّل». فكلُّ مستندٍ عامٍّ في قضاياه يصله بلا
+        // قرارٍ من أحد: مسوّداتٌ داخلية، مذكّراتٌ لم تُقدَّم بعد،
+        // تقاريرُ خصمٍ. والبوّابةُ الأخرى (ClientCaseGateway) تشترط
+        // client_visible صراحةً — فاختلف البابان في الشيء نفسِه.
+        //
+        // والرافعُ لا يُحمَّل: اسمُ الموظّف الذي رفع الورقة شأنُ
+        // المكتب لا شأنُ الموكّل.
+        $documents = Document::whereIn('case_id', $caseIds)
+            ->where('client_visible', true)
+            ->where('access_level', '!=', Document::ACCESS_PRIVATE)
+            ->with('case')
             ->latest()
             ->paginate(15);
 

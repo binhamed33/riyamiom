@@ -253,19 +253,39 @@ class ClientPortalAuthTest extends TestCase
     {
         $this->client();
 
+        // ═══ العقدُ تغيّر إلى الأمتن ═══
+        //
+        // كان المجهولُ يُردّ برسالة «تعذّر التحقّق» عند الخطوة الأولى
+        // والمعروفُ يمضي إلى الثانية: رسالتان مختلفتان وشاشتان
+        // مختلفتان — أي دليلُ هاتفٍ للمكتب. صار كلاهما يمضي إلى
+        // الخطوة الثانية، ويسقط عندها.
         $unknown = $this->post(route('client.access.lookup'), ['national_id' => '0000000000']);
-        $unknownMessage = session('portal_error');
+        $this->assertNull(session('portal_error'), 'المجهولُ يُردّ برسالةٍ تفضحه');
+        $unknownShape = $this->get(route('client.access'))->getContent();
 
         session()->flush();
         RateLimiter::clear('client-portal:lookup:127.0.0.1');
 
         $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
+        $knownShape = $this->get(route('client.access'))->getContent();
+
+        // الشكلُ نفسُه: خطوةٌ ثانيةٌ بتلميحٍ مقنَّع في الحالتين
+        foreach (['digits' => 'حقلُ الأرقام', '•' => 'التلميحُ المقنَّع'] as $needle => $what) {
+            $this->assertStringContainsString($needle, $unknownShape, "المجهول بلا {$what}");
+            $this->assertStringContainsString($needle, $knownShape, "المعروف بلا {$what}");
+        }
+
+        // والتحقّقُ يسقط في الحالتين بالرسالة نفسِها
         $this->post(route('client.access.verify'), ['digits' => '000']);
         $wrongPhoneMessage = session('portal_error');
 
-        $this->assertSame(__('portal.login.failed'), $unknownMessage);
+        session()->flush();
+        RateLimiter::clear('client-portal:lookup:127.0.0.1');
+        $this->post(route('client.access.lookup'), ['national_id' => '0000000000']);
+        $this->post(route('client.access.verify'), ['digits' => '000']);
+
         $this->assertSame(__('portal.login.failed'), $wrongPhoneMessage);
-        $this->assertSame($unknownMessage, $wrongPhoneMessage);
+        $this->assertSame($wrongPhoneMessage, session('portal_error'));
     }
 
     public function test_the_full_phone_number_never_reaches_the_browser(): void
@@ -333,10 +353,11 @@ class ClientPortalAuthTest extends TestCase
         // بلا هاتف لا سبيل للتحقّق — ويُعامَل كغير موجود فلا يكشف الرد شيئاً
         $this->client(['phone' => '']);
 
-        $this->post(route('client.access.lookup'), ['national_id' => '1234567890'])
-            ->assertSessionHas('portal_error', __('portal.login.failed'));
+        // يمضي إلى الخطوة الثانية كأيّ هويّة — ولا يفتح شيئاً
+        $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
 
-        $this->post(route('client.access.verify'), ['digits' => '123']);
+        $this->post(route('client.access.verify'), ['digits' => '123'])
+            ->assertSessionHas('portal_error', __('portal.login.failed'));
         $this->assertNull(session('client_access_id'));
     }
 

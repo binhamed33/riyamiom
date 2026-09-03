@@ -95,8 +95,28 @@ class ClientAuthenticator
 
         $this->record($request, $nationalId, 'lookup', $numbers !== [], $client?->id);
 
+        // ═══ الردُّ واحدٌ عرفنا الهويّةَ أم لم نعرفها ═══
+        //
+        // الرسالةُ كانت واحدةً بالفعل — لكنّ الحالةَ لم تكن: التحدّي
+        // يُكتب في الجلسة عند المعرفة وحدَها، فالصفحةُ التالية تُظهر
+        // الخطوةَ الثانية بتلميحٍ مثل «9123••••» عند المعرفة، وتعود
+        // إلى الأولى عند الجهل. فصار الرابطُ دليلَ هاتفٍ للمكتب: من
+        // جرّب رقمَ هويّةٍ عرف أصاحبُه موكّلٌ هنا (وعلاقةُ المحامي
+        // بموكّله سرٌّ في ذاتها)، وأخذ معه أوّلَ أربعةِ أرقامٍ من هاتفه.
+        //
+        // فالتحدّي يُكتب في الحالتين. والشكليُّ منه بلا معرّف موكّل —
+        // فيسقط تحقّقُه دائماً لأنّ Client::find(null) لا شيء — وتلميحُه
+        // مشتقٌّ من بصمة الهويّة نفسِها: ثابتٌ لمن أعاد المحاولةَ بالرقم
+        // نفسِه، مختلفٌ بين رقمٍ وآخر، فلا يُفرَّق بتغيّره.
         if (!$client || $numbers === []) {
-            return ['ok' => false, 'locked' => false, 'hint' => null, 'retry_after' => null];
+            $request->session()->put(self::SESSION_CHALLENGE, [
+                'client_id' => null,
+                'decoy_for' => $hash,
+                'issued_at' => now()->timestamp,
+                'token' => bin2hex(random_bytes(16)),
+            ]);
+
+            return ['ok' => true, 'locked' => false, 'hint' => null, 'retry_after' => null];
         }
 
         // التحدّي في الجلسة: لا يحمل الهاتف، بل معرّف العميل ووقت الإصدار
@@ -123,7 +143,13 @@ class ClientAuthenticator
     {
         $challenge = $request->session()->get(self::SESSION_CHALLENGE);
 
-        if (!is_array($challenge) || !isset($challenge['client_id'], $challenge['issued_at'], $challenge['token'])) {
+        // array_key_exists لا isset: التحدّي الشكليُّ معرّفُه null،
+        // وisset تعدّ الـnull غياباً — فكان يسقط في فرع «انتهت المهلة»
+        // بينما يسقط الحقيقيُّ في «تعذّر التحقّق». رسالتان مختلفتان =
+        // الأوراكلُ نفسُه الذي أُغلق في الخطوة الأولى.
+        if (!is_array($challenge)
+            || !array_key_exists('client_id', $challenge)
+            || !isset($challenge['issued_at'], $challenge['token'])) {
             return $this->failed(expired: true);
         }
 
@@ -137,7 +163,8 @@ class ClientAuthenticator
 
         // والسقفُ الثاني على الموكّل نفسِه: يعبر التحدّيات فلا يُلتفّ
         // عليه بالعودة إلى الخطوة الأولى وأخذ خمسٍ جديدة
-        $clientKey = 'client-portal:verify-client:' . $challenge['client_id'];
+        $clientKey = 'client-portal:verify-client:'
+            . ($challenge['client_id'] ?? 'decoy-' . substr((string) ($challenge['decoy_for'] ?? 'x'), 0, 32));
 
         if (RateLimiter::tooManyAttempts($clientKey, self::CLIENT_LIMIT)) {
             $request->session()->forget(self::SESSION_CHALLENGE);
@@ -271,10 +298,20 @@ class ClientAuthenticator
             return null;
         }
 
-        $client = Client::find($challenge['client_id'] ?? 0);
+        $client = ($challenge['client_id'] ?? null) ? Client::find($challenge['client_id']) : null;
         $numbers = $client ? $this->phoneNumbers($client) : [];
 
-        return $numbers === [] ? null : ['hint' => self::hint($numbers), 'count' => count($numbers)];
+        if ($numbers !== []) {
+            return ['hint' => self::hint($numbers), 'count' => count($numbers)];
+        }
+
+        // تحدٍّ شكليّ: خطوةٌ ثانيةٌ تبدو كغيرها تماماً، بتلميحٍ مشتقٍّ
+        // من بصمة الهويّة — ثابتٍ لصاحبه ولا يدلّ على شيء
+        if (isset($challenge['decoy_for'])) {
+            return ['hint' => self::decoyHint((string) $challenge['decoy_for']), 'count' => 1];
+        }
+
+        return null;
     }
 
     // ------------------------------------------------------------ داخلي
@@ -362,6 +399,21 @@ class ClientAuthenticator
     private static function hint(array $numbers): string
     {
         return implode(' · ', array_map(self::maskDigits(...), $numbers));
+    }
+
+    /**
+     * تلميحٌ شكليٌّ لهويّةٍ لا يعرفها المكتب.
+     *
+     * مشتقٌّ من بصمة الهويّة لا من عشوائيّة: من أعاد المحاولةَ بالرقم
+     * نفسِه رأى التلميحَ نفسَه، فلا يُميَّز الشكليُّ بتقلّبه. وشكلُه
+     * شكلُ الحقيقيّ: أربعةُ أرقامٍ ثمّ أربعُ نقاط.
+     */
+    private static function decoyHint(string $seed): string
+    {
+        $digits = preg_replace('/\D+/', '', hash('sha256', 'portal-decoy:' . $seed)) ?: '92000000';
+        $prefix = substr(str_pad($digits, 4, '0'), 0, 4);
+
+        return $prefix . str_repeat('•', 4);
     }
 
     private function normalizeId(string $value): string

@@ -55,15 +55,20 @@ class CaseFileController extends Controller
             $html = preg_replace('/^\xEF\xBB\xBF|\xEF\xBB\xBF$/', '', $html);
             $mpdf->WriteHTML($html);
 
-            $fileName = 'case-file-' . str_replace('/', '-', $case->case_number) . '-' . date('Y-m-d') . '.pdf';
+            // رقمُ القضية يكتبه الموظّف حرّاً بلا حدٍّ ولا محارف مسموحة،
+            // وكان يُلصق في الترويسة بين علامتَي اقتباس: رقمٌ فيه " يختار
+            // لزملائه اسمَ الملفّ الذي يُحفظ به. يُنظَّف ثمّ يُترك البناءُ
+            // لـstreamDownload — وهي تقتبس وتتحقّق كما فعلت downloadName.
+            $safeNumber = preg_replace('/[^\p{L}\p{N}\-_]+/u', '-', (string) $case->case_number) ?: 'case';
+            $fileName = 'case-file-' . trim($safeNumber, '-') . '-' . date('Y-m-d') . '.pdf';
 
             $pdfContent = $mpdf->Output($fileName, 'S');
 
-            return response($pdfContent, 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-                'Content-Length' => strlen($pdfContent),
-            ]);
+            return response()->streamDownload(
+                static fn () => print($pdfContent),
+                $fileName,
+                ['Content-Type' => 'application/pdf'],
+            );
         } catch (MpdfException $e) {
             abort(500, 'فشل إنشاء ملف PDF: ' . $e->getMessage());
         } catch (\Exception $e) {

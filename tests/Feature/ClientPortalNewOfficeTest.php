@@ -55,8 +55,11 @@ class ClientPortalNewOfficeTest extends TestCase
         $this->assertSame(0, LegalCase::count());
         $this->assertSame(0, Document::count());
 
-        // ولا يدخل أحد لأنه لا يوجد أحد
-        $this->post(route('client.access.lookup'), ['national_id' => '1234567890'])
+        // ولا يدخل أحد لأنه لا يوجد أحد. والخطوةُ الأولى لا تقول ذلك:
+        // ردُّها واحدٌ عرف المكتبُ الهويّةَ أم لم يعرفها — السقوطُ عند
+        // التحقّق (انظر ClientPortalAuthTest).
+        $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
+        $this->post(route('client.access.verify'), ['digits' => '123'])
             ->assertSessionHas('portal_error', __('portal.login.failed'));
 
         $this->assertNull(session('client_access_id'));
@@ -98,9 +101,12 @@ class ClientPortalNewOfficeTest extends TestCase
         $this->assertNotSame($oldHash, $newHash);
         $this->assertSame(Client::hashNationalId('2222000022'), $newHash);
 
-        // الرقم القديم لم يعد يفتح شيئاً
-        $this->post(route('client.access.lookup'), ['national_id' => '1111000011'])
+        // الرقم القديم لم يعد يفتح شيئاً — يمضي كأيّ مجهولٍ ويسقط
+        $this->post(route('client.access.lookup'), ['national_id' => '1111000011']);
+        $this->post(route('client.access.verify'), ['digits' => '567'])
             ->assertSessionHas('portal_error', __('portal.login.failed'));
+
+        $this->assertNull(session('client_access_id'));
     }
 
     /** حفظ العميل مراراً لا يُفسد البصمة رغم إعادة التشفير في كل حفظ */

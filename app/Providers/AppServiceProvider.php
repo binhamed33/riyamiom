@@ -31,6 +31,8 @@ class AppServiceProvider extends ServiceProvider
         // المسار الزمني للقضية يُكتب من مراقبي النماذج لا من المتحكّمات:
         // للجلسة والمستند وحالة القضية أكثر من طريق كتابة، وتسجيلٌ في
         // متحكّم واحد يترك بقية الطرق صامتة. المراقب يمسك الكتابة نفسها.
+        // روابطُ البوابة تُبطَل حين يتغيّر هاتفُ الموكّل أو يُحذف
+        \App\Models\Client::observe(\App\Observers\ClientObserver::class);
         \App\Models\Session::observe(\App\Observers\SessionObserver::class);
         \App\Models\Document::observe(\App\Observers\DocumentObserver::class);
         \App\Models\LegalCase::observe(\App\Observers\LegalCaseObserver::class);

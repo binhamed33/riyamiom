@@ -92,7 +92,12 @@
                     <p class="hm-next-meta">
                         {{ $at->translatedFormat('l') }} · {{ $at->format('h:i A') }}
                         @if ($appointment->location) <br>{{ $appointment->location }} @endif
-                        @if ($appointment->user) <br>مع: {{ $appointment->user->name }} @endif
+                        {{-- اسمُ الموظّف يتبع إعدادَ «إظهار المحامي» كما في
+                             بقيّة البوابة: مكتبٌ أطفأه ليمرّ الموكّلون
+                             بالاستقبال كان يُقرأ اسمُ محاميه هنا وحدَه. --}}
+                        @if ($appointment->user && \App\Support\ClientPortal::showsLawyer())
+                            <br>مع: {{ $appointment->user->name }}
+                        @endif
                     </p>
                 </div>
             </div>
