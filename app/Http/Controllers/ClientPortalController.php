@@ -35,7 +35,16 @@ class ClientPortalController extends Controller
         abort_unless($client, 404);
         abort_unless($case->client_id === $client->id, 403);
 
-        $case->load(['lawyer', 'sessions', 'documents.uploader']);
+        // القاعدةُ نفسُها التي في documents() أدناه — كانت هذه الصفحةُ
+        // تُحمّل المستندات بلا تصفيةٍ أصلاً، فيقرأ الموكّلُ عناوينَ كلّ
+        // ورقةٍ داخليّةٍ في ملفّه: مسوّداتٌ، مذكّراتٌ لم تُقدَّم، تقاريرُ
+        // خبراء. والرافعُ لا يُحمَّل: اسمُ الموظّف شأنُ المكتب.
+        $case->load([
+            'lawyer',
+            'sessions',
+            'documents' => fn ($q) => $q->where('client_visible', true)
+                ->where('access_level', '!=', Document::ACCESS_PRIVATE),
+        ]);
 
         return view('client-portal.case-show', compact('case', 'client'));
     }

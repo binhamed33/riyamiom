@@ -62,11 +62,26 @@ class PortalOtpLoginTest extends TestCase
         });
     }
 
+    /**
+     * الرمزُ يُقرأ من الرسالة الخارجة لا من صفّ السجلّ.
+     *
+     * السجلُّ يحفظ بديلاً بلا رمز عمداً: صندوقُ الوارد لا يفحص الصلاحيةَ
+     * لكلّ محادثةٍ على حدة، فمن يملك whatsapp.view كان يقرأ رمزَ أيّ
+     * موكّلٍ ويدخل بوابتَه. (انظر AuditBatchThreeTest)
+     */
     private function code(): string
     {
-        preg_match('/\b(\d{6})\b/u', (string) WhatsAppMessage::latest('id')->first()?->body, $m);
+        foreach (Http::recorded()->reverse() as [$request, $response]) {
+            if (!str_contains($request->url(), '/message/sendText/')) {
+                continue;
+            }
 
-        return $m[1] ?? '';
+            if (preg_match('/\b(\d{6})\b/u', json_encode($request->data(), JSON_UNESCAPED_UNICODE), $m)) {
+                return $m[1];
+            }
+        }
+
+        return '';
     }
 
     /** الرحلةُ كاملة: هاتف ⇐ رمزٌ يصل فوراً ⇐ دخول. */

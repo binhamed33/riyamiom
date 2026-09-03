@@ -47,7 +47,12 @@
                                     @endif
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-gray-400 text-xs max-w-[200px] truncate">{{ $session->notes ?? '—' }}</td>
+                            {{-- ‏report لا notes: الأولى ملخّصٌ يُكتب للموكّل،
+                                 والثانية ملاحظةُ المحامي لنفسه — «القاضي
+                                 يميل إلى الخصم»، «الموكّل غير متعاون».
+                                 وبوّابةُ الرابط لا تعرض أيّهما، فكانت
+                                 البوّابتان تختلفان في الشيء نفسِه. --}}
+                            <td class="px-4 py-3 text-gray-400 text-xs max-w-[200px] truncate">{{ $session->report ?: '—' }}</td>
                         </tr>
                     @empty
                         <tr>
