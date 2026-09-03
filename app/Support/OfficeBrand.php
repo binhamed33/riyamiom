@@ -20,7 +20,11 @@ class OfficeBrand
     public const DIR = 'office';
     public const KEY_PATH = 'office_logo_path';
     public const KEY_VERSION = 'office_logo_updated_at';
-    public const ALLOWED = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
+    // svg مرفوض: ملفٌّ نصّيٌّ يحمل سكربتاً ويُقدَّم inline من نطاق
+    // المكتب، فيُنفَّذ في أصلِه لو ضعُفت سياسةُ المحتوى يوماً.
+    // logoDataUri() يرفضه أصلاً، وAttachments::INLINE_TYPES تستثنيه
+    // للسبب نفسِه — فبقاؤه هنا كان الشذوذَ لا القاعدة.
+    public const ALLOWED = ['png', 'jpg', 'jpeg', 'webp'];
     public const MAX_KB = 1024;
 
     /** اسم المكتب المعروض (هوية المكتب لا هوية المنتج) */

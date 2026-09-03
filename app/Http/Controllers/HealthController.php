@@ -33,13 +33,24 @@ class HealthController extends Controller
         ], $healthy ? 200 : 503);
     }
 
+    /**
+     * ═══ الرسالةُ ثابتةٌ لا رسالةُ PDO ═══
+     *
+     * المسارُ عامٌّ بلا مصادقة. وكان يردّ نصَّ الخطأ كما هو، فأوّلُ
+     * انقطاعٍ أو تدويرِ كلمةِ مرورٍ يسلّم لأيّ زائر اسمَ مستخدم
+     * القاعدة وعنوانَ الخادم الداخليَّ ونسخةَ المحرّك:
+     *   "Access denied for user 'mudawala_ofc7'@'10.0.0.12'"
+     * التفصيلُ إلى السجلّ، والزائرُ يعرف «سليم» أو «غير متاح» فقط.
+     */
     private function checkDatabase(): array
     {
         try {
             DB::connection()->getPdo();
             return ['ok' => true, 'message' => 'Database connection OK'];
         } catch (\Exception $e) {
-            return ['ok' => false, 'message' => $e->getMessage()];
+            \Illuminate\Support\Facades\Log::error('health: database unreachable: ' . $e->getMessage());
+
+            return ['ok' => false, 'message' => 'Database unreachable'];
         }
     }
 
@@ -64,10 +75,14 @@ class HealthController extends Controller
         $total = disk_total_space(storage_path());
         $percent = round((1 - $free / $total) * 100, 1);
 
+        // النسبةُ إلى السجلّ لا إلى الجواب العامّ
         if ($percent > 95) {
-            return ['ok' => false, 'message' => "Disk {$percent}% full"];
+            \Illuminate\Support\Facades\Log::warning("health: disk {$percent}% full");
+
+            return ['ok' => false, 'message' => 'Disk almost full'];
         }
-        return ['ok' => true, 'message' => "Disk {$percent}% used"];
+
+        return ['ok' => true, 'message' => 'Disk OK'];
     }
 
     private function checkAppKey(): array

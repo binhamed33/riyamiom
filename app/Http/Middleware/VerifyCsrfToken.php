@@ -19,26 +19,15 @@ class VerifyCsrfToken extends BaseVerifier
         'webhooks/whatsapp', 'webhooks/evolution/*',
     ];
 
-    protected function tokensMatch($request)
-    {
-        $token = $this->getTokenFromRequest($request);
-
-        if (!$token) {
-            return false;
-        }
-
-        $sessionToken = $request->session()->token();
-
-        if ($sessionToken && hash_equals($sessionToken, $token)) {
-            return true;
-        }
-
-        $cookieToken = $request->cookie('XSRF-TOKEN');
-
-        if ($cookieToken && hash_equals($cookieToken, $token)) {
-            return true;
-        }
-
-        return false;
-    }
+    // ═══ لا مقارنةَ بكوكي ═══
+    //
+    // كان هنا تجاوزٌ لـtokensMatch يقبل الرمزَ إن طابق كوكي
+    // XSRF-TOKEN — وهي قيمةٌ يرسلها العميلُ نفسُه، لا حالةٌ عند
+    // الخادم. وتشفيرُ لارافل للكوكي مربوطٌ باسم الكوكي ومفتاح
+    // التطبيق لا بالجلسة، فرمزٌ صالحٌ لجلسةٍ يُقبل في أخرى: من ملك
+    // كتابةَ كوكي على النطاق (نطاقٌ فرعيٌّ مخترَق، أو اتصالٌ بلا
+    // تشفير) نفّذ نموذجاً باسم الضحيّة.
+    //
+    // والصنفُ الأمُّ يقارن بجلسة الخادم وحدَها، ويعالج ترويسة
+    // X-XSRF-TOKEN بفكّ تشفيرها — فلا شيءَ يُفقد بحذف التجاوز.
 }

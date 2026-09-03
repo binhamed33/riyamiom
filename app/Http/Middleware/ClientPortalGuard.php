@@ -22,14 +22,22 @@ class ClientPortalGuard
 
     public function handle(Request $request, Closure $next): Response
     {
+        // ═══ يُنسى مفتاحُ البوابة، ولا تُفرَغ الجلسة ═══
+        //
+        // logout() ينادي session()->invalidate() وهو flush كامل —
+        // يمحو login_web_* أيضاً. ومسارُ البوابة GET بلا مصادقةٍ ولا
+        // رمز، وSameSite=lax يرسل الكوكي في التنقّل العلويّ: فرابطٌ
+        // في بريدٍ إلى /client-access/home كان يُخرج المحاميَ من
+        // حسابه ويضعه أمام شاشةِ دخولٍ — وهي بعينُها الحيلةُ التي
+        // أُغلقت في POST /logout.
         if (!ClientPortal::enabled()) {
-            $this->auth->logout($request);
+            $this->auth->forget($request);
 
             return redirect()->route('client.access')->with('portal_error', __('portal.login.disabled'));
         }
 
         if (!$this->auth->current($request)) {
-            $this->auth->logout($request);
+            $this->auth->forget($request);
 
             return redirect()->route('client.access')->with('portal_error', __('portal.login.session_expired'));
         }

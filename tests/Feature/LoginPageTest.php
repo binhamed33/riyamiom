@@ -173,6 +173,12 @@ class LoginPageTest extends TestCase
         $this->assertNotSame($before, session()->getId(), 'يجب تدوير معرّف الجلسة بعد الدخول (Session Fixation)');
     }
 
+    /** مفتاحُ القفل: البريدُ والعنوانُ معاً — انظر الاختبار الذي يليه. */
+    private function lockKey(string $email, string $ip = '127.0.0.1'): string
+    {
+        return 'login_lock_' . md5($email . '|' . $ip);
+    }
+
     public function test_five_failed_attempts_lock_the_account(): void
     {
         User::factory()->create([
@@ -185,8 +191,38 @@ class LoginPageTest extends TestCase
             $this->post('/login', ['email' => 'lock@example.com', 'password' => 'bad']);
         }
 
-        $this->assertTrue(Cache::has('login_lock_' . md5('lock@example.com')));
+        $this->assertTrue(Cache::has($this->lockKey('lock@example.com')));
         $this->assertGuest();
+    }
+
+    /**
+     * ═══ والقفلُ على المُحاوِل لا على صاحب الحساب ═══
+     *
+     * كان المفتاحُ بريدَ الحساب وحدَه، فخمسُ محاولاتٍ خاطئةٍ من أيّ
+     * زائرٍ تُغلق حسابَ مدير المكتب ربعَ ساعة — تُعاد كلَّ ربع ساعةٍ
+     * فيبقى خارج نظامه، وتُغرَق قناةُ التنبيهات وسجلُّ التدقيق معه.
+     */
+    public function test_an_attacker_locks_only_themselves_out(): void
+    {
+        User::factory()->create([
+            'email' => 'victim@example.com',
+            'password' => 'password',
+            'is_active' => true,
+        ]);
+
+        // المهاجمُ من عنوانه
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.7']);
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/login', ['email' => 'victim@example.com', 'password' => 'bad']);
+        }
+
+        $this->assertTrue(Cache::has($this->lockKey('victim@example.com', '203.0.113.7')), 'المهاجمُ لم يُقفل على نفسه');
+        $this->assertFalse(Cache::has($this->lockKey('victim@example.com')), 'قُفل الحسابُ على صاحبه');
+
+        // وصاحبُ الحساب يدخل من جهازه كأنّ شيئاً لم يكن
+        $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1']);
+        $this->post('/login', ['email' => 'victim@example.com', 'password' => 'password']);
+        $this->assertAuthenticated();
     }
 
     public function test_a_locked_account_is_refused_even_with_the_right_password(): void
@@ -197,7 +233,7 @@ class LoginPageTest extends TestCase
             'is_active' => true,
         ]);
 
-        Cache::put('login_lock_' . md5('locked@example.com'), true, now()->addMinutes(15));
+        Cache::put($this->lockKey('locked@example.com'), true, now()->addMinutes(15));
 
         $this->followingRedirects()
             ->post('/login', ['email' => 'locked@example.com', 'password' => 'password'])

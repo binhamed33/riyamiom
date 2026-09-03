@@ -40,7 +40,7 @@ Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('langu
 // Auth routes (guest)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:5,1,login');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
@@ -49,7 +49,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 // الصفحات التسويقية العامة (لا تتطلب تسجيل دخول)
 // ============================================================
 Route::get('/register', [MarketingPageController::class, 'register'])->name('marketing.register');
-Route::post('/register', [MarketingPageController::class, 'storeRegister'])->name('marketing.register.store')->middleware('throttle:5,10');
+Route::post('/register', [MarketingPageController::class, 'storeRegister'])->name('marketing.register.store')->middleware('throttle:5,10,register');
 Route::get('/features', [MarketingPageController::class, 'features'])->name('marketing.features');
 Route::get('/pricing', [MarketingPageController::class, 'pricing'])->name('marketing.pricing');
 Route::get('/faq', [MarketingPageController::class, 'faq'])->name('marketing.faq');
@@ -79,18 +79,27 @@ Route::get('/', fn () => redirect()->route('dashboard'));
 | كل صفحة داخل البوابة خلف حارس يتحقّق من الجلسة ومن تفعيل المكتب لها.
 */
 Route::get('/client-access', [App\Http\Controllers\ClientAccessController::class, 'showLogin'])->name('client.access');
+/*
+| ═══ دلوٌ لكلّ باب ═══
+|
+| ThrottleRequests يبني مفتاحَه من sha1(النطاق|العنوان) والبادئةُ
+| فارغةٌ افتراضاً — فكلُّ مسارات الزوّار كانت تتشارك عدّاداً واحداً.
+| والمهلةُ تُثبَّت بأوّل من يلمس المفتاح، فطلبٌ واحدٌ على ويبهوكٍ
+| مهلتُه دقيقةٌ كان يحوّل «٢٠ محاولةً في عشر دقائق» إلى «٢٠ في
+| دقيقة» لبقيّة الأبواب. الوسيطُ الخامس هو البادئة.
+*/
 Route::post('/client-access', [App\Http\Controllers\ClientAccessController::class, 'lookup'])
-    ->middleware('throttle:20,10')->name('client.access.lookup');
+    ->middleware('throttle:20,10,portal-lookup')->name('client.access.lookup');
 Route::post('/client-access/verify', [App\Http\Controllers\ClientAccessController::class, 'verify'])
-    ->middleware('throttle:20,10')->name('client.access.verify');
+    ->middleware('throttle:20,10,portal-verify')->name('client.access.verify');
 
 // الدخول برمز واتساب: طلبُ الرمز محدودٌ بشدّة — الإرسالُ رسالةٌ حقيقية
 Route::post('/client-access/otp', [App\Http\Controllers\ClientAccessController::class, 'otpSend'])
-    ->middleware('throttle:6,10')->name('client.access.otp');
+    ->middleware('throttle:6,10,portal-otp')->name('client.access.otp');
 Route::post('/client-access/otp/verify', [App\Http\Controllers\ClientAccessController::class, 'otpVerify'])
-    ->middleware('throttle:20,10')->name('client.access.otp.verify');
+    ->middleware('throttle:20,10,portal-otp-verify')->name('client.access.otp.verify');
 Route::post('/client-access/otp/reset', [App\Http\Controllers\ClientAccessController::class, 'otpReset'])
-    ->middleware('throttle:20,10')->name('client.access.otp.reset');
+    ->middleware('throttle:20,10,portal-otp-reset')->name('client.access.otp.reset');
 Route::post('/client-access/logout', [App\Http\Controllers\ClientAccessController::class, 'logout'])->name('client.access.logout');
 
 Route::middleware('client.portal')->prefix('client-access')->group(function () {
@@ -111,7 +120,7 @@ Route::middleware('client.portal')->prefix('client-access')->group(function () {
 */
 Route::get('/p/{token}', [App\Http\Controllers\ClientLinkController::class, 'open'])
     ->where('token', '[A-Za-z0-9]{32,80}')
-    ->middleware('throttle:30,1')
+    ->middleware('throttle:30,1,portal-link')
     ->name('client.link.open');
 
 // توافق: الرابط القديم لصفحة القضية يوجّه إلى مقابله الجديد
@@ -132,7 +141,7 @@ Route::get('/client-access/case/{case}', function (string $case) {
 | والخانق ٦٠٠/دقيقة سخيٌّ عمداً: مكتبٌ نشط قد يستقبل دفعةَ إشعاراتٍ
 | بعد انقطاع، وخنقُها يجعل Meta تُعيد الإرسال فيتفاقم الازدحام.
 */
-Route::middleware('throttle:600,1')->group(function () {
+Route::middleware('throttle:600,1,wa-webhook')->group(function () {
     Route::get('/webhooks/whatsapp', [App\Http\Controllers\WhatsAppWebhookController::class, 'challenge'])
         ->name('whatsapp.webhook.challenge');
     Route::post('/webhooks/whatsapp', [App\Http\Controllers\WhatsAppWebhookController::class, 'receive'])

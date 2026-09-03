@@ -13,7 +13,13 @@ class CaseFileController extends Controller
     {
         $user = auth()->user();
 
-        $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader']);
+        // وملفُّ القضية PDF كذلك: كان يطبع عناوينَ المستندات الخاصّة
+        // ويكتب بجانبها «خاص» — لمن لا يملكها
+        $case->load([
+            'client', 'lawyer', 'sessions', 'tasks.assignee',
+            'documents' => fn ($q) => $q->visibleTo(auth()->user()),
+            'documents.uploader',
+        ]);
 
         try {
             $fontDir = resource_path('fonts');

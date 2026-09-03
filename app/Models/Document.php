@@ -29,6 +29,41 @@ class Document extends Model
         'client_visible',
     ];
 
+    /**
+     * ما يراه هذا المستخدم من المستندات.
+     *
+     * ═══ لماذا نطاقٌ لا شرطٌ مكرّر ═══
+     *
+     * كانت قائمةُ المستندات تُصفّي بالصلاحية، وصفحةُ القضية وملفُّ
+     * القضية PDF تُحمّلان `documents` بلا تصفيةٍ أصلاً. فموظّفٌ يفتح
+     * قضيةً لم يعمل فيها يقرأ عناوينَ كلّ مستندٍ «خاصّ» رفعه محامٍ
+     * آخر — «طلب طلاق»، «تقرير طبّي» — واسمَ رافعه وتاريخَه. المحتوى
+     * كان محميّاً، والعنوانُ وحده يكفي.
+     *
+     * والقاعدةُ هنا لتُقرأ من موضعٍ واحد: من أضاف قارئاً ثالثاً غداً
+     * يجده جاهزاً بدل أن ينسى الشرط.
+     */
+    public function scopeVisibleTo($query, ?\App\Models\User $user)
+    {
+        if (!$user) {
+            return $query->where('access_level', 'all');
+        }
+
+        return $query->where(function ($q) use ($user) {
+            $q->where(function ($qq) {
+                $qq->where('access_level', 'all')->orWhereNull('access_level');
+            });
+
+            if ($user->isAdmin() || $user->isDeveloper() || $user->isLawyer() || $user->isStaff()) {
+                $q->orWhere('access_level', 'team');
+            }
+
+            $q->orWhere(function ($qq) use ($user) {
+                $qq->where('access_level', 'private')->where('uploaded_by', $user->id);
+            });
+        });
+    }
+
     /** الشخصُ المنسوبُ إليه صراحةً — إن نُسب. */
     public function client()
     {

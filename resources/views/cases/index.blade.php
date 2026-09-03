@@ -95,7 +95,12 @@ document.addEventListener('alpine:init', () => {
                     </svg>
                     <div x-show="open" x-cloak class="absolute z-50 top-full mt-1 w-full bg-white border border-gold/15 rounded-lg shadow-lg overflow-hidden">
                         <template x-for="(r, i) in results" :key="i">
-                            <a :href="r.url" x-html="r.label"
+                            {{-- x-text لا x-html: label نصٌّ يبنيه الخادم من
+                                 عنوان القضية ورقمها — وكلاهما يكتبه الموظّف
+                                 حرّاً. وinnerHTML هنا يعني أنّ عنواناً فيه
+                                 x-init يُنفَّذ عند كلّ زميلٍ يبحث. ولا شيءَ
+                                 في القائمة يحتاج وسماً. --}}
+                            <a :href="r.url" x-text="r.label"
                                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-gold/10 transition-colors border-b border-gray-100 last:border-b-0"
                                 :class="{ 'bg-gold/10': i === selected }"></a>
                         </template>

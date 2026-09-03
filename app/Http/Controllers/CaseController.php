@@ -420,7 +420,13 @@ class CaseController extends Controller
     {
         $this->authorizeCaseAccess($case);
 
-        $case->load(['client', 'lawyer', 'sessions', 'tasks.assignee', 'documents.uploader', 'documents.folder', 'aiMessages', 'checklistItems.doneBy', 'folders', 'reminders']);
+        // المستنداتُ بحسب صلاحية القارئ: «خاصٌّ» لغيره لا يُعرض عنوانُه
+        $case->load([
+            'client', 'lawyer', 'sessions', 'tasks.assignee',
+            'documents' => fn ($q) => $q->visibleTo(auth()->user()),
+            'documents.uploader', 'documents.folder',
+            'aiMessages', 'checklistItems.doneBy', 'folders', 'reminders',
+        ]);
 
         // §13: محاسبة القضية — تُحمّل لمن يرى المال فقط، فالموظف الذي
         // لا صلاحية مالية له لا يُجلب له شيء أصلاً لا أن يُخفى عنه بالعرض

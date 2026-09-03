@@ -43,6 +43,21 @@ class ClientAuthenticator
     private const VERIFY_LIMIT = 5;
     private const VERIFY_DECAY = 900;      // ١٥ دقيقة
 
+    /**
+     * ═══ سقفُ التخمين لكلّ موكّلٍ لا لكلّ تحدٍّ ═══
+     *
+     * الرقمُ السرّيُّ ثلاثةُ أرقامٍ — ألفُ احتمالٍ لا غير. وحدُّ الخمسِ
+     * كان مربوطاً برمز التحدّي، والتحدّي يُولَد جديداً مع كلّ طلبِ
+     * هويّة: فمن خمّن خمساً عاد إلى الخطوة الأولى وأخذ خمساً أخرى،
+     * بلا نهاية. أي أنّه لم يكن قفلاً على الحساب بل مطبّاً.
+     *
+     * والسقفُ هنا على الموكّل نفسِه ويعبر التحدّيات: عشرون محاولةً في
+     * الساعة تكفي من نسي آخرَ ثلاثةٍ من رقمه، ولا تكفي من يمشي على
+     * الألف — يلزمه خمسون ساعةً بدل ساعتين.
+     */
+    private const CLIENT_LIMIT = 20;
+    private const CLIENT_DECAY = 3600;     // ساعة
+
     public const SESSION_CHALLENGE = 'client_portal_challenge';
     public const SESSION_CLIENT = 'client_access_id';
     public const SESSION_NAME = 'client_access_name';
@@ -120,6 +135,16 @@ class ClientAuthenticator
 
         $key = 'client-portal:verify:' . $challenge['token'];
 
+        // والسقفُ الثاني على الموكّل نفسِه: يعبر التحدّيات فلا يُلتفّ
+        // عليه بالعودة إلى الخطوة الأولى وأخذ خمسٍ جديدة
+        $clientKey = 'client-portal:verify-client:' . $challenge['client_id'];
+
+        if (RateLimiter::tooManyAttempts($clientKey, self::CLIENT_LIMIT)) {
+            $request->session()->forget(self::SESSION_CHALLENGE);
+
+            return $this->failed(locked: true, retryAfter: RateLimiter::availableIn($clientKey));
+        }
+
         if (RateLimiter::tooManyAttempts($key, self::VERIFY_LIMIT)) {
             // تحدٍّ استُهلك بالتخمين لا يُعاد استعماله
             $request->session()->forget(self::SESSION_CHALLENGE);
@@ -128,6 +153,7 @@ class ClientAuthenticator
         }
 
         RateLimiter::hit($key, self::VERIFY_DECAY);
+        RateLimiter::hit($clientKey, self::CLIENT_DECAY);
 
         $client = Client::find($challenge['client_id']);
         $expected = $client ? $this->phoneNumbers($client) : [];
@@ -152,6 +178,10 @@ class ClientAuthenticator
         if (!$matches) {
             return $this->failed();
         }
+
+        // نجاحٌ يمسح سقفَ الموكّل: من دخل حسابَه لا يُعاقَب بمحاولاتٍ
+        // سبقت، والسقفُ إنّما وُضع للمخمِّن لا لصاحب الرقم
+        RateLimiter::clear($clientKey);
 
         // تبديل معرّف الجلسة عند رفع الصلاحية — جلسة الزائر لا تصلح جلسةً لعميل
         $request->session()->regenerate();
@@ -194,6 +224,22 @@ class ClientAuthenticator
         $id = $request->session()->get(self::SESSION_CLIENT);
 
         return $id ? Client::find($id) : null;
+    }
+
+    /**
+     * نسيانُ مفتاح البوابة وحدَه — بلا مساسٍ ببقيّة الجلسة.
+     *
+     * للحارس: زائرٌ يطرق بابَ البوابة بلا جلسةِ موكّلٍ قد يكون
+     * موظّفاً مسجَّلَ الدخول، وإفراغُ جلسته إخراجٌ له من حسابه.
+     */
+    public function forget(Request $request): void
+    {
+        $request->session()->forget([
+            self::SESSION_CLIENT,
+            self::SESSION_NAME,
+            self::SESSION_AT,
+            self::SESSION_CHALLENGE,
+        ]);
     }
 
     public function logout(Request $request): void

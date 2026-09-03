@@ -10,6 +10,7 @@ use App\Support\Attachments;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -95,11 +96,20 @@ class ChatController extends Controller
 
     public function sendMessage(Request $request, Conversation $conversation): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'message' => 'nullable|string|max:5000',
             // svg مرفوض: صورةٌ في ظاهرها تحمل سكربتاً في حقيقتها، وعرضُها
             // من نطاق المكتب يُشغّل سكربتها في جلسة من يفتحها.
             'attachment' => 'nullable|file|max:20480|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,zip,rar,mp3,mp4,mov',
+
+            // ═══ الردُّ يكون على رسالةٍ من المحادثة نفسِها ═══
+            //
+            // كان يُؤخذ من الطلب بلا تحقّق ثمّ يُردّ نصُّه في الجواب
+            // ('reply_message' أدناه). فمن فتح محادثةً مع نفسه وأرسل
+            // reply_to_id=1، 2، 3… استخرج كلَّ رسائل المكتب رسالةً
+            // رسالة — ومنها محادثاتُ الإدارة الخاصّة.
+            'reply_to_id' => ['nullable', 'integer', Rule::exists('messages', 'id')
+                ->where('conversation_id', $conversation->id)],
         ]);
 
         $user = auth()->user();
@@ -112,7 +122,7 @@ class ChatController extends Controller
             'conversation_id' => $conversation->id,
             'user_id' => $user->id,
             'message' => $request->message ?? '',
-            'reply_to_id' => $request->reply_to_id ?? null,
+            'reply_to_id' => $validated['reply_to_id'] ?? null,
         ];
 
         if ($request->hasFile('attachment')) {

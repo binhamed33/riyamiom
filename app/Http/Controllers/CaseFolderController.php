@@ -112,6 +112,13 @@ class CaseFolderController extends Controller
     {
         $this->authorizeManage();
 
+        // authorizeManage تسأل عن الدور لا عن الورقة: مستندٌ «خاصّ»
+        // لغيرِ رافعه لا يُنقل ولا يُردّ عنوانُه في رسالة النجاح
+        abort_if(
+            $document->access_level === 'private' && $document->uploaded_by !== auth()->id(),
+            403,
+        );
+
         $validated = $request->validate([
             'case_id' => 'nullable|integer|exists:cases,id',
             'case_folder_id' => 'nullable|integer|exists:case_folders,id',

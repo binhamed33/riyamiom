@@ -53,7 +53,15 @@ class LoginController extends Controller
         ]);
 
         $email = $request->email;
-        $lockKey = 'login_lock_' . md5($email);
+
+        // ═══ القفلُ على المُحاوِل لا على صاحب الحساب ═══
+        //
+        // كان المفتاحُ بريدَ الحساب وحدَه، فخمسُ محاولاتٍ خاطئةٍ من أيّ
+        // زائرٍ تُغلق حسابَ مدير المكتب ربعَ ساعة — ويُعاد كلَّ ربع
+        // ساعةٍ فيبقى خارج نظامه إلى الأبد، وتُغرَق قناةُ التنبيهات
+        // وسجلُّ التدقيق معه. العنوانُ في المفتاح يجعل المهاجمَ يقفل
+        // نفسَه، وصاحبُ الحساب يدخل من جهازه بلا أثرٍ لمن حاول.
+        $lockKey = 'login_lock_' . md5($email . '|' . $request->ip());
 
         if (Cache::has($lockKey)) {
             return $this->reject($request, 'locked',
@@ -62,7 +70,7 @@ class LoginController extends Controller
                 'تم قفل الحساب مؤقتاً بسبب محاولات دخول كثيرة. حاول مرة أخرى بعد 15 دقيقة.');
         }
 
-        $attemptsKey = 'login_attempts_' . md5($email);
+        $attemptsKey = 'login_attempts_' . md5($email . '|' . $request->ip());
         $attempts = (int) Cache::get($attemptsKey, 0);
 
         if (!auth()->attempt($request->only('email', 'password'), $request->boolean('remember'))) {

@@ -1354,7 +1354,11 @@ document.addEventListener('alpine:init', () => {
                     <div :class="m.role === 'user'
                         ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl rounded-tr-sm max-w-[85%] px-4 py-2.5 shadow-sm'
                         : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm max-w-[85%] px-4 py-2.5 shadow-sm'">
-                        <div class="text-sm leading-relaxed" :class="m.role === 'user' ? 'whitespace-pre-wrap' : 'ai-content'" x-html="m.role === 'assistant' ? md(m.content) : m.content"></div>
+                        {{-- md() للطرفين: رسالةُ المستخدم كانت تُحقن خاماً
+                             (innerHTML)، وسجلُّ المحادثة مشتركٌ بين كلّ من
+                             يفتح القضية — فرسالةٌ فيها x-init تُنفَّذ عند كلّ
+                             زميلٍ يفتح اللوحة بعده. وmd() تهرّب & < > أوّلاً. --}}
+                        <div class="text-sm leading-relaxed" :class="m.role === 'user' ? 'whitespace-pre-wrap' : 'ai-content'" x-html="md(m.content)"></div>
                         <p class="text-[10px] mt-1.5" :class="m.role === 'user' ? 'text-emerald-100' : 'text-gray-400'" x-text="m.created_at || ''"></p>
                     </div>
                 </div>

@@ -2665,7 +2665,11 @@
                                     ? 'bg-red-50 border border-red-200 text-red-800 rounded-2xl rounded-tr-sm px-4 py-2.5'
                                     : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-sm')
                                 : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm'">
-                                <div class="text-sm leading-relaxed" :class="m.role === 'user' ? 'whitespace-pre-wrap' : 'ai-content'" x-html="m.role === 'assistant' ? md(m.content) : m.content"></div>
+                                {{-- md() للطرفين: رسالةُ المستخدم كانت تُحقن خاماً
+                                     (innerHTML)، وسجلُّ المحادثة مشتركٌ بين كلّ من
+                                     يفتح القضية — فرسالةٌ فيها x-init تُنفَّذ عند كلّ
+                                     زميلٍ يفتح اللوحة بعده. وmd() تهرّب & < > أوّلاً. --}}
+                                <div class="text-sm leading-relaxed" :class="m.role === 'user' ? 'whitespace-pre-wrap' : 'ai-content'" x-html="md(m.content)"></div>
                             </div>
 
                             {{-- تحت كل رسالة: وقتها، ونسخُ الجواب لمن
