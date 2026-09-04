@@ -119,7 +119,11 @@ class CommandController extends Controller
                 ];
             }
 
+            // بحثُ لوح الأوامر كان بلا visibleTo: يُكتب حرفٌ فتُعاد
+            // عناوينُ مستنداتٍ خاصّةٍ بغيره. ومن مشى على حروف
+            // المعجم استخرجها كلَّها.
             $documents = Document::with('case')
+                ->visibleTo($user)
                 ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)))
                 ->where(function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")

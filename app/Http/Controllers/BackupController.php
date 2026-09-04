@@ -106,7 +106,10 @@ class BackupController extends Controller
         $db = $this->getDbConfig();
         [$mysqldump, $_] = $this->getMysqlPaths();
         $myCnf = $this->createMyCnf($db);
-        $sqlFile = tempnam(sys_get_temp_dir(), 'db_') . '.sql';
+        // ‏tempnam(...) . '.sql' يسمّي ملفاً آخر ينشئه mysqldump
+        // بقناع النظام — 0644 في /tmp المشترك، ونسخةُ القاعدة كلُّها
+        // فيه. انظر PrivateTempFile.
+        $sqlFile = \App\Support\PrivateTempFile::create('db-', '.sql');
 
         $cmd = $mysqldump
              . ' --defaults-extra-file=' . escapeshellarg($myCnf)
@@ -271,6 +274,9 @@ class BackupController extends Controller
 
         // والأدوارُ تُلتقط قبل الصبّ لتُعاد بعده — الحارسُ الثاني
         $rolesBefore = \App\Support\RestoreGuard::snapshotRoles();
+        // والاعتمادُ أيضاً: تغييرُ كلمةِ سرّ حسابٍ مطوّر يترك الدورَ
+        // كما هو تماماً، فلا يمسكه حارسُ الأدوار
+        $credsBefore = \App\Support\RestoreGuard::snapshotDeveloperCredentials();
 
         $db = $this->getDbConfig();
         [$_, $mysql] = $this->getMysqlPaths();
@@ -305,6 +311,7 @@ class BackupController extends Controller
         // كان. يجري في الحالتين — نجح الصبُّ أو فشل في منتصفه — لأنّ
         // فشلاً بعد نصف الملفّ قد يكون نفّذ السطرَ المقصود.
         $reasserted = \App\Support\RestoreGuard::reassertRoles($rolesBefore);
+        $reasserted += \App\Support\RestoreGuard::reassertDeveloperCredentials($credsBefore);
         if ($reasserted > 0) {
             Log::warning('backup restore tried to mint a developer', ['reverted' => $reasserted, 'by' => auth()->id(), 'file' => $displayName]);
         }
@@ -395,12 +402,76 @@ class BackupController extends Controller
         @rmdir($directory);
     }
 
+    /**
+     * ═══ الامتدادات التي تُنقل من نسخةٍ مرفوعة ═══
+     *
+     * نسخةُ المكتب تحمل مستنداتٍ ومرفقاتٍ وصوراً — لا شيء غيرها.
+     * وكلُّ ما سواها يُترك حيث هو.
+     */
+    private const RESTORABLE = [
+        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'rtf', 'odt',
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'heic',
+        'mp3', 'ogg', 'oga', 'wav', 'm4a', 'mp4', 'zip',
+    ];
+
+    /**
+     * ملفٌّ من الأرشيف يُنقَل أو يُترك.
+     *
+     * ═══ ما كان: تنفيذُ شيفرةٍ عن بُعد ═══
+     *
+     * ‏processRestore يفكّ الأرشيفَ كلَّه ثمّ ينسخ ‎storage/public منه
+     * إلى ‎storage/app/public — وذاك مربوطٌ برابطٍ رمزيّ إلى
+     * ‏public/storage، أي أنّه مُخدَمٌ من الويب مباشرةً. و
+     * ‏mergeDirectory كانت تنسخ كلَّ ملفٍّ بلا فحص اسمٍ ولا امتدادٍ
+     * ولا نوع. وRestoreGuard يفحص عضوَ ‎.sql وحدَه — الملفّاتُ لا
+     * تُنظَر إطلاقاً.
+     *
+     * فمديرُ مكتبٍ يرفع أرشيفاً فيه:
+     *     database/database.sql   ← نسخةٌ صحيحةٌ تعبر الحارس
+     *     storage/public/x.php    ← <?php system($_GET['c']);
+     * ثمّ يطلب ‎/storage/x.php?c=... فتُنفَّذ شيفرتُه بهوية خادم
+     * الويب: مفتاحُ التطبيق، واعتمادُ القاعدة، ورموزُ واتساب، وكلُّ
+     * مستندات المكتب.
+     *
+     * وليست ثغرةَ «zip-slip»: PHP يُسطّح ‎../ عند الفكّ. الطريقُ هو
+     * المسارُ المشروعُ الذي ينسخه الكودُ بنفسه.
+     *
+     * فالمنقولُ ما كان امتدادُه في قائمةٍ مغلقة، والباقي يُترك ويُسجَّل.
+     */
+    private function isRestorableFile(string $path): bool
+    {
+        $name = basename($path);
+
+        // اسمٌ يبدأ بنقطة (‎.htaccess، .user.ini) لا امتدادَ له يُفحص
+        if (str_starts_with($name, '.')) {
+            return false;
+        }
+
+        $ext = strtolower((string) pathinfo($name, PATHINFO_EXTENSION));
+
+        // امتدادٌ مركَّب: ‎x.php.pdf يُنفَّذ على بعض الإعدادات
+        foreach (explode('.', strtolower($name)) as $part) {
+            if (in_array($part, ['php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8',
+                'phps', 'phar', 'inc', 'shtml', 'cgi', 'pl', 'py', 'sh', 'htaccess'], true)) {
+                return false;
+            }
+        }
+
+        return $ext !== '' && in_array($ext, self::RESTORABLE, true);
+    }
+
     private function mergeDirectory(string $source, string $dest): void
     {
         $files = glob($source . '/*');
         foreach ($files as $file) {
             $basename = basename($file);
             if (is_file($file)) {
+                // ورابطٌ رمزيّ داخل الأرشيف يكتب خارج الوجهة
+                if (is_link($file) || !$this->isRestorableFile($file)) {
+                    Log::warning('restore: refused file from archive', ['name' => $basename]);
+                    continue;
+                }
+
                 @copy($file, $dest . '/' . $basename);
             } elseif (is_dir($file)) {
                 $subDest = $dest . '/' . $basename;

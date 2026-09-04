@@ -247,6 +247,18 @@ class FinanceController extends Controller
             $data['client_visible'] = (bool) $data['client_visible'];
         }
 
+        /*
+         * والقضيةُ الهدفُ تُفحص كما تُفحص القضيةُ المصدر.
+         *
+         * كان صاحبُ الرسم ينقله إلى أيّ قضيةٍ في المكتب: فيعلّق رسمَه
+         * على قضيةِ غيره، ويصير الرسمُ ظاهراً في صفحتها ولمحاميها.
+         */
+        if (!$this->isAdmin()
+            && (int) $data['case_id'] !== (int) $fee->case_id
+            && !LegalCase::where('id', $data['case_id'])->where('lawyer_id', auth()->id())->exists()) {
+            abort(403);
+        }
+
         $fee->update($data);
         return redirect()->route('finance.index', ['tab' => 'fees'])->with('success', 'تم تحديث الرسم');
     }

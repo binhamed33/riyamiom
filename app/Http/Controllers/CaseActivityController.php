@@ -53,7 +53,20 @@ class CaseActivityController extends Controller
     public function timeline(LegalCase $case): JsonResponse
     {
         $this->authorizeCaseActivity($case);
-        $case->load(['activities.user', 'sessions', 'tasks', 'documents']);
+        // ═══ العنوانُ وحدَه إفشاء ═══
+        //
+        // مستوى الإتاحة هو الحارسُ الوحيد بين موظّفي المكتب: لا فحصَ
+        // على مستوى القضية (كلُّ الفريق يصل إلى كلّ قضية بالقصد). فإن
+        // سقط، سقط كلُّ شيء.
+        //
+        // وثلاثةُ مسارات كانت تحمّل المستنداتِ بلا visibleTo بينما
+        // تطبّقه cases.show وملفُّ القضية. والمُسرَّبُ ليس الملفَّ بل
+        // عنوانَه — و«طلب طلاق» أو «تقرير طبّي» في قضيةِ زميلٍ يكفي
+        // وحدَه: يُعرَف الموضوعُ من الاسم بلا فتح.
+        $case->load([
+            'activities.user', 'sessions', 'tasks',
+            'documents' => fn ($q) => $q->visibleTo(auth()->user()),
+        ]);
 
         $events = collect();
 

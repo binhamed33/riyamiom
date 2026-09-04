@@ -22,13 +22,23 @@ class DashboardTest extends TestCase
         $response->assertSee(__('app.page_dashboard'));
     }
 
-    public function test_dashboard_renders_for_client_role()
+    /**
+     * والموكّلُ يُصرَف إلى صفحاته — لا تُخدَم له لوحةُ المكتب.
+     *
+     * كان الاختبارُ يشترط ٢٠٠، فوثّق العطبَ لا الصواب: كلُّ استعلامات
+     * اللوحة مقيَّدةٌ بـ«when($isLawyer)» وحدَها، فتعمل على المكتب
+     * كلِّه لكلّ دورٍ آخر. فكان حسابُ موكّلٍ يقرأ في صفحته الأولى
+     * أسماءَ موكّلين آخرين وأرقامَ هواتفهم وعناوينَ قضاياهم.
+     *
+     * والصرفُ لا المنع: ‎/ يحوّل إلى /dashboard لكلّ أحد، فردُّ ٤٠٣
+     * يكسر دخولَ الموكّل.
+     */
+    public function test_dashboard_sends_a_client_to_their_own_pages()
     {
         $client = User::factory()->create(['role' => 'client', 'is_active' => true]);
 
-        $response = $this->actingAs($client)->get('/dashboard');
-
-        $response->assertStatus(200);
+        $this->actingAs($client)->get('/dashboard')
+            ->assertRedirect(route('client.cases'));
     }
 
     public function test_dashboard_requires_auth()

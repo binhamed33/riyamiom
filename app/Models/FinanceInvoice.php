@@ -65,4 +65,33 @@ class FinanceInvoice extends Model
     {
         return max(0, $this->amount - $this->paid_amount);
     }
+
+    /**
+     * الفواتيرُ التي يحقّ لهذا المستخدم رؤيتُها.
+     *
+     * ═══ لماذا صارت على النموذج ═══
+     *
+     * القاعدةُ كانت مكتوبةً في FinanceController وحده
+     * ‏(!isAdmin ⇐ user_id = self)، ومنسيّةً في موضعين يعرضان الفواتير
+     * نفسَها: موجزُ لوحة التحكّم (DashboardController) وقائمةُ ما
+     * يحتاج انتباهاً (AttentionService). فكان الموظّفُ يُمنع من
+     * ‏/finance/invoices/{id} ويقرأ رقمَ الفاتورة نفسِها واسمَ موكّلها
+     * والمبلغَ الباقي في صفحته الأولى — بل والرابطُ إليها معروضٌ وهو
+     * يردّه ٣٠٢.
+     *
+     * فقاعدةٌ واحدةٌ في موضعٍ واحد: من نسيها في مسارٍ رابعٍ يُنسى
+     * معه كلُّ شيء، ومن استعملها أصابَ بلا أن يعرف تفاصيلها.
+     */
+    public function scopeVisibleTo($query, ?\App\Models\User $user)
+    {
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (in_array($user->role, ['developer', 'admin'], true)) {
+            return $query;
+        }
+
+        return $query->where('user_id', $user->id);
+    }
 }

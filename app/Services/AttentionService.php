@@ -98,6 +98,7 @@ class AttentionService
 
         // 4. Unpaid invoices (due soon or overdue)
         FinanceInvoice::with('client')
+            ->visibleTo($user)
             ->where('status', '!=', 'paid')
             ->where(function ($q) use ($now) {
                 $q->where('due_date', '<=', $now->copy()->addDays(7));

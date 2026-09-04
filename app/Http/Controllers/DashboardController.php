@@ -22,6 +22,29 @@ class DashboardController extends Controller
         $startOfMonth = $now->copy()->startOfMonth();
         $lastMonth = $now->copy()->subMonth();
         $user = auth()->user();
+
+        /*
+         * ═══ الموكّلُ جهةٌ من خارج المكتب ═══
+         *
+         * ‏RoleMiddleware يقولها صراحةً: «دورُ الموكّل ليس درجةً أدنى
+         * في السلّم بل جهةٌ من خارج المكتب». ومسارُ ‎/dashboard كان بلا
+         * حارس دورٍ إطلاقاً، وكلُّ استعلاماته مقيَّدةٌ بـ
+         * ‏«when($isLawyer)» وحدَها — أي أنّها تعمل على المكتب كلِّه
+         * لكلّ دورٍ آخر، والموكّلُ منهم.
+         *
+         * فحسابُ موكّلٍ يفتح صفحتَه الأولى فيقرأ: أسماءَ موكّلين
+         * آخرين وأرقامَ هواتفهم، وعناوينَ قضاياهم وأرقامَها، وجلساتِهم
+         * وقاعاتِها ومواعيدَها، ومهامَّ متأخّرةً بأسماء محاميها،
+         * وعناوينَ مستنداتٍ ليست له. ثمّ يعيدها كلَّ يومٍ فيبني دفترَ
+         * موكّلي المكتب كلَّه.
+         *
+         * ولا يكفي أن تُرشَّح الاستعلامات: الصفحةُ كلُّها ليست له.
+         * فيُصرَف إلى صفحاته هو.
+         */
+        if ($user?->isClient()) {
+            return redirect()->route('client.cases');
+        }
+
         $isLawyer = $user && $user->isLawyer();
 
         $caseBase = LegalCase::query()
@@ -31,7 +54,10 @@ class DashboardController extends Controller
             ->when($isLawyer, fn ($q) => $q->where('assigned_to', $user->id));
         $sessionBase = Session::query()
             ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)));
+        // ونافذةُ «أحدث المستندات» في الصفحة الأولى: تُفتح اللوحةُ
+        // فيُقرأ عنوانُ آخر مستندٍ رفعه زميلٌ ولو كان خاصّاً به
         $documentBase = Document::query()
+            ->visibleTo($user)
             ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)));
 
         // ═══ لماذا سقط الكاش عن الأعداد ═══
@@ -311,7 +337,10 @@ class DashboardController extends Controller
                 ]);
             });
 
+            // الموجزُ كان يعرض فواتيرَ غيره: رقمَها واسمَ موكّلها
+            // والمبلغَ الباقي — والرابطُ إليها معروضٌ وهو يردّه ٣٠٢
             $dueInvoices = \App\Models\FinanceInvoice::with('client')
+                ->visibleTo($user)
                 ->where('status', '!=', 'paid')
                 ->where(function ($q) use ($now) {
                     $q->whereNull('due_date')->orWhere('due_date', '<=', $now->copy()->addDays(7));

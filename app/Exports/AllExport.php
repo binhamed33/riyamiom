@@ -59,11 +59,7 @@ class SummarySheet implements FromArray, WithHeadings, ShouldAutoSize, WithEvent
         $totalTasks = Task::count();
         $pendingTasks = Task::where('status', 'pending')->count();
         $totalSessions = Session::count();
-        $income = FinanceTransaction::where('type', 'income')->sum('amount');
-        $expense = FinanceTransaction::where('type', 'expense')->sum('amount');
-        $unpaidInvoices = FinanceInvoice::whereIn('status', ['unpaid', 'partial'])->count();
-
-        return [
+        $rows = [
             ['', ''],
             ['ملخص إحصائي', ''],
             ['', ''],
@@ -76,11 +72,35 @@ class SummarySheet implements FromArray, WithHeadings, ShouldAutoSize, WithEvent
             ['إجمالي المهام', $totalTasks],
             ['  المهام المعلقة', $pendingTasks],
             ['إجمالي الجلسات', $totalSessions],
-            ['إجمالي الدخل', number_format($income, 2) . ' ر.ع'],
-            ['إجمالي المصروفات', number_format($expense, 2) . ' ر.ع'],
-            ['الرصيد', number_format($income - $expense, 2) . ' ر.ع'],
-            ['الفواتير غير المسددة', $unpaidInvoices],
         ];
+
+        /*
+         * ═══ بابٌ خلفيٌّ على ماليّة المكتب ═══
+         *
+         * ‏FinanceController يقصر مجاميعَ المكتب على developer وadmin
+         * عن قصد (‎isAdmin() ثمّ «if ($isFinAdmin)» على كتلة الإحصاء).
+         * وهذه الورقةُ تعيد حسابَ الأرقام نفسِها بلا حارسٍ إطلاقاً،
+         * و‎$user يُستقبَل في الباني ولا يُسأل عنه بعد ذلك — والمسارُ
+         * مفتوحٌ لـlawyer وstaff.
+         *
+         * فموظّفٌ لا يرى ريالاً في صفحة الماليّة يفتح ‎/export/all
+         * فيقرأ في الورقة الأولى: إجمالي الدخل، وإجمالي المصروفات،
+         * والرصيد، وعددَ الفواتير غير المسدَّدة. كلُّ مالِ المكتب في
+         * نقرة.
+         *
+         * فالحارسُ هو حارسُ الماليّة نفسُه — لا نسخةٌ منه تتباعد عنه.
+         */
+        if (in_array($this->user->role ?? null, ['developer', 'admin'], true)) {
+            $income = FinanceTransaction::where('type', 'income')->sum('amount');
+            $expense = FinanceTransaction::where('type', 'expense')->sum('amount');
+
+            $rows[] = ['إجمالي الدخل', number_format($income, 2) . ' ر.ع'];
+            $rows[] = ['إجمالي المصروفات', number_format($expense, 2) . ' ر.ع'];
+            $rows[] = ['الرصيد', number_format($income - $expense, 2) . ' ر.ع'];
+            $rows[] = ['الفواتير غير المسددة', FinanceInvoice::whereIn('status', ['unpaid', 'partial'])->count()];
+        }
+
+        return $rows;
     }
 
     public function headings(): array

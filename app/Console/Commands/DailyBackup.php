@@ -52,7 +52,9 @@ class DailyBackup extends Command
         }
 
         // MySQL dump
-        $sqlFile = tempnam(sys_get_temp_dir(), 'backup') . '.sql';
+        // كلَّ ليلةٍ في الثانية عشرة، 0644 في /tmp المشترك — انظر
+        // PrivateTempFile
+        $sqlFile = \App\Support\PrivateTempFile::create('backup-', '.sql');
         $host = config('database.connections.mysql.host');
         $port = config('database.connections.mysql.port');
         $db = config('database.connections.mysql.database');

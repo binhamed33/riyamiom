@@ -48,7 +48,19 @@ class RestoreGuard
         '/\bLOAD\s+DATA\b/i' => 'LOAD DATA',
         '/\bINTO\s+(OUTFILE|DUMPFILE)\b/i' => 'INTO OUTFILE',
         '/\bLOAD_FILE\s*\(/i' => 'LOAD_FILE',
-        '/\bCREATE\s+(DEFINER\s*=\s*\S+\s+)?(PROCEDURE|FUNCTION|EVENT)\b/i' => 'CREATE PROCEDURE/FUNCTION/EVENT',
+        /*
+         * ═══ ‏TRIGGER كان ينقض الحارسَ الذي بعده ═══
+         *
+         * ‏reassertRoles تعيد الدورَ بعد الاستعادة — و
+         * ‏«CREATE TRIGGER … BEFORE UPDATE ON users SET NEW.role='developer'»
+         * يجعل تلك الإعادةَ نفسَها تكتب «developer» من جديد. أي أنّ
+         * الملفَّ يُبطل الحارسَ الذي كُتب ليردّه.
+         * وVIEW مثلُها: تُبدَّل «users» بمنظورٍ يخفي أو يزوّر.
+         */
+        '/\bCREATE\s+(OR\s+REPLACE\s+)?(DEFINER\s*=\s*\S+\s+)?(SQL\s+SECURITY\s+\w+\s+)?(PROCEDURE|FUNCTION|EVENT|TRIGGER|VIEW)\b/i' => 'CREATE PROCEDURE/FUNCTION/EVENT/TRIGGER/VIEW',
+        '/\bDEFINER\s*=/i' => 'DEFINER',
+        '/\bDROP\s+DATABASE\b/i' => 'DROP DATABASE',
+        '/\bRENAME\s+TABLE\b/i' => 'RENAME TABLE',
         '/\bINSTALL\s+(PLUGIN|COMPONENT)\b/i' => 'INSTALL PLUGIN',
         '/^\s*(system|\\\\!)\s/im' => 'system',
         // تصديرُ النظام يخرج بلا USE (mysqldump على قاعدةٍ واحدة بلا
@@ -120,6 +132,69 @@ class RestoreGuard
             }
 
             User::query()->whereKey($user->id)->update(['role' => $was ?? 'admin']);
+            $fixed++;
+        }
+
+        return $fixed;
+    }
+
+    /**
+     * اعتمادُ حسابات المطوّرين — لا الدورُ وحده.
+     *
+     * ═══ الثغرةُ التي تركها حارسُ الأدوار مفتوحة ═══
+     *
+     * ‏reassertRoles تفحص من صار «developer» ولم يكن. وهي لا تنظر إلى
+     * من كان مطوّراً وبقي — فسطرٌ في الملفّ:
+     *
+     *     UPDATE users SET email='me@evil.tld',
+     *            password='<تجزئةُ المهاجم>' WHERE role='developer';
+     *
+     * يترك الدورَ كما هو تماماً، فلا تلمسه reassertRoles، ويصير
+     * حسابُ المطوّر بيد رافع النسخة. ووعدُ الحارس المكتوب — «مهما
+     * كُتب في الملفّ، الدورُ يعود» — يصدق حرفياً ويخيب معنى.
+     *
+     * فتُلتقط تجزئةُ الكلمة والبريدُ ورمزُ التذكّر قبل الاستعادة،
+     * ويُعادون بعدها. ومن غيّرها في الملفّ لم يغيّر شيئاً.
+     *
+     * @return array<int, array{email: string, password: string, remember_token: ?string}>
+     */
+    public static function snapshotDeveloperCredentials(): array
+    {
+        return User::query()
+            ->where('role', 'developer')
+            ->get(['id', 'email', 'password', 'remember_token'])
+            ->mapWithKeys(fn ($u) => [$u->id => [
+                'email' => $u->email,
+                'password' => $u->password,
+                'remember_token' => $u->remember_token,
+            ]])
+            ->all();
+    }
+
+    /**
+     * @param  array<int, array{email: string, password: string, remember_token: ?string}>  $before
+     * @return int عددُ الحسابات التي أُعيد اعتمادُها
+     */
+    public static function reassertDeveloperCredentials(array $before): int
+    {
+        $fixed = 0;
+
+        foreach ($before as $id => $creds) {
+            $now = User::query()->whereKey($id)->first(['id', 'email', 'password']);
+
+            if (!$now) {
+                continue;
+            }
+
+            if ($now->email === $creds['email'] && $now->password === $creds['password']) {
+                continue;
+            }
+
+            User::query()->whereKey($id)->update([
+                'email' => $creds['email'],
+                'password' => $creds['password'],
+                'remember_token' => $creds['remember_token'],
+            ]);
             $fixed++;
         }
 

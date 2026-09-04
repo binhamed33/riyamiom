@@ -79,14 +79,34 @@ class CommandPaletteTest extends TestCase
         $this->assertContains('new_task', $keys);
     }
 
-    public function test_client_role_gets_no_internal_results()
+    /**
+     * حسابُ الموكّل لا يبلغ لوحَ الأوامر أصلاً.
+     *
+     * ═══ ما كان يشترطه هذا الاختبار ═══
+     *
+     * كان يشترط ٢٠٠ مع غياب مجموعة «case» — أي أنّه صدّق أنّ اللوحَ
+     * يرشّح بالدور. وهو لا يرشّح: مجموعاتُ «الأحدث» (recentGroups)
+     * تُبنى بلا فحص دورٍ إطلاقاً وتُستدعى لكلّ استعلامٍ أقصرَ من
+     * حرفين، وكتلةُ CaseActivity خارج حارس $canFull. فكان حسابُ
+     * موكّلٍ يطلب ‎/command فيعود إليه JSON فيه أسماءُ موكّلين آخرين
+     * وعناوينُ قضاياهم وأرقامُها وقاعاتُ جلساتهم.
+     *
+     * والاختبارُ لم يمسك ذلك لأنّه سأل عن مجموعةٍ واحدةٍ في ردٍّ
+     * واحد، لا عن السرّ نفسِه في الردّ كلِّه.
+     *
+     * فالعقدُ الآن أصرح: الموكّلُ جهةٌ من خارج المكتب، فلا يبلغ
+     * اللوحَ بحال.
+     */
+    public function test_client_role_cannot_reach_the_palette_at_all()
     {
         $client = User::factory()->create(['role' => 'client', 'is_active' => true]);
         LegalCase::factory()->create(['title' => 'قضية سرية', 'status' => 'active']);
 
-        $response = $this->actingAs($client)->get('/command?q=قضية');
+        foreach (['/command?q=قضية', '/command?q='] as $url) {
+            $response = $this->actingAs($client)->get($url);
 
-        $response->assertStatus(200);
-        $this->assertArrayNotHasKey('case', $response->json('groups'));
+            $this->assertContains($response->getStatusCode(), [403, 302], $url . ' — بلغه الموكّل');
+            $this->assertStringNotContainsString('قضية سرية', $response->getContent());
+        }
     }
 }

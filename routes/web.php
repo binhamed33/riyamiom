@@ -270,15 +270,27 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         return response()->json($results->take(15)->values());
     })->name('search');
 
-    // Command Palette - unified search + actions
-    Route::get('/command', App\Http\Controllers\CommandController::class)->name('command');
+    // ═══ لوحُ الأوامر لفريق المكتب وحدَه ═══
+    //
+    // كان بلا حارس دور، واستعلاماتُه مقيَّدةٌ بـ«when($isLawyer)»
+    // وحدَها. فحسابُ موكّلٍ يطلب ‎GET /command فيعود إليه JSON فيه
+    // أسماءُ موكّلين آخرين وعناوينُ قضاياهم وأرقامُها وقاعاتُ جلساتهم
+    // — بلا واجهةٍ ولا حيلة، طلبٌ واحد.
+    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+        Route::get('/command', App\Http\Controllers\CommandController::class)->name('command');
+    });
 
     // Natural Language → Actions (Speech-to-Action)
-    Route::post('/nl/actions/parse', [App\Http\Controllers\NaturalActionController::class, 'parse'])->name('nl.parse');
-    Route::post('/nl/actions/confirm', [App\Http\Controllers\NaturalActionController::class, 'confirm'])->name('nl.confirm');
+    // وأوامرُ اللغة الطبيعيّة تُنشئ وتُعدّل في بيانات المكتب — فهي
+    // للفريق قطعاً لا لجهةٍ من خارجه
+    Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
+        Route::post('/nl/actions/parse', [App\Http\Controllers\NaturalActionController::class, 'parse'])->name('nl.parse');
+        Route::post('/nl/actions/confirm', [App\Http\Controllers\NaturalActionController::class, 'confirm'])->name('nl.confirm');
+    });
 
     // Sync - lightweight polling endpoint for real-time updates
-    Route::get('/sync', function () {
+    // ونبضُ التغيير إشارةٌ داخليّة عن جداول المكتب — لا تخرج إليه
+    Route::middleware('role:developer,admin,lawyer,staff')->get('/sync', function () {
         $tables = ['cases', 'tasks', 'sessions', 'clients', 'notifications'];
         $max = null;
         foreach ($tables as $table) {

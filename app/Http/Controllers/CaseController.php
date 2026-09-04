@@ -660,6 +660,31 @@ class CaseController extends Controller
             'lawyer_id'           => 'nullable|exists:users,id',
         ]);
 
+        /*
+         * ═══ حقلٌ يكتبه المستفيدُ منه ليس صلاحيّة ═══
+         *
+         * ‏cases.lawyer_id هو مفتاحُ صلاحيّة المال: FinanceController
+         * يعرض الرسومَ لمن كان محاميَ قضيتها (‎:42، :51، :268)، وصفحةُ
+         * القضية تفتح فواتيرَها ورسومَها لمن كان محاميَها (‎:433).
+         *
+         * وكان الحقلُ حرّاً على PUT /cases/{case} لكلّ من يصل إلى
+         * التعديل — والوصولُ إلى كلّ قضيةٍ مفتوحٌ للفريق بالقصد
+         * ‏(authorizeCaseAccess لا تفعل شيئاً). فموظّفٌ يُرفض عند
+         * ‏/finance/fees/{id}:
+         *
+         *   PUT /cases/7   lawyer_id=<نفسه>
+         *   GET /finance/fees/{id}   ⇐ 200
+         *
+         * فيصير محاميَ القضية بطلبٍ واحد، وتُفتح له رسومُها
+         * وفواتيرُها. ونموذجُ الإنشاء يعطّل الحقلَ لغير المديرين
+         * أصلاً — أي أنّ الواجهةَ تعرف القاعدةَ والخادمُ لا يفرضها.
+         *
+         * فالإسنادُ للمديرين وحدَهم، ومن سواهم يبقى الحقلُ على ما هو.
+         */
+        if (!in_array(auth()->user()->role, ['developer', 'admin'], true)) {
+            $validated['lawyer_id'] = $case->lawyer_id;
+        }
+
         if (empty($validated['title'])) {
             $validated['title'] = $case->title;
         }
@@ -788,7 +813,14 @@ class CaseController extends Controller
     public function summarize(LegalCase $case): JsonResponse
     {
         $this->authorizeCaseAccess($case);
-        $case->load(['client', 'lawyer', 'sessions', 'tasks', 'documents']);
+
+        // العددُ يُرشَّح كما تُرشَّح القائمة. وإلّا اختلفا: تعرض
+        // الصفحةُ ثلاثةً ويقول الملخّصُ خمسة — فيُعرَف وجودُ اثنين
+        // خاصَّين بغيره. وهو إفشاءٌ صغير، لكنّه أيضاً تناقضٌ يربك.
+        $case->load([
+            'client', 'lawyer', 'sessions', 'tasks',
+            'documents' => fn ($q) => $q->visibleTo(auth()->user()),
+        ]);
 
         return response()->json([
             'id'           => $case->id,

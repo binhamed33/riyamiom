@@ -23,6 +23,15 @@ class SecurityHeaders
         $response->headers->set('X-XSS-Protection', '1; mode=block');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+        /*
+         * ولا يُفهرَس شيءٌ من نظام المكتب.
+         *
+         * ‏robots.txt طلبٌ يُطاع أو لا يُطاع، ولا يمنع فهرسةَ صفحةٍ
+         * وصلها الزاحفُ من رابطٍ خارجيّ. والترويسةُ أمرٌ لا طلب:
+         * صفحةٌ تحملها لا تدخل الفهرس ولو زُحف إليها.
+         */
+        $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
         $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
         $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
 

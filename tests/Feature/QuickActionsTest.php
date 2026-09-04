@@ -82,7 +82,13 @@ class QuickActionsTest extends TestCase
         ]);
         \App\Models\Session::factory()->create(['case_id' => $case->id, 'location' => 'محكمة الرستاق']);
         \App\Models\Task::factory()->create(['case_id' => $case->id, 'title' => 'مهمة الرد', 'assigned_to' => $developer->id]);
-        \App\Models\Document::factory()->create(['case_id' => $case->id, 'title' => 'عقد الوكالة']);
+        // مستوى الإتاحة صريحٌ لا عشوائيّ: مصنعُ المستندات يختار من
+        // ‏['all','team','private'] بالقرعة، ورافعُه مستخدمٌ آخر. فمنذ
+        // صار الخطُّ الزمنيّ يرشّح بـvisibleTo — وهو ما يجب — صار هذا
+        // الاختبارُ يسقط في ثلث التشغيلات لا لعطبٍ بل لقرعة.
+        \App\Models\Document::factory()->create([
+            'case_id' => $case->id, 'title' => 'عقد الوكالة', 'access_level' => 'all',
+        ]);
 
         $response = $this->actingAs($developer)->get('/cases/' . $case->id . '/timeline');
 
