@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\ClientPortalAttempt;
 use App\Support\GulfPhone;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
@@ -56,6 +57,15 @@ class ClientAuthenticator
      * الألف — يلزمه خمسون ساعةً بدل ساعتين.
      */
     private const CLIENT_LIMIT = 20;
+
+    /** كم نفادَ ميزانيّةٍ قبل الإغلاق الكامل لباب الهويّة */
+    private const LOCK_ROUNDS = 3;
+
+    /** مدّةُ الإغلاق — يومٌ كامل */
+    private const LOCK_SECONDS = 86400;
+
+    /** وعمرُ العدّ التراكميّ: أسبوعٌ، فلا يُنسى بين موجةٍ وأخرى */
+    private const LOCK_MEMORY = 604800;
     private const CLIENT_DECAY = 3600;     // ساعة
 
     public const SESSION_CHALLENGE = 'client_portal_challenge';
@@ -166,8 +176,44 @@ class ClientAuthenticator
         $clientKey = 'client-portal:verify-client:'
             . ($challenge['client_id'] ?? 'decoy-' . substr((string) ($challenge['decoy_for'] ?? 'x'), 0, 32));
 
+        /*
+         * ═══ عشرُ بتّاتٍ لا تُحمى بميزانيّةٍ تتجدّد ═══
+         *
+         * السرُّ آخرُ ثلاثةِ أرقامٍ من الهاتف — ألفُ احتمالٍ لا غير.
+         * والسقفُ الوحيدُ المستقلُّ عن العنوان كان عشرين محاولةً في
+         * الساعة، **تتجدّد** لا تُقفل. فمن دار على عناوينَ قليلة:
+         * عشرون في الساعة × ألفُ احتمال ⇐ خمسٌ وعشرون ساعةً وسطياً،
+         * وخمسون في أسوأ الحالات. ثمّ ملفُّ الموكّل كلُّه: قضاياه
+         * وجلساتُه ومستنداتُه وفواتيرُه.
+         *
+         * وسقفُ التحدّي الواحد (خمس) يُجدَّد بالعودة إلى الخطوة الأولى.
+         *
+         * فالعدُّ صار تراكمياً على الموكّل بعمرٍ طويل: من بلغ الحدَّ
+         * الأقصى أُغلق بابُ الهويّة عليه يوماً كاملاً — ويبقى بابُ
+         * رمز واتساب مفتوحاً لصاحب الحقّ. وموكّلٌ حقيقيٌّ يعرف
+         * أرقامَه لا يبلغ عشراً أبداً.
+         */
+        $lockKey = str_replace('verify-client:', 'verify-lock:', $clientKey);
+
+        if (Cache::get($lockKey . ':until', 0) > now()->timestamp) {
+            $request->session()->forget(self::SESSION_CHALLENGE);
+
+            return $this->failed(
+                locked: true,
+                retryAfter: (int) Cache::get($lockKey . ':until', 0) - now()->timestamp,
+            );
+        }
+
         if (RateLimiter::tooManyAttempts($clientKey, self::CLIENT_LIMIT)) {
             $request->session()->forget(self::SESSION_CHALLENGE);
+
+            // كلُّ نفادٍ للميزانية يزيد العدَّ التراكميّ
+            $rounds = (int) Cache::increment($lockKey . ':rounds');
+            Cache::put($lockKey . ':rounds', $rounds, self::LOCK_MEMORY);
+
+            if ($rounds >= self::LOCK_ROUNDS) {
+                Cache::put($lockKey . ':until', now()->timestamp + self::LOCK_SECONDS, self::LOCK_SECONDS);
+            }
 
             return $this->failed(locked: true, retryAfter: RateLimiter::availableIn($clientKey));
         }
@@ -411,7 +457,25 @@ class ClientAuthenticator
     private static function decoyHint(string $seed): string
     {
         $digits = preg_replace('/\D+/', '', hash('sha256', 'portal-decoy:' . $seed)) ?: '92000000';
-        $prefix = substr(str_pad($digits, 4, '0'), 0, 4);
+        $digits = str_pad($digits, 8, '0');
+
+        /*
+         * ═══ أوّلُ رقمٍ كان يفضح الشكليَّ ═══
+         *
+         * أرقامُ الهواتف العُمانيّة المحمولة تبدأ بـ٩ أو ٧ لا غير.
+         * وكان أوّلُ رقمٍ في التلميح الشكليّ يُؤخذ من بصمةٍ موزّعةٍ
+         * على العشرة بالتساوي — فسبعُ مرّاتٍ من عشرٍ يخرج رقمٌ لا
+         * يبدأ به رقمٌ عُمانيّ قطّ.
+         *
+         * فمن أراد أن يعرف: أهذا الشخصُ موكّلٌ لهذا المكتب؟ — وهي
+         * علاقةٌ سرّيّةٌ بذاتها — أدخل هويّتَه ونظر إلى أوّل رقم.
+         * لا يبدأ بـ٧ أو ٩ ⇐ ليس موكّلاً، قطعاً.
+         *
+         * فصار الشكليُّ يبدأ بما يبدأ به الحقيقيّ، بالتوزيع نفسِه
+         * تقريباً (٩ أغلبُ من ٧)، ومشتقّاً من البصمة فيثبت لصاحبه.
+         */
+        $first = ((int) $digits[0] % 5 === 0) ? '7' : '9';
+        $prefix = $first . substr($digits, 1, 3);
 
         return $prefix . str_repeat('•', 4);
     }
