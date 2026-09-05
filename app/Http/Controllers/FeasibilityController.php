@@ -12,6 +12,27 @@ use Illuminate\View\View;
 class FeasibilityController extends Controller
 {
     /**
+     * قوّةُ الشدّ نحو المتوسّط: عيّنةٌ من n محاولةٍ تحتفظ بوزن
+     * ‏n/(n+5) من نسبتها. فمقامٌ واحد يقترب من المتوسّط، وثمانيةٌ
+     * وخمسون يبقى على نسبته.
+     */
+    private const SHRINK = 5.0;
+
+    /**
+     * وزنُ الحِمل — أثقلُ مكوّنٍ عن قصد.
+     *
+     * التقييمُ يقيس «كم عملتَ» أوّلاً ثمّ «كيف»، لا العكس. والصيغةُ
+     * القديمة كانت نسباً خالصةً بلا حِملٍ إطلاقاً، فمن لا عمل له تبقى
+     * نسبُه نظيفةً ويعلو على من يحمل المكتب.
+     */
+    private const WORKLOAD_WEIGHT = 0.35;
+
+    /** كلُّ مهمّةٍ متأخّرةٍ نقطةٌ من الكفاءة، بسقفٍ لا يُلغي التقييم */
+    private const OVERDUE_WEIGHT = 1.0;
+
+    private const OVERDUE_CAP = 10.0;
+
+    /**
      * هدف الإنتاجية: مهمّتان مكتملتان في اليوم = 100%.
      * رقمٌ معلن يُشرح للمستخدم بدل معامل مخفيّ في الشيفرة.
      */
@@ -117,7 +138,73 @@ class FeasibilityController extends Controller
 
         $users = User::whereIn('id', $userIds)->get();
 
-        $efficiencyData = $users->map(function (User $user) use ($stats) {
+        /*
+         * ═══ ثلاثةُ أعطابٍ اجتمعت فرفعت من لا عمل له إلى القمّة ═══
+         *
+         * الصيغةُ كانت نسباً خالصة:
+         *   (نجاح×0.35) + (إنجاز×0.25) + (التزام×0.25) + (إنتاجية×0.15)
+         *
+         * ١) **مقامٌ صفرٌ يُحسب رسوباً.** موظّفةٌ لم يُفصَل في أيّ قضيةٍ
+         *    لها بعدُ تأخذ «معدّل نجاح 0%» — كمن خسر كلَّ قضاياه. وهي
+         *    لم تخسر شيئاً؛ لم يُقَس بعد.
+         *
+         * ٢) **مقامٌ واحدٌ يُعطي مئةً بالمئة.** مهمّةٌ واحدةٌ أُنجزت في
+         *    موعدها = 100% إنجاز و100% التزام = خمسون نقطةً من مئة.
+         *    ومن يحمل ثمانيَ وخمسين قضيّةً وأنجز واحدةً من ثلاثَ عشرةَ
+         *    مهمّة يأخذ 7.7%. فالعملُ الكثيرُ يُعاقَب لأنّ مقامَه كبير.
+         *
+         * ٣) **الحِملُ لا يدخل الحساب إطلاقاً.** لا عددُ القضايا ولا
+         *    الجلساتُ في الصيغة. فمن لا عمل له تبقى نسبُه نظيفةً
+         *    ويعلو. والمتأخّراتُ لا تكلّف شيئاً: اثنتا عشرةَ مهمّةً
+         *    متأخّرةً وزنُها صفر.
+         *
+         * ═══ العلاج ═══
+         *
+         * النسبةُ تُشَدّ نحو متوسّط المكتب بقدر ضعف عيّنتها — وهو
+         * تقديرٌ بايزيّ قياسيّ (تنعيم لابلاس): من عنده مقامٌ واحد
+         * يقترب من المتوسّط، ومن عنده ثمانٍ وخمسون يحتفظ بنسبته
+         * كاملةً تقريباً. ومن لا مقام له يأخذ المتوسّطَ نفسَه — لا
+         * صفراً ولا مئة، فهو غيرُ مقيسٍ لا فاشل.
+         *
+         * ويدخل الحِملُ بوزنٍ حقيقيّ، وتُخصَم المتأخّرات.
+         */
+        $pooled = function (string $hits, string $trials) use ($stats): float {
+            $h = 0;
+            $t = 0;
+            foreach ($stats as $row) {
+                $h += (int) ($row[$hits] ?? 0);
+                $t += (int) ($row[$trials] ?? 0);
+            }
+
+            return $t > 0 ? $h / $t : 0.5;
+        };
+
+        // متوسّطاتُ المكتب المجمّعة — هي «الظنُّ المسبق» لمن لا عيّنةَ له
+        $priorSuccess = (function () use ($stats) {
+            $won = 0;
+            $decided = 0;
+            foreach ($stats as $row) {
+                $won += (int) ($row['wonCases'] ?? 0);
+                $decided += (int) ($row['wonCases'] ?? 0) + (int) ($row['lostCases'] ?? 0);
+            }
+
+            return $decided > 0 ? $won / $decided : 0.5;
+        })();
+        $priorTasks = $pooled('completedTasks', 'totalTasks');
+        $priorDeadline = $pooled('completedOnTime', 'tasksWithDue');
+
+        // وأثقلُ حِملٍ في المكتب هو مقياسُ الحِمل
+        $maxLoad = 0.0;
+        foreach ($stats as $row) {
+            $load = (int) ($row['totalCases'] ?? 0)
+                + 0.5 * (int) ($row['totalSessions'] ?? 0)
+                + 0.5 * (int) ($row['completedTasks'] ?? 0);
+            $maxLoad = max($maxLoad, $load);
+        }
+
+        $efficiencyData = $users->map(function (User $user) use (
+            $stats, $priorSuccess, $priorTasks, $priorDeadline, $maxLoad
+        ) {
             $s = $stats[$user->id] ?? [];
 
             $totalDecided = ($s['wonCases'] ?? 0) + ($s['lostCases'] ?? 0);
@@ -149,13 +236,77 @@ class FeasibilityController extends Controller
             $productivity = $tasksPerDay;
             $productivityScore = min(100, round(($tasksPerDay / self::PRODUCTIVITY_TARGET) * 100, 1));
 
-            $overall = ($successRate * 0.35)
-                + ($taskCompletion * 0.25)
-                + ($deadlineCompliance * 0.25)
-                + ($productivityScore * 0.15);
+            // النسبةُ المعدَّلة: نسبتُه بوزن عيّنته، والمتوسّطُ بوزن ثابت
+            $shrunk = fn (int $hits, int $trials, float $prior): float
+                => (($hits + self::SHRINK * $prior) / ($trials + self::SHRINK)) * 100;
 
-            // الكفاءة نسبة: تبقى بين صفر ومئة مهما بلغت مكوّناتها
-            $overall = max(0, min(100, $overall));
+            $adjSuccess = $shrunk((int) ($s['wonCases'] ?? 0), (int) $totalDecided, $priorSuccess);
+            $adjTasks = $shrunk((int) $completedTasks, (int) $totalTasks, $priorTasks);
+            $adjDeadline = $shrunk((int) $completedOnTime, (int) $tasksWithDue, $priorDeadline);
+
+            // الحِمل: قضاياه وجلساتُه ومهامُّه المنجَزة، منسوبةً إلى أثقل
+            // حِملٍ في المكتب. فمن يحمل ثمانيَ وخمسين قضيّةً لا يساوي
+            // من يحمل واحدة.
+            $load = (int) ($s['totalCases'] ?? 0)
+                + 0.5 * (int) ($s['totalSessions'] ?? 0)
+                + 0.5 * (int) $completedTasks;
+            $workload = $maxLoad > 0 ? min(100, ($load / $maxLoad) * 100) : 0.0;
+
+            $overdueTasks = (int) ($s['overdueTasks'] ?? 0);
+
+            /*
+             * ═══ ما لا دليلَ عليه لا يُحسب — لا له ولا عليه ═══
+             *
+             * الشدُّ نحو المتوسّط يقدّر نسبةَ من عيّنتُه صغيرة تقديراً
+             * صحيحاً. لكنّه يعطي من **لا عيّنةَ له أصلاً** متوسّطَ
+             * المكتب كاملاً. ومتوسّطُ النجاح هنا ٧٣٪ وأكثرُ الفريق لم
+             * يُفصَل في قضاياه بعد — فيأخذ كلُّ واحدٍ منهم اثنتين
+             * وعشرين نقطةً مجّاناً، بلا قضيّةٍ فُصل فيها.
+             *
+             * فوزنُ كلّ مكوّنٍ يسقط إذا لم يكن له مقام، ويُعاد توزيعُه
+             * على ما بقي. فمن لم يُفصَل في قضاياه لا يُحاسَب على النجاح
+             * ولا يُكافأ به — يُقاس بما يملك دليلاً عليه وحدَه.
+             *
+             * والحِملُ والإنتاجيّةُ لهما دليلٌ دائماً: صفرُ قضايا صفرٌ
+             * حقيقيّ لا مجهول.
+             */
+            $parts = [
+                [$adjSuccess, 0.25, $totalDecided > 0],
+                [$adjTasks, 0.15, $totalTasks > 0],
+                [$adjDeadline, 0.15, $tasksWithDue > 0],
+                [$productivityScore, 0.10, true],
+            ];
+
+            $sum = 0.0;
+            $toWorkload = self::WORKLOAD_WEIGHT;
+
+            foreach ($parts as [$value, $w, $hasEvidence]) {
+                if ($hasEvidence) {
+                    $sum += $value * $w;
+                } else {
+                    // وزنُ ما لا دليلَ عليه يذهب إلى الحِمل لا إلى بقيّة
+                    // النسب: توزيعُه عليها يضخّم الدليلَ الوحيد الباقي.
+                    // فمن له قضيّتان ربح إحداهما ولا مهامَّ له كان يأخذ
+                    // نصفَ الدرجة من رقمٍ واحد — ويسبق من يحمل ثمانياً
+                    // وخمسين قضيّة.
+                    $toWorkload += $w;
+                }
+            }
+
+            $overall = $sum
+                + ($workload * $toWorkload)
+                - min(self::OVERDUE_CAP, $overdueTasks * self::OVERDUE_WEIGHT);
+
+            /*
+             * ومن لا بيانات له لا يُقيَّم.
+             *
+             * حسابٌ بلا قضيّةٍ ولا مهمّةٍ ولا جلسة كان يأخذ رقماً كأيّ
+             * أحد — والرقمُ يوحي بقياسٍ جرى ولم يجرِ. فيُصفَّر ويُعلَّم،
+             * وتقول الشاشةُ «لا بيانات» لا «صفر بالمئة».
+             */
+            $hasData = ($s['totalCases'] ?? 0) > 0 || $totalTasks > 0 || ($s['totalSessions'] ?? 0) > 0;
+
+            $overall = $hasData ? max(0, min(100, $overall)) : 0.0;
 
             return [
                 'user' => $user,
@@ -179,6 +330,16 @@ class FeasibilityController extends Controller
                 'tasks_per_day' => $tasksPerDay,
                 'overall' => round($overall, 1),
                 'active_days' => $activeDays,
+                // ما يُعرض: النسبةُ الخام. وما يُحسب: المعدَّلة. ويُقال
+                // للشاشة أيُّ نسبةٍ بلا مقامٍ أصلاً كي تكتب «—» لا «0%»
+                'has_data' => $hasData,
+                'has_decided' => $totalDecided > 0,
+                'has_tasks' => $totalTasks > 0,
+                'has_due' => $tasksWithDue > 0,
+                'adj_success' => round($adjSuccess, 1),
+                'adj_tasks' => round($adjTasks, 1),
+                'adj_deadline' => round($adjDeadline, 1),
+                'workload' => round($workload, 1),
             ];
         })->sortByDesc('overall')->values();
 

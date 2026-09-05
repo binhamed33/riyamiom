@@ -212,8 +212,8 @@
                                     <tr>
                                         <td class="py-1.5 text-gray-700">{{ $row['user']['name'] ?? '—' }}</td>
                                         <td class="py-1.5 text-gray-600">{{ $row['overall'] }}٪</td>
-                                        <td class="py-1.5 text-gray-600">{{ $row['success_rate'] }}٪</td>
-                                        <td class="py-1.5 text-gray-600">{{ $row['task_completion'] }}٪</td>
+                                        <td class="py-1.5 text-gray-600">{{ ($row['has_decided'] ?? true) ? $row['success_rate'] . '٪' : '—' }}</td>
+                                        <td class="py-1.5 text-gray-600">{{ ($row['has_tasks'] ?? true) ? $row['task_completion'] . '٪' : '—' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -402,9 +402,19 @@
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-gray-700 text-sm">{{ $entry['total_cases'] }}</td>
-                            <td class="px-4 py-3 text-gray-700 text-sm">{{ $entry['success_rate'] }}%</td>
-                            <td class="px-4 py-3 text-gray-700 text-sm">{{ $entry['task_completion'] }}%</td>
-                            <td class="px-4 py-3 text-gray-700 text-sm">{{ $entry['deadline_compliance'] }}%</td>
+                            {{-- «٪٠» لشيءٍ لم يُقَس ليس رقماً بل ادّعاء.
+                                 موظّفةٌ لم يُفصَل في أيّ قضيّةٍ لها بعدُ كانت
+                                 تُعرض بـ«معدّل نجاح ٠٪» — كمن خسر كلَّ قضاياه.
+                                 فالمقامُ الصفرُ يُكتب «—». --}}
+                            <td class="px-4 py-3 text-gray-700 text-sm">
+                                {{ ($entry['has_decided'] ?? true) ? $entry['success_rate'] . '%' : '—' }}
+                            </td>
+                            <td class="px-4 py-3 text-gray-700 text-sm">
+                                {{ ($entry['has_tasks'] ?? true) ? $entry['task_completion'] . '%' : '—' }}
+                            </td>
+                            <td class="px-4 py-3 text-gray-700 text-sm">
+                                {{ ($entry['has_due'] ?? true) ? $entry['deadline_compliance'] . '%' : '—' }}
+                            </td>
                             <td class="px-4 py-3">
                                 @if($entry['overdue_tasks'] > 0)
                                     <span class="text-red-700 text-sm font-medium">{{ $entry['overdue_tasks'] }}</span>
