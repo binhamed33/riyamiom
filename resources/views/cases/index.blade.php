@@ -240,26 +240,49 @@ document.addEventListener('alpine:init', () => {
                 <thead>
                     <tr class="border-b border-gray-200">
                         @php
-                            $sortableCols = ['number', 'court', 'client', 'type', 'lawyer', 'status', 'priority', 'created']; // «الخصم» مشفَّرٌ فلا يُرتَّب
+                            /*
+                             * ═══ «ما يُعرض» غيرُ «ما يُرتَّب» ═══
+                             *
+                             * كانت قائمةٌ واحدةٌ تبني العنوانَ والترتيبَ معاً. ولمّا
+                             * أُسقط «الخصم» منها — لأنّه مشفَّرٌ في القاعدة فترتيبُه
+                             * يرتّب النصَّ المعمَّى لا الاسم — سقط **عنوانُه** أيضاً،
+                             * وبقيت خليّتُه في الجسد.
+                             *
+                             * فصار في الرأس تسعةُ عناوينَ وفي الصفّ عشرُ خلايا: كلُّ
+                             * عنوانٍ بعد «الموكّل» يقف فوق عمودٍ ليس له. فيُقرأ اسمُ
+                             * وزارةٍ تحت «نوع القضية»، و«مدني» تحت «محامي القضية»،
+                             * واسمُ المحامي تحت «الحالة». والجدولُ يبدو سليماً
+                             * والقارئُ يصدّقه — وهو أسوأُ من عمودٍ فارغ.
+                             *
+                             * فالعمودُ يُعلَن مرّةً واحدةً بعنوانه وبقابليّته للترتيب.
+                             * ومن أضاف عموداً غداً أضافه هنا، ولا يستطيع أن يُسقط
+                             * عنواناً وهو يمنع ترتيباً.
+                             */
+                            $cols = [
+                                ['key' => 'number', 'label' => __('app.office_case_number'), 'sortable' => true],
+                                ['key' => 'court', 'label' => __('app.case_court_with_number'), 'sortable' => true],
+                                ['key' => 'client', 'label' => __('app.case_principal'), 'sortable' => true],
+                                // مشفَّرٌ في القاعدة: يُعرض ولا يُرتَّب
+                                ['key' => 'opponent', 'label' => __('app.case_opponent'), 'sortable' => false],
+                                ['key' => 'type', 'label' => __('app.case_type'), 'sortable' => true],
+                                ['key' => 'lawyer', 'label' => __('app.case_lawyer'), 'sortable' => true],
+                                ['key' => 'status', 'label' => __('app.status'), 'sortable' => true],
+                                ['key' => 'priority', 'label' => __('app.priority'), 'sortable' => true],
+                                ['key' => 'created', 'label' => __('app.created_at'), 'sortable' => true],
+                            ];
                             $arrowCls = 'inline-flex items-center gap-1 font-bold whitespace-nowrap text-xs transition-colors';
                         @endphp
-                        @foreach($sortableCols as $colKey)
+                        @foreach($cols as $col)
                             @php
+                                $colKey = $col['key'];
+                                $label = $col['label'];
                                 $isActive = $sort === $colKey;
                                 $nextDir = ($isActive && $dir === 'asc') ? 'desc' : 'asc';
-                                $label = [
-                                    'number' => __('app.office_case_number'),
-                                    'court' => __('app.case_court_with_number'),
-                                    'client' => __('app.case_principal'),
-                                    'opponent' => __('app.case_opponent'),
-                                    'type' => __('app.case_type'),
-                                    'lawyer' => __('app.case_lawyer'),
-                                    'status' => __('app.status'),
-                                    'priority' => __('app.priority'),
-                                    'created' => __('app.created_at'),
-                                ][$colKey];
                             @endphp
                             <th class="px-3 py-2 whitespace-nowrap text-xs">
+                                @if(!$col['sortable'])
+                                    <span class="{{ $arrowCls }} text-gold-dark">{{ $label }}</span>
+                                @else
                                 <a href="{{ request()->fullUrlWithQuery(['sort' => $colKey, 'dir' => $nextDir]) }}"
                                     data-live-link
                                     class="{{ $arrowCls }} {{ $isActive ? 'text-gold-dark bg-gold/12/80 rounded-lg px-2 py-1' : 'text-gold-dark hover:text-gold-dark' }}">
@@ -278,6 +301,7 @@ document.addEventListener('alpine:init', () => {
                                         </svg>
                                     @endif
                                 </a>
+                                @endif
                             </th>
                         @endforeach
                         <th class="px-3 py-2 text-gold-dark font-bold whitespace-nowrap text-xs">{{ __('app.actions') }}</th>
