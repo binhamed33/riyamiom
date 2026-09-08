@@ -101,7 +101,7 @@
                     aria-expanded="false"
                     aria-label="{{ __('app.phone_country') }}"
                     class="flex h-full items-center gap-1.5 px-3 py-2.5 text-sm {{ $text }} focus:outline-none focus:ring-2 focus:ring-gold-dark/40 rounded-s-lg">
-                <span data-phone-flag class="text-base leading-none">{{ \App\Support\Phone::flag($iso) }}</span>
+                <span data-phone-flag class="phone-flag text-base">{{ \App\Support\Phone::flag($iso) }}</span>
                 <span data-phone-dial class="font-mono">+{{ \App\Support\Phone::dialCode($iso) }}</span>
                 <svg class="w-3 h-3 opacity-50" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>

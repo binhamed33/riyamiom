@@ -13,6 +13,44 @@
      فلا نسخةٌ ثانيةٌ من الجدول تفترق عن الأولى، وما تراه اللوحةُ هو
      نفسُه ما يُرسَل. وألوانُ اللوحة تأتي في data-row-class من المكوّن،
      فالسكربتُ واحدٌ للفاتح والداكن ولا يُنسخ مرّتين. --}}
+{{-- ═══ الأعلامُ لا تُرسم على ويندوز ═══
+
+     العلمُ في يونيكود حرفا «مؤشّرٍ إقليميّ» يرسمهما الخطُّ علماً. وخطُّ
+     ويندوز — Segoe UI Emoji — يحذف الأعلام **عمداً**، فيسقط المتصفّح
+     إلى رسم الحرفين كما هما: «OM» و«AE» و«SA» في وجه الموظّف.
+
+     ولا حيلةَ في الكود: الجهازُ لا يملك الرسم. فيُحمَل معنا — خطٌّ
+     مقصوصٌ على الأعلام وحدها، ثمانيةٌ وسبعون كيلوبايتاً، من نطاقنا
+     نفسِه (‎font-src 'self'‎ في سياسة الأمن، فلا شبكةٌ خارجيّةٌ تُفتح).
+
+     و‎unicode-range يقصره على نطاق المؤشّرات الإقليميّة وحدَه: فلا
+     يُنزَّل إلا حين يُعرض علم، ولا يمسّ حرفاً عربياً ولا لاتينياً
+     ولا رقماً مهما وُضع في مقدّمة قائمة الخطوط.
+
+     والرسومُ من Twemoji بترخيص CC-BY-4.0 — نصُّه في
+     ‎public/fonts/TwemojiCountryFlags.LICENSE.md‎. --}}
+<style>
+@font-face {
+    font-family: 'Twemoji Country Flags';
+    unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E0063, U+E0065, U+E0067,
+        U+E006C, U+E006E, U+E0073-E0074, U+E0077, U+E007F;
+    src: url('{{ asset('fonts/TwemojiCountryFlags.woff2') }}') format('woff2');
+    font-display: swap;
+}
+
+/* على خانة العلم وحدها لا على الحقل كلّه.
+
+   ‏«font-family: '…', inherit» ليست CSS صحيحة — inherit قيمةٌ للخاصّية
+   كلّها لا عنصرٌ في قائمة بدائل، فتُهمل القاعدةُ بأكملها. والصحيحُ أن
+   تُقصر على العناصر التي لا تحمل إلا العلم، فلا تُمَسّ خطوطُ النظام
+   العربيّةُ أصلاً ولا يُعتمد على المدى وحدَه حارساً. */
+.phone-flag {
+    font-family: 'Twemoji Country Flags';
+    /* ‏ليُرسم العلمُ بحجمٍ ثابتٍ لا يتبع حجمَ نصّ السطر */
+    line-height: 1;
+}
+</style>
+
 <script nonce="{{ $cspNonce ?? '' }}">
 (function () {
     'use strict';
@@ -175,7 +213,7 @@
                      + ' aria-selected="' + (on ? 'true' : 'false') + '"'
                      + ' class="flex items-center gap-2 px-3 py-2 cursor-pointer ' + rowClass
                      + (on ? ' font-semibold' : '') + '">'
-                     + '<span class="text-base leading-none">' + r.flag + '</span>'
+                     + '<span class="phone-flag text-base">' + r.flag + '</span>'
                      + '<span class="flex-1 truncate">' + esc(r.name) + '</span>'
                      + '<span class="font-mono text-xs opacity-60" dir="ltr">+' + esc(r.dial) + '</span>'
                      + '</li>';

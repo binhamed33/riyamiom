@@ -149,6 +149,66 @@ class PhoneInputTest extends TestCase
         $this->assertStringContainsString('value="501234567"', $html);
     }
 
+    /**
+     * ═══ الأعلامُ لا تُرسم على ويندوز ═══
+     *
+     * العلمُ في يونيكود حرفا «مؤشّرٍ إقليميّ» يرسمهما الخطُّ علماً.
+     * وخطُّ ويندوز — Segoe UI Emoji — يحذف الأعلام **عمداً**، فيسقط
+     * المتصفّح إلى رسم الحرفين كما هما: «OM» و«AE» و«SA» صفّاً في وجه
+     * الموظّف بدل الأعلام.
+     *
+     * ولا حيلةَ في الكود: الجهازُ لا يملك الرسم. فيُحمَل الخطُّ معنا،
+     * مقصوصاً على الأعلام وحدها، من نطاقنا نفسِه — لا شبكةَ خارجيّةً
+     * تُفتح ولا سياسةَ أمنٍ تُوسَّع.
+     *
+     * وهذا يحرس الملفَّ من أن يُحذف بصمت: من نقله أو أعاد تسميته يسقط
+     * هنا، لا في شاشة موظّفٍ بعد شهر.
+     */
+    public function test_the_flag_font_ships_with_the_app(): void
+    {
+        $font = public_path('fonts/TwemojiCountryFlags.woff2');
+
+        $this->assertFileExists($font, 'خطُّ الأعلام غيرُ موجود — ويندوز سيعرض «OM» و«AE» بدلها');
+        $this->assertGreaterThan(50_000, filesize($font), 'ملفُّ الخطّ أصغرُ من أن يكون كاملاً');
+
+        $html = $this->actingAs($this->admin())->get('/clients/create')->assertOk()->getContent();
+
+        $this->assertStringContainsString('fonts/TwemojiCountryFlags.woff2', $html,
+            'الصفحةُ لا تشير إلى الخطّ');
+        $this->assertStringContainsString("font-family: 'Twemoji Country Flags'", $html);
+    }
+
+    /**
+     * والخطُّ مقصورٌ على خانة العلم — لا على النصّ العربيّ.
+     *
+     * قاعدةٌ على الحقل كلِّه تضع خطَّ الأعلام في مقدّمة قائمة خطوطه،
+     * وهو لا يحمل حرفاً عربياً ولا لاتينياً. و‎unicode-range يحرس ذلك
+     * في المتصفّح، لكنّ الحراسةَ حارسان أولى: القاعدةُ على العلم وحدَه،
+     * والمدى فوقها.
+     */
+    public function test_the_flag_font_never_touches_the_arabic_text(): void
+    {
+        $css = file_get_contents(resource_path('views/partials/phone-picker.blade.php'));
+
+        $this->assertStringContainsString('.phone-flag {', $css,
+            'قاعدةُ الخطّ ليست مقصورةً على خانة العلم');
+        $this->assertStringNotContainsString("[data-phone-field] {
+    font-family: 'Twemoji", $css);
+
+        // والمدى يقصر التنزيلَ والاستعمالَ على المؤشّرات الإقليميّة
+        $this->assertStringContainsString('unicode-range: U+1F1E6-1F1FF', $css,
+            'بلا مدىً يُنزَّل الخطُّ لكلّ صفحةٍ ويُقحَم في قياس كلّ حرف');
+
+        // وكلُّ علمٍ يُعرض يحمل الصنف: الزرُّ من القالب، والصفوفُ من السكربت
+        $html = $this->actingAs($this->admin())->get('/clients/create')->assertOk()->getContent();
+
+        $this->assertStringContainsString('data-phone-flag class="phone-flag', $html,
+            'علمُ الزرّ بلا صنف — يبقى حرفين على ويندوز');
+        // موضعان: علمُ الزرّ في القالب، وقالبُ الصفّ في السكربت
+        $this->assertGreaterThanOrEqual(2, substr_count($html, 'phone-flag text-base'),
+            'أعلامُ صفوف اللوحة بلا صنف — تبقى حرفين على ويندوز');
+    }
+
     // ── ٢) ما يُحفظ ───────────────────────────────────────────────
 
     /**
