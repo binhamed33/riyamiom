@@ -77,7 +77,7 @@ class ClientTest extends TestCase
         $response = $this->actingAs($developer)->post('/clients', [
             'name' => 'Test Client',
             'type' => 'individual',
-            'phone' => '123456789',
+            'phone' => '91234567',
             'email' => 'client@example.com',
             'address' => '123 Test St',
         ]);

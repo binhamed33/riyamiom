@@ -53,7 +53,7 @@ class WhatsAppContact extends Model
             return (string) $this->client->name;
         }
 
-        return $this->profile_name ?: \App\Support\GulfPhone::format($this->wa_id);
+        return $this->profile_name ?: \App\Support\Phone::format($this->wa_id);
     }
 
     /**

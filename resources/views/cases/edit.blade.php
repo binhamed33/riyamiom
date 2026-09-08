@@ -178,12 +178,7 @@
                     @enderror
                 </div>
                 <div>
-                    <label for="opponent_phone" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.opponent_phone') }}</label>
-                    <input type="tel" name="opponent_phone" id="opponent_phone" value="{{ old('opponent_phone', $case->opponent_phone) }}" data-phone inputmode="tel" autocomplete="tel" maxlength="20" dir="ltr"
-                        class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('opponent_phone') border-red-500/50 @enderror" placeholder="+968 9123 4567">
-                    @error('opponent_phone')
-                        <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
-                    @enderror
+                    <x-phone-input name="opponent_phone" :label="__('app.opponent_phone')" :value="$case->opponent_phone" />
                 </div>
                 <div class="md:col-span-2">
                     <label for="opponent_address" class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.opponent_address') }}</label>

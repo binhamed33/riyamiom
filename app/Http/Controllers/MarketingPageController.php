@@ -17,7 +17,7 @@ class MarketingPageController extends Controller
         $validated = $request->validate([
             'office_name' => \App\Support\PersonName::rule(true, 190),
             'contact_name' => \App\Support\PersonName::rule(true, 190),
-            'phone' => \App\Support\GulfPhone::rule(true),
+            'phone' => \App\Support\Phone::rule(true),
             'email' => ['required', 'email', 'max:190'],
             'lawyers_count' => ['nullable', 'integer', 'in:1,2,3,4'],
             'city' => ['nullable', 'string', 'max:100'],

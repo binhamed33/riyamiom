@@ -44,18 +44,7 @@
         </div>
 
         <div>
-            <label for="phone" class="block text-sm font-medium text-gold-dark mb-2">{{ __('app.phone') }}</label>
-            <input
-                type="tel"
-                name="phone"
-                id="phone"
-                value="{{ old('phone', auth()->user()->phone) }}"
-                class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
-                dir="ltr" data-phone inputmode="tel" autocomplete="tel" maxlength="20" placeholder="+968 9123 4567"
-            >
-            @error('phone')
-                <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
-            @enderror
+            <x-phone-input name="phone" :label="__('app.phone')" :value="auth()->user()->phone" />
         </div>
 
         <div class="border-t border-gray-200 pt-6">

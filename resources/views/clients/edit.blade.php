@@ -47,25 +47,8 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <label for="phone" class="block text-sm font-medium text-gold-dark mb-2">{{ __('app.client_phone') }}</label>
-                <input
-                    type="tel"
-                    name="phone"
-                    id="phone"
-                    value="{{ old('phone', $client->phone) }}"
-                    class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-4 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
-                    dir="ltr" data-phone inputmode="tel" autocomplete="tel" maxlength="20" placeholder="+968 9123 4567"
-                >
-                @error('phone')
-                    <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
-                @enderror
-                {{-- الرقمُ الذي سيراه واتساب — يُقال للموظّف قبل الحفظ
-                     لا بعد أن تذهب رسالةٌ إلى بلدٍ آخر. --}}
-                <p class="mt-1 text-[11px] text-gray-500 leading-relaxed">
-                    الرقم المحلّي (٨ خانات) يُعامَل تلقائياً كرقمٍ عُمانيّ
-                    <span dir="ltr" class="font-mono">+968</span>.
-                    ولموكّلٍ خارج عُمان، اكتب رقمه بمفتاح دولته.
-                </p>
+                <x-phone-input name="phone" :label="__('app.client_phone')" :value="$client->phone"
+                    note="الرقم يُحفظ بصيغته الدوليّة ليصله واتساب — اختر الدولة ثمّ اكتب الرقم بلا مفتاحها." />
             </div>
             <div>
                 <label for="email" class="block text-sm font-medium text-gold-dark mb-2">{{ __('app.client_email') }}</label>

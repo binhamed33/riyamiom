@@ -104,7 +104,7 @@ class ClientController extends Controller
         $validated = $request->validate([
             'name'          => \App\Support\PersonName::rule(),
             'type'          => 'required|in:individual,company',
-            'phone'         => \App\Support\GulfPhone::rule(),
+            'phone'         => \App\Support\Phone::rule(),
             'email'         => 'nullable|email|max:255',
             'address'       => 'nullable|string',
             'national_id'   => 'nullable|string|max:255',
@@ -148,7 +148,7 @@ class ClientController extends Controller
 
         $validated = $request->validate([
             'name'        => \App\Support\PersonName::rule(),
-            'phone'       => \App\Support\GulfPhone::rule(),
+            'phone'       => \App\Support\Phone::rule(),
             'email'       => 'nullable|email|max:255',
             'national_id' => 'nullable|string|max:255',
             'address'     => 'nullable|string|max:500',
@@ -201,7 +201,7 @@ class ClientController extends Controller
         $validated = $request->validate([
             'name'          => \App\Support\PersonName::rule(),
             'type'          => 'required|in:individual,company',
-            'phone'         => \App\Support\GulfPhone::rule(),
+            'phone'         => \App\Support\Phone::rule(),
             'email'         => 'nullable|email|max:255',
             'address'       => 'nullable|string',
             'national_id'   => 'nullable|string|max:255',

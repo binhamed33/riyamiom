@@ -147,6 +147,5 @@
     </footer>
 
     @stack('scripts')
-    @include('partials.phone-mask')
 </body>
 </html>

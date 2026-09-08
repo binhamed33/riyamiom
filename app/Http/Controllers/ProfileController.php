@@ -25,7 +25,7 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name'              => \App\Support\PersonName::rule(),
             'email'             => 'required|email|unique:users,email,' . $user->id,
-            'phone'             => \App\Support\GulfPhone::rule(),
+            'phone'             => \App\Support\Phone::rule(),
             'current_password'  => 'required_with:password|current_password',
             'password'          => ['nullable', 'string', 'confirmed', \App\Support\PasswordPolicy::rules()],
         ], \App\Support\PasswordPolicy::messages());

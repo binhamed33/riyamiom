@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'wa.inbox' => \App\Http\Middleware\WhatsAppInboxGuard::class,
             'engine' => \App\Http\Middleware\EnsureEngineOn::class,
         ]);
+        $middleware->appendToGroup('web', \App\Http\Middleware\NormalizePhoneNumbers::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\PreventBrowserCache::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SecurityHeaders::class);

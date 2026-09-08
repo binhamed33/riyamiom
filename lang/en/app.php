@@ -106,6 +106,10 @@ return [
     'title' => 'Title',
     'date' => 'Date',
     'phone' => 'Phone',
+    'phone_country' => 'Country',
+    'phone_country_search' => 'Search country or code…',
+    'phone_country_none' => 'No country by that name',
+
     'email' => 'Email',
     'address' => 'Address',
     'notes' => 'Notes',

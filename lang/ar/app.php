@@ -106,6 +106,10 @@ return [
     'title' => 'العنوان',
     'date' => 'التاريخ',
     'phone' => 'الهاتف',
+    'phone_country' => 'دولة الرقم',
+    'phone_country_search' => 'ابحث عن دولة أو مفتاح…',
+    'phone_country_none' => 'لا دولة بهذا الاسم',
+
     'email' => 'البريد الإلكتروني',
     'address' => 'العنوان',
     'notes' => 'ملاحظات',

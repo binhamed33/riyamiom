@@ -3094,7 +3094,6 @@
         @endif
     @endauth
 
-    @include('partials.phone-mask')
 
 </body>
 </html>

@@ -4,7 +4,7 @@ namespace App\Services\ClientPortal;
 
 use App\Models\Client;
 use App\Models\ClientPortalAttempt;
-use App\Support\GulfPhone;
+use App\Support\Phone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
@@ -393,18 +393,13 @@ class ClientAuthenticator
      * ‎00971506233112‎ من وسطه فيُعرض ‎0623••••‎ — شريحةٌ لا تقابل شيئاً
      * في رقم صاحبها، فينظر إليها ولا يعرفها. وبطول الدولة يُقتطع
      * المفتاح وحده فيبقى ‎5062•••••‎ — وهو أوّل رقمه كما يكتبه.
+     *
+     * وكان جدولُ الأطوال يعرف ستَّ دولٍ خليجيّة، فموكّلٌ هنديٌّ أو
+     * مصريٌّ يعود إلى العطب نفسِه. فصار القصُّ بمرجع Google لكلّ دولة.
      */
     private static function localPart(string $digits): string
     {
-        $digits = str_starts_with($digits, '00') ? substr($digits, 2) : $digits;
-
-        foreach (GulfPhone::COUNTRIES as [$code, $length]) {
-            if (strlen($digits) === strlen($code) + $length && str_starts_with($digits, $code)) {
-                return substr($digits, strlen($code));
-            }
-        }
-
-        return $digits;
+        return Phone::national($digits);
     }
 
     /**

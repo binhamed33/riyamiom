@@ -23,7 +23,7 @@
 
     $waContact = $conversation->contact;
     $waName    = $waContact?->displayName() ?: __('app.wa_unknown_contact');
-    $waPhone   = $waContact ? \App\Support\GulfPhone::format($waContact->wa_id) : '';
+    $waPhone   = $waContact ? \App\Support\Phone::format($waContact->wa_id) : '';
     $waInitial = mb_substr(trim($waName), 0, 1) ?: '#';
 
     $waOpen     = $conversation->windowOpen();
