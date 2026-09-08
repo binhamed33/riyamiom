@@ -81,6 +81,125 @@ class ErrorPulse
         ];
     }
 
+    /**
+     * الأخطاءُ مجموعةً بنوعها وموضعها — لتُقرأ وتُصلَح.
+     *
+     * ═══ لماذا يُقرأ السجلُّ هكذا لا بالعين ═══
+     *
+     * ‏«ما أريد ولا خطأ» يبدأ بمعرفة ما الأخطاء. وفتحُ laravel.log
+     * بالعين يعطي أسطراً بمقدار عشرات الميغابايت، فيها الخطأُ الواحد
+     * مكرَّراً ألفَ مرّة، ونصوصُ الأخطاء تحمل ما تحمل.
+     *
+     * وهذا يجمعها: نوعُ الاستثناء × المسار × الملفّ والسطر، وكم مرّة.
+     * فخمسةَ عشرَ سطراً تقول ما تقوله عشرةُ آلاف.
+     *
+     * ═══ وما لا يُطبَع ═══
+     *
+     * نصُّ الخطأ. فرسالةُ خطأ قاعدة البيانات تحمل ما في الصفّ:
+     * ‏«Duplicate entry 'أحمد الريامي' for key 'clients_phone'». والنوعُ
+     * والموضعُ يكفيان للإصلاح — والتفصيلُ يبقى في الخادم لمن يملكه.
+     *
+     * @return list<array{count:int,type:string,route:?string,origin:?string,last_at:string}>
+     */
+    public static function breakdown(?Carbon $since = null, int $limit = 15): array
+    {
+        $since ??= now()->subDay();
+        $groups = [];
+
+        foreach (self::errorLines($since) as [$at, $line]) {
+            $type = self::exceptionType($line);
+            $route = self::route($line);
+            $origin = self::origin($line);
+
+            $key = $type . '|' . ($route ?? '') . '|' . ($origin ?? '');
+
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'count' => 0,
+                    'type' => $type,
+                    'route' => $route,
+                    'origin' => $origin,
+                    'last_at' => $at,
+                ];
+            }
+
+            $groups[$key]['count']++;
+            $groups[$key]['last_at'] = $at;
+        }
+
+        usort($groups, fn ($a, $b) => $b['count'] <=> $a['count']);
+
+        return array_slice(array_values($groups), 0, max(1, $limit));
+    }
+
+    /**
+     * أسطرُ الخطأ في النافذة — مصدرٌ واحدٌ للقراءة يستعمله الملخّصُ
+     * والتفصيل، فلا تفترق قراءتان عن سجلٍّ واحد.
+     *
+     * @return list<array{0:string,1:string}>
+     */
+    private static function errorLines(Carbon $since): array
+    {
+        $log = storage_path('logs/laravel.log');
+
+        if (!is_file($log) || !is_readable($log)) {
+            return [];
+        }
+
+        try {
+            $handle = fopen($log, 'r');
+
+            if ($handle === false) {
+                return [];
+            }
+
+            fseek($handle, max(0, filesize($log) - self::TAIL_BYTES));
+            $tail = stream_get_contents($handle);
+            fclose($handle);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $rows = [];
+
+        foreach (explode("\n", (string) $tail) as $line) {
+            if (!str_contains($line, '.ERROR:')) {
+                continue;
+            }
+
+            if (!preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/', $line, $m)) {
+                continue;
+            }
+
+            if (!Carbon::parse($m[1])->gte($since)) {
+                continue;
+            }
+
+            $rows[] = [$m[1], $line];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * الملفُّ والسطرُ اللذان رُمي منهما — وهو ما يُفتح لإصلاحه.
+     *
+     * والمسارُ في سياق لارافل مُهرَّبٌ بـJSON (‎\/home\/...‎)، فتُزال
+     * الشُّرَطُ المائلة العكسيّة قبل المطابقة وإلّا لم يُطابَق شيء.
+     * ويُقصّ إلى ما بعد جذر التطبيق: ‎/home/riyami/htdocs/office.riyami.om/‎
+     * لا يفيد قارئاً، و‎app/Http/Controllers/CaseController.php:412‎ يفيد.
+     */
+    private static function origin(string $line): ?string
+    {
+        $clean = str_replace('\\/', '/', $line);
+
+        if (!preg_match('#(/(?:app|routes|database|resources|config)/[A-Za-z0-9_/.\-]+\.php)[^0-9]{0,3}(\d+)#', $clean, $m)) {
+            return null;
+        }
+
+        return ltrim($m[1], '/') . ':' . $m[2];
+    }
+
     /** اسم صنف الاستثناء وحده — لا رسالته. */
     private static function exceptionType(string $line): string
     {
