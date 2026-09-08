@@ -192,6 +192,10 @@ class WhatsAppSweep extends Command
             ->whereNull('processed_at')
             ->where('created_at', '<=', now()->subMinutes(5))
             ->where('created_at', '>=', $retentionCutoff)
+            // ومن استنفد محاولاتِه لا يُعاد دفعُه: عيبُ شكلٍ في البيانات
+            // لا يُصلحه تشغيلٌ حادي عشر، وإعادتُه كلَّ خمس دقائق تبتلع
+            // الطابورَ عن رسائل اليوم
+            ->where('attempts', '<', WhatsAppWebhookEvent::MAX_ATTEMPTS)
             ->orderBy('id')
             ->limit(self::REDISPATCH_CAP)
             ->pluck('id');

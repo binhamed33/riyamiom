@@ -78,7 +78,42 @@ class ProcessWhatsAppWebhook implements ShouldQueue
             Log::error('WhatsApp webhook processing failed for event ' . $event->id . ': ' . $e->getMessage());
             $event->markFailed($e->getMessage());
 
+            // ═══ ما يستحيل نجاحُه لا يُعاد ═══
+            //
+            // ‏«Data too long for column» و«Duplicate entry» عيوبُ شكلٍ
+            // في البيانات: التشغيلُ الثاني يخفق كما أخفق الأوّل، بالحرف.
+            // وكان يُرمى فيُعاد خمساً، والمكنسةُ تعيد دفعَ الحدث كلَّ
+            // خمس دقائق، فبلغت مهامُّ الإخفاق في مكتبٍ واحد ثلاثةً
+            // وسبعين ألفاً — وابتلع الطابورُ رسائلَ اليوم.
+            //
+            // أمّا انقطاعُ شبكةٍ أو تشابكُ أقفال (deadlock) فيُعاد:
+            // التشغيلُ التالي قد ينجح فعلاً.
+            if (self::permanent($e)) {
+                return;
+            }
+
             throw $e; // ليُعاد ضمن حدود tries وretryUntil
         }
+    }
+
+    /**
+     * أعطبٌ في شكل البيانات هو، أم عارضٌ يزول؟
+     *
+     * الرمزُ الأوّل من SQLSTATE يقول: «22» استثناءُ بيانات (طولٌ زائد،
+     * قيمةٌ خارج المدى)، و«23» خرقُ قيدٍ (تكرارٌ، مفتاحٌ أجنبيّ غائب).
+     * وكلاهما يخفق غداً كما أخفق اليوم.
+     *
+     * وما عداهما — انقطاعُ اتّصال (08)، تشابكُ أقفال (40)، مهلةٌ —
+     * يُعاد، فقد ينجح.
+     */
+    private static function permanent(\Throwable $e): bool
+    {
+        if (!$e instanceof \Illuminate\Database\QueryException) {
+            return false;
+        }
+
+        $state = (string) ($e->errorInfo[0] ?? '');
+
+        return str_starts_with($state, '22') || str_starts_with($state, '23');
     }
 }

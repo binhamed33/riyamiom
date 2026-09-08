@@ -45,8 +45,27 @@ class WhatsAppWebhookEvent extends Model
         $this->forceFill(['processed_at' => now(), 'error' => null])->save();
     }
 
+    /**
+     * حدٌّ لإعادة المحاولة على الحدث نفسِه.
+     *
+     * ‏عيبُ شكلٍ في البيانات لا يُصلحه تشغيلٌ سادس. وبلا عدّادٍ كانت
+     * المكنسةُ تعيد دفعَ الحدث المستحيل كلَّ خمس دقائق حتى تنتهي مدّةُ
+     * الحفظ — فبلغت مهامُّ الإخفاق في مكتبٍ واحد ثلاثةً وسبعين ألفاً،
+     * وابتلع الطابورُ رسائلَ اليوم عن رسائل اليوم.
+     */
+    public const MAX_ATTEMPTS = 10;
+
     public function markFailed(string $reason): void
     {
-        $this->forceFill(['error' => mb_substr($reason, 0, 500)])->save();
+        $this->forceFill([
+            'error' => mb_substr($reason, 0, 500),
+            'attempts' => (int) $this->attempts + 1,
+        ])->save();
+    }
+
+    /** استُنفدت محاولاتُه: يبقى على القرص، ولا يُعاد دفعُه. */
+    public function exhausted(): bool
+    {
+        return (int) $this->attempts >= self::MAX_ATTEMPTS;
     }
 }
