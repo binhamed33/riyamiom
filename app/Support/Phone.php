@@ -37,8 +37,31 @@ class Phone
     /** الدولُ المقدَّمة في أوّل القائمة: أكثرُ ما يُدخَل في مكاتبنا. */
     public const PINNED = ['OM', 'AE', 'SA', 'QA', 'KW', 'BH', 'YE', 'EG', 'JO', 'IN', 'PK', 'GB', 'US'];
 
+    /**
+     * ما لا يُعرض ولا يُقبل.
+     *
+     * النظامُ يخدم مكاتبَ محاماةٍ عُمانيّة، وسلطنةُ عُمان لا تعترف
+     * بالكيان المحتلّ ولا تقيم معه علاقات، والتعاملُ معه ممنوعٌ قانوناً.
+     * فمفتاحُه لا يُعرض في منتقي الدول ولا يُقبل رقمٌ به.
+     *
+     * ولا يكفي حذفُه من القائمة: من لصق رقماً بمفتاحه في الحقل مباشرةً
+     * كان يمرّ من الخادم لأنّ المكتبةَ تعرفه. فالمنعُ في ‎resolve‎ —
+     * المعبرِ الذي تمرّ منه كلُّ قراءةٍ وكلُّ تحقّق — لا في العرض وحده.
+     *
+     * والأراضي الفلسطينيّة (PS، ‎+970‎) في القائمة كما هي.
+     */
+    public const EXCLUDED = ['IL'];
+
     /** حقولُ صفِّ الدولة — تُشتقّ منها بصمةُ الذاكرة، فلا تُقرأ نسخةٌ قديمة. */
     private const ROW_SHAPE = ['iso', 'name', 'dial', 'flag', 'example', 'lengths', 'max', 'main', 'q'];
+
+    /** أتُقبل هذه الدولةُ في النظام أصلاً؟ */
+    public static function supports(?string $region): bool
+    {
+        return $region !== null
+            && $region !== ''
+            && !in_array(strtoupper($region), self::EXCLUDED, true);
+    }
 
     private static ?PhoneNumberUtil $util = null;
 
@@ -106,16 +129,33 @@ class Phone
      */
     private static function resolve(?string $raw, ?string $region = null): ?\libphonenumber\PhoneNumber
     {
+        if (!self::supports($region ?? self::DEFAULT_REGION)) {
+            return null;
+        }
+
         $number = self::parse($raw, $region);
         $valid = $number !== null && self::util()->isValidNumber($number);
 
         if ($valid || $region !== null) {
-            return $valid ? $number : null;
+            return $valid && self::supported($number) ? $number : null;
         }
 
         $bare = self::parse('+' . self::digits($raw));
 
-        return $bare !== null && self::util()->isValidNumber($bare) ? $bare : null;
+        return $bare !== null && self::util()->isValidNumber($bare) && self::supported($bare)
+            ? $bare
+            : null;
+    }
+
+    /** رقمٌ دولتُه مستثناة لا يُقرأ صحيحاً مهما صحّ بناؤه. */
+    private static function supported(?\libphonenumber\PhoneNumber $number): bool
+    {
+        if ($number === null) {
+            return false;
+        }
+
+        return self::supports(self::util()->getRegionCodeForNumber($number))
+            && self::supports(self::util()->getRegionCodeForCountryCode($number->getCountryCode()));
     }
 
     /**
@@ -203,8 +243,12 @@ class Phone
             return $fallback;
         }
 
-        return self::util()->getRegionCodeForNumber($partial)
+        $partialRegion = self::util()->getRegionCodeForNumber($partial)
             ?: (self::util()->getRegionCodeForCountryCode($partial->getCountryCode()) ?: $fallback);
+
+        // ولا تُرجَع مستثناةٌ ولو قالها المفتاح: المنتقي يبني اختيارَه
+        // على هذه القيمة، فلو أعادت «IL» بحث عن خيارٍ لا وجود له
+        return self::supports($partialRegion) ? $partialRegion : $fallback;
     }
 
     /**
@@ -408,7 +452,10 @@ class Phone
         //
         // فالمفتاحُ يُشتقّ من أسماء الحقول نفسِها: من غيّرها غيّر المفتاح
         // معه ولو لم ينتبه، والقديمُ يُهمَل ولا يُقرأ.
-        $shape = substr(md5(implode(',', self::ROW_SHAPE)), 0, 8);
+        // والبصمةُ تشمل المستثنى كذلك: حذفُ دولةٍ يغيّر المخرَجَ ولا
+        // يغيّر شكلَ الصفّ، فلولا ذلك بقيت المحذوفةُ معروضةً يوماً كاملاً
+        // من ذاكرةٍ كُتبت قبل الحذف.
+        $shape = substr(md5(implode(',', self::ROW_SHAPE) . '|' . implode(',', self::EXCLUDED)), 0, 8);
 
         return cache()->remember('phone.countries.' . $shape . '.' . $locale, 86400, function () use ($locale) {
             $rows = [];
@@ -416,7 +463,7 @@ class Phone
             foreach (self::util()->getSupportedRegions() as $iso) {
                 $dial = self::dialCode($iso);
 
-                if ($dial === null) {
+                if ($dial === null || !self::supports($iso)) {
                     continue;
                 }
 

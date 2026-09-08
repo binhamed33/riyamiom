@@ -53,7 +53,8 @@ class NormalizePhoneNumbers
 
             if ($field === '' || !is_string($region)
                 || !preg_match('/^[A-Za-z]{2}$/', $region)
-                || Phone::dialCode($region) === null) {
+                || Phone::dialCode($region) === null
+                || !Phone::supports($region)) {
                 continue;
             }
 

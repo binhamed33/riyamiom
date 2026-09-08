@@ -83,7 +83,8 @@ class PhoneNumber implements DataAwareRule, ValidationRule
         $chosen = data_get($this->data, $attribute . '_country');
 
         if (is_string($chosen) && preg_match('/^[A-Za-z]{2}$/', $chosen)
-            && Phone::dialCode($chosen) !== null) {
+            && Phone::dialCode($chosen) !== null
+            && Phone::supports($chosen)) {
             return strtoupper($chosen);
         }
 
@@ -95,6 +96,16 @@ class PhoneNumber implements DataAwareRule, ValidationRule
      */
     private function explain(string $value, string $region): string
     {
+        // مفتاحٌ لدولةٍ لا يعمل بها النظام: يُقال باسمه بدل أن يُقاس
+        // الرقمُ على عُمان فتخرج رسالةٌ عن طولٍ لا علاقة له بالسبب
+        $raw = Phone::parse($value);
+
+        if ($raw !== null && !Phone::supports(
+            \libphonenumber\PhoneNumberUtil::getInstance()->getRegionCodeForCountryCode($raw->getCountryCode())
+        )) {
+            return 'مفتاح +' . $raw->getCountryCode() . ' غير مدعوم في النظام.';
+        }
+
         $country = Phone::name($region, 'ar');
         $lengths = Phone::lengths($region);
 

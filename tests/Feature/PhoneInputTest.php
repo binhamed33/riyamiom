@@ -328,6 +328,81 @@ class PhoneInputTest extends TestCase
             'الرقمُ المردودُ عاد مغيَّراً — فيصحّح الموظّفُ ما لم يكتبه');
     }
 
+    // ── دولةٌ خارج النظام ─────────────────────────────────────────
+
+    /**
+     * ═══ مفتاحٌ لا يُعرض ولا يُقبل ═══
+     *
+     * النظامُ يخدم مكاتبَ محاماةٍ عُمانيّة، وسلطنةُ عُمان لا تعترف
+     * بالكيان المحتلّ. فمفتاحُه خارج المنتقي.
+     *
+     * ولا يكفي حذفُه من القائمة: من لصق رقماً بمفتاحه في الحقل مباشرةً
+     * يمرّ من الخادم لأنّ المكتبةَ تعرفه. فالمنعُ في المعبر الذي تمرّ منه
+     * كلُّ قراءةٍ وكلُّ تحقّق — وهذا يفحص الطبقات كلَّها لا الشاشة.
+     */
+    public function test_an_excluded_country_is_not_in_the_picker(): void
+    {
+        $html = $this->actingAs($this->admin())->get('/clients/create')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('value="IL"', $html, 'المفتاحُ ما زال في القائمة');
+        $this->assertStringNotContainsString('+972', $html);
+
+        $isos = array_column(Phone::countries('ar'), 'iso');
+        $this->assertNotContains('IL', $isos);
+
+        // والأراضي الفلسطينيّة في مكانها
+        $this->assertContains('PS', $isos);
+        $this->assertStringContainsString('value="PS"', $html);
+    }
+
+    /** ورقمٌ بمفتاحه يُردّ ولو لُصق كاملاً — بأيّ صيغةٍ كُتب. */
+    public function test_a_number_with_that_code_is_refused_in_every_form(): void
+    {
+        foreach (['+972501234567', '972501234567', '00972501234567', '+972 50 123 4567'] as $written) {
+            $this->assertFalse(Phone::isValid($written), $written . ' — مرّ');
+        }
+
+        // ولا يُقبل ولو سُمّيت الدولةُ صراحةً في الحقل المرافق
+        $this->assertFalse(Phone::isValid('501234567', 'IL'));
+
+        $this->actingAs($this->admin())->post('/clients', [
+            'name' => 'موكّل',
+            'type' => 'individual',
+            'phone' => '+972501234567',
+        ])->assertSessionHasErrors('phone');
+
+        $this->assertDatabaseCount('clients', 0);
+    }
+
+    /** والرسالةُ تقول السبب، لا تقيسه على طولٍ عُمانيّ لا علاقة له. */
+    public function test_the_refusal_names_the_code_not_a_length(): void
+    {
+        $this->actingAs($this->admin())->post('/clients', [
+            'name' => 'موكّل',
+            'type' => 'individual',
+            'phone' => '+972501234567',
+        ]);
+
+        $message = (string) session('errors')->first('phone');
+
+        $this->assertStringContainsString('+972', $message);
+        $this->assertStringContainsString('غير مدعوم', $message);
+        $this->assertStringNotContainsString('عُمان', $message, 'قيس الرقمُ على عُمان فخرجت رسالةٌ لا تفسّر شيئاً');
+    }
+
+    /** والأراضي الفلسطينيّة تُقبل كأيّ دولة. */
+    public function test_palestine_is_accepted_like_any_country(): void
+    {
+        $this->actingAs($this->admin())->post('/clients', [
+            'name' => 'موكّل فلسطينيّ',
+            'type' => 'individual',
+            'phone' => '599123456',
+            'phone_country' => 'PS',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('+970599123456', Client::where('name', 'موكّل فلسطينيّ')->first()->phone);
+    }
+
     // ── ٤) الوسيطُ لا يمسّ ما ليس له ──────────────────────────────
 
     /**
