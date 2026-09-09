@@ -95,7 +95,7 @@
             <p class="px-4 pt-4 pb-2 font-bold text-gold-dark text-sm">حضور الفريق اليوم</p>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
+                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
                     <tbody>
                         @forelse($teamAttendance as $rec)
                         <tr class="border-b border-gray-100">
@@ -112,7 +112,7 @@
                                     <span class="text-amber-600 font-semibold">بلا انصراف</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3">{{ $rec->minutes !== null ? intdiv((int) $rec->minutes, 60) . 'س ' . ((int) $rec->minutes) % 60 . 'د' : '—' }}</td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($rec->minutes === null ? null : (int) $rec->minutes) }}</td>
                         </tr>
                         @empty
                         <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">لم يسجّل أحد حضوره اليوم بعد</td></tr>
@@ -128,14 +128,14 @@
             <p class="px-4 pt-4 pb-2 font-bold text-gold-dark text-sm">سجلّي هذا الشهر</p>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">اليوم</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
+                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">اليوم</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
                     <tbody>
                         @forelse($attendanceMonth as $rec)
                         <tr class="border-b border-gray-100">
                             <td class="px-4 py-3">{{ $rec->work_date->translatedFormat('D j M') }}</td>
                             <td class="px-4 py-3">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
                             <td class="px-4 py-3">{{ $rec->check_out_at?->timezone('Asia/Muscat')->format('H:i') ?? '—' }}</td>
-                            <td class="px-4 py-3">{{ $rec->minutes !== null ? intdiv((int) $rec->minutes, 60) . 'س ' . ((int) $rec->minutes) % 60 . 'د' : '—' }}</td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($rec->minutes === null ? null : (int) $rec->minutes) }}</td>
                         </tr>
                         @empty
                         <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">لا سجلات هذا الشهر</td></tr>
@@ -469,7 +469,9 @@
                     <thead class="bg-gray-50">
                         <tr>
                             @foreach(['الموظف','التاريخ','الحضور','الانصراف','المدة','الحالة'] as $h)
-                                <th class="text-start px-4 py-3 font-semibold text-xs text-gold-dark">{{ $h }}</th>
+                                {{-- عنوانُ «المدة» يتوسّط كخليّته: عنوانٌ إلى الحافّة فوق
+                                     قيمةٍ في الوسط يجعل العينَ تبحث عن العمود. --}}
+                                <th class="{{ $h === 'المدة' ? 'text-center' : 'text-start' }} px-4 py-3 font-semibold text-xs text-gold-dark">{{ $h }}</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -481,7 +483,10 @@
                                 <td class="px-4 py-3 text-gray-500" dir="ltr">{{ $r->work_date->format('Y-m-d') }}</td>
                                 <td class="px-4 py-3 text-gray-700" dir="ltr">{{ $r->check_in_at->timezone('Asia/Muscat')->format('h:i A') }}</td>
                                 <td class="px-4 py-3 text-gray-700" dir="ltr">{{ $r->check_out_at ? $r->check_out_at->timezone('Asia/Muscat')->format('h:i A') : '—' }}</td>
-                                <td class="px-4 py-3 text-gray-500" dir="ltr">{{ $r->minutes === null ? '—' : intdiv($r->minutes, 60) . 'س ' . ($r->minutes % 60) . 'د' }}</td>
+                                {{-- ‏rtl لا ltr: النصُّ يخلط أرقاماً لاتينيّةً بحرفين عربيّين،
+                                     وفي سياقٍ لاتينيّ تقلبه خوارزميّةُ الاتّجاهين فيخرج
+                                     «س 15د 6» بدل «6 س 15 د» — والرقمُ يقفز إلى آخر السطر. --}}
+                                <td class="px-4 py-3 text-gray-500 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($r->minutes) }}</td>
                                 <td class="px-4 py-3">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold {{ $isIn ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-500/10 text-gray-500' }}">
                                         <span class="w-1.5 h-1.5 rounded-full {{ $isIn ? 'bg-emerald-500' : 'bg-gray-400' }}"></span>
