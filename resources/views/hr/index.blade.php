@@ -94,12 +94,12 @@
         <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
             <p class="px-4 pt-4 pb-2 font-bold text-gold-dark text-sm">حضور الفريق اليوم</p>
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-center px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
+                <table class="w-full text-sm tbl-centred">
+                    <thead><tr class="border-b border-gray-200"><th class="text-start px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-center px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
                     <tbody>
                         @forelse($teamAttendance as $rec)
                         <tr class="border-b border-gray-100">
-                            <td class="px-4 py-3 font-medium">{{ $rec->user->name ?? '—' }}</td>
+                            <td class="px-4 py-3 font-medium text-start">{{ $rec->user->name ?? '—' }}</td>
                             <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
                             <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">
                                 @if($rec->check_out_at)
@@ -127,7 +127,7 @@
         <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
             <p class="px-4 pt-4 pb-2 font-bold text-gold-dark text-sm">سجلّي هذا الشهر</p>
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="w-full text-sm tbl-centred">
                     <thead><tr class="border-b border-gray-200"><th class="text-center px-4 py-3 font-bold text-gold-dark">اليوم</th><th class="text-center px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-center px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
                     <tbody>
                         @forelse($attendanceMonth as $rec)
@@ -163,8 +163,8 @@
             </div>
             @endif
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الاسم</th><th class="text-right px-4 py-3 font-bold text-gold-dark">البريد</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الدور</th><th class="text-right px-4 py-3 font-bold text-gold-dark">قضايا</th><th class="text-right px-4 py-3 font-bold text-gold-dark">مهام</th><th class="text-right px-4 py-3 font-bold text-gold-dark">التقييم</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحالة</th></tr></thead>
+                <table class="w-full text-sm tbl-centred">
+                    <thead><tr class="border-b border-gray-200"><th class="text-start px-4 py-3 font-bold text-gold-dark">الاسم</th><th class="px-4 py-3 font-bold text-gold-dark">البريد</th><th class="px-4 py-3 font-bold text-gold-dark">الدور</th><th class="px-4 py-3 font-bold text-gold-dark">قضايا</th><th class="px-4 py-3 font-bold text-gold-dark">مهام</th><th class="px-4 py-3 font-bold text-gold-dark">التقييم</th><th class="px-4 py-3 font-bold text-gold-dark">الحالة</th></tr></thead>
                     <tbody>
                         @foreach($employees as $emp)
                             @php $d = collect($chartData)->firstWhere('name', $emp->name) ?? ['cases'=>0,'tasks'=>0,'tasks_done'=>0,'rating'=>0]; @endphp
@@ -192,12 +192,12 @@
             </div>
             @endif
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">التاريخ</th><th class="text-right px-4 py-3 font-bold text-gold-dark">التقييم</th><th class="text-right px-4 py-3 font-bold text-gold-dark">المقيم</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
+                <table class="w-full text-sm tbl-centred">
+                    <thead><tr class="border-b border-gray-200"><th class="text-start px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="px-4 py-3 font-bold text-gold-dark">التاريخ</th><th class="px-4 py-3 font-bold text-gold-dark">التقييم</th><th class="px-4 py-3 font-bold text-gold-dark">المقيم</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
                     <tbody>
                         @forelse($performances as $p)
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                <td class="px-4 py-3 text-gray-900">{{ $p->employee->name }}</td>
+                                <td class="px-4 py-3 text-gray-900 text-start">{{ $p->employee->name }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $p->review_date->format('Y-m-d') }}</td>
                                 <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $p->rating >= 4 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ($p->rating >= 3 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-red-100 text-red-700 border-red-200') }}">{{ $p->rating }}/5</span></td>
                                 <td class="px-4 py-3 text-gray-500">{{ $p->reviewer->name }}</td>
@@ -207,7 +207,7 @@
                                 </td>
                                 @endif
                             </tr>
-                            @if($p->notes)<tr class="border-b border-gray-100"><td colspan="{{ $isAdmin ? 5 : 4 }}" class="px-4 pb-3 text-xs text-gray-400">{{ $p->notes }}</td></tr>@endif
+                            @if($p->notes)<tr class="border-b border-gray-100"><td colspan="{{ $isAdmin ? 5 : 4 }}" class="px-4 pb-3 text-xs text-gray-400 text-start">{{ $p->notes }}</td></tr>@endif
                         @empty
                             <tr><td colspan="{{ $isAdmin ? 5 : 4 }}" class="px-4 py-12 text-center text-gray-400">لا توجد تقييمات</td></tr>
                         @endforelse
@@ -226,14 +226,14 @@
             </div>
             @endif
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">المبلغ</th><th class="text-right px-4 py-3 font-bold text-gold-dark">السبب</th><th class="text-right px-4 py-3 font-bold text-gold-dark">التاريخ</th><th class="text-right px-4 py-3 font-bold text-gold-dark">بواسطة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
+                <table class="w-full text-sm tbl-centred">
+                    <thead><tr class="border-b border-gray-200"><th class="text-start px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="px-4 py-3 font-bold text-gold-dark">المبلغ</th><th class="px-4 py-3 font-bold text-gold-dark">السبب</th><th class="px-4 py-3 font-bold text-gold-dark">التاريخ</th><th class="px-4 py-3 font-bold text-gold-dark">بواسطة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
                     <tbody>
                         @forelse($bonuses as $b)
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                <td class="px-4 py-3 text-gray-900">{{ $b->employee->name }}</td>
+                                <td class="px-4 py-3 text-gray-900 text-start">{{ $b->employee->name }}</td>
                                 <td class="px-4 py-3 font-bold text-green-700">{{ number_format($b->amount, 2) }}</td>
-                                <td class="px-4 py-3 text-gray-500">{{ $b->reason }}</td>
+                                <td class="px-4 py-3 text-gray-500 text-start">{{ $b->reason }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $b->date->format('Y-m-d') }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $b->giver->name }}</td>
                                 @if($isAdmin)
@@ -260,14 +260,14 @@
             </div>
             @endif
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">المبلغ</th><th class="text-right px-4 py-3 font-bold text-gold-dark">السبب</th><th class="text-right px-4 py-3 font-bold text-gold-dark">التاريخ</th><th class="text-right px-4 py-3 font-bold text-gold-dark">بواسطة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
+                <table class="w-full text-sm tbl-centred">
+                    <thead><tr class="border-b border-gray-200"><th class="text-start px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="px-4 py-3 font-bold text-gold-dark">المبلغ</th><th class="px-4 py-3 font-bold text-gold-dark">السبب</th><th class="px-4 py-3 font-bold text-gold-dark">التاريخ</th><th class="px-4 py-3 font-bold text-gold-dark">بواسطة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
                     <tbody>
                         @forelse($penalties as $p)
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                <td class="px-4 py-3 text-gray-900">{{ $p->employee->name }}</td>
+                                <td class="px-4 py-3 text-gray-900 text-start">{{ $p->employee->name }}</td>
                                 <td class="px-4 py-3 font-bold {{ $p->amount ? 'text-red-700' : 'text-gray-400' }}">{{ $p->amount ? number_format($p->amount, 2) : '-' }}</td>
-                                <td class="px-4 py-3 text-gray-500">{{ $p->reason }}</td>
+                                <td class="px-4 py-3 text-gray-500 text-start">{{ $p->reason }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $p->date->format('Y-m-d') }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $p->giver->name }}</td>
                                 @if($isAdmin)
@@ -344,12 +344,12 @@
                 <button @click="$dispatch('open-modal', 'leaveModal')" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">+ طلب إجازة</button>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">النوع</th><th class="text-right px-4 py-3 font-bold text-gold-dark">من</th><th class="text-right px-4 py-3 font-bold text-gold-dark">إلى</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحالة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
+                <table class="w-full text-sm tbl-centred">
+                    <thead><tr class="border-b border-gray-200"><th class="text-start px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="px-4 py-3 font-bold text-gold-dark">النوع</th><th class="px-4 py-3 font-bold text-gold-dark">من</th><th class="px-4 py-3 font-bold text-gold-dark">إلى</th><th class="px-4 py-3 font-bold text-gold-dark">الحالة</th>@if($isAdmin)<th class="text-center px-4 py-3 font-bold text-gold-dark">إجراءات</th>@endif</tr></thead>
                     <tbody>
                         @forelse($leaves as $l)
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                <td class="px-4 py-3 text-gray-900">{{ $l->employee->name }}</td>
+                                <td class="px-4 py-3 text-gray-900 text-start">{{ $l->employee->name }}</td>
                                 <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gray-100 text-gray-500 border-gray-200">{{ $l->type }}</span></td>
                                 <td class="px-4 py-3 text-gray-500">{{ $l->start_date->format('Y-m-d') }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $l->end_date->format('Y-m-d') }}</td>
@@ -366,7 +366,7 @@
                                 </td>
                                 @endif
                             </tr>
-                            @if($l->reason)<tr class="border-b border-gray-100"><td colspan="{{ $isAdmin ? 6 : 5 }}" class="px-4 pb-3 text-xs text-gray-400">{{ $l->reason }}</td></tr>@endif
+                            @if($l->reason)<tr class="border-b border-gray-100"><td colspan="{{ $isAdmin ? 6 : 5 }}" class="px-4 pb-3 text-xs text-gray-400 text-start">{{ $l->reason }}</td></tr>@endif
                         @empty
                             <tr><td colspan="{{ $isAdmin ? 6 : 5 }}" class="px-4 py-12 text-center text-gray-400">لا توجد إجازات</td></tr>
                         @endforelse
@@ -465,15 +465,13 @@
 
         <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="w-full text-sm tbl-centred">
                     <thead class="bg-gray-50">
                         <tr>
-                            {{-- الأعمدةُ الرقميّة تتوسّط، والاسمُ وحدَه إلى الحافّة.
-                                 وعنوانُ العمود يتبع خليّتَه: عنوانٌ إلى الحافّة فوق قيمةٍ
-                                 في الوسط يجعل العينَ تبحث عن العمود بدل أن تقرأه. --}}
-                            @php $centred = ['التاريخ', 'الحضور', 'الانصراف', 'المدة']; @endphp
+                            {{-- التوسيطُ من قاعدة tbl-centred، والاسمُ وحدَه يُستثنى:
+                                 نصٌّ متغيّرُ الطول يُقرأ من مبدئه لا من وسطه. --}}
                             @foreach(['الموظف','التاريخ','الحضور','الانصراف','المدة','الحالة'] as $h)
-                                <th class="{{ in_array($h, $centred, true) ? 'text-center' : 'text-start' }} px-4 py-3 font-semibold text-xs text-gold-dark">{{ $h }}</th>
+                                <th class="{{ $h === 'الموظف' ? 'text-start' : '' }} px-4 py-3 font-semibold text-xs text-gold-dark">{{ $h }}</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -481,7 +479,7 @@
                         @forelse($attRecords as $r)
                             @php $isIn = $r->check_out_at === null; @endphp
                             <tr class="border-t border-gray-200">
-                                <td class="px-4 py-3 text-gray-700">{{ $r->user->name ?? '—' }}</td>
+                                <td class="px-4 py-3 text-gray-700 text-start">{{ $r->user->name ?? '—' }}</td>
                                 {{-- ‏tabular-nums كي تقف الخاناتُ فوق بعضها في عمودٍ
                                      متوسّط: بلا عرضٍ ثابتٍ للرقم يتذبذب الوسطُ من صفٍّ
                                      إلى صفّ فيبدو العمودُ مهتزّاً. --}}
@@ -537,18 +535,18 @@
 
         <div class="bg-white rounded-xl border border-gold/15 overflow-hidden mb-6">
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="w-full text-sm tbl-centred">
                     <thead class="bg-gray-50">
                         <tr>
-                            @foreach(['الموظف','الأساسي','البدلات','أيام إجازة خاصمة','خصم الإجازة','خصومات أخرى','الصافي',''] as $h)
-                                <th class="text-start px-4 py-3 font-semibold text-xs text-gold-dark">{{ $h }}</th>
+                            @foreach(['الموظف','الأساسي','البدلات','أيام إجازة خاصة','خصم الإجازة','خصومات أخرى','الصافي',''] as $h)
+                                <th class="{{ $h === 'الموظف' ? 'text-start' : '' }} px-4 py-3 font-semibold text-xs text-gold-dark">{{ $h }}</th>
                             @endforeach
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($payslips as $p)
                             <tr class="border-t border-gray-200">
-                                <td class="px-4 py-3 font-medium text-gray-700">{{ $p['employee']->name }}</td>
+                                <td class="px-4 py-3 font-medium text-gray-700 text-start">{{ $p['employee']->name }}</td>
                                 <td class="px-4 py-3 text-gray-700" dir="ltr">{{ $p['has_salary'] ? number_format($p['basic'], 2) : '—' }}</td>
                                 <td class="px-4 py-3 text-gray-700" dir="ltr">{{ number_format($p['allowances'], 2) }}</td>
                                 <td class="px-4 py-3 text-gray-500" dir="ltr">{{ $p['unpaid_days'] ?: '—' }}</td>
