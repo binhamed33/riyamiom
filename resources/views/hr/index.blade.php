@@ -95,13 +95,13 @@
             <p class="px-4 pt-4 pb-2 font-bold text-gold-dark text-sm">حضور الفريق اليوم</p>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
+                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">الموظف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-center px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
                     <tbody>
                         @forelse($teamAttendance as $rec)
                         <tr class="border-b border-gray-100">
                             <td class="px-4 py-3 font-medium">{{ $rec->user->name ?? '—' }}</td>
-                            <td class="px-4 py-3">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
-                            <td class="px-4 py-3">
+                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">
                                 @if($rec->check_out_at)
                                     {{ $rec->check_out_at->timezone('Asia/Muscat')->format('H:i') }}
                                 @elseif($rec->work_date?->isToday())
@@ -128,13 +128,13 @@
             <p class="px-4 pt-4 pb-2 font-bold text-gold-dark text-sm">سجلّي هذا الشهر</p>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead><tr class="border-b border-gray-200"><th class="text-right px-4 py-3 font-bold text-gold-dark">اليوم</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-right px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
+                    <thead><tr class="border-b border-gray-200"><th class="text-center px-4 py-3 font-bold text-gold-dark">اليوم</th><th class="text-center px-4 py-3 font-bold text-gold-dark">الحضور</th><th class="text-center px-4 py-3 font-bold text-gold-dark">الانصراف</th><th class="text-center px-4 py-3 font-bold text-gold-dark">المدة</th></tr></thead>
                     <tbody>
                         @forelse($attendanceMonth as $rec)
                         <tr class="border-b border-gray-100">
-                            <td class="px-4 py-3">{{ $rec->work_date->translatedFormat('D j M') }}</td>
-                            <td class="px-4 py-3">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
-                            <td class="px-4 py-3">{{ $rec->check_out_at?->timezone('Asia/Muscat')->format('H:i') ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap">{{ $rec->work_date->translatedFormat('D j M') }}</td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">{{ $rec->check_out_at?->timezone('Asia/Muscat')->format('H:i') ?? '—' }}</td>
                             <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($rec->minutes === null ? null : (int) $rec->minutes) }}</td>
                         </tr>
                         @empty
@@ -468,10 +468,12 @@
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50">
                         <tr>
+                            {{-- الأعمدةُ الرقميّة تتوسّط، والاسمُ وحدَه إلى الحافّة.
+                                 وعنوانُ العمود يتبع خليّتَه: عنوانٌ إلى الحافّة فوق قيمةٍ
+                                 في الوسط يجعل العينَ تبحث عن العمود بدل أن تقرأه. --}}
+                            @php $centred = ['التاريخ', 'الحضور', 'الانصراف', 'المدة']; @endphp
                             @foreach(['الموظف','التاريخ','الحضور','الانصراف','المدة','الحالة'] as $h)
-                                {{-- عنوانُ «المدة» يتوسّط كخليّته: عنوانٌ إلى الحافّة فوق
-                                     قيمةٍ في الوسط يجعل العينَ تبحث عن العمود. --}}
-                                <th class="{{ $h === 'المدة' ? 'text-center' : 'text-start' }} px-4 py-3 font-semibold text-xs text-gold-dark">{{ $h }}</th>
+                                <th class="{{ in_array($h, $centred, true) ? 'text-center' : 'text-start' }} px-4 py-3 font-semibold text-xs text-gold-dark">{{ $h }}</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -480,9 +482,12 @@
                             @php $isIn = $r->check_out_at === null; @endphp
                             <tr class="border-t border-gray-200">
                                 <td class="px-4 py-3 text-gray-700">{{ $r->user->name ?? '—' }}</td>
-                                <td class="px-4 py-3 text-gray-500" dir="ltr">{{ $r->work_date->format('Y-m-d') }}</td>
-                                <td class="px-4 py-3 text-gray-700" dir="ltr">{{ $r->check_in_at->timezone('Asia/Muscat')->format('h:i A') }}</td>
-                                <td class="px-4 py-3 text-gray-700" dir="ltr">{{ $r->check_out_at ? $r->check_out_at->timezone('Asia/Muscat')->format('h:i A') : '—' }}</td>
+                                {{-- ‏tabular-nums كي تقف الخاناتُ فوق بعضها في عمودٍ
+                                     متوسّط: بلا عرضٍ ثابتٍ للرقم يتذبذب الوسطُ من صفٍّ
+                                     إلى صفّ فيبدو العمودُ مهتزّاً. --}}
+                                <td class="px-4 py-3 text-gray-500 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->work_date->format('Y-m-d') }}</td>
+                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->check_in_at->timezone('Asia/Muscat')->format('h:i A') }}</td>
+                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->check_out_at ? $r->check_out_at->timezone('Asia/Muscat')->format('h:i A') : '—' }}</td>
                                 {{-- ‏rtl لا ltr: النصُّ يخلط أرقاماً لاتينيّةً بحرفين عربيّين،
                                      وفي سياقٍ لاتينيّ تقلبه خوارزميّةُ الاتّجاهين فيخرج
                                      «س 15د 6» بدل «6 س 15 د» — والرقمُ يقفز إلى آخر السطر. --}}
