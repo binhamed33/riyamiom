@@ -51,7 +51,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
-    <link nonce="{{ $cspNonce }}" rel="stylesheet" href="{{ asset('vendor/tom-select/tom-select-2.3.1.css') }}">
+    <link nonce="{{ $cspNonce }}" rel="stylesheet" href="{{ asset('lib/tom-select/tom-select-2.3.1.css') }}">
 
     <script nonce="{{ $cspNonce }}" src="https://cdn.tailwindcss.com"></script>
     {{-- ═══ المكتباتُ من نطاقنا لا من شبكةٍ خارجيّة ═══
@@ -61,9 +61,9 @@
          لا تحميه سياسةُ الأمان إلا بثقةٍ في الشبكة كلِّها. وفاحصُ ZAP
          يعدّ كلَّ سكربتٍ خارجيٍّ بلا بصمة integrity ثغرة — والبصمةُ لا
          تُوضع على رابطٍ عائم. فصارت محمولةً مع النظام بإصدارٍ في اسمها
-         (‎public/vendor/README.md‎). --}}
-    <script nonce="{{ $cspNonce }}" defer src="{{ asset('vendor/alpinejs/alpine-3.17.2.min.js') }}"></script>
-    <script nonce="{{ $cspNonce }}" src="{{ asset('vendor/chartjs/chart-4.5.1.umd.min.js') }}"></script>
+         (‎public/lib/README.md‎). --}}
+    <script nonce="{{ $cspNonce }}" defer src="{{ asset('lib/alpinejs/alpine-3.17.2.min.js') }}"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset('lib/chartjs/chart-4.5.1.umd.min.js') }}"></script>
 
     <script nonce="{{ $cspNonce }}">
         // كل لون سمة يُقرأ من متغيّر CSS مع دعم درجة الشفافية،
@@ -541,15 +541,25 @@
             .sb-section-body, .sb-section-chevron { transition: none; }
         }
 
+        /* ═══ التخطيطُ صحيحٌ بلا جافاسكربت ═══
+
+           هامشُ المحتوى كان يأتي من صنفٍ يضعه Alpine (‎:class‎). فيومَ لم
+           يُحمَّل Alpine — ملفُّه لم يُرفع إلى الخادم — بقي المحتوى بلا
+           هامش، فانزلق تحت الشريط الجانبيّ وقُصّ رأسُ كلّ صفحة.
+
+           فالافتراضُ في CSS: الشريطُ مفتوحٌ والهامشُ معه، وAlpine يضيف
+           ‎ct-closed‎ حين يطويه المستخدم. سقوطُ السكربت يُبقي الصفحةَ
+           تُقرأ — وأمّا الأزرارُ فتموت وحدَها، ولذلك فحصُ الأصول في
+           ‎office:health‎. */
         .sb-open { width: 16rem; }
         .sb-closed { width: 72px; }
-        [dir="rtl"] .ct-open { margin-right: 16rem; }
-        [dir="ltr"] .ct-open { margin-left: 16rem; }
+        [dir="rtl"] .content-area:not(.ct-closed) { margin-right: 16rem; }
+        [dir="ltr"] .content-area:not(.ct-closed) { margin-left: 16rem; }
         [dir="rtl"] .ct-closed { margin-right: 72px; }
         [dir="ltr"] .ct-closed { margin-left: 72px; }
         @media (max-width: 767px) {
-            [dir="rtl"] .ct-open, [dir="rtl"] .ct-closed { margin-right: 0 !important; }
-            [dir="ltr"] .ct-open, [dir="ltr"] .ct-closed { margin-left: 0 !important; }
+            [dir="rtl"] .content-area, [dir="rtl"] .ct-closed { margin-right: 0 !important; }
+            [dir="ltr"] .content-area, [dir="ltr"] .ct-closed { margin-left: 0 !important; }
         }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
@@ -2592,7 +2602,7 @@
     </script>
     @endauth
 
-    <script nonce="{{ $cspNonce }}" src="{{ asset('vendor/tom-select/tom-select-2.3.1.complete.min.js') }}"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset('lib/tom-select/tom-select-2.3.1.complete.min.js') }}"></script>
     <script nonce="{{ $cspNonce }}">
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('select.ts').forEach(function(el) {

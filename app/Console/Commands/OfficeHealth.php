@@ -38,6 +38,7 @@ class OfficeHealth extends Command
         $this->checkFeatures();
         $this->checkPlanLimits();
         $this->checkMail();
+        $this->checkAssets();
         $this->checkLog();
 
         $this->line('');
@@ -49,6 +50,75 @@ class OfficeHealth extends Command
         }
 
         return $this->failures === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    // ---------------------------------------------------------------- الأصول
+
+    /**
+     * مكتباتُ الواجهة تُخدَم فعلاً — من الخادم نفسِه، لا من القرص وحده.
+     *
+     * ═══ ما وقع ═══
+     *
+     * ‏Alpine وChart.js وtom-select نُقلت من شبكةٍ خارجيّة إلى public/lib.
+     * والاختبارُ تأكّد أنّها على القرص فمرّ أخضر — لكنّ .gitignore ابتلعها
+     * فلم تُرفع، والخادمُ ردّ على طلبها 404. فانزلق المحتوى تحت الشريط
+     * الجانبيّ في كلّ مكتب، ومات كلُّ زرّ.
+     *
+     * ولم يرصده فحصٌ: 404 على ملفٍّ ساكنٍ يردّه nginx مباشرةً، لا يمرّ
+     * بـPHP، فلا سطرَ في السجلّ ولا رقمَ في نبضة الأخطاء. الفحصُ الوحيد
+     * الصادق هو أن يُطلب الملفُّ كما يطلبه المتصفّح.
+     *
+     * والقائمةُ تُقرأ من التخطيط نفسِه لا من هنا: ما يُضاف هناك يُفحص
+     * هنا بلا تذكّر.
+     */
+    private function checkAssets(): void
+    {
+        $this->line('');
+        $this->line('      أصول الواجهة — كما يطلبها المتصفّح');
+
+        $layout = (string) @file_get_contents(resource_path('views/layouts/app.blade.php'));
+        preg_match_all("/asset\('(lib\/[^']+)'\)/", $layout, $m);
+        $paths = array_values(array_unique($m[1] ?? []));
+
+        if ($paths === []) {
+            $this->bad('التخطيط لا يشير إلى أيّ مكتبةٍ محمولة — أُزيلت المراجع؟');
+
+            return;
+        }
+
+        $base = rtrim((string) config('app.url'), '/');
+        $remote = str_starts_with($base, 'https://') && !str_contains($base, 'localhost') && !str_contains($base, '127.0.0.1');
+
+        foreach ($paths as $path) {
+            $local = public_path($path);
+
+            if (!is_file($local) || filesize($local) < 1024) {
+                $this->bad($path . ' — غيرُ موجودٍ على القرص أو فارغ');
+                continue;
+            }
+
+            if (!$remote) {
+                $this->line('      •  ' . $path . ' على القرص (' . round(filesize($local) / 1024) . ' ك.ب) — لا فحصَ شبكيّ خارج الإنتاج');
+                continue;
+            }
+
+            try {
+                $response = \Illuminate\Support\Facades\Http::timeout(8)->withHeaders(['Cache-Control' => 'no-cache'])->get($base . '/' . $path);
+            } catch (\Throwable $e) {
+                $this->bad($path . ' — تعذّر طلبه من ' . $base . ': ' . $e->getMessage());
+                continue;
+            }
+
+            $got = strlen((string) $response->body());
+
+            if ($response->status() !== 200) {
+                $this->bad($path . ' — الخادم يردّ ' . $response->status() . ' (الملفُّ خارج git، أو nginx/الجدار يحجب المسار). بلا هذا الملفّ لا تعمل الواجهة.');
+            } elseif ($got < filesize($local) * 0.9) {
+                $this->bad($path . ' — يصل ناقصاً: ' . $got . ' من ' . filesize($local) . ' بايت');
+            } else {
+                $this->ok($path . ' يُخدَم (' . round($got / 1024) . ' ك.ب)');
+            }
+        }
     }
 
     // ---------------------------------------------------------------- النسخ

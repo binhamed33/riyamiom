@@ -111,10 +111,10 @@ class SecurityHeadersEverywhereTest extends TestCase
             'ما زالت مكتبةٌ تُحمَّل من jsdelivr');
 
         foreach ([
-            'vendor/alpinejs/alpine-3.17.2.min.js' => 40_000,
-            'vendor/chartjs/chart-4.5.1.umd.min.js' => 150_000,
-            'vendor/tom-select/tom-select-2.3.1.complete.min.js' => 40_000,
-            'vendor/tom-select/tom-select-2.3.1.css' => 5_000,
+            'lib/alpinejs/alpine-3.17.2.min.js' => 40_000,
+            'lib/chartjs/chart-4.5.1.umd.min.js' => 150_000,
+            'lib/tom-select/tom-select-2.3.1.complete.min.js' => 40_000,
+            'lib/tom-select/tom-select-2.3.1.css' => 5_000,
         ] as $file => $min) {
             $this->assertFileExists(public_path($file), $file . ' غيرُ موجود');
             $this->assertGreaterThan($min, filesize(public_path($file)), $file . ' أصغرُ من أن يكون كاملاً');
@@ -122,7 +122,7 @@ class SecurityHeadersEverywhereTest extends TestCase
 
             // ═══ موجودٌ على القرص لا يعني مرفوعاً ═══
             //
-            // ‏.gitignore كان فيه «vendor/» طليقةً، فابتلعت public/vendor بصمت:
+            // ‏.gitignore كان فيه «vendor/» طليقةً، فابتلعت public/lib بصمت:
             // الملفّاتُ هنا، والاختبارُ أخضر، والخادمُ بلا Alpine — المحتوى تحت
             // الشريط الجانبيّ وكلُّ زرٍّ ميّت، في كلّ مكتبٍ نُشر إليه. فيُسأل git
             // نفسُه لا القرص.
@@ -133,7 +133,23 @@ class SecurityHeadersEverywhereTest extends TestCase
         // ولا يعود النمطُ الطليق: /vendor/ مثبّتةً بالجذر أو لا شيء
         $ignore = file_get_contents(base_path('.gitignore'));
         $this->assertDoesNotMatchRegularExpression('/^vendor\/\s*$/m', $ignore,
-            '«vendor/» طليقةٌ في .gitignore تبتلع public/vendor');
+            '«vendor/» طليقةٌ في .gitignore تبتلع public/lib');
+    }
+
+    /**
+     * ═══ والتخطيطُ لا ينهار حين يسقط سكربت ═══
+     *
+     * هامشُ المحتوى كان يأتي من صنفٍ يضعه Alpine. فيومَ لم يُحمَّل —
+     * ملفُّه لم يُرفع — انزلق المحتوى تحت الشريط الجانبيّ في كلّ صفحةٍ
+     * من كلّ مكتب. فالافتراضُ صار في CSS، وهذا يمنع عودتَه إلى الصنف.
+     */
+    public function test_the_content_margin_does_not_depend_on_javascript(): void
+    {
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+
+        $this->assertStringContainsString('.content-area:not(.ct-closed) { margin-right: 16rem; }', $layout,
+            'هامشُ المحتوى يعتمد على صنفٍ يضعه Alpine — سقوطُ السكربت يُخفي الصفحة تحت الشريط');
+        $this->assertStringContainsString('.content-area:not(.ct-closed) { margin-left: 16rem; }', $layout);
     }
 
     /**
