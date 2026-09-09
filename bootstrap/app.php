@@ -20,10 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'wa.inbox' => \App\Http\Middleware\WhatsAppInboxGuard::class,
             'engine' => \App\Http\Middleware\EnsureEngineOn::class,
         ]);
+        // ترويساتُ الأمان وسيطٌ عامٌّ لا في مجموعة web: المجموعةُ لا تعمل
+        // إلا بعد أن يجد الموجِّهُ مساراً، فمسارٌ غيرُ موجود (404) كان يخرج
+        // بلا سياسة أمان ولا X-Frame-Options — وهو ما رصده فاحصُ ZAP
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\NormalizePhoneNumbers::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\PreventBrowserCache::class);
-        $middleware->appendToGroup('web', \App\Http\Middleware\SecurityHeaders::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\TrackUserActivity::class);
         $middleware->appendToGroup('web', \Illuminate\Http\Middleware\HandleCors::class);
         $middleware->replaceInGroup('web', \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \App\Http\Middleware\VerifyCsrfToken::class);

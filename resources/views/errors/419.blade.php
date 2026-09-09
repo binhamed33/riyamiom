@@ -1,0 +1,6 @@
+@extends('errors.layout')
+@section('code', '419')
+@section('title', 'انتهت صلاحية الصفحة')
+@section('message', 'بقيت الصفحة مفتوحةً طويلاً فانتهى رمزُ حمايتها. ارجع وأعد المحاولة — لن يضيع شيءٌ ممّا كتبت إلا هذا النموذج.')
+@section('action-href', url()->previous())
+@section('action', 'العودة والمحاولة من جديد')

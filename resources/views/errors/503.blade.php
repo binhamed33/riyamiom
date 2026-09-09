@@ -1,0 +1,6 @@
+@extends('errors.layout')
+@section('code', '503')
+@section('title', 'النظام في صيانةٍ قصيرة')
+@section('message', 'نُحدّث النظام الآن، ويعود خلال دقائق. بياناتك محفوظةٌ ولا يُمسّ منها شيء.')
+@section('action-href', url()->current())
+@section('action', 'إعادة المحاولة')

@@ -1,0 +1,6 @@
+@extends('errors.layout')
+@section('code', '401')
+@section('title', 'يلزم تسجيل الدخول')
+@section('message', 'انتهت جلستك أو لم تبدأ بعد. سجّل دخولك ثمّ عد إلى ما كنت فيه.')
+@section('action-href', url('/login'))
+@section('action', 'تسجيل الدخول')

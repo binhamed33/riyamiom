@@ -51,11 +51,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
-    <link nonce="{{ $cspNonce }}" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css">
+    <link nonce="{{ $cspNonce }}" rel="stylesheet" href="{{ asset('vendor/tom-select/tom-select-2.3.1.css') }}">
 
     <script nonce="{{ $cspNonce }}" src="https://cdn.tailwindcss.com"></script>
-    <script nonce="{{ $cspNonce }}" defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {{-- ═══ المكتباتُ من نطاقنا لا من شبكةٍ خارجيّة ═══
+
+         كانت من cdn.jsdelivr.net، وAlpine بإصدارٍ عائم (‎3.x.x‎): أيُّ إصدارٍ
+         جديدٍ يصل المتصفّحَ بلا نشرٍ ولا اختبار، وسكربتٌ من خارج نطاقنا
+         لا تحميه سياسةُ الأمان إلا بثقةٍ في الشبكة كلِّها. وفاحصُ ZAP
+         يعدّ كلَّ سكربتٍ خارجيٍّ بلا بصمة integrity ثغرة — والبصمةُ لا
+         تُوضع على رابطٍ عائم. فصارت محمولةً مع النظام بإصدارٍ في اسمها
+         (‎public/vendor/README.md‎). --}}
+    <script nonce="{{ $cspNonce }}" defer src="{{ asset('vendor/alpinejs/alpine-3.17.2.min.js') }}"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset('vendor/chartjs/chart-4.5.1.umd.min.js') }}"></script>
 
     <script nonce="{{ $cspNonce }}">
         // كل لون سمة يُقرأ من متغيّر CSS مع دعم درجة الشفافية،
@@ -2584,7 +2592,7 @@
     </script>
     @endauth
 
-    <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script nonce="{{ $cspNonce }}" src="{{ asset('vendor/tom-select/tom-select-2.3.1.complete.min.js') }}"></script>
     <script nonce="{{ $cspNonce }}">
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('select.ts').forEach(function(el) {

@@ -6,6 +6,41 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * ترويساتُ الأمان على **كلّ** ردّ — لا على ما وجد مساراً.
+ *
+ * ═══ ما كشفه فاحصُ ZAP ═══
+ *
+ * صفحةُ 404 كانت تخرج بلا سياسة أمان ولا X-Frame-Options ولا HSTS.
+ * والدليلُ في جسمها: سكربتُ Cloudflare يُحقَن بـnonce حين يجد
+ * السياسةَ في الترويسات، وفي صفحة 404 يُحقَن بلا nonce — أي أنّ
+ * الترويسةَ لم تكن هناك.
+ *
+ * والسببُ أنّ هذا الوسيطَ كان في مجموعة web، ومجموعةُ web لا تعمل إلا
+ * بعد أن يجد الموجِّهُ مساراً. فمسارٌ غيرُ موجود يُرمى قبلها، ويخرج
+ * ردُّه عارياً. فصار وسيطاً عامّاً يلتفّ على كلّ ردّ.
+ *
+ * ═══ وما عُدِّل في السياسة ═══
+ *
+ *   • ‎https: http:‎ من script-src: مع strict-dynamic تتجاهلهما
+ *     المتصفّحاتُ الحديثةُ كلُّها، وZAP يعدّهما بابَين مفتوحَين. وما كان
+ *     يُحمَّل من شبكاتٍ خارجيّة صار محمولاً مع النظام.
+ *   • ‎object-src 'none'‎: بلا تعريفٍ يسقط إلى default-src، وZAP يطلبه
+ *     صريحاً — ولا Flash ولا Java هنا.
+ *   • ‎X-XSS-Protection: 0‎ لا ‎1; mode=block‎: المرشّحُ القديم أُزيل من
+ *     المتصفّحات لأنّه صار هو نفسُه أداةَ تسريب، والقيمةُ الموصى بها
+ *     اليوم صفر.
+ *   • و‎X-Powered-By: PHP/8.4‎ تُمحى: PHP يضيفها بنفسه خارج الردّ،
+ *     وتقول للفاحص أيَّ إصدارٍ يهاجم.
+ *
+ * ═══ وما بقي عمداً ═══
+ *
+ *   • ‎'unsafe-eval'‎: Alpine يقيّم تعابيرَه بـnew Function. البديلُ
+ *     ‎@alpinejs/csp‎ ويكسر نصفَ القوالب.
+ *   • ‎style-src 'unsafe-inline'‎: Tailwind من CDN يحقن أنماطَه، ومئاتُ
+ *     ‎style=""‎ في القوالب. زوالُه يحتاج بناءَ Tailwind لا تحميلَه —
+ *     وهو عملٌ مستقلّ.
+ */
 class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
@@ -15,12 +50,18 @@ class SecurityHeaders
 
         $response = $next($request);
 
+        // ‏PHP يضيف X-Powered-By على مستوى الخادم لا الردّ، فلا يُزال من
+        // $response->headers — يُزال من طبقة PHP نفسِها قبل الإرسال
+        if (!headers_sent()) {
+            header_remove('X-Powered-By');
+        }
+
         // SAMEORIGIN لا DENY: عارض المستندات يعرض PDF داخل إطار من
         // الموقع نفسه. DENY كانت تحجب الموقع عن نفسه فتظهر المعاينة
         // صندوقاً فارغاً — والحماية من مواقع خارجية تبقى كاملة.
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->headers->set('X-XSS-Protection', '1; mode=block');
+        $response->headers->set('X-XSS-Protection', '0');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
@@ -37,14 +78,17 @@ class SecurityHeaders
 
         $csp = [
             "default-src 'self'",
-            "script-src 'nonce-{$nonce}' 'strict-dynamic' 'unsafe-eval' https: http:",
-            "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com",
-            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.tailwindcss.com",
+            "script-src 'nonce-{$nonce}' 'strict-dynamic' 'unsafe-eval'",
+            "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.gstatic.com",
             "img-src 'self' data: blob: https://static.cloudflareinsights.com",
-            "connect-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com",
+            // ‏cloudflareinsights.com (بلا static) هو ما يبعث إليه المنارُ قياساتِه
+            "connect-src 'self' https://cdn.tailwindcss.com https://static.cloudflareinsights.com https://cloudflareinsights.com",
+            "object-src 'none'",
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",
+            'upgrade-insecure-requests',
         ];
         // ═══ سياسةٌ وضعها المتحكّمُ لا تُستبدل ═══
         //
