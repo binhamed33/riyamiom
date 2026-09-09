@@ -119,7 +119,21 @@ class SecurityHeadersEverywhereTest extends TestCase
             $this->assertFileExists(public_path($file), $file . ' غيرُ موجود');
             $this->assertGreaterThan($min, filesize(public_path($file)), $file . ' أصغرُ من أن يكون كاملاً');
             $this->assertStringContainsString($file, $layout, $file . ' لا يُشار إليه من التخطيط');
+
+            // ═══ موجودٌ على القرص لا يعني مرفوعاً ═══
+            //
+            // ‏.gitignore كان فيه «vendor/» طليقةً، فابتلعت public/vendor بصمت:
+            // الملفّاتُ هنا، والاختبارُ أخضر، والخادمُ بلا Alpine — المحتوى تحت
+            // الشريط الجانبيّ وكلُّ زرٍّ ميّت، في كلّ مكتبٍ نُشر إليه. فيُسأل git
+            // نفسُه لا القرص.
+            $tracked = trim((string) shell_exec('cd ' . escapeshellarg(base_path()) . ' && git ls-files --error-unmatch ' . escapeshellarg('public/' . $file) . ' 2>/dev/null'));
+            $this->assertSame('public/' . $file, $tracked, $file . ' على القرص لكنّه خارج git — لن يصل الخادم');
         }
+
+        // ولا يعود النمطُ الطليق: /vendor/ مثبّتةً بالجذر أو لا شيء
+        $ignore = file_get_contents(base_path('.gitignore'));
+        $this->assertDoesNotMatchRegularExpression('/^vendor\/\s*$/m', $ignore,
+            '«vendor/» طليقةٌ في .gitignore تبتلع public/vendor');
     }
 
     /**
