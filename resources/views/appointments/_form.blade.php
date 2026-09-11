@@ -27,9 +27,18 @@
     <div class="p-4">
         <div x-show="mode === 'client'">
             <label class="block text-xs font-semibold text-gray-600 mb-1" for="client_id">الموكّل</label>
+            {{-- ‏ts: قائمةُ الموكّلين تبلغ المئات، والقائمةُ الأصليّة تُنزَل بالعجلة لا
+                 بالكتابة — فصارت كبقيّة قوائم النظام: يُكتب الاسمُ فتُصفّى.
+                 و‎data-no-create‎ لأنّ الموكّلَ الجديد له تبويبُه («شخص جديد») لا
+                 سطرٌ يُخترع في القائمة.
+                 و‎x-effect‎ يُعلم TomSelect بالتعطيل: Alpine يغيّر disabled على
+                 ‎<select>‎ الأصليّ المخفيّ، وTomSelect لا يراقبه، فيبقى الصندوقُ
+                 المرسومُ مفتوحاً وهو معطّل. --}}
             <select id="client_id" name="client_id" x-bind:disabled="mode !== 'client'"
-                    class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
-                <option value="">اختر الموكّل…</option>
+                    x-effect="if ($el.tomselect) { mode === 'client' ? $el.tomselect.enable() : $el.tomselect.disable() }"
+                    data-no-create placeholder="اكتب اسم الموكّل…"
+                    class="ts w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
+                <option value="">اكتب اسم الموكّل…</option>
                 @foreach($clients as $client)
                     <option value="{{ $client->id }}" @selected($selectedClient == $client->id)>{{ $client->name }}</option>
                 @endforeach

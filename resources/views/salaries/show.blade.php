@@ -42,6 +42,39 @@
         </p>
     </div>
 
+    {{-- ═══ التعديلُ حيث يُقرأ الرقم ═══
+         من فتح الكشفَ ورأى الأساسيَّ خطأً كان عليه أن يعود إلى تبويب
+         الرواتب ويبحث عن الموظّف في القائمة ويكتب من جديد. فالنموذجُ هنا،
+         مملوءاً بالراتب القائم، ويحفظ بالمسار نفسِه (إنشاءً أو تعديلاً). --}}
+    <div class="bg-white rounded-xl border border-gold/15 p-6 mb-6">
+        <h2 class="text-sm font-bold text-gold-dark mb-4">{{ $salary ? 'تعديل الراتب' : 'تسجيل الراتب' }}</h2>
+        <form method="POST" action="{{ route('salaries.store') }}" class="grid md:grid-cols-3 gap-3 items-end">
+            @csrf
+            <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1.5">الراتب الأساسي (ر.ع)</label>
+                <input type="number" step="0.01" min="0" name="basic_salary" required dir="ltr"
+                       value="{{ old('basic_salary', $salary ? number_format((float) $salary->basic_salary, 2, '.', '') : '') }}"
+                       class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1.5">البدلات الثابتة</label>
+                <input type="number" step="0.01" min="0" name="allowances" dir="ltr"
+                       value="{{ old('allowances', $salary ? number_format((float) $salary->allowances, 2, '.', '') : '0') }}"
+                       class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1.5">ملاحظة</label>
+                <input type="text" name="note" maxlength="255" value="{{ old('note', $salary?->note) }}"
+                       class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
+            </div>
+            <button class="md:col-span-3 bg-primary hover:bg-primary-dark text-white py-2.5 rounded-lg font-semibold text-sm transition-colors">
+                {{ $salary ? 'تحديث الراتب' : 'حفظ الراتب' }}
+            </button>
+        </form>
+        @error('basic_salary')<p class="text-[11px] text-red-600 mt-2">{{ $message }}</p>@enderror
+    </div>
+
     <div class="grid lg:grid-cols-2 gap-4">
         <div class="bg-white rounded-xl border border-gold/15 p-6">
             <h2 class="text-sm font-bold text-gold-dark mb-4">بنود الفترة</h2>

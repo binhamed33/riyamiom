@@ -555,9 +555,12 @@
                                 </td>
                                 <td class="px-4 py-3 text-gray-500" dir="ltr">{{ $p['other_deductions'] > 0 ? number_format($p['other_deductions'], 2) : '—' }}</td>
                                 <td class="px-4 py-3 font-bold text-gray-700" dir="ltr">{{ $p['has_salary'] ? number_format($p['net'], 2) : '—' }}</td>
-                                <td class="px-4 py-3">
+                                <td class="px-4 py-3 whitespace-nowrap">
                                     <a href="{{ route('salaries.show', $p['employee']) }}?period={{ $payPeriod }}"
                                        class="text-xs font-semibold text-gold-dark hover:underline">الكشف</a>
+                                    <span class="text-gray-300 mx-1">·</span>
+                                    <a href="{{ route('hr.index', ['tab' => 'salaries', 'period' => $payPeriod, 'employee' => $p['employee']->id]) }}#salary-form"
+                                       class="text-xs font-semibold text-primary hover:underline">تعديل</a>
                                 </td>
                             </tr>
                         @endforeach
@@ -568,36 +571,73 @@
 
         <div class="grid lg:grid-cols-2 gap-4">
             <div class="bg-white rounded-xl border border-gold/15 p-6">
-                <h2 class="text-sm font-bold text-gold-dark mb-4">تحديد راتب موظف</h2>
-                <form method="POST" action="{{ route('salaries.store') }}" class="space-y-3">
+                <h2 class="text-sm font-bold text-gold-dark mb-4">تحديد راتب موظف أو تعديله</h2>
+                {{-- ═══ التعديلُ لا يبدأ من صفر ═══
+                     كان النموذجُ يفتح فارغاً دائماً: من اختار موظّفاً له راتبٌ رأى
+                     صفراً في الأساسيّ وظنّ أنّ التعديل غيرُ ممكن. فالخياراتُ تحمل
+                     الراتبَ القائم، والسكربتُ يملأ الحقولَ عند الاختيار — ويُسبَق
+                     الاختيارُ حين يأتي من رابط «تعديل» في الجدول أو من الكشف. --}}
+                <form method="POST" action="{{ route('salaries.store') }}" class="space-y-3" id="salary-form" data-salary-form>
                     @csrf
                     <div>
                         <label class="block text-xs text-gray-400 mb-1.5">الموظف</label>
-                        <select data-no-create name="employee_id" required class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
+                        <select data-no-create name="employee_id" required placeholder="اكتب اسم الموظّف…" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
+                            <option value="">اكتب اسم الموظّف…</option>
                             @foreach($employees as $e)
-                                <option value="{{ $e->id }}">{{ $e->name }}</option>
+                                @php $cur = $salaries[$e->id] ?? null; @endphp
+                                <option value="{{ $e->id }}"
+                                        data-basic="{{ $cur ? number_format((float) $cur->basic_salary, 2, '.', '') : '' }}"
+                                        data-allowances="{{ $cur ? number_format((float) $cur->allowances, 2, '.', '') : '' }}"
+                                        data-note="{{ $cur?->note }}"
+                                        @selected($salaryEmployee === $e->id)>{{ $e->name }}{{ $cur ? ' — ' . number_format((float) $cur->basic_salary, 2) . ' ر.ع' : '' }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs text-gray-400 mb-1.5">الراتب الأساسي (ر.ع)</label>
-                            <input type="number" step="0.01" min="0" name="basic_salary" required dir="ltr"
+                            <input type="number" step="0.01" min="0" name="basic_salary" required dir="ltr" data-salary-basic
                                    class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
                         </div>
                         <div>
                             <label class="block text-xs text-gray-400 mb-1.5">البدلات الثابتة</label>
-                            <input type="number" step="0.01" min="0" name="allowances" value="0" dir="ltr"
+                            <input type="number" step="0.01" min="0" name="allowances" value="0" dir="ltr" data-salary-allowances
                                    class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
                         </div>
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 mb-1.5">ملاحظة</label>
-                        <input type="text" name="note" maxlength="255"
+                        <input type="text" name="note" maxlength="255" data-salary-note
                                class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm">
                     </div>
-                    <button class="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-lg font-semibold text-sm transition-colors">حفظ الراتب</button>
+                    <p class="text-[11px] text-gray-400" data-salary-hint hidden>هذا الموظّف له راتبٌ مسجَّل — الحفظُ يُحدّثه.</p>
+                    <button class="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-lg font-semibold text-sm transition-colors" data-salary-submit>حفظ الراتب</button>
                 </form>
+                <script nonce="{{ $cspNonce ?? '' }}">
+                (function () {
+                    var form = document.querySelector('[data-salary-form]');
+                    if (!form) return;
+                    var sel = form.querySelector('select[name=employee_id]');
+                    var basic = form.querySelector('[data-salary-basic]');
+                    var allow = form.querySelector('[data-salary-allowances]');
+                    var note = form.querySelector('[data-salary-note]');
+                    var hint = form.querySelector('[data-salary-hint]');
+                    var btn = form.querySelector('[data-salary-submit]');
+
+                    function fill() {
+                        var o = sel.options[sel.selectedIndex];
+                        var has = o && o.getAttribute('data-basic') !== null && o.getAttribute('data-basic') !== '';
+                        basic.value = has ? o.getAttribute('data-basic') : '';
+                        allow.value = has ? o.getAttribute('data-allowances') : '0';
+                        note.value = has ? (o.getAttribute('data-note') || '') : '';
+                        hint.hidden = !has;
+                        btn.textContent = has ? 'تحديث الراتب' : 'حفظ الراتب';
+                    }
+
+                    sel.addEventListener('change', fill);
+                    fill();
+                })();
+                </script>
             </div>
 
             <div class="bg-white rounded-xl border border-gold/15 p-6">

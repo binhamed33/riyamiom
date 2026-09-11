@@ -9,6 +9,7 @@ use App\Models\HrLeaveType;
 use App\Models\HrPenalty;
 use App\Models\HrPerformance;
 use App\Models\Notification;
+use App\Models\HrSalary;
 use App\Models\User;
 use App\Models\LegalCase;
 use App\Models\Task;
@@ -211,6 +212,15 @@ class HrController extends Controller
             $out += [
                 'payPeriod' => $period,
                 'payslips' => $payslips,
+                // ═══ التعديلُ لا يبدأ من صفر ═══
+                //
+                // كان نموذجُ «تحديد راتب» يفتح فارغاً دائماً، فمن أراد تعديلَ
+                // راتبٍ قائم رأى صفراً في الأساسيّ وظنّ أنّ التعديل غيرُ ممكن
+                // — وهو ممكن، لكنّ الشاشةَ لا تقوله. فالرواتبُ القائمةُ تُرسل
+                // مع القائمة، ويُملأ النموذجُ بها عند اختيار الموظّف.
+                'salaries' => HrSalary::whereIn('employee_id', $employees->pluck('id'))->get()->keyBy('employee_id'),
+                // ورابطُ «تعديل» من الجدول ومن الكشف يفتح النموذجَ على صاحبه
+                'salaryEmployee' => (int) $request->get('employee', 0),
                 'payTotals' => [
                     'gross' => round($payslips->sum('gross'), 2),
                     'deductions' => round($payslips->sum('deductions'), 2),
