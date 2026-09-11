@@ -32,4 +32,22 @@ class AppointmentClientPickerTest extends TestCase
         $this->assertStringContainsString('data-no-create', $m[0], 'الكتابةُ الحرّة تخترع موكّلاً غيرَ مسجَّل');
         $this->assertStringContainsString('placeholder="اكتب اسم الموكّل…"', $m[0]);
     }
+
+    /**
+     * ═══ والقائمةُ المنسدلة لا تُقصّ ═══
+     *
+     * بطاقةُ التبويبين كانت ‎overflow-hidden‎ لتدوير زواياها، والقائمةُ
+     * المنسدلة تُرسم مطلقةَ الموضع داخلها — فظهر منها شريطٌ بعرض إصبعٍ
+     * تحت الحقل، «مستحيةً» كما وصفها المالك. الزوايا تُدوَّر على شريط
+     * التبويبين نفسِه، والبطاقةُ تبقى مفتوحةً لما ينسدل منها.
+     */
+    public function test_the_picker_card_does_not_clip_its_dropdown(): void
+    {
+        $form = file_get_contents(resource_path('views/appointments/_form.blade.php'));
+
+        preg_match('/<div class="([^"]*)"\s*\n?\s*x-data="\{ mode:/', $form, $m);
+        $this->assertNotEmpty($m, 'لم تُوجد بطاقةُ التبويبين');
+        $this->assertStringNotContainsString('overflow-hidden', $m[1],
+            'بطاقةُ التبويبين تقصّ القائمةَ المنسدلة عند حافّتها');
+    }
 }

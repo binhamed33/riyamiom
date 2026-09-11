@@ -13,9 +13,13 @@
      أكثرُ المواعيد الأولى مع من لا ملفَّ له بعد: يتّصل ويطلب استشارة.
      فبابان: موكّلٌ من السجلّ، أو شخصٌ باسمه ورقمه — والرقمُ وحده يكفي
      لتصله رسالةُ التأكيد. --}}
-<div class="mb-4 rounded-xl border border-gray-200 overflow-hidden"
+{{-- ‏بلا overflow-hidden على البطاقة: قائمةُ الموكّلين المنسدلة تُرسم مطلقةَ
+     الموضع داخلها، والقصُّ عند حافّة البطاقة كان يُظهر منها شريطاً بعرض
+     إصبعٍ — «مستحيةً» كما وصفها المالك. والزوايا تُدوَّر على شريط
+     التبويبين نفسِه فيبقى الشكلُ كما كان. --}}
+<div class="mb-4 rounded-xl border border-gray-200"
      x-data="{ mode: '{{ $selectedClient ? 'client' : (old('guest_name', $appointment?->guest_name) ? 'guest' : 'client') }}' }">
-    <div class="flex text-xs font-bold">
+    <div class="flex text-xs font-bold rounded-t-xl overflow-hidden">
         <button type="button" x-on:click="mode = 'client'"
                 :class="mode === 'client' ? 'bg-gold text-white' : 'bg-gray-50 text-gray-500'"
                 class="flex-1 py-2.5 transition">موكّل مسجَّل</button>
