@@ -68,6 +68,30 @@ class OfficeErrorsCommandTest extends TestCase
                 . '"url":"https://office.riyami.om/clients","user_id":7}';
         }
 
+        // وعطبٌ ثالثٌ بشكل لارافل الحقيقيّ: الرميُ في vendor والسببُ في إطار
+        // تتبّعٍ لاحق تحت app/ — وهو ما كان يظهر «—» في الموضع
+        for ($i = 0; $i < 4; $i++) {
+            $lines[] = '[' . $at(10 - $i) . '] production.ERROR: SQLSTATE[42S22]: Column not found: 1054 Unknown column '
+                . "'attempts' in 'where clause' (Connection: mysql, SQL: select * from `whatsapp_webhook_events` where `attempts` < 10) "
+                . '{"exception":"[object] (Illuminate\\\\Database\\\\QueryException(code: 42S22): SQLSTATE[42S22]: Column not found: 1054 '
+                . 'at /home/office-x/htdocs/x.riyami.om/vendor/laravel/framework/src/Illuminate/Database/Connection.php:825)';
+            $lines[] = '[stacktrace]';
+            $lines[] = '#0 /home/office-x/htdocs/x.riyami.om/vendor/laravel/framework/src/Illuminate/Database/Connection.php(779): Illuminate\\Database\\Connection->runQueryCallback()';
+            $lines[] = '#1 /home/office-x/htdocs/x.riyami.om/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php(3106): Illuminate\\Database\\Connection->select()';
+            $lines[] = '#2 /home/office-x/htdocs/x.riyami.om/app/Console/Commands/WhatsAppSweep.php(191): Illuminate\\Database\\Query\\Builder->pluck()';
+            $lines[] = '#3 /home/office-x/htdocs/x.riyami.om/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): App\\Console\\Commands\\WhatsAppSweep->handle()';
+            $lines[] = '"}';
+        }
+
+        // وخطأُ اتّصالٍ بشكله الآخر: القاعدةُ لا تردّ — ونصُّه يحمل اسمَ مستخدم القاعدة
+        $lines[] = '[' . $at(5) . '] production.ERROR: SQLSTATE[HY000] [2002] Connection refused (Connection: mysql, SQL: select 1) '
+            . '{"exception":"[object] (Illuminate\\Database\\QueryException(code: 2002): SQLSTATE[HY000] [2002] Connection refused '
+            . 'at /home/office-x/htdocs/x.riyami.om/vendor/laravel/framework/src/Illuminate/Database/Connection.php:825)';
+        $lines[] = '[stacktrace]';
+        $lines[] = '#0 /home/office-x/htdocs/x.riyami.om/vendor/acme/thing/resources/app/Helper.php(7): Acme\\Helper->run()';
+        $lines[] = '#1 /home/office-x/htdocs/x.riyami.om/app/Console/Commands/PanelHeartbeat.php(33): Acme\\Helper->run()';
+        $lines[] = '"}';
+
         // وخطأٌ قديمٌ خارج النافذة — لا يُعَدّ
         $lines[] = '[' . now()->subDays(9)->format('Y-m-d H:i:s') . '] production.ERROR: Unhandled exception [OLD]: '
             . '{"exception":"[object] (RuntimeException(code: 0): at /app/Http/Controllers/OldController.php:9)"}';
@@ -80,23 +104,37 @@ class OfficeErrorsCommandTest extends TestCase
     {
         $rows = ErrorPulse::breakdown(now()->subDay());
 
-        $this->assertCount(2, $rows, 'المجموعاتُ ليست اثنتين — ' . json_encode($rows, JSON_UNESCAPED_UNICODE));
+        $this->assertCount(4, $rows, 'المجموعاتُ ليست أربعاً — ' . json_encode($rows, JSON_UNESCAPED_UNICODE));
 
         $this->assertSame(13, $rows[0]['count'], 'العددُ لا يُجمع');
         $this->assertSame('QueryException', $rows[0]['type']);
         $this->assertSame('app/Http/Controllers/AppointmentController.php:41', $rows[0]['origin'],
             'الموضعُ لا يُستخرج — وهو ما يُفتح لإصلاحه');
+        $this->assertSame('Base table or view not found (1146)', $rows[0]['detail']);
 
-        $this->assertSame(2, $rows[1]['count']);
-        $this->assertSame('UniqueConstraintViolationException', $rows[1]['type']);
-        $this->assertSame('app/Http/Controllers/ClientController.php:118', $rows[1]['origin']);
+        // الرميُ في vendor والسببُ في التتبّع تحت app/ — كان يظهر «—»
+        $this->assertSame(4, $rows[1]['count']);
+        $this->assertSame('app/Console/Commands/WhatsAppSweep.php:191', $rows[1]['origin'],
+            'الإطارُ الأوّل تحت app/ في التتبّع لا يُقرأ — فيبقى الموضعُ «—»');
+        $this->assertSame('Column not found (1054)', $rows[1]['detail']);
+
+        $this->assertSame(2, $rows[2]['count']);
+        $this->assertSame('UniqueConstraintViolationException', $rows[2]['type']);
+        $this->assertSame('app/Http/Controllers/ClientController.php:118', $rows[2]['origin']);
+        $this->assertSame('Integrity constraint violation (1062)', $rows[2]['detail']);
+
+        // خطأُ الاتّصال: رمزُه يُقرأ، وإطارُ vendor الذي في مساره ‎/app/‎ يُتخطّى
+        $this->assertSame(1, $rows[3]['count']);
+        $this->assertSame('Connection (2002)', $rows[3]['detail']);
+        $this->assertSame('app/Console/Commands/PanelHeartbeat.php:33', $rows[3]['origin'],
+            'إطارُ vendor الذي في مساره /app/ قُرئ موضعاً لنا');
     }
 
     /** والنافذةُ تُحترم: خطأُ الأسبوع الماضي ليس خطأَ اليوم. */
     public function test_it_respects_the_window(): void
     {
-        $this->assertCount(2, ErrorPulse::breakdown(now()->subDay()));
-        $this->assertCount(3, ErrorPulse::breakdown(now()->subDays(30)));
+        $this->assertCount(4, ErrorPulse::breakdown(now()->subDay()));
+        $this->assertCount(5, ErrorPulse::breakdown(now()->subDays(30)));
     }
 
     /**
@@ -112,6 +150,10 @@ class OfficeErrorsCommandTest extends TestCase
             ->doesntExpectOutputToContain('أحمد الريامي')
             ->doesntExpectOutputToContain('Duplicate entry')
             ->doesntExpectOutputToContain('SQLSTATE')
+            ->doesntExpectOutputToContain('whatsapp_webhook_events')
+            ->doesntExpectOutputToContain('Connection refused')
+            ->expectsOutputToContain('Column not found (1054)')
+            ->expectsOutputToContain('Connection (2002)')
             ->run();
     }
 
@@ -140,7 +182,8 @@ class OfficeErrorsCommandTest extends TestCase
             'الوقتُ بلا منطقةٍ زمنيّة — اللوحةُ ستقرؤه UTC');
         $this->assertLessThanOrEqual(now()->timestamp, \Carbon\Carbon::parse($pulse['last_at'])->timestamp,
             'آخرُ خطأٍ في المستقبل — المنطقةُ الزمنيّة مقلوبة');
-        $this->assertSame('app/Http/Controllers/ClientController.php:118', $pulse['last_origin']);
+        $this->assertSame('app/Console/Commands/PanelHeartbeat.php:33', $pulse['last_origin'],
+            'موضعُ آخر خطأٍ لا يُقرأ من التتبّع');
         $this->assertStringNotContainsString('أحمد', json_encode($pulse, JSON_UNESCAPED_UNICODE));
     }
 

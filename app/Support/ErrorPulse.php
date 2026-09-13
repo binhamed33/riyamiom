@@ -21,52 +21,19 @@ class ErrorPulse
     private const TAIL_BYTES = 2_000_000;
 
     /**
-     * @return array{count:int,last_type:?string,last_route:?string,last_at:?string}
+     * @return array{count:int,last_type:?string,last_route:?string,last_at:?string,last_origin?:?string}
      */
     public static function summary(?Carbon $since = null): array
     {
         $since ??= now()->subDay();
         $empty = ['count' => 0, 'last_type' => null, 'last_route' => null, 'last_at' => null];
 
-        $log = storage_path('logs/laravel.log');
-
-        if (!is_file($log) || !is_readable($log)) {
-            return $empty;
-        }
-
-        try {
-            $handle = fopen($log, 'r');
-
-            if ($handle === false) {
-                return $empty;
-            }
-
-            fseek($handle, max(0, filesize($log) - self::TAIL_BYTES));
-            $tail = stream_get_contents($handle);
-            fclose($handle);
-        } catch (\Throwable) {
-            // سجلٌّ متعذّر القراءة لا يُسقط النبضة — غيابُ الخبر ليس خطأً
-            return $empty;
-        }
-
         $count = 0;
         $last = null;
 
-        foreach (explode("\n", (string) $tail) as $line) {
-            if (!str_contains($line, '.ERROR:')) {
-                continue;
-            }
-
-            if (!preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/', $line, $m)) {
-                continue;
-            }
-
-            if (!Carbon::parse($m[1])->gte($since)) {
-                continue;
-            }
-
+        foreach (self::errorLines($since) as [$at, $line, $trace]) {
             $count++;
-            $last = ['at' => $m[1], 'line' => $line];
+            $last = ['at' => $at, 'line' => $line, 'trace' => $trace];
         }
 
         if ($last === null) {
@@ -86,7 +53,7 @@ class ErrorPulse
             'last_at' => Carbon::parse($last['at'], config('app.timezone'))->toIso8601String(),
             // والموضعُ (الملفُّ والسطر) يجيب «ما الخطأ؟» في القناة نفسِها —
             // بلا نصّ الخطأ، فلا يخرج بيانُ موكّل (§56)
-            'last_origin' => self::origin($last['line']),
+            'last_origin' => self::origin($last['line'], $last['trace']),
         ];
     }
 
@@ -108,24 +75,26 @@ class ErrorPulse
      * ‏«Duplicate entry 'أحمد الريامي' for key 'clients_phone'». والنوعُ
      * والموضعُ يكفيان للإصلاح — والتفصيلُ يبقى في الخادم لمن يملكه.
      *
-     * @return list<array{count:int,type:string,route:?string,origin:?string,last_at:string}>
+     * @return list<array{count:int,type:string,detail:?string,route:?string,origin:?string,last_at:string}>
      */
     public static function breakdown(?Carbon $since = null, int $limit = 15): array
     {
         $since ??= now()->subDay();
         $groups = [];
 
-        foreach (self::errorLines($since) as [$at, $line]) {
+        foreach (self::errorLines($since) as [$at, $line, $trace]) {
             $type = self::exceptionType($line);
             $route = self::route($line);
-            $origin = self::origin($line);
+            $origin = self::origin($line, $trace);
+            $detail = self::detail($line);
 
-            $key = $type . '|' . ($route ?? '') . '|' . ($origin ?? '');
+            $key = $type . '|' . ($route ?? '') . '|' . ($origin ?? '') . '|' . ($detail ?? '');
 
             if (!isset($groups[$key])) {
                 $groups[$key] = [
                     'count' => 0,
                     'type' => $type,
+                    'detail' => $detail,
                     'route' => $route,
                     'origin' => $origin,
                     'last_at' => $at,
@@ -145,7 +114,7 @@ class ErrorPulse
      * أسطرُ الخطأ في النافذة — مصدرٌ واحدٌ للقراءة يستعمله الملخّصُ
      * والتفصيل، فلا تفترق قراءتان عن سجلٍّ واحد.
      *
-     * @return list<array{0:string,1:string}>
+     * @return list<array{0:string,1:string,2:string}> الوقتُ، سطرُ الخطأ، وإطاراتُ التتبّع التي تليه
      */
     private static function errorLines(Carbon $since): array
     {
@@ -169,22 +138,35 @@ class ErrorPulse
             return [];
         }
 
+        // ═══ الخطأُ سطرٌ وما بعده تتبّع ═══
+        //
+        // لارافل يكتب الاستثناءَ على سطرٍ ثمّ [stacktrace] وإطاراتِه على
+        // أسطرٍ تليه: ‎#0 /…/vendor/…/Connection.php(825)‎ ثمّ ‎#5 /…/app/…‎.
+        // وسطرُ الخطأ نفسُه يشير إلى موضع الرمي في vendor لا إلى شفرتنا،
+        // فمن قرأ السطرَ وحده رأى «—» في الموضع. الإطارُ الأوّل تحت app/
+        // هو الجواب، وهو في الأسطر التالية.
         $rows = [];
+        $open = null;
 
         foreach (explode("\n", (string) $tail) as $line) {
-            if (!str_contains($line, '.ERROR:')) {
+            $isEntry = preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/', $line, $m) === 1;
+
+            if ($isEntry) {
+                $open = null;
+
+                if (!str_contains($line, '.ERROR:') || !Carbon::parse($m[1])->gte($since)) {
+                    continue;
+                }
+
+                $rows[] = [$m[1], $line, ''];
+                $open = count($rows) - 1;
                 continue;
             }
 
-            if (!preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/', $line, $m)) {
-                continue;
+            // إطارُ تتبّعٍ يتبع آخرَ خطأٍ مفتوح — يُرفق به (بحدٍّ، فالتتبّع طويل)
+            if ($open !== null && str_starts_with($line, '#') && strlen($rows[$open][2]) < 6000) {
+                $rows[$open][2] .= $line . "\n";
             }
-
-            if (!Carbon::parse($m[1])->gte($since)) {
-                continue;
-            }
-
-            $rows[] = [$m[1], $line];
         }
 
         return $rows;
@@ -198,15 +180,56 @@ class ErrorPulse
      * ويُقصّ إلى ما بعد جذر التطبيق: ‎/home/riyami/htdocs/office.riyami.om/‎
      * لا يفيد قارئاً، و‎app/Http/Controllers/CaseController.php:412‎ يفيد.
      */
-    private static function origin(string $line): ?string
+    private static function origin(string $line, string $trace = ''): ?string
     {
         $clean = str_replace('\\/', '/', $line);
 
-        if (!preg_match('#(/(?:app|routes|database|resources|config)/[A-Za-z0-9_/.\-]+\.php)[^0-9]{0,3}(\d+)#', $clean, $m)) {
-            return null;
+        // موضعُ الرمي إن كان في شفرتنا أصلاً
+        if (preg_match('#(/(?:app|routes|database|resources|config)/[A-Za-z0-9_/.\-]+\.php)[^0-9]{0,3}(\d+)#', $clean, $m)) {
+            return ltrim($m[1], '/') . ':' . $m[2];
         }
 
-        return ltrim($m[1], '/') . ':' . $m[2];
+        // وإلّا فأوّلُ إطارٍ في التتبّع تحت شفرتنا: الاستثناءُ يُرمى في
+        // vendor (Connection.php) والسببُ في app/…
+        //
+        // وإطاراتُ vendor تُتخطّى بالاسم لا بالنمط وحده: حزمةٌ في vendor
+        // قد يكون في مسارها ‎/app/‎ أو ‎/resources/‎ (‎vendor/x/resources/views‎)
+        // فيُقرأ إطارُها موضعاً لنا ويُفتح ملفٌ لا علاقة له بالعطب.
+        foreach (explode("\n", $trace) as $frame) {
+            if (!str_starts_with($frame, '#') || str_contains($frame, '/vendor/')) {
+                continue;
+            }
+
+            if (preg_match('#(/(?:app|routes|database|resources|config)/[A-Za-z0-9_/.\-]+\.php)\((\d+)\)#', $frame, $m)) {
+                return ltrim($m[1], '/') . ':' . $m[2];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * صنفُ خطأ قاعدة البيانات بلا نصّه: «Column not found (1054)».
+     *
+     * ‏SQLSTATE ورمزُ المحرّك واسمُ الصنف ثوابتُ في المحرّك لا بياناتٌ من
+     * الصفوف — فتُرسَل. أمّا ما بعدها («Unknown column 'x' … bindings
+     * [أحمد الريامي]») فقد يحمل اسمَ موكّل، فلا يُقرأ.
+     */
+    private static function detail(string $line): ?string
+    {
+        if (preg_match('/SQLSTATE\[([0-9A-Z]{5})\]: ([A-Za-z][A-Za-z \/]{2,40}?): (\d{3,5})\b/', $line, $m)) {
+            return trim($m[2]) . ' (' . $m[3] . ')';
+        }
+
+        // خطأُ الاتّصال نفسِه يأتي بشكلٍ آخر: ‎SQLSTATE[HY000] [2002] Connection
+        // refused‎ أو ‎[1045] Access denied for user 'x'@'host'‎ — والرمزُ
+        // يكفي (2002 = الخادم لا يردّ، 1045 = كلمةُ المرور)، وما بعده
+        // يحمل اسمَ مستخدم القاعدة فلا يُطبَع.
+        if (preg_match('/SQLSTATE\[HY000\] \[(\d{4})\]/', $line, $m)) {
+            return 'Connection (' . $m[1] . ')';
+        }
+
+        return null;
     }
 
     /** اسم صنف الاستثناء وحده — لا رسالته. */
