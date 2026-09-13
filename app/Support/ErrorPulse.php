@@ -77,7 +77,16 @@ class ErrorPulse
             'count' => $count,
             'last_type' => self::exceptionType($last['line']),
             'last_route' => self::route($last['line']),
-            'last_at' => $last['at'],
+            // ═══ الوقتُ بمنطقته لا عارياً ═══
+            //
+            // السجلُّ يكتب الساعةَ بتوقيت المكتب (مسقط)، وكانت تُرسل نصّاً
+            // بلا منطقة، فتقرؤها اللوحةُ — وهي على UTC — على أنّها UTC:
+            // أربعُ ساعاتٍ إلى الأمام، فتقول رسالةُ ديسكورد «آخرها بعد ٣
+            // ساعات من الآن» عن خطأٍ وقع قبل ساعة.
+            'last_at' => Carbon::parse($last['at'], config('app.timezone'))->toIso8601String(),
+            // والموضعُ (الملفُّ والسطر) يجيب «ما الخطأ؟» في القناة نفسِها —
+            // بلا نصّ الخطأ، فلا يخرج بيانُ موكّل (§56)
+            'last_origin' => self::origin($last['line']),
         ];
     }
 

@@ -125,6 +125,25 @@ class OfficeErrorsCommandTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * ═══ النبضةُ تحمل الوقتَ بمنطقته والموضعَ ═══
+     *
+     * كانت الساعةُ تُرسل عاريةً بتوقيت مسقط فتقرؤها اللوحةُ UTC — فتقول
+     * رسالةُ ديسكورد «آخرها بعد ٣ ساعات من الآن» عن خطأٍ وقع قبل ساعة.
+     * والموضعُ يجيب «ما الخطأ؟» في القناة نفسِها بلا نصّ الخطأ.
+     */
+    public function test_the_pulse_carries_an_offset_timestamp_and_the_origin(): void
+    {
+        $pulse = ErrorPulse::summary(now()->subDay());
+
+        $this->assertMatchesRegularExpression('/[+-]\d{2}:\d{2}$/', $pulse['last_at'],
+            'الوقتُ بلا منطقةٍ زمنيّة — اللوحةُ ستقرؤه UTC');
+        $this->assertLessThanOrEqual(now()->timestamp, \Carbon\Carbon::parse($pulse['last_at'])->timestamp,
+            'آخرُ خطأٍ في المستقبل — المنطقةُ الزمنيّة مقلوبة');
+        $this->assertSame('app/Http/Controllers/ClientController.php:118', $pulse['last_origin']);
+        $this->assertStringNotContainsString('أحمد', json_encode($pulse, JSON_UNESCAPED_UNICODE));
+    }
+
     /** ورمزُ الخروج يقول «فيه أخطاء» لمن يبني عليه شرطاً في سكربت. */
     public function test_the_exit_code_reports_the_verdict(): void
     {
