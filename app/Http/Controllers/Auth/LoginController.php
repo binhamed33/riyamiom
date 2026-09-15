@@ -151,7 +151,8 @@ class LoginController extends Controller
         if ($attendance) {
             $request->session()->put('attendance_flash', [
                 'created' => $attendance['created'],
-                'at' => $attendance['record']->check_in_at->timezone('Asia/Muscat')->format('h:i A'),
+                'resumed' => $attendance['resumed'] ?? false,
+                'at' => $attendance['record']->intervalStart()->timezone('Asia/Muscat')->format('h:i A'),
             ]);
         }
 
@@ -196,16 +197,13 @@ class LoginController extends Controller
 
         app(StaffDiscordService::class)->reportLogout($user, $ip);
 
-        // قبل إبطال الجلسة: بعدها لا يبقى مستخدمٌ نَنسب إليه الانصراف.
+        // ═══ الخروجُ من النظام ليس انصرافاً ═══
         //
-        // وخروجُ الخمول التلقائي (auto=1) ليس «زرَّ الخروج»: تسجيلُ
-        // انصرافٍ عنده يعيد الشكوى التي أُغلق بابها — محامٍ انشغل عن
-        // الشاشة إحدى عشرة دقيقةً وُجد منصرفاً ودوامُه قائم. الجلسة
-        // تُغلق للأمان، والانصرافُ للزرّ الصريح وحده.
-        if (! $request->boolean('auto')) {
-            AttendanceGuard::checkOutOnLogout($user);
-        }
-
+        // كان زرُّ الخروج يكتب انصرافاً، فمن خرج ظهراً ليقفل جهازَه في
+        // الاستراحة — أو ليدخل من جهازٍ آخر — وُجد يومُه «مكتملاً» وضاعت
+        // فترتُه المسائيّة من كشف الشهر. الجلسةُ تُغلق هنا للأمان لا غير؛
+        // والانصرافُ لزرّ «تسجيل الانصراف» وحده (AttendanceGuard::checkOut)،
+        // ومن نسيه أقفله سقفُ المناوبة موسوماً بأنّه مستنتَج.
         auth()->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

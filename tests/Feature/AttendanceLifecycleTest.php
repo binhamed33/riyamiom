@@ -91,8 +91,37 @@ class AttendanceLifecycleTest extends TestCase
         $this->assertSame(1, HrAttendance::count());
     }
 
-    /** TEST 4 — تسجيل الخروج يحفظ وقت الانصراف والمدة. */
-    public function test_logout_records_check_out(): void
+    /**
+     * TEST 4 — تسجيل الخروج يُغلق الجلسة ولا يكتب انصرافاً.
+     *
+     * الخروجُ في الاستراحة والدخولُ عصراً كانا يُقفلان اليومَ ظهراً
+     * («يومك مكتمل») فتضيع الفترةُ المسائيّة. الانصرافُ بزرّه وحده.
+     */
+    public function test_logout_leaves_the_day_open(): void
+    {
+        $user = $this->staff();
+        $this->login($user);
+
+        $record = HrAttendance::where('user_id', $user->id)->firstOrFail();
+        $record->update(['check_in_at' => now()->subHours(2)]);
+
+        $this->post('/logout')->assertRedirect();
+
+        $record->refresh();
+
+        $this->assertNull($record->check_out_at, 'الخروج سجّل انصرافاً');
+        $this->assertSame('present', $record->status);
+        $this->assertNull($record->minutes);
+
+        // والعودةُ بعد الاستراحة تجد اليومَ كما تُرك: سجلٌّ واحد، وحضورٌ أوّل لم يُستبدل
+        $this->login($user);
+        $this->assertSame(1, HrAttendance::where('user_id', $user->id)->count());
+        $this->assertNull($record->fresh()->check_out_at);
+        $this->assertSame(1, (int) $record->fresh()->intervals);
+    }
+
+    /** الانصراف من الزرّ يحفظ وقت الانصراف والمدة. */
+    public function test_manual_checkout_button_records_time(): void
     {
         $user = $this->staff();
         $this->login($user);
@@ -101,27 +130,13 @@ class AttendanceLifecycleTest extends TestCase
         // نُرجع الحضور ساعتين للوراء ليكون للمدة معنى
         $record->update(['check_in_at' => now()->subHours(2)]);
 
-        $this->post('/logout')->assertRedirect();
+        $this->actingAs($user)->post(route('hr.attendance.checkout'))->assertRedirect();
 
         $record->refresh();
-
-        $this->assertNotNull($record->check_out_at, 'الخروج لم يسجّل انصرافاً');
+        $this->assertNotNull($record->check_out_at);
         $this->assertSame('completed', $record->status);
         $this->assertGreaterThanOrEqual(119, $record->minutes);
         $this->assertLessThanOrEqual(121, $record->minutes);
-    }
-
-    /** الانصراف اليدوي من الزرّ يعمل كما يعمل الخروج. */
-    public function test_manual_checkout_button_records_time(): void
-    {
-        $user = $this->staff();
-        $this->login($user);
-
-        $this->actingAs($user)->post(route('hr.attendance.checkout'))->assertRedirect();
-
-        $record = HrAttendance::where('user_id', $user->id)->firstOrFail();
-        $this->assertNotNull($record->check_out_at);
-        $this->assertSame('completed', $record->status);
     }
 
     /** الموكّل ليس موظفاً: دخولُه لا يفتح له سجلّ حضور. */

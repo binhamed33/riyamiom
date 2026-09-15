@@ -15,7 +15,7 @@ class HrAttendance extends Model
 {
     protected $table = 'hr_attendance';
 
-    protected $fillable = ['user_id', 'work_date', 'check_in_at', 'check_out_at', 'minutes', 'note', 'status', 'source'];
+    protected $fillable = ['user_id', 'work_date', 'check_in_at', 'check_out_at', 'resumed_at', 'minutes', 'intervals', 'note', 'status', 'source'];
 
     protected function casts(): array
     {
@@ -23,12 +23,58 @@ class HrAttendance extends Model
             'work_date' => 'date',
             'check_in_at' => 'datetime',
             'check_out_at' => 'datetime',
+            'resumed_at' => 'datetime',
+            'intervals' => 'integer',
         ];
     }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * بدايةُ الفترة المفتوحة الآن: الاستئنافُ إن كان، وإلّا الحضورُ الأوّل.
+     *
+     * كلُّ حسابٍ للمدّة يبدأ من هنا — الانصرافُ بالزرّ والسقفُ والإقفالُ
+     * الليليّ سواء — وإلّا حُسبت استراحةُ الظهر دواماً لمن استأنف عصراً.
+     */
+    public function intervalStart(): \Carbon\Carbon
+    {
+        return $this->resumed_at ?? $this->check_in_at;
+    }
+
+    /** الدقائقُ المقفَلة قبل الفترة المفتوحة — صفرٌ ما لم يُستأنف اليوم. */
+    public function bankedMinutes(): int
+    {
+        return $this->resumed_at ? (int) $this->minutes : 0;
+    }
+
+    /**
+     * وسمُ وقتِ انصرافٍ استنتجه النظام — ليُقرأ في الكشف على حقيقته.
+     *
+     * الوسمُ كان يُكتب في العمود ولا يُعرض في أيّ كشف، فيقرأ المدير
+     * «08:00 — 16:00» كأنّ صاحبَه ضغطها، وهي سقفٌ أُقفل عليه المنسيّ.
+     */
+    public function inferredLabel(): ?string
+    {
+        return match ($this->source) {
+            'auto_capped' => 'بلغ السقف',
+            'auto_closed' => 'آخر نشاط',
+            default => null,
+        };
+    }
+
+    /** «فترتان» لمن استأنف يومه — فلا يُقرأ «08:29 — 20:30» اثنتي عشرة ساعة. */
+    public function intervalsLabel(): ?string
+    {
+        $n = (int) ($this->intervals ?? 1);
+
+        return match (true) {
+            $n <= 1 => null,
+            $n === 2 => 'فترتان',
+            default => $n . ' فترات',
+        };
     }
 
     public static function today(): string

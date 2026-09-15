@@ -311,9 +311,9 @@ class HrController extends Controller
     {
         $user = auth()->user();
 
-        // نفس الدالّة التي يستعملها الخروج من النظام: وقتٌ واحد،
-        // ومدّةٌ واحدة، وحالةٌ واحدة — أياً كان الزرّ الذي ضُغط.
-        $record = \App\Support\AttendanceGuard::checkOutOnLogout($user);
+        // دالّةٌ واحدة لكلّ زرّ انصراف (لوحة القيادة، تبويب الحضور،
+        // إشعار الحضور): وقتٌ واحد، ومدّةٌ واحدة، وحالةٌ واحدة.
+        $record = \App\Support\AttendanceGuard::checkOut($user);
 
         if (! $record && ! HrAttendance::todayFor($user->id) && ! HrAttendance::openFor($user->id)) {
             return redirect()->route('hr.index', ['tab' => 'attendance'])
@@ -322,6 +322,26 @@ class HrController extends Controller
 
         return redirect()->route('hr.index', ['tab' => 'attendance'])
             ->with('success', 'سُجّل انصرافك.');
+    }
+
+    /**
+     * استئنافُ يومٍ أُقفل — لمن عاد من استراحة الظهر فوجد «يومك مكتمل».
+     *
+     * السجلُّ نفسُه يُفتح وتبقى دقائقُه، وتبدأ فترةٌ جديدة من الآن؛
+     * والانصرافُ التالي يضيف لا يستبدل. والزرُّ لا يخترع سجلاً: من لا
+     * انصرافَ له اليوم لا شيءَ عنده يُستأنف.
+     */
+    public function resume()
+    {
+        $record = \App\Support\AttendanceGuard::resume(auth()->user());
+
+        if (! $record) {
+            return redirect()->route('hr.index', ['tab' => 'attendance'])
+                ->withErrors(['attendance' => 'لا انصرافَ مسجَّلاً اليوم يُستأنف بعده.']);
+        }
+
+        return redirect()->route('hr.index', ['tab' => 'attendance'])
+            ->with('success', 'استُؤنف دوامك — ما سبق محفوظ، والدقائق تُحسب من الآن.');
     }
 
     public function storePerformance(Request $request)

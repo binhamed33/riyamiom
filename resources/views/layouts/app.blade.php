@@ -1965,11 +1965,10 @@
     </div>
 
     @auth
+    {{-- خروجُ الخمول يُغلق الجلسةَ فقط — والخروجُ كلُّه، بزرّه أو بالخمول،
+         لا يسجّل انصرافاً منذ صار الانصرافُ لزرّه وحده (AttendanceGuard) --}}
     <form id="autoLogoutForm" action="{{ route('logout') }}" method="POST" style="display:none;">
         @csrf
-        {{-- خروجُ الخمول ليس «زرَّ الخروج»: العلامة تخبر الخادم ألّا
-             يسجّل انصرافاً — وإلا عاد اختراعُ وقت الانصراف من بابٍ خلفي --}}
-        <input type="hidden" name="auto" value="1">
     </form>
 
     <div id="autoLogoutOverlay" style="display:none;" class="fixed inset-0 z-[9999] flex items-center justify-center" data-autologout-backdrop role="alertdialog" aria-modal="true" aria-labelledby="autoLogoutTitle">
@@ -2111,7 +2110,9 @@
         var outBtn = document.querySelector('[data-autologout-logout]');
         var backdrop = document.querySelector('[data-autologout-backdrop]');
         if (contBtn) contBtn.addEventListener('click', dismiss);
-        if (outBtn) outBtn.addEventListener('click', doLogout);
+        // لا يُمرَّر حدثُ النقر إلى doLogout: كان يُقرأ «الجلسة ميتة» فيُحوَّل
+        // إلى صفحة الدخول بلا خروجٍ فعليّ — والجلسةُ حيّةٌ تعيده إلى لوحته
+        if (outBtn) outBtn.addEventListener('click', function () { doLogout(false); });
         if (backdrop) backdrop.addEventListener('click', function (e) { if (e.target === backdrop) dismiss(); });
         document.addEventListener('keydown', function (e) {
             var overlay = document.getElementById('autoLogoutOverlay');

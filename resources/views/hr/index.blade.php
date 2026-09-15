@@ -66,13 +66,23 @@
                 @if(!$attendanceToday)
                     <p class="text-lg font-bold text-gray-700">لم تسجّل حضورك اليوم بعد</p>
                 @elseif($attendanceToday->check_out_at === null)
-                    <p class="text-lg font-bold text-green-700">حاضر منذ {{ $attendanceToday->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</p>
+                    @if($attendanceToday->resumed_at)
+                        <p class="text-lg font-bold text-green-700">استُؤنف الدوام {{ $attendanceToday->resumed_at->timezone('Asia/Muscat')->format('H:i') }}
+                            <span class="text-sm text-gray-400">— الحضور الأوّل {{ $attendanceToday->check_in_at->timezone('Asia/Muscat')->format('H:i') }}، ومحفوظٌ قبله <span dir="rtl">{{ \App\Support\Duration::human((int) $attendanceToday->minutes) }}</span></span>
+                        </p>
+                    @else
+                        <p class="text-lg font-bold text-green-700">حاضر منذ {{ $attendanceToday->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</p>
+                    @endif
                 @else
                     <p class="text-lg font-bold text-gray-700">
                         يوم مكتمل: {{ $attendanceToday->check_in_at->timezone('Asia/Muscat')->format('H:i') }}
                         — {{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->format('H:i') }}
-                        <span class="text-sm text-gray-400">({{ intdiv((int) $attendanceToday->minutes, 60) }}س {{ ((int) $attendanceToday->minutes) % 60 }}د)</span>
+                        <span class="text-sm text-gray-400" dir="rtl">({{ \App\Support\Duration::human((int) $attendanceToday->minutes) }}@if($attendanceToday->intervalsLabel()) · {{ $attendanceToday->intervalsLabel() }}@endif)</span>
+                        @if($attendanceToday->inferredLabel())
+                            <span class="text-xs text-amber-600 font-semibold" title="وقتٌ استنتجه النظام لا ضغطه صاحبُه">{{ $attendanceToday->inferredLabel() }}</span>
+                        @endif
                     </p>
+                    <p class="text-xs text-gray-400 mt-1">ما زلت في دوامك؟ «استئناف الدوام» يفتح اليوم ويحفظ ما سبق.</p>
                 @endif
                 @error('attendance')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
             </div>
@@ -84,6 +94,10 @@
                 @elseif($attendanceToday->check_out_at === null)
                     <form method="POST" action="{{ route('hr.attendance.checkout') }}">@csrf
                         <button class="px-6 py-3 rounded-xl bg-gray-700 text-white font-bold hover:opacity-90 transition md-touch">تسجيل الانصراف</button>
+                    </form>
+                @else
+                    <form method="POST" action="{{ route('hr.attendance.resume') }}">@csrf
+                        <button class="px-6 py-3 rounded-xl bg-gold/10 border border-gold/30 text-gold-dark font-bold hover:bg-gold/20 transition md-touch">استئناف الدوام</button>
                     </form>
                 @endif
             </div>
@@ -104,6 +118,7 @@
                             <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">
                                 @if($rec->check_out_at)
                                     {{ $rec->check_out_at->timezone('Asia/Muscat')->format('H:i') }}
+                                    @if($rec->inferredLabel())<span class="text-[10px] text-amber-600 font-semibold ms-1" title="وقتٌ استنتجه النظام لا ضغطه صاحبُه">{{ $rec->inferredLabel() }}</span>@endif
                                 @elseif($rec->work_date?->isToday())
                                     ما زال حاضراً
                                 @else
@@ -112,7 +127,7 @@
                                     <span class="text-amber-600 font-semibold">بلا انصراف</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($rec->minutes === null ? null : (int) $rec->minutes) }}</td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($rec->minutes === null ? null : (int) $rec->minutes) }}@if($rec->intervalsLabel()) <span class="text-[10px] text-gray-400">({{ $rec->intervalsLabel() }})</span>@endif</td>
                         </tr>
                         @empty
                         <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">لم يسجّل أحد حضوره اليوم بعد</td></tr>
@@ -134,8 +149,8 @@
                         <tr class="border-b border-gray-100">
                             <td class="px-4 py-3 text-center whitespace-nowrap">{{ $rec->work_date->translatedFormat('D j M') }}</td>
                             <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
-                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">{{ $rec->check_out_at?->timezone('Asia/Muscat')->format('H:i') ?? '—' }}</td>
-                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($rec->minutes === null ? null : (int) $rec->minutes) }}</td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">{{ $rec->check_out_at?->timezone('Asia/Muscat')->format('H:i') ?? '—' }}@if($rec->inferredLabel()) <span class="text-[10px] text-amber-600 font-semibold" title="وقتٌ استنتجه النظام لا ضغطه صاحبُه">{{ $rec->inferredLabel() }}</span>@endif</td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($rec->minutes === null ? null : (int) $rec->minutes) }}@if($rec->intervalsLabel()) <span class="text-[10px] text-gray-400">({{ $rec->intervalsLabel() }})</span>@endif</td>
                         </tr>
                         @empty
                         <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">لا سجلات هذا الشهر</td></tr>
@@ -485,11 +500,11 @@
                                      إلى صفّ فيبدو العمودُ مهتزّاً. --}}
                                 <td class="px-4 py-3 text-gray-500 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->work_date->format('Y-m-d') }}</td>
                                 <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->check_in_at->timezone('Asia/Muscat')->format('h:i A') }}</td>
-                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->check_out_at ? $r->check_out_at->timezone('Asia/Muscat')->format('h:i A') : '—' }}</td>
+                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->check_out_at ? $r->check_out_at->timezone('Asia/Muscat')->format('h:i A') : '—' }}@if($r->inferredLabel()) <span dir="rtl" class="text-[10px] text-amber-600 font-semibold" title="وقتٌ استنتجه النظام لا ضغطه صاحبُه">{{ $r->inferredLabel() }}</span>@endif</td>
                                 {{-- ‏rtl لا ltr: النصُّ يخلط أرقاماً لاتينيّةً بحرفين عربيّين،
                                      وفي سياقٍ لاتينيّ تقلبه خوارزميّةُ الاتّجاهين فيخرج
                                      «س 15د 6» بدل «6 س 15 د» — والرقمُ يقفز إلى آخر السطر. --}}
-                                <td class="px-4 py-3 text-gray-500 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($r->minutes) }}</td>
+                                <td class="px-4 py-3 text-gray-500 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($r->minutes) }}@if($r->intervalsLabel()) <span class="text-[10px] text-gray-400">({{ $r->intervalsLabel() }})</span>@endif</td>
                                 <td class="px-4 py-3">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold {{ $isIn ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-500/10 text-gray-500' }}">
                                         <span class="w-1.5 h-1.5 rounded-full {{ $isIn ? 'bg-emerald-500' : 'bg-gray-400' }}"></span>

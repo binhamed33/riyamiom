@@ -53,6 +53,11 @@
                 </form>
             @else
                 <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">يومك مكتمل ✓</span>
+                {{-- عاد من استراحة الظهر فوجد يومَه «مكتملاً» ولا شيءَ يفتحه —
+                     فكانت الفترةُ المسائيّة تضيع من كشف الشهر --}}
+                <form method="POST" action="{{ route('hr.attendance.resume') }}">@csrf
+                    <button class="md-touch-pad text-xs font-bold text-gold-dark bg-gold/10 border border-gold/20 rounded-xl px-3.5 py-2.5 hover:bg-gold/20 transition">استئناف الدوام</button>
+                </form>
             @endif
             @if($myPendingLeaves > 0)
                 <a href="{{ route('hr.index', ['tab' => 'leaves']) }}" class="text-xs font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-xl px-3.5 py-2.5 hover:bg-yellow-100 transition">إجازة معلّقة ({{ $myPendingLeaves }})</a>

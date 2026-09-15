@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * الانصراف يُسجَّل بزرّ الخروج وحده — لا باستنتاجٍ من غياب النشاط.
+ * الانصراف يُسجَّل بزرّ الانصراف وحده — لا بالخروج من النظام ولا
+ * باستنتاجٍ من غياب النشاط.
  *
  * ═══ اقتراحٌ من محامٍ يستعمل النظام ═══
  *
@@ -61,8 +62,17 @@ class AttendanceOnlyByButtonTest extends TestCase
         $this->assertNull($record->fresh()->check_out_at, 'خمولُ الشاشة سجّل انصرافاً');
     }
 
-    /** وزرُّ الخروج الصريح يبقى يسجّل الانصراف كما وُعد المحامي. */
-    public function test_the_explicit_logout_button_still_records_the_checkout(): void
+    /**
+     * وزرُّ الخروج الصريح يُغلق الجلسةَ ولا يُنهي يومَ العمل هو الآخر.
+     *
+     * ═══ الشكوى ═══
+     *
+     * «تسجيل الخروج ليس فقط يخرجنا من النظام، بل يسوّي مغادرة» — فمن
+     * خرج ظهراً ليقفل جهازَه في الاستراحة، أو ليدخل من جهازٍ آخر، وُجد
+     * يومُه «مكتملاً» وضاعت فترتُه المسائيّة من كشف الشهر. الانصرافُ
+     * لزرّه وحده.
+     */
+    public function test_the_logout_button_ends_the_session_not_the_work_day(): void
     {
         $user = $this->staff();
         $record = $this->openRecord($user);
@@ -70,21 +80,29 @@ class AttendanceOnlyByButtonTest extends TestCase
         $this->actingAs($user)->post(route('logout'));
 
         $this->assertGuest();
-        $this->assertNotNull($record->fresh()->check_out_at, 'زرُّ الخروج لم يعد يسجّل الانصراف');
+        $this->assertNull($record->fresh()->check_out_at, 'زرُّ الخروج ما زال يسجّل انصرافاً');
+        $this->assertSame('present', $record->fresh()->status);
     }
 
     /**
-     * وواجهةُ الخمول موصولة فعلاً: النموذج يحمل العلامة، والنبضة
-     * تتوقف عند موت الجلسة بدل قرع الخادم برمزٍ ميت كلَّ ١٠ ثوانٍ.
+     * وواجهةُ الخمول موصولة فعلاً: النبضة تتوقف عند موت الجلسة بدل قرع
+     * الخادم برمزٍ ميت كلَّ ١٠ ثوانٍ، وزرُّ «تسجيل خروج» في النافذة يُرسل
+     * النموذجَ فعلاً.
+     *
+     * كان الزرُّ يمرّر حدثَ النقر إلى doLogout فيُقرأ «الجلسة ميتة»:
+     * تحويلٌ إلى صفحة الدخول بلا خروج، والجلسةُ الحيّة تعيده إلى لوحته.
      */
     public function test_the_idle_ui_declares_itself_and_stops_on_a_dead_session(): void
     {
         $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
 
-        $this->assertStringContainsString('name="auto" value="1"', $layout, 'نموذج الخمول بلا علامة auto');
         $this->assertStringContainsString('doLogout(true)', $layout, 'موت الجلسة لا يوقف النبضة');
         $this->assertStringContainsString('window.location.replace', $layout,
             'الجلسة الميتة تُرسَل نموذجاً برمز CSRF ميت بدل صفحة الدخول');
+        $this->assertStringContainsString("outBtn.addEventListener('click', function () { doLogout(false); })", $layout,
+            'زرُّ الخروج في نافذة الخمول يمرّر حدثَ النقر فلا يخرج أحد');
+        $this->assertStringNotContainsString('name="auto"', $layout,
+            'علامةُ auto بقيت — والخروجُ كلُّه لم يعد يسجّل انصرافاً');
     }
 
     /** الافتراض: لا يُخترع وقتُ انصرافٍ من آخر نشاط. */
@@ -113,7 +131,7 @@ class AttendanceOnlyByButtonTest extends TestCase
         $record = $this->openRecord($user, now()->subHours(2)->format('H:i'));
 
         $this->artisan('hr:close-attendance')
-            ->expectsOutputToContain('بزرّ الخروج وحده')
+            ->expectsOutputToContain('بزرّ الانصراف وحده')
             ->assertSuccessful();
 
         $this->assertNull($record->fresh()->check_out_at);
@@ -136,7 +154,7 @@ class AttendanceOnlyByButtonTest extends TestCase
         $user = $this->staff();
         $record = $this->openRecord($user, '08:00');
 
-        AttendanceGuard::checkOutOnLogout($user);
+        AttendanceGuard::checkOut($user);
 
         $fresh = $record->fresh();
         $this->assertNotNull($fresh->check_out_at);

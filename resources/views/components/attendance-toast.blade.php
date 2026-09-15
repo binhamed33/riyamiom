@@ -10,7 +10,9 @@
     يُسأل ثانيةً اليوم.
 --}}
 @php
-    $flash = session('attendance_flash');
+    // يُسحب لا يُقرأ: كان يُقرأ فيبقى في الجلسة، فيعود إشعارُ الدخول في كلّ
+    // صفحةٍ سبعَ ثوانٍ، ويحجب سؤالَ «أما زلت حاضراً؟» طولَ الجلسة
+    $flash = session()->pull('attendance_flash');
     $open = $attendanceOpen ?? null;
     $dismissed = session('attendance_prompt_dismissed') === \App\Models\HrAttendance::today();
     $showPrompt = $open && ! $flash && ! $dismissed;
@@ -34,11 +36,12 @@
             </svg>
         </span>
         <div class="flex-1 min-w-0">
+            @php $resumed = (bool) ($flash['resumed'] ?? false); @endphp
             <p class="font-semibold text-sm text-gray-700">
-                {{ $flash['created'] ? 'تم تسجيل حضورك بنجاح' : 'أنت مسجّل حضور اليوم' }}
+                {{ $resumed ? 'استُؤنف دوامك — ما سبق محفوظ' : ($flash['created'] ? 'تم تسجيل حضورك بنجاح' : 'أنت مسجّل حضور اليوم') }}
             </p>
             <p class="text-xs mt-0.5 text-gray-400">
-                تم تسجيل حضورك اليوم الساعة <span dir="ltr">{{ $flash['at'] }}</span>
+                {{ $resumed ? 'بدأت فترةٌ جديدة الساعة' : 'تم تسجيل حضورك اليوم الساعة' }} <span dir="ltr">{{ $flash['at'] }}</span>
             </p>
         </div>
         <button @click="show = false" class="p-2 -m-2 flex-shrink-0 opacity-50 hover:opacity-100 transition" aria-label="إغلاق">
