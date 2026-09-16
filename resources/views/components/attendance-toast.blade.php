@@ -11,12 +11,60 @@
 --}}
 @php
     // يُسحب لا يُقرأ: كان يُقرأ فيبقى في الجلسة، فيعود إشعارُ الدخول في كلّ
-    // صفحةٍ سبعَ ثوانٍ، ويحجب سؤالَ «أما زلت حاضراً؟» طولَ الجلسة
-    $flash = session()->pull('attendance_flash');
+    // صفحةٍ سبعَ ثوانٍ، ويحجب سؤالَ «أما زلت حاضراً؟» طولَ الجلسة.
+    //
+    // ولا يُسحب في طلبات الآلة: صفحةُ الدخول تُرسل النموذجَ بـfetch وتتبع
+    // التحويلَ إلى لوحة القيادة (صفحةٌ لا يراها أحد) ثمّ تنتقل إليها فعلاً —
+    // فكان السحبُ الأوّل يلتهم الإشعارَ ولا يظهر «تم تسجيل حضورك» لأحد.
+    $flash = request()->ajax() ? session('attendance_flash') : session()->pull('attendance_flash');
     $open = $attendanceOpen ?? null;
+    $featureOff = \App\Models\Setting::get('feature_hr', '0') === '1';
     $dismissed = session('attendance_prompt_dismissed') === \App\Models\HrAttendance::today();
-    $showPrompt = $open && ! $flash && ! $dismissed;
+    // لا يُسأل حيث بطاقةُ الحضور نفسُها على الشاشة: زرّان للانصراف في صفحةٍ واحدة يُربكان
+    // — لوحةُ القيادة وتبويبُ الحضور وحدُه، لا كلُّ تبويبات الموارد البشريّة
+    $hasCard = request()->routeIs('dashboard')
+        || (request()->routeIs('hr.index') && (request()->get('tab') ?? (in_array(auth()->user()->role, ['admin', 'developer'], true) ? 'employees' : 'attendance')) === 'attendance');
+    $showPrompt = $open && ! $flash && ! $dismissed && ! $featureOff && ! $hasCard;
+    // «لستُ في دوامي»: دخولٌ ليليٌّ من البيت يفتح يوماً يبلغ السقفَ صباحاً بثماني ساعاتٍ لم تُعمل
+    $cancellable = $open && \App\Support\AttendanceGuard::cancellable($open);
+
+    // ═══ انصرافٌ بالزرّ قبل قليل — يُعرض استئنافُه ولا يُفتح خلسةً ═══
+    //
+    // من ضغط الانصرافَ ظهراً وعاد عصراً كان يُقال له «يومك مكتمل» ولا
+    // شيءَ يفتحه؛ والفتحُ التلقائيّ عند الدخول يفتح يومَ من دخل من بيته
+    // ليلاً لدقيقتين. فالسؤالُ هو الطريقُ الوسط — ويُغلق مرّةً في اليوم.
+    $closedToday = (! $open && ! $flash && \App\Support\AttendanceGuard::tracks(auth()->user()))
+        ? \App\Models\HrAttendance::todayFor(auth()->id())
+        : null;
+    $resumeDismissed = session('attendance_resume_dismissed') === \App\Models\HrAttendance::today();
+    $showResume = $closedToday && \App\Support\AttendanceGuard::resumable($closedToday) && ! $resumeDismissed && ! $featureOff;
 @endphp
+
+@if($showResume)
+    <div class="mb-4 rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4"
+         style="background: rgba(212,175,55,.10); border: 1px solid rgba(212,175,55,.28);" data-attendance-resume>
+        <div class="flex-1 min-w-0">
+            {{-- ما كتبه النظامُ لا يُنسب إلى صاحبه: «أُقفل يومُك آليّاً» لا «سجّلت انصرافك» --}}
+            @if($closedToday->closedByInference())
+                <p class="font-semibold text-sm text-amber-700">أُقفل يومُك آليّاً الساعة <span dir="ltr">{{ $closedToday->check_out_at->timezone('Asia/Muscat')->format('h:i A') }}</span> ({{ $closedToday->inferredLabel() }}).</p>
+            @else
+                <p class="font-semibold text-sm text-gray-700">سجّلت انصرافك الساعة <span dir="ltr">{{ $closedToday->check_out_at->timezone('Asia/Muscat')->format('h:i A') }}</span>.</p>
+            @endif
+            <p class="text-xs mt-0.5 text-gray-400">إن كنت ما زلت في دوامك فاستأنفه — ما سبق محفوظٌ وتُضاف الدقائق من الآن.</p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <form method="POST" action="{{ route('attendance.keep') }}">
+                @csrf
+                <input type="hidden" name="dismiss" value="resume">
+                <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold transition border border-gray-200 text-gray-500 hover:bg-gray-50">انتهى يومي</button>
+            </form>
+            <form method="POST" action="{{ route('hr.attendance.resume') }}">
+                @csrf
+                <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-primary hover:bg-primary-dark text-white">استئناف الدوام</button>
+            </form>
+        </div>
+    </div>
+@endif
 
 @if($flash)
     <div x-data="{ show: true }"
@@ -40,9 +88,14 @@
             <p class="font-semibold text-sm text-gray-700">
                 {{ $resumed ? 'استُؤنف دوامك — ما سبق محفوظ' : ($flash['created'] ? 'تم تسجيل حضورك بنجاح' : 'أنت مسجّل حضور اليوم') }}
             </p>
-            <p class="text-xs mt-0.5 text-gray-400">
+            {{-- div لا p: نموذجٌ داخل فقرةٍ يُغلقها المتصفّح فيقفز الزرُّ إلى سطرٍ وحده --}}
+            <div class="text-xs mt-0.5 text-gray-400">
                 {{ $resumed ? 'بدأت فترةٌ جديدة الساعة' : 'تم تسجيل حضورك اليوم الساعة' }} <span dir="ltr">{{ $flash['at'] }}</span>
-            </p>
+                @if($cancellable && $flash['created'])
+                    {{-- نموذجٌ لا رابطٌ بمعالجٍ مضمَّن: سياسةُ CSP تمنع onclick --}}
+                    · <form method="POST" action="{{ route('hr.attendance.cancel') }}" class="inline">@csrf<button type="submit" data-attendance-cancel class="underline hover:text-gray-600" title="دخولٌ عابر لا دوام — يُلغى تسجيلُ الحضور التلقائيّ ما دام لم تمضِ عليه نصفُ ساعة">لستُ في دوامي</button></form>
+                @endif
+            </div>
         </div>
         <button @click="show = false" class="p-2 -m-2 flex-shrink-0 opacity-50 hover:opacity-100 transition" aria-label="إغلاق">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -62,11 +115,24 @@
         <div class="flex-1 min-w-0">
             <p class="font-semibold text-sm text-gray-700">أنت مسجّل حضور حاليًا.</p>
             <p class="text-xs mt-0.5 text-gray-400">
-                تم تسجيل حضورك الساعة
-                <span dir="ltr">{{ $open->check_in_at->timezone('Asia/Muscat')->format('h:i A') }}</span>.
+                {{-- بدايةُ الفترة المفتوحة لا الحضورُ الأوّل: من استأنف عصراً كان يقرأ «حضورك ٨:٠٠» فيظنّ العصرَ غيرَ مسجَّل --}}
+                @if($open->resumed_at)
+                    استُؤنف دوامك الساعة
+                @elseif(! ($open->work_date?->isToday() ?? true))
+                    سجلُّ أمسِ ما زال مفتوحاً منذ
+                @else
+                    تم تسجيل حضورك الساعة
+                @endif
+                <span dir="ltr">{{ $open->intervalStart()->timezone('Asia/Muscat')->format('h:i A') }}</span>.
             </p>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
+            @if($cancellable)
+                <form method="POST" action="{{ route('hr.attendance.cancel') }}">
+                    @csrf
+                    <button type="submit" class="px-3 py-2 rounded-xl text-xs font-semibold transition text-gray-500 hover:text-gray-700" title="دخولٌ عابر لا دوام — يُلغى تسجيلُ الحضور التلقائيّ ما دام لم تمضِ عليه نصفُ ساعة">لستُ في دوامي</button>
+                </form>
+            @endif
             <form method="POST" action="{{ route('attendance.keep') }}">
                 @csrf
                 <button type="submit"

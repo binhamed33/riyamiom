@@ -41,7 +41,8 @@
             <p class="text-xs text-gray-400 mt-0.5">إليك ما يحتاج انتباهك اليوم — {{ now()->format('l d F Y') }}</p>
         </div>
         {{-- الحضور من هنا مباشرة: نقرة واحدة صباحاً وواحدة مساءً --}}
-        @if (!auth()->user()->isClient() && \App\Models\Setting::get('feature_hr', '0') !== '1')
+        {{-- للأدوار التي لها حضور وحدها: المطوّر كان يرى الأزرارَ ويُنشئ سجلاً يُقفله السقف --}}
+        @if (\App\Support\AttendanceGuard::tracks(auth()->user()) && \App\Models\Setting::get('feature_hr', '0') !== '1')
         <div class="flex items-center gap-2 flex-shrink-0">
             @if(!$attendanceToday)
                 <form method="POST" action="{{ route('hr.attendance.checkin') }}">@csrf
@@ -52,12 +53,20 @@
                     <button class="md-touch-pad text-xs font-bold text-gray-700 bg-gray-100 border border-gray-200 rounded-xl px-3.5 py-2.5 hover:bg-gray-200 transition">تسجيل الانصراف</button>
                 </form>
             @else
-                <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">يومك مكتمل ✓</span>
+                {{-- الوقتُ وكاتبُه لا «مكتمل» وحدها: من أُقفل يومُه بالسقف وهو في المحكمة
+                     كان يعود إلى «يومك مكتمل ✓» بلا وقتٍ ولا سبب — العبارةُ التي شكا منها مكتبان --}}
+                @if($attendanceToday->closedByInference())
+                    <span class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">أُقفل يومك <span dir="ltr">{{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->format('h:i A') }}</span> ({{ $attendanceToday->inferredLabel() }})</span>
+                @else
+                    <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">يومك مكتمل ✓ <span dir="ltr">{{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->format('h:i A') }}</span></span>
+                @endif
                 {{-- عاد من استراحة الظهر فوجد يومَه «مكتملاً» ولا شيءَ يفتحه —
                      فكانت الفترةُ المسائيّة تضيع من كشف الشهر --}}
+                @if(\App\Support\AttendanceGuard::resumable($attendanceToday))
                 <form method="POST" action="{{ route('hr.attendance.resume') }}">@csrf
                     <button class="md-touch-pad text-xs font-bold text-gold-dark bg-gold/10 border border-gold/20 rounded-xl px-3.5 py-2.5 hover:bg-gold/20 transition">استئناف الدوام</button>
                 </form>
+                @endif
             @endif
             @if($myPendingLeaves > 0)
                 <a href="{{ route('hr.index', ['tab' => 'leaves']) }}" class="text-xs font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-xl px-3.5 py-2.5 hover:bg-yellow-100 transition">إجازة معلّقة ({{ $myPendingLeaves }})</a>

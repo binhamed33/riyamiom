@@ -116,13 +116,19 @@ class HrController extends Controller
             }
         }
 
-        // الحضور: سجلّ اليوم لصاحب الشاشة، وشهرُه؛ وللإدارة حضور الفريق اليوم
-        $attendanceToday = HrAttendance::todayFor($user->id);
+        // الحضور: سجلّ اليوم لصاحب الشاشة — أو سجلُّ أمسِ المفتوح لمن يعمل
+        // بعد منتصف الليل — وشهرُه؛ وللإدارة حضور الفريق اليوم
+        $attendanceToday = HrAttendance::todayFor($user->id) ?? AttendanceGuard::openRecord($user);
         $attendanceMonth = HrAttendance::where('user_id', $user->id)
             ->whereDate('work_date', '>=', now('Asia/Muscat')->startOfMonth()->toDateString())
             ->orderByDesc('work_date')->get();
+        // ومعه ما بقي مفتوحاً من أيّامٍ سبقت: كان فرعُ «بلا انصراف» في الجدول
+        // لا يُعرض أبداً لأنّ الاستعلامَ يومُ اليوم وحده
         $teamAttendance = $isAdmin
-            ? HrAttendance::with('user')->whereDate('work_date', HrAttendance::today())->orderBy('check_in_at')->get()
+            ? HrAttendance::with('user')
+                ->where(fn ($q) => $q->whereDate('work_date', HrAttendance::today())
+                    ->orWhere(fn ($o) => $o->whereNull('check_out_at')->whereDate('work_date', '<', HrAttendance::today())))
+                ->orderBy('check_in_at')->get()
             : collect();
 
         // تبويبا سجلّ الحضور والرواتب: بياناتهما تُحسب عند الحاجة
@@ -158,6 +164,12 @@ class HrController extends Controller
             $user = auth()->user();
             $manager = $isAdmin || $user->hasPermission('attendance.manage');
 
+            // من مُنح «إدارة حضور الفريق» كان يرى جدولَ الجميع وعدّاداتِ نفسِه
+            // وقائمةَ موظّفين فيها اسمُه وحدَه — فتبدو الصلاحيّةُ معطوبة
+            if ($manager && ! $isAdmin) {
+                $employees = User::whereIn('role', ['admin', 'lawyer', 'staff'])->orderBy('name')->get();
+            }
+
             $range = in_array($request->get('range'), ['day', 'week', 'month'], true)
                 ? $request->get('range') : 'day';
 
@@ -190,9 +202,30 @@ class HrController extends Controller
                 $q->whereNull('check_out_at');
             } elseif ($request->get('status') === 'completed') {
                 $q->whereNotNull('check_out_at');
+            } elseif ($request->get('status') === 'unclosed') {
+                // منسيٌّ مفتوحاً من يومٍ سبق — يحتاج تصحيحاً
+                $q->whereNull('check_out_at')->whereDate('work_date', '<', HrAttendance::today());
+            } elseif ($request->get('status') === 'inferred') {
+                // ما كتبه النظامُ لا صاحبُه: للمراجعة مع الموظّف
+                $q->where(fn ($w) => $w->whereIn('closed_by', [HrAttendance::CLOSED_BY_CAP, HrAttendance::CLOSED_BY_SEEN])
+                    ->orWhere(fn ($l) => $l->whereNull('closed_by')->whereIn('source', ['auto_capped', 'auto_closed'])));
             }
 
+            // مجموعُ المدى لكلّ موظّف — من استعلامٍ مجمَّع لا من صفحةٍ مقطوعة:
+            // «كم ساعة عمل فلان في سبتمبر؟» كان جمعَ اثنين وعشرين صفّاً بالعين
+            $totals = (clone $q)->reorder()->get(['user_id', 'minutes', 'inferred_minutes', 'closed_by', 'source', 'check_out_at'])
+                ->groupBy('user_id')
+                ->map(fn ($rows) => [
+                    'minutes' => (int) $rows->sum('minutes'),
+                    'days' => $rows->count(),
+                    'inferred' => $rows->filter(fn ($r) => $r->hasInferredTime())->count(),
+                    'open' => $rows->whereNull('check_out_at')->count(),
+                ]);
+
             $out += [
+                'attTotals' => $totals,
+                'attEmployees' => $employees,
+                'attQuery' => (clone $q)->orderByDesc('work_date')->orderBy('check_in_at'),
                 'isManagerAtt' => $manager,
                 'attRange' => $range,
                 'attDate' => $date,
@@ -235,10 +268,117 @@ class HrController extends Controller
     }
 
     /** عدّادات اليوم — استعلامان لا استعلامٌ لكل موظف. */
+    /**
+     * كشفُ الحضور للمدى المصفّى — ملفَّ CSV للمحاسب.
+     *
+     * الاستعلامُ نفسُه الذي يعرضه التبويب، بلا تقطيع صفحات. والخليّةُ التي
+     * تبدأ بـ= أو + أو - أو @ تُسبق بفاصلةٍ عليا: اسمٌ أو سببٌ يُكتب هكذا
+     * يُنفَّذ معادلةً في إكسل عند فتح الملفّ.
+     */
+    public function exportAttendance(Request $request)
+    {
+        $user = auth()->user();
+        abort_unless($this->isAdmin() || $user->hasPermission('attendance.manage'), 403);
+
+        $employees = User::whereIn('role', ['admin', 'lawyer', 'staff'])->get();
+        $data = $this->tabData($request->merge(['tab' => 'attendance_log']), 'attendance_log', $this->isAdmin(), $employees);
+        $rows = $data['attQuery']->with('user')->get();
+
+        // ومعها التبويبُ والرجوع: إكسل يقصّ الفراغَ الأوّل ثمّ ينفّذ ما بعده
+        $safe = fn ($v) => preg_match('/^[=+\-@\t\r]/', (string) $v) ? "'" . $v : (string) $v;
+        $tz = 'Asia/Muscat';
+
+        $csv = fopen('php://temp', 'r+');
+        fwrite($csv, "\xEF\xBB\xBF");
+        fputcsv($csv, ['الموظف', 'التاريخ', 'الحضور', 'الانصراف', 'الدقائق', 'المدة', 'الفترات', 'الكاتب', 'ملاحظة']);
+        foreach ($rows as $r) {
+            fputcsv($csv, [
+                $safe($r->user->name ?? '—'),
+                $r->work_date->toDateString(),
+                $r->check_in_at->timezone($tz)->format('H:i'),
+                $r->checkOutDisplay() ?? '',
+                $r->minutes === null ? '' : (int) $r->minutes,
+                $r->minutes === null ? '' : \App\Support\Duration::human((int) $r->minutes),
+                (int) ($r->intervals ?: 1),
+                // الكاتبُ صراحةً لكلّ قيمة: «غير موثَّق» لما سبق التوثيق، لا «بالزرّ» افتراضاً
+                match ($r->closed_by ?? ($r->check_out_at ? HrAttendance::CLOSED_BY_LEGACY : null)) {
+                    null => 'مفتوح',
+                    HrAttendance::CLOSED_BY_BUTTON => $r->inferredLabel() ?? 'بالزرّ',
+                    HrAttendance::CLOSED_BY_LEGACY => 'غير موثَّق',
+                    default => $r->inferredLabel() ?? 'غير موثَّق',
+                },
+                $safe($r->note),
+            ]);
+        }
+        rewind($csv);
+        $body = stream_get_contents($csv);
+        fclose($csv);
+
+        return response($body, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="attendance-' . $data['attDate']->toDateString() . '-' . $data['attRange'] . '.csv"',
+        ]);
+    }
+
+    /** يومٌ يضيفه الإداري لموظّفٍ لم يدخل النظام — انظر AttendanceGuard::addDay. */
+    public function addDay(Request $request)
+    {
+        $user = auth()->user();
+        abort_unless($this->isAdmin() || $user->hasPermission('attendance.manage'), 403);
+
+        $data = $request->validate([
+            // موظّفٌ نشِطٌ له حضور — لا موكّلٌ ولا حسابٌ معطَّل
+            'employee_id' => ['required', \Illuminate\Validation\Rule::exists('users', 'id')->whereIn('role', ['admin', 'lawyer', 'staff'])->where('is_active', true)],
+            // صيغةٌ ثابتة: «date» تقبل ISO بوقتٍ ومنطقة فيسقط التركيبُ بعدها بخطأ خادم
+            'work_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+            'check_in' => 'required|date_format:H:i',
+            'check_out' => 'required|date_format:H:i',
+            'next_day' => 'nullable|boolean',
+            'reason' => 'required|string|max:120',
+        ], [], ['employee_id' => 'الموظف', 'work_date' => 'اليوم', 'check_in' => 'الحضور', 'check_out' => 'الانصراف', 'reason' => 'السبب']);
+
+        $employee = User::findOrFail($data['employee_id']);
+        abort_if(! $this->isAdmin() && $employee->id === $user->id, 403, 'لا يضيف الموظّفُ يوماً لنفسه.');
+
+        $in = \Carbon\Carbon::parse($data['work_date'] . ' ' . $data['check_in'], 'Asia/Muscat');
+        $out = \Carbon\Carbon::parse($data['work_date'] . ' ' . $data['check_out'], 'Asia/Muscat');
+        if ($request->boolean('next_day')) {
+            $out->addDay();
+        }
+
+        if ($out->lessThanOrEqualTo($in)) {
+            return back()->withInput()->withErrors(['add_check_out' => 'الانصراف يجب أن يكون بعد الحضور.']);
+        }
+
+        if ($out->greaterThan(now())) {
+            return back()->withInput()->withErrors(['add_check_out' => 'لا يُكتب انصرافٌ لم يقع بعد.']);
+        }
+
+        $record = AttendanceGuard::addDay($employee, $user, $in, $out, $data['reason']);
+
+        if (! $record) {
+            return back()->withInput()->withErrors(['add_check_out' => 'لهذا الموظّف سجلٌّ في هذا اليوم أصلاً — صحّحه من الجدول.']);
+        }
+
+        return back()->with('success', 'أُضيف يومُ ' . $employee->name . ': ' . $in->format('h:i A') . ' → ' . $out->format('h:i A') . '.');
+    }
+
+    /** سجلّاتُ اليوم، ومعها المفتوحُ منذ أقلَّ من يوم: من حضر ليلاً وما زال يعمل حاضرٌ لا غائب. */
+    private function todaysRecords()
+    {
+        $today = HrAttendance::today();
+
+        return HrAttendance::where(fn ($q) => $q->whereDate('work_date', $today)
+                ->orWhere(fn ($o) => $o->whereNull('check_out_at')->where('check_in_at', '>=', now()->subDay())))
+            ->orderBy('work_date')->get()->keyBy('user_id');
+    }
+
     private function attendanceStats($employees): array
     {
         $today = HrAttendance::today();
-        $records = HrAttendance::whereDate('work_date', $today)->get()->keyBy('user_id');
+        $records = $this->todaysRecords();
+        // حسابٌ معطَّل ليس غائباً: كان المحامي المستقيل يُعدّ غائباً كلَّ يوم
+        $employees = $employees->where('is_active', true);
 
         $onLeave = HrLeave::where('status', 'approved')
             ->whereDate('start_date', '<=', $today)
@@ -258,7 +398,8 @@ class HrController extends Controller
     private function attendanceBoard($employees)
     {
         $today = HrAttendance::today();
-        $records = HrAttendance::whereDate('work_date', $today)->get()->keyBy('user_id');
+        $records = $this->todaysRecords();
+        $employees = $employees->where('is_active', true);
 
         $onLeave = HrLeave::where('status', 'approved')
             ->whereDate('start_date', '<=', $today)
@@ -287,8 +428,12 @@ class HrController extends Controller
     {
         $user = auth()->user();
 
+        // المطوّر والموكّل لا حضورَ لهما: كان الزرُّ يُنشئ سجلاً ثمّ يُقفله السقف
+        abort_unless(AttendanceGuard::tracks($user), 403);
+
         try {
-            $existing = HrAttendance::todayFor($user->id);
+            // سجلُّ أمسِ المفتوح (ليلةُ عمل) هو سجلُّ هذا الحضور — لا سجلٌّ ثانٍ
+            $existing = HrAttendance::todayFor($user->id) ?? AttendanceGuard::openWithinDay($user->id);
 
             if (! $existing) {
                 HrAttendance::create([
@@ -315,13 +460,71 @@ class HrController extends Controller
         // إشعار الحضور): وقتٌ واحد، ومدّةٌ واحدة، وحالةٌ واحدة.
         $record = \App\Support\AttendanceGuard::checkOut($user);
 
-        if (! $record && ! HrAttendance::todayFor($user->id) && ! HrAttendance::openFor($user->id)) {
+        if (! $record) {
+            $today = HrAttendance::todayFor($user->id);
+
+            // تبويبان: ضغط الانصرافَ في أحدهما ثمّ في الآخر «للتأكيد» — فكان
+            // يُقال له «سُجّل انصرافك» والوقتُ المحفوظ هو الأوّل، ويظنّ
+            // الثاني هو المسجَّل ويعترض على الكشف بعدها
+            $message = $today?->check_out_at
+                ? 'سجلُّ اليوم مقفَلٌ منذ ' . $today->check_out_at->timezone('Asia/Muscat')->format('h:i A') . ' — «استئناف الدوام» يفتحه إن كنت ما زلت في دوامك.'
+                : 'لم تسجّل حضوراً اليوم بعد.';
+
             return redirect()->route('hr.index', ['tab' => 'attendance'])
-                ->withErrors(['attendance' => 'لم تسجّل حضوراً اليوم بعد.']);
+                ->withErrors(['attendance' => $message]);
         }
+
+        // ولا يُسأل «أما زلت في دوامك؟» في الشاشة نفسِها التي أكّدت انصرافَه
+        request()->session()->put('attendance_resume_dismissed', HrAttendance::today());
 
         return redirect()->route('hr.index', ['tab' => 'attendance'])
             ->with('success', 'سُجّل انصرافك.');
+    }
+
+    /**
+     * تصحيحُ سجلّ حضورٍ بيد الإداري — بوقتين وسببٍ مكتوب.
+     *
+     * محامٍ وجد انصرافَه ١:٣٦ وهو خرج ٣:٥٧ ولم يكن في النظام ما يصحّحه
+     * سوى قاعدة البيانات. هنا يصحّح الإداري ويبقى الأثر: القديمُ والجديدُ
+     * والسببُ ومَن صحّح — في الملاحظة وفي سجلّ التدقيق.
+     */
+    public function correct(Request $request, HrAttendance $record)
+    {
+        $user = auth()->user();
+        abort_unless($this->isAdmin() || $user->hasPermission('attendance.manage'), 403);
+        // من مُنح إدارةَ الحضور لا يصحّح سجلَّ نفسِه — مديرُ المكتب وحدَه، وأثرُه مدوَّن
+        abort_if(! $this->isAdmin() && $record->user_id === $user->id, 403, 'لا يصحّح الموظّفُ سجلَّ نفسه.');
+
+        $data = $request->validate([
+            'check_in' => 'required|date_format:H:i',
+            'check_out' => 'required|date_format:H:i',
+            'next_day' => 'nullable|boolean',
+            'reason' => 'required|string|max:120',
+        ], [], ['check_in' => 'الحضور', 'check_out' => 'الانصراف', 'reason' => 'السبب']);
+
+        // الوقتان على يوم السجلّ بتوقيت المكتب، والانصرافُ في اليوم التالي إن
+        // قيل صراحةً (ليلةُ عمل) — لا تخميناً من انصرافٍ يسبق الحضور
+        $day = $record->work_date->toDateString();
+        $in = \Carbon\Carbon::parse($day . ' ' . $data['check_in'], 'Asia/Muscat');
+        $out = \Carbon\Carbon::parse($day . ' ' . $data['check_out'], 'Asia/Muscat');
+        if ($request->boolean('next_day')) {
+            $out->addDay();
+        }
+
+        if ($out->lessThanOrEqualTo($in)) {
+            return back()->withInput(['record_id' => $record->id] + $data)
+                ->withErrors(['check_out' => 'الانصراف يجب أن يكون بعد الحضور.']);
+        }
+
+        // انصرافٌ لم يقع بعد لا يُكتب — ولو بيد الإداري
+        if ($out->greaterThan(now())) {
+            return back()->withInput(['record_id' => $record->id] + $data)
+                ->withErrors(['check_out' => 'لا يُكتب انصرافٌ لم يقع بعد.']);
+        }
+
+        \App\Support\AttendanceGuard::correct($record, $user, $in, $out, $data['reason']);
+
+        return back()->with('success', 'صُحّح السجلّ: ' . $in->format('h:i A') . ' → ' . $out->format('h:i A') . ' (' . \App\Support\Duration::human($record->fresh()->minutes) . ').');
     }
 
     /**
@@ -336,12 +539,28 @@ class HrController extends Controller
         $record = \App\Support\AttendanceGuard::resume(auth()->user());
 
         if (! $record) {
-            return redirect()->route('hr.index', ['tab' => 'attendance'])
-                ->withErrors(['attendance' => 'لا انصرافَ مسجَّلاً اليوم يُستأنف بعده.']);
+            $today = HrAttendance::todayFor(auth()->id());
+            $message = match (true) {
+                $today?->closed_by === HrAttendance::CLOSED_BY_MANAGER => 'هذا اليوم صحّحه الإداري — راجعه إن كان فيه خطأ.',
+                $today?->check_out_at !== null => 'انصرافُك مضى عليه أكثرُ من ' . \App\Support\AttendanceGuard::RESUME_WINDOW_HOURS . ' ساعات — يومٌ انقضى؛ يومُ الغد يُفتح بحضوره.',
+                default => 'لا انصرافَ مسجَّلاً اليوم يُستأنف بعده.',
+            };
+
+            return redirect()->route('hr.index', ['tab' => 'attendance'])->withErrors(['attendance' => $message]);
         }
 
         return redirect()->route('hr.index', ['tab' => 'attendance'])
             ->with('success', 'استُؤنف دوامك — ما سبق محفوظ، والدقائق تُحسب من الآن.');
+    }
+
+    /** «لستُ في دوامي»: إلغاءُ حضورٍ تلقائيٍّ حديث — انظر AttendanceGuard::cancellable. */
+    public function cancel()
+    {
+        $cancelled = AttendanceGuard::cancelAutoCheckIn(auth()->user());
+
+        return back()->with($cancelled ? 'success' : 'error', $cancelled
+            ? 'أُلغي تسجيلُ الحضور — لم يُحسب لك شيء.'
+            : 'لا يُلغى إلا حضورٌ تلقائيٌّ لم تمضِ عليه نصفُ ساعة.');
     }
 
     public function storePerformance(Request $request)

@@ -377,7 +377,10 @@ class DashboardController extends Controller
         }
 
         // بوابة الموظّف: حالة حضور اليوم وإجازاتي المعلّقة — للترحيب لا للرقابة
-        $attendanceToday = \App\Models\HrAttendance::todayFor(auth()->id());
+        // أو سجلُّ أمسِ المفتوح: بعد منتصف الليل كانت اللوحةُ تعرض «تسجيل الحضور»
+        // والإشعارُ فوقها يقول «أنت مسجّل حضور حاليًا» — فيُضغط ويُصنع سجلٌّ ثانٍ
+        $attendanceToday = \App\Models\HrAttendance::todayFor(auth()->id())
+            ?? \App\Support\AttendanceGuard::openRecord(auth()->user());
         $myPendingLeaves = \App\Models\HrLeave::where('employee_id', auth()->id())
             ->where('status', 'pending')->count();
 

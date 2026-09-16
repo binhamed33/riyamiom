@@ -36,6 +36,14 @@ class AttendanceResumeTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // ساعةٌ مجمَّدة: الحزمةُ كانت خضراءَ بعد السادسة مساءً فقط — أوقاتُ «16:00» المزروعة
+        // تقع في المستقبل صباحاً أو داخل نافذة الخمول عصراً
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::parse('2026-09-16 21:00:00', 'Asia/Muscat'));
+    }
+
     private function staff(): User
     {
         return User::factory()->create([
@@ -59,13 +67,10 @@ class AttendanceResumeTest extends TestCase
         ]);
     }
 
+    /** آخرُ نشاطٍ بشريّ — عمودٌ دائم لا صفُّ جلسةٍ يمحوه الخروج. */
     private function seen(User $user, \Carbon\CarbonInterface $at): void
     {
-        DB::table('sessions')->insert([
-            'id' => 'sess-' . uniqid(), 'user_id' => $user->id,
-            'ip_address' => '127.0.0.1', 'user_agent' => 't', 'payload' => '',
-            'last_activity' => $at->timestamp,
-        ]);
+        DB::table('users')->where('id', $user->id)->update(['last_seen_at' => $at]);
     }
 
     private function login(User $user): \Illuminate\Testing\TestResponse
@@ -132,26 +137,30 @@ class AttendanceResumeTest extends TestCase
         $this->assertNull($record->fresh()->resumed_at);
     }
 
-    /** وما بلغ السقفَ ثمّ استُؤنف وأُقفل بالزرّ لم يعد موسوماً بالسقف. */
-    public function test_a_capped_day_resumed_and_closed_by_hand_drops_the_inferred_mark(): void
+    /** وما بلغ السقفَ ثمّ استُؤنف وأُقفل بالزرّ يُوسم بالزرّ — والأثرُ يحفظ أنّ ما قبله سقف. */
+    public function test_a_capped_day_resumed_and_closed_by_hand_is_marked_by_the_button(): void
     {
         $user = $this->staff();
-        $record = $this->closedDay($user, inHoursAgo: 9, outHoursAgo: 1, source: 'auto_capped');
+        $record = $this->closedDay($user, inHoursAgo: 9, outHoursAgo: 1);
+        $record->update(['closed_by' => HrAttendance::CLOSED_BY_CAP]);
 
         AttendanceGuard::resume($user);
         AttendanceGuard::checkOut($user);
 
-        $this->assertSame('manual', $record->fresh()->source);
-        $this->assertNull($record->fresh()->inferredLabel());
+        $fresh = $record->fresh();
+        $this->assertSame(HrAttendance::CLOSED_BY_BUTTON, $fresh->closed_by);
+        $this->assertNull($fresh->inferredLabel());
+        $this->assertStringContainsString('بعد إقفالٍ بالسقف', (string) $fresh->note);
     }
 
     // ══════════ الاستئناف عند الدخول ══════════
 
-    /** دخولٌ عصراً بعد انصرافِ الظهر: يُستأنف وحده ويقولها. */
+    /** دخولٌ عصراً بعد إقفالٍ آليٍّ قريب (سقف): يُستأنف وحده ويقولها. */
     public function test_login_after_a_short_break_resumes_the_day(): void
     {
         $user = $this->staff();
         $record = $this->closedDay($user, inHoursAgo: 8, outHoursAgo: 3);
+        $record->update(['closed_by' => HrAttendance::CLOSED_BY_CAP]);
 
         $this->login($user)->assertRedirect();
 
@@ -162,11 +171,38 @@ class AttendanceResumeTest extends TestCase
         $this->assertTrue(session('attendance_flash')['resumed'] ?? false, 'الإشعارُ لا يقول إنّ الدوام استُؤنف');
     }
 
+    /**
+     * وانصرافٌ بالزرّ لا يُفتح خلسةً بدخولٍ لاحق — يُعرض الاستئنافُ ويقرّر هو.
+     *
+     * محامٍ انصرف الواحدةَ والنصف بيده ودخل من هاتفه الثامنةَ ليقرأ حكماً
+     * دقيقتين كان يجد يومَه مفتوحاً ثمّ مقفَلاً بالسقف بساعاتٍ لم يعملها.
+     */
+    public function test_login_after_a_button_checkout_offers_resume_instead_of_resuming(): void
+    {
+        $user = $this->staff();
+        $record = $this->closedDay($user, inHoursAgo: 8, outHoursAgo: 3);
+        $record->update(['closed_by' => HrAttendance::CLOSED_BY_BUTTON]);
+
+        $this->login($user)->assertRedirect();
+
+        $this->assertNotNull($record->fresh()->check_out_at, 'انصرافٌ بالزرّ فُتح خلسةً بالدخول');
+        $this->assertSame(1, (int) $record->fresh()->intervals);
+
+        $page = $this->actingAs($user)->get(route('dashboard'))->assertOk();
+        $page->assertSee('data-attendance-resume', false)->assertSee('استئناف الدوام');
+
+        // «انتهى يومي» يُغلق السؤالَ لليوم ولا يمسّ السجلّ
+        $this->actingAs($user)->post(route('attendance.keep'), ['dismiss' => 'resume'])->assertRedirect();
+        $this->actingAs($user)->get(route('dashboard'))->assertDontSee('data-attendance-resume', false);
+        $this->assertNotNull($record->fresh()->check_out_at);
+    }
+
     /** ودخولٌ ليلاً بعد يومٍ انقضى لا يفتح فترةً تبلغ السقفَ صباحاً. */
     public function test_login_long_after_the_checkout_does_not_resume(): void
     {
         $user = $this->staff();
         $record = $this->closedDay($user, inHoursAgo: 14, outHoursAgo: 7);
+        $record->update(['closed_by' => HrAttendance::CLOSED_BY_CAP]);
 
         $this->login($user)->assertRedirect();
 
@@ -176,11 +212,12 @@ class AttendanceResumeTest extends TestCase
         $this->assertFalse(session('attendance_flash')['resumed'] ?? false);
     }
 
-    /** ومن عاد إلى «يومك مكتمل» يجد زرَّ الاستئناف في لوحته وتبويب الحضور. */
+    /** ومن عاد إلى «يومك مكتمل» بانصرافٍ قريب يجد زرَّ الاستئناف — وبانصرافٍ انقضى يومُه لا يجده. */
     public function test_a_completed_day_offers_the_resume_button(): void
     {
         $user = $this->staff();
-        $this->closedDay($user, inHoursAgo: 14, outHoursAgo: 7);
+        $record = $this->closedDay($user, inHoursAgo: 8, outHoursAgo: 3);
+        $record->update(['closed_by' => HrAttendance::CLOSED_BY_BUTTON]);
 
         $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
@@ -191,11 +228,17 @@ class AttendanceResumeTest extends TestCase
         $this->actingAs($user)->get(route('hr.index', ['tab' => 'attendance']))
             ->assertOk()
             ->assertSee('استئناف الدوام');
+
+        // انصرافٌ قبل سبع ساعات: يومٌ انقضى — لا زرَّ، والخادمُ يردّ الطلبَ المباشر
+        $record->update(['check_out_at' => now()->subHours(7)]);
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertDontSee(route('hr.attendance.resume'));
+        $this->actingAs($user)->post(route('hr.attendance.resume'))->assertSessionHasErrors('attendance');
+        $this->assertNotNull($record->fresh()->check_out_at);
     }
 
     // ══════════ السقفُ والفترات ══════════
 
-    /** السقفُ يُقاس من الاستئناف لا من الحضور الأوّل. */
+    /** السقفُ سقفُ اليوم: يُقاس من الاستئناف مع ما حُفظ قبله، لا من الحضور الأوّل ولا لكلّ فترةٍ وحدَها. */
     public function test_the_cap_measures_the_open_interval_not_the_first_check_in(): void
     {
         $user = $this->staff();
@@ -210,16 +253,16 @@ class AttendanceResumeTest extends TestCase
         $this->assertSame(0, AttendanceGuard::closeOvertimeRecords(), 'المستأنَفُ قبل ساعتين أُقفل بالسقف من حضوره الأوّل');
         $this->assertNull($record->fresh()->check_out_at);
 
-        // وحين تبلغ الفترةُ المفتوحة السقفَ تُقفل على «استئنافٌ + السقف» مضافاً إلى المحفوظ
+        // وحين يبلغ اليومُ كلُّه السقفَ (٣٠٠ محفوظة + ١٨٠ من الاستئناف) يُقفل
+        // على ذلك الحدّ: ثماني ساعاتٍ لليوم لا ثمانٍ لكلّ فترة
         $record->update(['resumed_at' => now()->subHours(9)]);
         $this->assertSame(1, AttendanceGuard::closeOvertimeRecords());
 
         $record->refresh();
-        $this->assertSame(300 + 480, (int) $record->minutes);
-        $this->assertTrue($record->check_out_at->equalTo(now()->subHours(9)->addHours(8)->startOfSecond())
-            || abs($record->check_out_at->diffInSeconds(now()->subHour())) <= 2,
-            'وقتُ الانصراف ليس استئنافاً + ثماني ساعات');
-        $this->assertSame('auto_capped', $record->source);
+        $this->assertSame(480, (int) $record->minutes, 'فترتان بسقفٍ لكلٍّ — اليومُ تجاوز سقفَه');
+        $this->assertLessThanOrEqual(2, abs($record->check_out_at->diffInSeconds(now()->subHours(9)->addHours(3))),
+            'وقتُ الانصراف ليس استئنافاً + ما بقي من السقف');
+        $this->assertSame(HrAttendance::CLOSED_BY_CAP, $record->closed_by);
     }
 
     /** من رآه الخادمُ في آخر ساعة لا يُقفل عليه وهو على شاشته. */
@@ -251,7 +294,8 @@ class AttendanceResumeTest extends TestCase
 
         $record->refresh();
         $this->assertEqualsWithDelta(540, (int) $record->minutes, 1, 'قُصّت ساعةٌ رآها الخادم بعد السقف');
-        $this->assertSame('auto_capped', $record->source);
+        $this->assertSame(HrAttendance::CLOSED_BY_SEEN, $record->closed_by, 'وقتٌ من آخر نشاطٍ وُسم سقفاً');
+        $this->assertSame('آخر نشاط', $record->inferredLabel());
     }
 
     /** وما رُئي قبل السقف لا يُستنتج منه انصراف: يبقى السقفُ حدّاً لا نقرةً. */
@@ -276,7 +320,8 @@ class AttendanceResumeTest extends TestCase
         HrAttendance::create([
             'user_id' => $user->id, 'work_date' => HrAttendance::today(),
             'check_in_at' => now()->subHours(12), 'check_out_at' => now()->subHour(),
-            'minutes' => 540, 'intervals' => 2, 'status' => 'completed', 'source' => 'auto_capped',
+            'minutes' => 540, 'intervals' => 2, 'status' => 'completed', 'source' => 'auto_login',
+            'closed_by' => HrAttendance::CLOSED_BY_CAP,
         ]);
 
         $this->actingAs($user)->get(route('hr.index', ['tab' => 'attendance']))

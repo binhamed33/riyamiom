@@ -76,15 +76,21 @@
                 @else
                     <p class="text-lg font-bold text-gray-700">
                         يوم مكتمل: {{ $attendanceToday->check_in_at->timezone('Asia/Muscat')->format('H:i') }}
-                        — {{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->format('H:i') }}
+                        — <span dir="ltr">{{ $attendanceToday->checkOutDisplay() }}</span>
                         <span class="text-sm text-gray-400" dir="rtl">({{ \App\Support\Duration::human((int) $attendanceToday->minutes) }}@if($attendanceToday->intervalsLabel()) · {{ $attendanceToday->intervalsLabel() }}@endif)</span>
                         @if($attendanceToday->inferredLabel())
                             <span class="text-xs text-amber-600 font-semibold" title="وقتٌ استنتجه النظام لا ضغطه صاحبُه">{{ $attendanceToday->inferredLabel() }}</span>
                         @endif
                     </p>
-                    <p class="text-xs text-gray-400 mt-1">ما زلت في دوامك؟ «استئناف الدوام» يفتح اليوم ويحفظ ما سبق.</p>
+                    @if(\App\Support\AttendanceGuard::resumable($attendanceToday))
+                        <p class="text-xs text-gray-400 mt-1">ما زلت في دوامك؟ «استئناف الدوام» يفتح اليوم ويحفظ ما سبق.</p>
+                    @endif
                 @endif
                 @error('attendance')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+                @if($isAdmin)
+                    {{-- القاعدةُ التي تُقفل سجلّاتِ الفريق كانت خفيّةً عن مدير المكتب --}}
+                    <p class="text-[11px] text-gray-400 mt-2">سقفُ اليوم {{ \App\Support\AttendanceGuard::capHours() }} ساعات — يُقفل به من نسي الانصراف ولم يُرَ في آخر ساعة · الإقفالُ الليليّ بآخر نشاط {{ \App\Support\AttendanceGuard::autoCloseEnabled() ? 'مفعَّل' : 'معطَّل' }}</p>
+                @endif
             </div>
             <div>
                 @if(!$attendanceToday)
@@ -95,7 +101,8 @@
                     <form method="POST" action="{{ route('hr.attendance.checkout') }}">@csrf
                         <button class="px-6 py-3 rounded-xl bg-gray-700 text-white font-bold hover:opacity-90 transition md-touch">تسجيل الانصراف</button>
                     </form>
-                @else
+                @elseif(\App\Support\AttendanceGuard::resumable($attendanceToday))
+                    {{-- الزرُّ حيث يقبله الخادم: انصرافٌ قريبٌ لم يصحّحه الإداري --}}
                     <form method="POST" action="{{ route('hr.attendance.resume') }}">@csrf
                         <button class="px-6 py-3 rounded-xl bg-gold/10 border border-gold/30 text-gold-dark font-bold hover:bg-gold/20 transition md-touch">استئناف الدوام</button>
                     </form>
@@ -117,8 +124,9 @@
                             <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
                             <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">
                                 @if($rec->check_out_at)
-                                    {{ $rec->check_out_at->timezone('Asia/Muscat')->format('H:i') }}
-                                    @if($rec->inferredLabel())<span class="text-[10px] text-amber-600 font-semibold ms-1" title="وقتٌ استنتجه النظام لا ضغطه صاحبُه">{{ $rec->inferredLabel() }}</span>@endif
+                                    {{-- عزلٌ لاتينيّ: «(+1)» في سياقٍ عربيّ يُقلب إلى «(1+)» --}}
+                                    <span dir="ltr">{{ $rec->checkOutDisplay() }}</span>
+                                    @if($rec->inferredLabel())<span class="text-[10px] text-amber-600 font-semibold ms-1" title="{{ $rec->closedByInference() ? 'وقتٌ استنتجه النظام لا ضغطه صاحبُه' : 'صحّحه الإداري' }}">{{ $rec->inferredLabel() }}</span>@endif
                                 @elseif($rec->work_date?->isToday())
                                     ما زال حاضراً
                                 @else
@@ -149,7 +157,7 @@
                         <tr class="border-b border-gray-100">
                             <td class="px-4 py-3 text-center whitespace-nowrap">{{ $rec->work_date->translatedFormat('D j M') }}</td>
                             <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">{{ $rec->check_in_at->timezone('Asia/Muscat')->format('H:i') }}</td>
-                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums">{{ $rec->check_out_at?->timezone('Asia/Muscat')->format('H:i') ?? '—' }}@if($rec->inferredLabel()) <span class="text-[10px] text-amber-600 font-semibold" title="وقتٌ استنتجه النظام لا ضغطه صاحبُه">{{ $rec->inferredLabel() }}</span>@endif</td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums"><span dir="ltr">{{ $rec->checkOutDisplay() ?? '—' }}</span>@if($rec->inferredLabel()) <span class="text-[10px] text-amber-600 font-semibold" title="{{ $rec->closedByInference() ? 'وقتٌ استنتجه النظام لا ضغطه صاحبُه' : 'صحّحه الإداري' }}">{{ $rec->inferredLabel() }}</span>@endif</td>
                             <td class="px-4 py-3 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($rec->minutes === null ? null : (int) $rec->minutes) }}@if($rec->intervalsLabel()) <span class="text-[10px] text-gray-400">({{ $rec->intervalsLabel() }})</span>@endif</td>
                         </tr>
                         @empty
@@ -397,11 +405,12 @@
              معه، ولا يبقى اسمٌ أسودَ على أسود. --}}
         @if($isManagerAtt)
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {{-- العدّاداتُ عن اليوم دائماً ولو صُفّي الجدولُ ليومٍ آخر — فيُقال في اسمها --}}
             @foreach([
                 ['حاضرون الآن', $attStats['present'], 'text-emerald-500'],
-                ['انصرفوا', $attStats['completed'], 'text-gray-500'],
-                ['في إجازة', $attStats['on_leave'], 'text-gold-dark'],
-                ['غائبون', $attStats['absent'], 'text-red-500'],
+                ['انصرفوا اليوم', $attStats['completed'], 'text-gray-500'],
+                ['في إجازة اليوم', $attStats['on_leave'], 'text-gold-dark'],
+                ['غائبون اليوم', $attStats['absent'], 'text-red-500'],
             ] as [$label, $value, $tone])
                 <div class="bg-white rounded-xl border border-gold/15 p-5">
                     <p class="text-xs text-gray-400 mb-1">{{ $label }}</p>
@@ -472,11 +481,79 @@
                     <option value="">الكل</option>
                     <option value="present" @selected(request('status') === 'present')>حاضر</option>
                     <option value="completed" @selected(request('status') === 'completed')>منتهٍ</option>
+                    <option value="unclosed" @selected(request('status') === 'unclosed')>بلا انصراف</option>
+                    <option value="inferred" @selected(request('status') === 'inferred')>مستنتَج (سقف/آخر نشاط)</option>
                 </select>
             </div>
             <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-lg font-semibold text-sm transition-colors">تصفية</button>
             <a href="{{ route('hr.index', ['tab' => 'attendance_log']) }}" class="text-gray-400 hover:text-gray-600 text-sm px-3 py-2">مسح</a>
+            @if($isManagerAtt)
+                {{-- الكشفُ للمحاسب: المدى المصفّى نفسُه، ملفّاً لا صورَ شاشة --}}
+                <a href="{{ route('hr.attendance.export', request()->only(['range', 'date', 'employee_id', 'status'])) }}" data-attendance-export class="text-gold-dark hover:underline text-sm px-3 py-2 font-semibold">تنزيل CSV</a>
+            @endif
         </form>
+
+        @if($isManagerAtt)
+        {{-- يومٌ لموظّفٍ لم يدخل النظام (محكمة، جهازٌ معطَّل): كان يُقرأ «غائباً» ولا سبيلَ إلّا المطوّر --}}
+        <details class="bg-white rounded-xl border border-gold/15 mb-4" @if(old('form') === 'add_day' && $errors->any()) open @endif>
+            <summary class="px-4 py-3 text-sm font-semibold text-gold-dark cursor-pointer">إضافة يومٍ لموظّف لم يسجّل حضوره</summary>
+            {{-- old() بعلامة النموذج: خطأُ تحقّقٍ في صفّ تصحيحٍ كان يملأ هذا النموذجَ بأوقات موظّفٍ آخر --}}
+            @php $addOld = old('form') === 'add_day'; @endphp
+            <form method="POST" action="{{ route('hr.attendance.add') }}" class="px-4 pb-4 flex flex-wrap items-end gap-3" data-attendance-add>
+                @csrf
+                <input type="hidden" name="form" value="add_day">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">الموظف</label>
+                    <select name="employee_id" required class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-sm">
+                        @foreach($attEmployees as $e)
+                            <option value="{{ $e->id }}" @selected($addOld && old('employee_id') == $e->id)>{{ $e->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">اليوم</label>
+                    <input type="date" name="work_date" required max="{{ now('Asia/Muscat')->toDateString() }}" value="{{ $addOld ? old('work_date') : '' }}" class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-sm" dir="ltr">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">الحضور</label>
+                    <input type="time" name="check_in" required value="{{ $addOld ? old('check_in') : '' }}" class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-sm tabular-nums" dir="ltr">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">الانصراف</label>
+                    <input type="time" name="check_out" required value="{{ $addOld ? old('check_out') : '' }}" class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-sm tabular-nums" dir="ltr">
+                </div>
+                <label class="flex items-center gap-1.5 text-xs text-gray-500 pb-2"><input type="checkbox" name="next_day" value="1" @checked($addOld && old('next_day'))> الانصراف في اليوم التالي</label>
+                <div class="flex-1 min-w-[12rem]">
+                    <label class="block text-xs text-gray-400 mb-1">السبب — يبقى في السجلّ</label>
+                    <input type="text" name="reason" required maxlength="120" value="{{ $addOld ? old('reason') : '' }}" placeholder="مثال: يومُ محكمةٍ بلا دخولٍ للنظام" class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-sm">
+                </div>
+                <button type="submit" class="bg-gold-dark hover:opacity-90 text-white px-5 py-2 rounded-lg font-semibold text-sm transition">إضافة</button>
+                @if($addOld)
+                    @foreach(['add_check_out', 'work_date', 'employee_id', 'check_in', 'check_out', 'reason'] as $field)
+                        @error($field)<p class="w-full text-xs text-red-600">{{ $message }}</p>@enderror
+                    @endforeach
+                @endif
+            </form>
+        </details>
+        @endif
+
+        @if($attTotals->isNotEmpty())
+        {{-- مجموعُ المدى: الرقمُ الذي يُسأل عنه أوّلاً، ومعه كم منه استنتجه النظام --}}
+        <div class="bg-white rounded-xl border border-gold/15 p-4 mb-4">
+            <p class="text-xs font-bold text-gold-dark mb-2">مجموع المدى المعروض</p>
+            <div class="flex flex-wrap gap-2" data-attendance-totals>
+                @foreach($attTotals as $uid => $t)
+                    @php $emp = $attEmployees->firstWhere('id', $uid); @endphp
+                    <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
+                        <span class="font-semibold text-gray-700">{{ $emp?->name ?? ('#' . $uid) }}</span>
+                        <span class="text-gray-500" dir="rtl">— {{ \App\Support\Duration::human($t['minutes']) }} في {{ $t['days'] }} يوم</span>
+                        @if($t['inferred'])<span class="text-amber-600" title="أوقاتٌ كتبها النظام لا أصحابُها — راجعها">· منها {{ $t['inferred'] }} مستنتَج</span>@endif
+                        @if($t['open'])<span class="text-emerald-600">· {{ $t['open'] }} مفتوح</span>@endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
 
         <div class="bg-white rounded-xl border border-gold/15 overflow-hidden">
             <div class="overflow-x-auto">
@@ -485,40 +562,102 @@
                         <tr>
                             {{-- التوسيطُ من قاعدة tbl-centred، والاسمُ وحدَه يُستثنى:
                                  نصٌّ متغيّرُ الطول يُقرأ من مبدئه لا من وسطه. --}}
-                            @foreach(['الموظف','التاريخ','الحضور','الانصراف','المدة','الحالة'] as $h)
+                            @foreach(array_merge(['الموظف','التاريخ','الحضور','الانصراف','المدة','الحالة'], $isManagerAtt ? ['تصحيح'] : []) as $h)
                                 <th class="{{ $h === 'الموظف' ? 'text-start' : '' }} px-4 py-3 font-semibold text-xs text-gold-dark">{{ $h }}</th>
                             @endforeach
                         </tr>
                     </thead>
-                    <tbody>
+                    {{-- ═══ تصحيحُ الإداري ═══
+                         كان الكشفُ يعد «للإداري تصحيحه» ولا زرَّ له. صفُّ التصحيح يظهر تحت
+                         السجلّ بالنقر، ويعود مفتوحاً بعد خطأ تحقّقٍ على السجلّ نفسِه. --}}
+                    <tbody x-data="{ fix: {{ (int) old('record_id', 0) }} }">
                         @forelse($attRecords as $r)
-                            @php $isIn = $r->check_out_at === null; @endphp
+                            @php
+                                $isIn = $r->check_out_at === null;
+                                // الحالةُ من مصدرٍ واحد: كان الصفُّ يقول «حاضر» عن سجلّ الثلاثاء الماضي
+                                // المفتوح، واللوحةُ عنه «بلا انصراف»
+                                $rowStatus = \App\Support\AttendanceGuard::statusOf($r);
+                                [$pillText, $pillDot, $pillTone] = match ($rowStatus) {
+                                    'present' => ['حاضر', 'bg-emerald-500', 'bg-emerald-500/10 text-emerald-600'],
+                                    'unclosed' => ['بلا انصراف', 'bg-amber-400', 'bg-amber-500/10 text-amber-600'],
+                                    default => ['منتهٍ', 'bg-gray-400', 'bg-gray-500/10 text-gray-500'],
+                                };
+                            @endphp
                             <tr class="border-t border-gray-200">
-                                <td class="px-4 py-3 text-gray-700 text-start">{{ $r->user->name ?? '—' }}</td>
+                                <td class="px-4 py-3 text-gray-700 text-start">{{ $r->user->name ?? '—' }}
+                                    @if($isManagerAtt && $r->note)
+                                        {{-- أثرُ الفترات والإقفالات والتصحيحات: كان يُكتب في عمودٍ لا تعرضه شاشة --}}
+                                        <p class="text-[10px] text-gray-400 font-normal mt-0.5 whitespace-normal max-w-xs">{{ $r->note }}</p>
+                                    @endif
+                                </td>
                                 {{-- ‏tabular-nums كي تقف الخاناتُ فوق بعضها في عمودٍ
                                      متوسّط: بلا عرضٍ ثابتٍ للرقم يتذبذب الوسطُ من صفٍّ
                                      إلى صفّ فيبدو العمودُ مهتزّاً. --}}
                                 <td class="px-4 py-3 text-gray-500 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->work_date->format('Y-m-d') }}</td>
                                 <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->check_in_at->timezone('Asia/Muscat')->format('h:i A') }}</td>
-                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->check_out_at ? $r->check_out_at->timezone('Asia/Muscat')->format('h:i A') : '—' }}@if($r->inferredLabel()) <span dir="rtl" class="text-[10px] text-amber-600 font-semibold" title="وقتٌ استنتجه النظام لا ضغطه صاحبُه">{{ $r->inferredLabel() }}</span>@endif</td>
+                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->checkOutDisplay('h:i A') ?? '—' }}@if($r->inferredLabel()) <span dir="rtl" class="text-[10px] text-amber-600 font-semibold" title="{{ $r->closedByInference() ? 'وقتٌ استنتجه النظام لا ضغطه صاحبُه' : 'صحّحه الإداري' }}">{{ $r->inferredLabel() }}</span>@endif</td>
                                 {{-- ‏rtl لا ltr: النصُّ يخلط أرقاماً لاتينيّةً بحرفين عربيّين،
                                      وفي سياقٍ لاتينيّ تقلبه خوارزميّةُ الاتّجاهين فيخرج
                                      «س 15د 6» بدل «6 س 15 د» — والرقمُ يقفز إلى آخر السطر. --}}
                                 <td class="px-4 py-3 text-gray-500 text-center whitespace-nowrap tabular-nums" dir="rtl">{{ \App\Support\Duration::human($r->minutes) }}@if($r->intervalsLabel()) <span class="text-[10px] text-gray-400">({{ $r->intervalsLabel() }})</span>@endif</td>
                                 <td class="px-4 py-3">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold {{ $isIn ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-500/10 text-gray-500' }}">
-                                        <span class="w-1.5 h-1.5 rounded-full {{ $isIn ? 'bg-emerald-500' : 'bg-gray-400' }}"></span>
-                                        {{ $isIn ? 'حاضر' : 'منتهٍ' }}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold {{ $pillTone }}">
+                                        <span class="w-1.5 h-1.5 rounded-full {{ $pillDot }}"></span>
+                                        {{ $pillText }}
                                     </span>
                                 </td>
+                                @if($isManagerAtt)
+                                    <td class="px-4 py-3 text-center">
+                                        <button type="button" @click="fix = fix === {{ $r->id }} ? 0 : {{ $r->id }}" data-attendance-fix="{{ $r->id }}"
+                                                class="text-xs font-semibold text-gold-dark hover:underline">تصحيح</button>
+                                    </td>
+                                @endif
                             </tr>
+                            @if($isManagerAtt)
+                                <tr x-show="fix === {{ $r->id }}" x-cloak class="bg-gold/5">
+                                    <td colspan="7" class="px-4 py-3">
+                                        <form method="POST" action="{{ route('hr.attendance.correct', $r) }}" class="flex flex-wrap items-end gap-3" data-attendance-fix-form="{{ $r->id }}">
+                                            @csrf
+                                            <input type="hidden" name="record_id" value="{{ $r->id }}">
+                                            <div>
+                                                <label class="block text-xs text-gray-400 mb-1">الحضور</label>
+                                                <input type="time" name="check_in" required value="{{ old('record_id') == $r->id ? old('check_in') : $r->check_in_at->timezone('Asia/Muscat')->format('H:i') }}" class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-sm tabular-nums" dir="ltr">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-gray-400 mb-1">الانصراف</label>
+                                                <input type="time" name="check_out" required value="{{ old('record_id') == $r->id ? old('check_out') : ($r->check_out_at?->timezone('Asia/Muscat')->format('H:i') ?? '') }}" class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-sm tabular-nums" dir="ltr">
+                                            </div>
+                                            {{-- ليلةُ عمل: انصرافٌ بعد منتصف الليل يُقال صراحةً لا يُردّ «قبل الحضور» --}}
+                                            @php $crossed = $r->check_out_at && $r->checkOutDisplay() !== $r->check_out_at->timezone('Asia/Muscat')->format('H:i'); @endphp
+                                            <label class="flex items-center gap-1.5 text-xs text-gray-500 pb-2"><input type="checkbox" name="next_day" value="1" @checked(old('record_id') == $r->id ? old('next_day') : $crossed)> في اليوم التالي</label>
+                                            <div class="flex-1 min-w-[12rem]">
+                                                <label class="block text-xs text-gray-400 mb-1">السبب — يبقى في السجلّ</label>
+                                                <input type="text" name="reason" required maxlength="120" value="{{ old('record_id') == $r->id ? old('reason') : '' }}" placeholder="مثال: خرج ٣:٥٧ بشهادته والسجلُّ أُقفل بالسقف" class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-sm">
+                                            </div>
+                                            <button type="submit" class="bg-gold-dark hover:opacity-90 text-white px-5 py-2 rounded-lg font-semibold text-sm transition">حفظ التصحيح</button>
+                                            @if(old('record_id') == $r->id)
+                                                @error('check_out')<p class="w-full text-xs text-red-600">{{ $message }}</p>@enderror
+                                                @error('check_in')<p class="w-full text-xs text-red-600">{{ $message }}</p>@enderror
+                                                @error('reason')<p class="w-full text-xs text-red-600">{{ $message }}</p>@enderror
+                                            @endif
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endif
                         @empty
-                            <tr><td colspan="6" class="px-4 py-12 text-center text-gray-400">لا سجلات في هذا المدى.</td></tr>
+                            <tr><td colspan="{{ $isManagerAtt ? 7 : 6 }}" class="px-4 py-12 text-center text-gray-400">لا سجلات في هذا المدى.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
             <div class="px-4 py-3 border-t border-gray-200">{{ $attRecords->links() }}</div>
+            {{-- معنى الوسوم كان في تلميح تحويمٍ لا يظهر على الهاتف --}}
+            <p class="px-4 py-3 border-t border-gray-100 text-[11px] text-gray-400 leading-relaxed">
+                <span class="text-amber-600 font-semibold">بلغ السقف</span>: أُقفل تلقائيّاً حين بلغ اليومُ {{ \App\Support\AttendanceGuard::capHours() }} ساعات ولم يُرَ صاحبُه في آخر ساعة — الوقتُ مستنتَج ·
+                <span class="text-amber-600 font-semibold">آخر نشاط</span>: أُقفل على آخر لحظةٍ رُئي فيها يعمل ·
+                <span class="text-amber-600 font-semibold">مصحَّح</span>: صحّحه الإداري بسببٍ مكتوب ·
+                والانصرافُ بلا وسمٍ ضغطه صاحبُه. «استئناف الدوام» يفتح يوماً أُقفل وصاحبُه في دوامه.
+            </p>
         </div>
 
     @elseif($tab === 'salaries' && $canManageSalaries)

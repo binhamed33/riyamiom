@@ -782,7 +782,8 @@ class DemoOfficeSeed extends Command
             ]);
         }
 
-        if (HrAttendance::where('note', 'بيانات العرض')->exists()) {
+        // بادئةٌ لا مطابقةٌ تامّة: أثرُ الإقفال والاستئناف يُلحَق بالملاحظة فتفقد المطابقةُ التامّة علامتَها
+        if (HrAttendance::where('note', 'like', 'بيانات العرض%')->exists()) {
             return;
         }
 

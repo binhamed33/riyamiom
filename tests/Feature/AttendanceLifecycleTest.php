@@ -18,6 +18,14 @@ class AttendanceLifecycleTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // ساعةٌ مجمَّدة: الحزمةُ كانت خضراءَ بعد السادسة مساءً فقط — أوقاتُ «16:00» المزروعة
+        // تقع في المستقبل صباحاً أو داخل نافذة الخمول عصراً
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::parse('2026-09-16 21:00:00', 'Asia/Muscat'));
+    }
+
     private function staff(array $attrs = []): User
     {
         return User::factory()->create($attrs + [

@@ -99,6 +99,13 @@ class AttendanceController extends Controller
      */
     public function keepPresent(Request $request)
     {
+        // «انتهى يومي» على سؤال الاستئناف: يُغلق السؤالُ لليوم ولا يُمسّ السجلّ
+        if ($request->input('dismiss') === 'resume') {
+            $request->session()->put('attendance_resume_dismissed', HrAttendance::today());
+
+            return back()->with('success', 'حسناً — انصرافُك كما سُجّل.');
+        }
+
         $request->session()->put('attendance_prompt_dismissed', HrAttendance::today());
 
         return back()->with('success', 'واصلْ عملك — حضورك ما يزال مسجّلاً.');

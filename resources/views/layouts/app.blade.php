@@ -1376,6 +1376,44 @@
                  كما هما، فمن حفظ الرابط يصل، ومن بحث في الشريط
                  العلويّ يجد. --}}
 
+            @php
+                // سجلُّ الحضور المفتوح يُقرأ مرّةً هنا ويُعاد استعمالُه في إشعار الحضور
+                $attOpen = \App\Support\AttendanceGuard::openRecord(auth()->user());
+            @endphp
+            @if($attOpen)
+                {{-- ═══ الخروجُ ليس انصرافاً — فيُسأل صاحبُه ═══
+                     كان زرُّ الخروج يكتب انصرافاً خلسةً فتضيع الفترةُ المسائيّة؛ وبلا
+                     سؤالٍ ينسى من اعتاد الزرَّ تسجيلَ انصرافه فيُقفل يومُه بالسقف.
+                     فالسؤالُ يقع مرّةً عند الخروج وسجلُّه مفتوح، والقرارُ بيده. --}}
+                <div x-data="{ askOut: false }">
+                    <button type="button" @click="askOut = true" data-logout-ask class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm w-full hover:text-red-700">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span class="sidebar-footer-text">{{ __('app.logout') }}</span>
+                    </button>
+                    {{-- تُنقل إلى body: الشريطُ الجانبيّ محوَّل (transform) فيصير fixed نسبيّاً إليه
+                         وتظهر النافذةُ محشورةً في عموده والخلفيّةُ لا تغطّي الصفحة --}}
+                    <template x-teleport="body">
+                    <div x-show="askOut" x-cloak @keydown.escape.window="askOut = false" class="fixed inset-0 z-[9998] flex items-center justify-center" style="background: rgba(0,0,0,.45);" role="alertdialog" aria-modal="true" data-logout-dialog>
+                        <div @click.outside="askOut = false" class="bg-white border border-gray-200 rounded-2xl p-6 max-w-sm mx-4 shadow-2xl card-premium text-start">
+                            <h3 class="text-gray-900 font-bold text-base mb-1">هل تسجّل انصرافك أيضاً؟</h3>
+                            <p class="text-gray-500 text-sm mb-5">حضورُك مسجَّلٌ منذ <span dir="ltr">{{ $attOpen->intervalStart()->timezone('Asia/Muscat')->format('h:i A') }}</span>. الخروجُ من النظام وحدَه لا يُنهي يومَك.</p>
+                            <form method="POST" action="{{ route('logout') }}" class="mb-2">
+                                @csrf
+                                <input type="hidden" name="checkout" value="1">
+                                <button type="submit" class="w-full btn-gold py-2.5 rounded-xl font-bold text-sm">تسجيل الانصراف والخروج</button>
+                            </form>
+                            <form method="POST" action="{{ route('logout') }}" class="mb-2">
+                                @csrf
+                                <button type="submit" class="w-full btn-ghost py-2.5 rounded-xl font-medium text-sm">خروجٌ فقط — سأعود</button>
+                            </form>
+                            <button type="button" @click="askOut = false" class="w-full text-xs text-gray-400 hover:text-gray-600 py-1">إلغاء</button>
+                        </div>
+                    </div>
+                    </template>
+                </div>
+            @else
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 text-sm w-full hover:text-red-700">
@@ -1385,6 +1423,7 @@
                     <span class="sidebar-footer-text">{{ __('app.logout') }}</span>
                 </button>
             </form>
+            @endif
         </div>
 
     {{-- أقسام الشريط الجانبي: تُطوى بالنقر، ويُحفظ اختيارك.
@@ -1866,7 +1905,7 @@
         {{-- Page Content --}}
         <main class="p-4 sm:p-6 lg:p-8 page-enter pb-20 md:pb-8">
             {{-- بلوغُ حدّ الباقة: يُعرض قبل غيره — هو سببُ عدم وقوع ما طُلب --}}
-            <x-attendance-toast :attendance-open="\App\Support\AttendanceGuard::openRecord(auth()->user())" />
+            <x-attendance-toast :attendance-open="$attOpen ?? \App\Support\AttendanceGuard::openRecord(auth()->user())" />
             <x-limit-notice />
 
             @if(session('success'))
@@ -1969,6 +2008,8 @@
          لا يسجّل انصرافاً منذ صار الانصرافُ لزرّه وحده (AttendanceGuard) --}}
     <form id="autoLogoutForm" action="{{ route('logout') }}" method="POST" style="display:none;">
         @csrf
+        {{-- علامةُ الخمول: الخادمُ لا يختم «آخرَ نشاط» لخروجٍ أرسله المؤقّت بعد ساعةِ غياب --}}
+        <input type="hidden" name="idle" value="1">
     </form>
 
     <div id="autoLogoutOverlay" style="display:none;" class="fixed inset-0 z-[9999] flex items-center justify-center" data-autologout-backdrop role="alertdialog" aria-modal="true" aria-labelledby="autoLogoutTitle">
@@ -1979,7 +2020,9 @@
                 </svg>
             </div>
             <h3 id="autoLogoutTitle" class="text-gray-900 font-bold text-lg mb-2" style="font-family: 'Cairo', sans-serif;">{{ __('app.session_warning_title') }}</h3>
-            <p class="text-gray-500 text-sm mb-4">{{ __('app.session_warning_message') }} <span class="text-amber-400 font-bold" id="autoLogoutCountdown">60</span></p>
+            <p class="text-gray-500 text-sm mb-2">{{ __('app.session_warning_message') }} <span class="text-amber-400 font-bold" id="autoLogoutCountdown">60</span></p>
+            {{-- مكتبان تعلّما أنّ الخروج = انصراف تحت الشفرة القديمة؛ القاعدةُ الجديدة تُقال حيث تقع --}}
+            <p class="text-gray-400 text-xs mb-4">الخروجُ من النظام لا يسجّل انصرافاً — الانصرافُ بزرّه.</p>
             <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
                 <div id="autoLogoutBar" class="bg-amber-400 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
             </div>
@@ -1993,6 +2036,8 @@
 
     <script nonce="{{ $cspNonce }}">
     (function() {
+        // الطبقةُ لا تُرسم إلّا لمن دخل؛ صفحةٌ للزائر بهذا القالب كانت سترمي خطأً مع كلّ حركة فأرة
+        if (!document.getElementById('autoLogoutOverlay')) return;
         var timer = null;
         var countdownTimer = null;
         var keepAliveTimer = null;

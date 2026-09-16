@@ -28,6 +28,14 @@ class AttendanceOnlyByButtonTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // ساعةٌ مجمَّدة: الحزمةُ كانت خضراءَ بعد السادسة مساءً فقط — أوقاتُ «16:00» المزروعة
+        // تقع في المستقبل صباحاً أو داخل نافذة الخمول عصراً
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::parse('2026-09-16 21:00:00', 'Asia/Muscat'));
+    }
+
     private function staff(): User
     {
         return User::factory()->create(['role' => 'lawyer', 'is_active' => true]);
@@ -116,6 +124,8 @@ class AttendanceOnlyByButtonTest extends TestCase
             'last_activity' => now()->setTimeFromTimeString('11:20')->timestamp,
         ]);
 
+        DB::table('users')->where('id', $user->id)->update(['last_seen_at' => now()->setTimeFromTimeString('11:20')]);
+
         $this->assertSame(0, AttendanceGuard::closeStaleRecords());
         $this->assertNull($record->fresh()->check_out_at, 'اختُرع وقتُ انصرافٍ من آخر نقرة');
     }
@@ -137,11 +147,12 @@ class AttendanceOnlyByButtonTest extends TestCase
         $this->assertNull($record->fresh()->check_out_at);
     }
 
-    /** و--force يتجاوز لمن أراد إقفالاً يدويّاً واعياً. */
+    /** و--force يتجاوز لمن أراد إقفالاً يدويّاً واعياً — على أثرٍ حقيقيّ. */
     public function test_force_still_closes_for_a_deliberate_manual_run(): void
     {
         $user = $this->staff();
-        $record = $this->openRecord($user);
+        $record = $this->openRecord($user, now()->subHours(3)->format('H:i'));
+        DB::table('users')->where('id', $user->id)->update(['last_seen_at' => now()->subHours(2)]);
 
         $this->artisan('hr:close-attendance --force')->assertSuccessful();
 
@@ -182,12 +193,13 @@ class AttendanceOnlyByButtonTest extends TestCase
         $this->assertSame('present', AttendanceGuard::statusOf($this->openRecord($user)));
     }
 
-    /** ومكتبٌ فضّل الإقفال الليليّ القديم يفعّله فيعود. */
+    /** ومكتبٌ فضّل الإقفال الليليّ القديم يفعّله فيعود — بأثرٍ حقيقيّ لا بصفر. */
     public function test_an_office_can_opt_back_into_nightly_closing(): void
     {
         Setting::set('hr_auto_close', '1');
         $user = $this->staff();
-        $record = $this->openRecord($user);
+        $record = $this->openRecord($user, now()->subHours(3)->format('H:i'));
+        DB::table('users')->where('id', $user->id)->update(['last_seen_at' => now()->subHours(2)]);
 
         $this->assertSame(1, AttendanceGuard::closeStaleRecords());
         $this->assertNotNull($record->fresh()->check_out_at);

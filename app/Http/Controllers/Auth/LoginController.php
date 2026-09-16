@@ -143,18 +143,8 @@ class LoginController extends Controller
             $request->userAgent()
         );
 
-        // الحضور يُسجَّل هنا لا في وسيط: الوسيط يمرّ على كل طلب فيعيد
-        // المحاولة مئة مرة في اليوم، والدخول يقع مرة. والفشل لا يمنع
-        // الدخول — AttendanceGuard يبتلع عطله ويُرجع null.
-        $attendance = AttendanceGuard::checkInOnLogin(auth()->user());
-
-        if ($attendance) {
-            $request->session()->put('attendance_flash', [
-                'created' => $attendance['created'],
-                'resumed' => $attendance['resumed'] ?? false,
-                'at' => $attendance['record']->intervalStart()->timezone('Asia/Muscat')->format('h:i A'),
-            ]);
-        }
+        // الحضورُ سُجّل في مستمع حدث الدخول (RecordAttendanceOnLogin) — وهو
+        // يعمل كذلك لدخول «تذكّرني» الذي لا يمرّ من هنا
 
         return redirect()->intended(route('dashboard'));
     }
@@ -202,8 +192,22 @@ class LoginController extends Controller
         // كان زرُّ الخروج يكتب انصرافاً، فمن خرج ظهراً ليقفل جهازَه في
         // الاستراحة — أو ليدخل من جهازٍ آخر — وُجد يومُه «مكتملاً» وضاعت
         // فترتُه المسائيّة من كشف الشهر. الجلسةُ تُغلق هنا للأمان لا غير؛
-        // والانصرافُ لزرّ «تسجيل الانصراف» وحده (AttendanceGuard::checkOut)،
-        // ومن نسيه أقفله سقفُ المناوبة موسوماً بأنّه مستنتَج.
+        // والانصرافُ لزرّ «تسجيل الانصراف» وحده، أو لمن اختار صراحةً
+        // «تسجيل الانصراف والخروج» في نافذة الخروج (checkout=1) — اختيارٌ
+        // بيده لا افتراضٌ عنه.
+        //
+        // ويُختم آخرُ نشاطٍ قبل موت الجلسة: لحظةُ الخروج آخرُ ما رأيناه
+        // يقيناً، ولولاها أُقفل سجلُّ من نسي الزرّ بالسقف قبل خروجه.
+        if ($request->boolean('checkout')) {
+            AttendanceGuard::checkOut($user);
+        }
+
+        // خروجُ الخمول (idle=1) يُرسله المؤقّتُ بعد ساعةٍ من الغياب — لا إنسانَ
+        // يُختم له أثر؛ ختمُه كان يكتب انصرافاً بعد الرحيل بساعة
+        if (! $request->boolean('idle')) {
+            AttendanceGuard::stampSeen($user);
+        }
+
         auth()->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

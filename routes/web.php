@@ -570,6 +570,10 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::post('/hr/attendance/check-in', [HrController::class, 'checkIn'])->name('hr.attendance.checkin');
         Route::post('/hr/attendance/check-out', [HrController::class, 'checkOut'])->name('hr.attendance.checkout');
         Route::post('/hr/attendance/resume', [HrController::class, 'resume'])->name('hr.attendance.resume');
+        Route::post('/hr/attendance/{record}/correct', [HrController::class, 'correct'])->name('hr.attendance.correct');
+        Route::post('/hr/attendance/cancel', [HrController::class, 'cancel'])->name('hr.attendance.cancel');
+        Route::get('/hr/attendance/export', [HrController::class, 'exportAttendance'])->name('hr.attendance.export');
+        Route::post('/hr/attendance/add-day', [HrController::class, 'addDay'])->name('hr.attendance.add');
         Route::post('/hr/leaves', [HrController::class, 'storeLeave'])->name('hr.leaves.store');
         Route::post('/hr/performance', [HrController::class, 'storePerformance'])->name('hr.performance.store');
         Route::delete('/hr/performance/{performance}', [HrController::class, 'destroyPerformance'])->name('hr.performance.destroy');

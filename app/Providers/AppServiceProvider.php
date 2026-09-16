@@ -40,6 +40,10 @@ class AppServiceProvider extends ServiceProvider
         // الفاتورة وحدها بلا مراقبٍ قائم — تُراقَب هنا لإشعار الموكّل
         \App\Models\FinanceInvoice::observe(\App\Observers\FinanceInvoiceObserver::class);
 
+        // حضورُ اليوم عند كلّ دخول — بالنموذج أو بكعكة «تذكّرني» التي لا
+        // تمرّ على LoginController: App\Listeners\RecordAttendanceOnLogin،
+        // يكتشفه لارافل من مجلّده بلا تسجيلٍ هنا (تسجيلٌ ثانٍ يُشغّله مرّتين)
+
         config(['app.timezone' => 'Asia/Muscat']);
         date_default_timezone_set('Asia/Muscat');
 

@@ -42,6 +42,10 @@ class CloseAttendance extends Command
         // ولولاه لبقي مفتوحاً أياماً وظهر صاحبُه «حاضراً» إلى الأبد.
         $capped = AttendanceGuard::closeOvertimeRecords();
 
+        // أثرُ المسحة: office:health يقرؤه، فقفلُ تزامنٍ بقي بعد تشغيلٍ مقتول
+        // كان يُسكت المسحاتِ يوماً ولا يقولها أحد
+        \Illuminate\Support\Facades\Cache::put(AttendanceGuard::SWEEP_STAMP, now()->toDateTimeString(), now()->addDays(2));
+
         if ($capped > 0) {
             $this->info("أُقفل {$capped} سجلّاً بلغ سقفَ المناوبة ("
                 . AttendanceGuard::capHours() . ' ساعات).');

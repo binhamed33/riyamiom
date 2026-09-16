@@ -29,6 +29,14 @@ class AttendanceShiftCapTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // ساعةٌ مجمَّدة: الحزمةُ كانت خضراءَ بعد السادسة مساءً فقط — أوقاتُ «16:00» المزروعة
+        // تقع في المستقبل صباحاً أو داخل نافذة الخمول عصراً
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::parse('2026-09-16 21:00:00', 'Asia/Muscat'));
+    }
+
     private function staff(): User
     {
         return User::factory()->create(['role' => 'lawyer', 'is_active' => true]);
@@ -59,8 +67,10 @@ class AttendanceShiftCapTest extends TestCase
 
         $this->assertNotNull($record->check_out_at);
         $this->assertSame(480, (int) $record->minutes, 'الدقائقُ ليست ثماني ساعات');
-        $this->assertSame('auto_capped', $record->source);
+        $this->assertSame(HrAttendance::CLOSED_BY_CAP, $record->closed_by);
+        $this->assertSame('auto_login', $record->source, 'أصلُ الإنشاء كُتب فوقه');
         $this->assertSame('completed', $record->status);
+        $this->assertStringContainsString('أُقفل بالسقف', (string) $record->note);
 
         // ولا يُكتب «الآن»: الوقتُ محسوبٌ من الحضور
         $this->assertTrue(
@@ -154,7 +164,7 @@ class AttendanceShiftCapTest extends TestCase
 
         $this->artisan('hr:close-attendance --cap')->assertSuccessful();
 
-        $this->assertSame('auto_capped', $record->refresh()->source);
+        $this->assertSame(HrAttendance::CLOSED_BY_CAP, $record->refresh()->closed_by);
     }
 
     // ══════════ الخمول ══════════

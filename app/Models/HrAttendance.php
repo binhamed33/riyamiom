@@ -15,7 +15,16 @@ class HrAttendance extends Model
 {
     protected $table = 'hr_attendance';
 
-    protected $fillable = ['user_id', 'work_date', 'check_in_at', 'check_out_at', 'resumed_at', 'minutes', 'intervals', 'note', 'status', 'source'];
+    /** مَن كتب وقتَ الانصراف — انظر هجرة closed_by. */
+    public const CLOSED_BY_BUTTON = 'button';
+    public const CLOSED_BY_CAP = 'cap';
+    public const CLOSED_BY_SEEN = 'seen';
+    public const CLOSED_BY_MANAGER = 'manager';
+    public const CLOSED_BY_LEGACY = 'legacy';
+    /** زرُّ الخروج القديم الذي كان يكتب انصرافاً — صفوفٌ من قبل الإصلاح وُسمت من سجلّ التدقيق. */
+    public const CLOSED_BY_LOGOUT = 'logout';
+
+    protected $fillable = ['user_id', 'work_date', 'check_in_at', 'check_out_at', 'resumed_at', 'minutes', 'inferred_minutes', 'intervals', 'note', 'status', 'source', 'closed_by'];
 
     protected function casts(): array
     {
@@ -51,18 +60,65 @@ class HrAttendance extends Model
     }
 
     /**
-     * وسمُ وقتِ انصرافٍ استنتجه النظام — ليُقرأ في الكشف على حقيقته.
+     * وسمُ وقتِ انصرافٍ لم يضغطه صاحبُه — ليُقرأ في الكشف على حقيقته.
      *
      * الوسمُ كان يُكتب في العمود ولا يُعرض في أيّ كشف، فيقرأ المدير
      * «08:00 — 16:00» كأنّ صاحبَه ضغطها، وهي سقفٌ أُقفل عليه المنسيّ.
+     * والصفوفُ التي أُقفلت قبل عمود closed_by تُقرأ من source القديم.
      */
     public function inferredLabel(): ?string
     {
-        return match ($this->source) {
-            'auto_capped' => 'بلغ السقف',
-            'auto_closed' => 'آخر نشاط',
+        // أُقفل بالزرّ لكنّ في مجموعه دقائقَ كتبها السقفُ قبل الاستئناف — فلا يُقرأ كلُّه موقَّعاً
+        if ($this->closed_by === self::CLOSED_BY_BUTTON && (int) $this->inferred_minutes > 0) {
+            return 'فترةٌ بالسقف';
+        }
+
+        return match ($this->closed_by ?? $this->legacyClosedBy()) {
+            self::CLOSED_BY_CAP => 'بلغ السقف',
+            self::CLOSED_BY_SEEN => 'آخر نشاط',
+            self::CLOSED_BY_MANAGER => 'مصحَّح',
+            self::CLOSED_BY_LOGOUT => 'زرّ الخروج (قديم)',
             default => null,
         };
+    }
+
+    private function legacyClosedBy(): ?string
+    {
+        return match ($this->source) {
+            'auto_capped' => self::CLOSED_BY_CAP,
+            'auto_closed' => self::CLOSED_BY_SEEN,
+            default => null,
+        };
+    }
+
+    /** هل وقتُ الانصراف استنتاجٌ (سقفٌ أو آخرُ نشاط) لا ضغطةُ صاحبه ولا تصحيحُ إداري؟ */
+    public function closedByInference(): bool
+    {
+        return in_array($this->closed_by ?? $this->legacyClosedBy(), [self::CLOSED_BY_CAP, self::CLOSED_BY_SEEN], true);
+    }
+
+    /** هل في مجموع اليوم دقائقُ كتبها النظام — إقفالاً كاملاً أو فترةً قبل استئناف؟ */
+    public function hasInferredTime(): bool
+    {
+        return $this->closedByInference() || (int) $this->inferred_minutes > 0;
+    }
+
+    /**
+     * وقتُ الانصراف للعرض — و«(+1)» إن وقع بعد منتصف الليل.
+     *
+     * صفُّ ١٥ سبتمبر بانصراف «00:30» يُقرأ نصفَ ساعةٍ بعد الظهر أو خطأً؛
+     * والقولُ «في اليوم التالي» يقطع الشكّ.
+     */
+    public function checkOutDisplay(string $format = 'H:i'): ?string
+    {
+        if (! $this->check_out_at) {
+            return null;
+        }
+
+        $out = $this->check_out_at->timezone('Asia/Muscat');
+        $crossed = $this->work_date && $out->toDateString() > $this->work_date->toDateString();
+
+        return $out->format($format) . ($crossed ? ' (+1)' : '');
     }
 
     /** «فترتان» لمن استأنف يومه — فلا يُقرأ «08:29 — 20:30» اثنتي عشرة ساعة. */

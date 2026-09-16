@@ -39,6 +39,7 @@ class OfficeHealth extends Command
         $this->checkPlanLimits();
         $this->checkMail();
         $this->checkAssets();
+        $this->checkAttendance();
         $this->checkLog();
 
         $this->line('');
@@ -340,6 +341,50 @@ class OfficeHealth extends Command
 
         if ($failed > 0) {
             $this->bad($failed . ' مهمّة أخفقت نهائياً — راجع السجلّ');
+        }
+    }
+
+    /**
+     * مسحةُ سقف الحضور تعمل — والمنسيُّ مفتوحاً يُقال.
+     *
+     * قفلُ تزامنٍ بقي بعد تشغيلٍ مقتول، أو كرونٌ متوقّف، كان يُسكت المسحةَ
+     * يوماً كاملاً بلا سطرٍ في أيّ سجلّ: يظهر الفريقُ «حاضراً» إلى الليل
+     * ويسأل المدير لماذا. المسحةُ تختم الكاشَ كلَّ ساعة، وهنا يُقرأ الختم.
+     */
+    private function checkAttendance(): void
+    {
+        if (\App\Models\Setting::get('feature_hr', '0') === '1' || ! \Illuminate\Support\Facades\Schema::hasTable('hr_attendance')) {
+            return;
+        }
+
+        $this->section('الحضور');
+
+        $rows = \App\Models\HrAttendance::count();
+
+        if ($rows === 0) {
+            $this->ok('لا سجلّات حضور بعد');
+
+            return;
+        }
+
+        $stamp = \Illuminate\Support\Facades\Cache::get(\App\Support\AttendanceGuard::SWEEP_STAMP);
+        // Carbon 3 يُرجع الفرقَ بإشارته: الماضي سالبٌ إن بدأنا من الآن — فيُبدأ من الختم
+        $age = $stamp ? (int) \Illuminate\Support\Carbon::parse($stamp)->diffInMinutes(now()) : null;
+
+        if ($age === null) {
+            $this->bad('مسحةُ السقف لم تعمل بعد — تحقّق من كرون المجدوِل (schedule:run كلَّ دقيقة)');
+        } elseif ($age > 180) {
+            $this->bad('آخرُ مسحةِ سقفٍ قبل ' . (int) round($age / 60) . ' ساعة — الكرون متوقّف أو قفلُ التزامن عالق');
+        } else {
+            $this->ok('مسحةُ السقف تعمل — آخرُها قبل ' . (int) $age . ' دقيقة');
+        }
+
+        $stale = \App\Models\HrAttendance::whereNull('check_out_at')
+            ->whereDate('work_date', '<', \App\Models\HrAttendance::today())
+            ->count();
+
+        if ($stale > 0) {
+            $this->bad($stale . ' سجلّ حضورٍ من أيّامٍ سبقت بلا انصراف — يصحّحه الإداري من سجلّ الحضور');
         }
     }
 

@@ -29,6 +29,9 @@ class AttendanceAutoCloseTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // ساعةٌ مجمَّدة: الحزمةُ كانت خضراءَ بعد السادسة مساءً فقط — أوقاتُ «16:00» المزروعة
+        // تقع في المستقبل صباحاً أو داخل نافذة الخمول عصراً
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::parse('2026-09-16 21:00:00', 'Asia/Muscat'));
         // هذه الحزمة تختبر سلوك الإقفال «حين يُفعَّل». وهو معطَّل
         // افتراضاً بناءً على اقتراح محامٍ: وقتُ آخر نقرةٍ ليس وقتَ
         // انصراف، والانصراف بزرّه وحده — انظر AttendanceOnlyByButtonTest.
@@ -52,17 +55,16 @@ class AttendanceAutoCloseTest extends TestCase
         ]);
     }
 
-    /** آخر نشاطٍ للموظّف في جدول جلسات لارافيل. */
+    /**
+     * آخر نشاطٍ بشريٍّ معروف للموظّف.
+     *
+     * عمودٌ دائم لا صفُّ جلسة: ذاك يُحذف بالخروج ويُكنَس بعد ساعتين وتجدّده
+     * نبضةُ المزامنة بلا إنسان — فكان يُقرأ حضوراً لمن غادر.
+     */
     private function seeUserAt(User $user, string $time): void
     {
-        DB::table('sessions')->insert([
-            'id' => 'sess-' . $user->id . '-' . uniqid(),
-            'user_id' => $user->id,
-            'ip_address' => '127.0.0.1',
-            'user_agent' => 'test',
-            'payload' => '',
-            'last_activity' => now()->setTimeFromTimeString($time)->timestamp,
-        ]);
+        DB::table('users')->where('id', $user->id)
+            ->update(['last_seen_at' => now()->setTimeFromTimeString($time)]);
     }
 
     public function test_an_open_record_is_closed_instead_of_staying_empty_forever(): void
@@ -111,40 +113,56 @@ class AttendanceAutoCloseTest extends TestCase
     }
 
     /**
-     * ومن لا أثرَ لجلسته يُقفل سجلُّه على حضوره بصفر دقيقة.
+     * ومن لا أثرَ له يُترك مفتوحاً — لا يُقفل على حضوره بصفر دقيقة.
      *
-     * رقمٌ ظاهرُ الخطأ يُراجَع، خيرٌ من رقمٍ مخترَعٍ يُصدَّق ويدخل الرواتب.
+     * صفُّ الجلسة يُكنَس بعد ساعتين، فكان كلُّ من نسي الزرَّ ولم يُرَ
+     * بعد الثامنة يُقفل بصفر دقيقة: يومُ عملٍ كامل يُقرأ «0 د» في كشف
+     * الشهر ويُصدَّق. «بلا انصراف» صدقٌ يُصحَّحه الإداري، وسقفُ اليوم
+     * يقفله في مسحته إن لم يُصحَّح.
      */
-    public function test_a_record_with_no_session_trace_closes_at_check_in(): void
+    public function test_a_record_with_no_trace_is_left_open_for_the_manager(): void
     {
         $user = $this->staff();
         $record = $this->openRecord($user, '09:00');
 
-        AttendanceGuard::closeStaleRecords();
-
-        $fresh = $record->fresh();
-        $this->assertSame('09:00', $fresh->check_out_at->format('H:i'));
-        $this->assertSame(0, $fresh->minutes);
+        $this->assertSame(0, AttendanceGuard::closeStaleRecords());
+        $this->assertNull($record->fresh()->check_out_at, 'أُقفل بلا أثرٍ بصفر دقيقة');
     }
 
-    /** والانصراف لا يسبق الحضور مهما قال جدول الجلسات. */
-    public function test_checkout_never_precedes_check_in(): void
+    /** ونشاطٌ قبل الحضور ليس أثراً لهذا اليوم — فيبقى مفتوحاً لا مقفَلاً بصفر. */
+    public function test_activity_before_check_in_is_no_trace(): void
     {
         $user = $this->staff();
         $record = $this->openRecord($user, '13:00');
         $this->seeUserAt($user, '07:00');
 
-        AttendanceGuard::closeStaleRecords();
-
-        $fresh = $record->fresh();
-        $this->assertTrue(
-            $fresh->check_out_at->greaterThanOrEqualTo($fresh->check_in_at),
-            'الانصراف قبل الحضور',
-        );
-        $this->assertGreaterThanOrEqual(0, $fresh->minutes);
+        $this->assertSame(0, AttendanceGuard::closeStaleRecords());
+        $this->assertNull($record->fresh()->check_out_at);
     }
 
-    /** والسجلّ يُوسم فيعرف المكتب أن الوقت مستنتَجٌ لا مسجَّل. */
+    /**
+     * ونشاطُ يومٍ آخر لا يُقفل به سجلٌّ قديم.
+     *
+     * الإداري يشغّل `--date` ليومٍ فات والموظّفُ داخلٌ الآن: كان آخرُ
+     * نشاطٍ (الآن) يُكتب انصرافاً لذلك اليوم فتخرج آلافُ الدقائق.
+     */
+    public function test_another_days_activity_never_closes_an_old_record(): void
+    {
+        $user = $this->staff();
+        $old = HrAttendance::create([
+            'user_id' => $user->id,
+            'work_date' => now()->subDays(3)->toDateString(),
+            'check_in_at' => now()->subDays(3)->setTime(8, 0),
+            'status' => 'present',
+            'source' => 'login',
+        ]);
+        DB::table('users')->where('id', $user->id)->update(['last_seen_at' => now()]);
+
+        $this->assertSame(0, AttendanceGuard::closeStaleRecords(now()->subDays(3), force: true));
+        $this->assertNull($old->fresh()->check_out_at, 'نشاطُ اليوم أُقفل به سجلُّ ما قبل ثلاثة أيام');
+    }
+
+    /** والسجلّ يُوسم بكاتبه فيعرف المكتب أن الوقت مستنتَجٌ لا مسجَّل. */
     public function test_an_auto_closed_record_is_marked_as_such(): void
     {
         $user = $this->staff();
@@ -153,7 +171,9 @@ class AttendanceAutoCloseTest extends TestCase
 
         AttendanceGuard::closeStaleRecords();
 
-        $this->assertSame('auto_closed', $record->fresh()->source);
+        $this->assertSame(HrAttendance::CLOSED_BY_SEEN, $record->fresh()->closed_by);
+        $this->assertSame('آخر نشاط', $record->fresh()->inferredLabel());
+        $this->assertStringContainsString('أُقفل بآخر نشاط', (string) $record->fresh()->note);
     }
 
     /** وسجلٌّ أُقفل بالفعل لا يُمسّ. */
@@ -174,15 +194,18 @@ class AttendanceAutoCloseTest extends TestCase
         $this->assertSame('logout', $record->fresh()->source);
     }
 
-    /** والأمر المجدول يُشغّل المنطق نفسه. */
+    /** والأمر المجدول يُشغّل المنطق نفسه — الإقفالُ الليليّ لا السقف (الحضورُ الثالثة، فالسقفُ لم يُبلغ). */
     public function test_the_scheduled_command_closes_records(): void
     {
         $user = $this->staff();
-        $record = $this->openRecord($user);
+        $record = $this->openRecord($user, '15:00');
         $this->seeUserAt($user, '16:00');
 
         $this->artisan('hr:close-attendance')->assertSuccessful();
 
-        $this->assertNotNull($record->fresh()->check_out_at);
+        $fresh = $record->fresh();
+        $this->assertNotNull($fresh->check_out_at);
+        $this->assertSame(HrAttendance::CLOSED_BY_SEEN, $fresh->closed_by, 'أقفله السقفُ لا الإقفالُ الليليّ');
+        $this->assertSame('16:00', $fresh->check_out_at->format('H:i'));
     }
 }

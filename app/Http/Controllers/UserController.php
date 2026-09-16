@@ -186,6 +186,17 @@ class UserController extends Controller
             }
         }
 
+        // ═══ سجلُّ الحضور يُحذف مع صاحبه ═══
+        //
+        // المفتاحُ الأجنبيّ يمحو أيّامَ الحضور كلَّها في العبارة نفسِها — وموظّفٌ
+        // استقال على خلافٍ في التسوية يفقد كشفَه لحظةَ حذف حسابه. التعطيلُ
+        // يحفظ كلَّ شيء ويمنع الدخول.
+        $attendanceDays = \App\Models\HrAttendance::where('user_id', $user->id)->count();
+        if ($attendanceDays > 0) {
+            return redirect()->route('users.index')
+                ->withErrors(['error' => "لهذا الحساب سجلُّ حضور ({$attendanceDays} يوماً) يُحذف معه — عطّل الحساب بدل حذفه."]);
+        }
+
         $oldValues = $user->toArray();
         $user->delete();
 
