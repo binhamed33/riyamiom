@@ -20,11 +20,7 @@ class ChatController extends Controller
     {
         $user = auth()->user();
 
-        $conversations = Conversation::whereHas('participants', fn($q) => $q->where('user_id', $user->id))
-            ->with(['participants', 'lastMessage.user'])
-            ->withCount(['messages as unread_count' => fn($q) => $q->whereRaw('(SELECT last_read_at FROM conversation_participants WHERE conversation_id = messages.conversation_id AND user_id = ?) IS NULL OR created_at > (SELECT last_read_at FROM conversation_participants WHERE conversation_id = messages.conversation_id AND user_id = ?)', [$user->id, $user->id])])
-            ->latest('updated_at')
-            ->get();
+        $conversations = $this->conversationsFor($user);
 
         $users = User::where('id', '!=', $user->id)
             ->whereIn('role', ['developer', 'admin', 'lawyer', 'staff'])
@@ -43,10 +39,9 @@ class ChatController extends Controller
 
         $conversation->participants()->updateExistingPivot($user->id, ['last_read_at' => now()]);
 
-        $conversations = Conversation::whereHas('participants', fn($q) => $q->where('user_id', $user->id))
-            ->with(['participants', 'lastMessage.user'])
-            ->latest('updated_at')
-            ->get();
+        // بالشارات: كانت القائمةُ هنا بلا عدّ، فتختفي الشاراتُ الحمراءُ عن
+        // بقيّة المحادثات ما دامت واحدةٌ مفتوحة
+        $conversations = $this->conversationsFor($user);
 
         $users = User::where('id', '!=', $user->id)
             ->whereIn('role', ['developer', 'admin', 'lawyer', 'staff'])
@@ -55,6 +50,16 @@ class ChatController extends Controller
         $messages = $conversation->messages()->with(['user', 'replyTo.user'])->oldest()->get();
 
         return view('chat.index', compact('conversations', 'conversation', 'messages', 'users'));
+    }
+
+    /** قائمةُ محادثات الموظّف بشاراتها — مصدرٌ واحدٌ للشاشتين. */
+    private function conversationsFor(User $user)
+    {
+        return Conversation::whereHas('participants', fn ($q) => $q->where('user_id', $user->id))
+            ->with(['participants', 'lastMessage.user'])
+            ->withUnreadFor($user->id)
+            ->latest('updated_at')
+            ->get();
     }
 
     public function store(Request $request): RedirectResponse
@@ -86,9 +91,8 @@ class ChatController extends Controller
                 'message' => $request->message,
             ]);
             $conversation->touch();
-            if (!$this->forwardToDevelopers($conversation, $user, $message)) {
-                $this->notifyParticipants($conversation, $user, $request->message);
-            }
+            $this->forwardToDevelopers($conversation, $user, $message);
+            $this->notifyParticipants($conversation, $user, $request->message);
         }
 
         return redirect()->route('chat.show', $conversation);
@@ -139,9 +143,8 @@ class ChatController extends Controller
         $conversation->touch();
 
         $notifyText = $request->message ?: ($request->hasFile('attachment') ? $file->getClientOriginalName() : 'مرفق');
-        if (!$this->forwardToDevelopers($conversation, $user, $message)) {
-            $this->notifyParticipants($conversation, $user, $notifyText);
-        }
+        $this->forwardToDevelopers($conversation, $user, $message);
+        $this->notifyParticipants($conversation, $user, $notifyText);
 
         $message->load('replyTo');
         return response()->json([
@@ -261,18 +264,32 @@ class ChatController extends Controller
     {
         $user = auth()->user();
 
-        $count = Conversation::whereHas('participants', fn($q) => $q->where('user_id', $user->id))
-            ->withCount(['messages as unread_count' => fn($q) => $q->whereRaw('(SELECT last_read_at FROM conversation_participants WHERE conversation_id = messages.conversation_id AND user_id = ?) IS NULL OR created_at > (SELECT last_read_at FROM conversation_participants WHERE conversation_id = messages.conversation_id AND user_id = ?)', [$user->id, $user->id])])
-            ->get()
-            ->sum('unread_count');
+        // ومعه التفصيلُ لكلّ محادثة: الشارةُ في الشريط تقول «كم»، وصفوفُ
+        // القائمة تقول «من أين» — والشاشةُ المفتوحة تحدّثها بلا إعادة تحميل
+        $rows = Conversation::whereHas('participants', fn ($q) => $q->where('user_id', $user->id))
+            ->withUnreadFor($user->id)
+            ->get(['conversations.id']);
 
-        return response()->json(['count' => $count]);
+        return response()->json([
+            'count' => (int) $rows->sum('unread_count'),
+            'conversations' => $rows->filter(fn ($c) => $c->unread_count > 0)
+                ->mapWithKeys(fn ($c) => [$c->id => (int) $c->unread_count]),
+        ]);
     }
 
-    private function forwardToDevelopers(Conversation $conversation, User $sender, Message $message): bool
+    /**
+     * تحويلُ رسالةِ المكتب إلى قناة المطوّر في ديسكورد.
+     *
+     * ═══ ديسكورد زيادةٌ لا بديل ═══
+     *
+     * كان نجاحُ التحويل يُلغي إشعارَ النظام، فمن كتب للمطوّر لم يُترك له
+     * أثرٌ في الجرس ولا في الشارة — والمطوّرُ يفتح النظام فلا يرى أنّ أحداً
+     * كلّمه. الرسالةُ تصل هناك وهنا معاً.
+     */
+    private function forwardToDevelopers(Conversation $conversation, User $sender, Message $message): void
     {
         if ($sender->isDeveloper()) {
-            return false;
+            return;
         }
 
         $hasDeveloperRecipient = $conversation->participants()
@@ -281,16 +298,14 @@ class ChatController extends Controller
             ->exists();
 
         if (!$hasDeveloperRecipient) {
-            return false;
+            return;
         }
 
         $discordId = DiscordNotifier::sendChatMessage($message);
+
         if ($discordId) {
             $message->update(['discord_message_id' => $discordId]);
-            return true;
         }
-
-        return false;
     }
 
     private function notifyParticipants(Conversation $conversation, User $sender, string $message): void
@@ -306,8 +321,19 @@ class ChatController extends Controller
                 ->first();
 
             if ($existing) {
-                $existing->increment('message_count');
-                $existing->touch();
+                // العنوانُ يُحدَّث لآخر مرسِل: في مجموعةٍ كان يبقى على اسم أوّل
+                // من كتب، فيُقرأ الإشعارُ «فلان أرسل لك رسالة» وهو لغيره.
+                // والعدّادُ يُزاد في الذاكرة ثمّ يُحفظ مرّةً واحدة مع العنوان —
+                // فـ‎increment‎ ثمّ حفظٌ بنسخةٍ قديمة كان يعيده إلى ما كان.
+                $existing->countAnotherMessage();
+                $existing->forceFill([
+                    'title' => __('app.notif_chat_title', ['sender' => $sender->name], config('app.locale')),
+                    'message' => mb_substr($message, 0, 100),
+                    'title_key' => 'app.notif_chat_title',
+                    'message_key' => 'app.notif_passthrough',
+                    'params' => ['sender' => $sender->name, 'text' => mb_substr($message, 0, 100)],
+                    'updated_at' => now(),
+                ])->save();
             } else {
                 \App\Support\Notify::send(
                     userId: $participant->id,

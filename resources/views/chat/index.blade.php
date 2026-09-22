@@ -57,19 +57,23 @@ function fileGlyph($name, $type) {
         </div>
         <div class="flex-1 overflow-y-auto" data-filter-list="conv">
             @forelse($conversations as $conv)
-                @php $other = $conv->participants->where('id', '!=', auth()->id())->first(); @endphp
-                <a href="{{ route('chat.show', $conv) }}" data-filter-text="{{ mb_strtolower(($other?->name ?? 'مجموعة') . ' ' . ($conv->lastMessage?->message ?? '')) }}" class="block px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition {{ isset($conversation) && $conversation->id === $conv->id ? 'bg-gold/10 border-r-2 border-r-gold-dark' : '' }}">
+                @php
+                    $other = $conv->participants->where('id', '!=', auth()->id())->first();
+                    // اسمُ المجموعة أسماءُ أهلِها: «مجموعة» وحدَها لا تقول لمن تكتب
+                    $convTitle = $conv->titleFor(auth()->id());
+                    $convUnread = (int) ($conv->unread_count ?? 0);
+                @endphp
+                <a href="{{ route('chat.show', $conv) }}" data-conv-row="{{ $conv->id }}" data-filter-text="{{ mb_strtolower($convTitle . ' ' . ($conv->lastMessage?->message ?? '')) }}" class="block px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition {{ isset($conversation) && $conversation->id === $conv->id ? 'bg-gold/10 border-r-2 border-r-gold-dark' : '' }}">
                     <div class="flex items-center gap-3">
                         <div class="relative">
-                            {!! $other ? roleAvatar($other, 10) : '<div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"><span class="text-gray-500 font-bold text-sm">?</span></div>' !!}
-                            @if($conv->unread_count > 0)
-                                <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{{ $conv->unread_count > 9 ? '9+' : $conv->unread_count }}</span>
-                            @endif
+                            {!! $other && !$conv->isGroup() ? roleAvatar($other, 10) : '<div class="w-10 h-10 rounded-full bg-gold/12 flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-gold-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>' !!}
+                            {{-- الشارةُ مرسومةٌ دائماً ومخفيّةٌ عند الصفر: النبضةُ تحدّثها بلا إعادة تحميل --}}
+                            <span data-conv-badge="{{ $conv->id }}" class="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center {{ $convUnread > 0 ? '' : 'hidden' }}">{{ $convUnread > 9 ? '9+' : $convUnread }}</span>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
                                 <p class="text-sm text-gray-900 font-medium truncate">
-                                    {{ $other?->name ?? 'مجموعة' }}
+                                    {{ $convTitle }}@if($conv->isGroup())<span class="text-[10px] text-gray-400 font-normal"> · مجموعة</span>@endif
                                 </p>
                                 @if($conv->lastMessage)
                                     <span class="text-[10px] text-gray-400 flex-shrink-0">{{ $conv->lastMessage->created_at->diffForHumans() }}</span>
@@ -100,12 +104,16 @@ function fileGlyph($name, $type) {
     <div class="flex-1 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden flex-col {{ isset($conversation) ? 'flex' : 'hidden md:flex' }}">
         @if(isset($conversation))
             {{-- Chat Header --}}
-            @php $other = $conversation->participants->where('id', '!=', auth()->id())->first(); @endphp
+            @php
+                $other = $conversation->participants->where('id', '!=', auth()->id())->first();
+                $isGroupChat = $conversation->isGroup();
+            @endphp
             <div class="px-4 py-3 border-b border-gray-100 flex items-center gap-3 bg-gray-100">
-                {!! $other ? roleAvatar($other) : '<div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"><span class="text-gray-500 font-bold text-sm">?</span></div>' !!}
+                {!! $other && !$isGroupChat ? roleAvatar($other) : '<div class="w-9 h-9 rounded-full bg-gold/12 flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-gold-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>' !!}
                 <div class="flex-1 min-w-0">
-                    <h3 class="text-sm font-bold text-gray-900 truncate">{{ $other?->name ?? 'المحادثة' }}</h3>
-                    <p class="text-[11px] text-gray-400">{{ roleLabel($other?->role) }}</p>
+                    <h3 class="text-sm font-bold text-gray-900 truncate">{{ $conversation->titleFor(auth()->id()) }}</h3>
+                    {{-- في المجموعة يُقال عددُ أهلِها لا صفةُ واحدٍ منهم --}}
+                    <p class="text-[11px] text-gray-400">{{ $isGroupChat ? $conversation->participants->count() . ' أعضاء' : roleLabel($other?->role) }}</p>
                 </div>
                 <div class="relative flex-shrink-0">
                     <label for="msgSearch" class="sr-only">بحث في الرسائل</label>
@@ -458,10 +466,43 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastMessageId = {{ $messages->last()?->id ?? 0 }};
     let selectedFile = null;
 
-    function scrollToBottom() {
-        anchor?.scrollIntoView({ behavior: 'smooth' });
+    // ═══ تُفتح المحادثةُ على آخرها لا على وسطها ═══
+    //
+    // كان الفتحُ يُمرِّر «بنعومة» إلى مِرساةٍ في الذيل، والصورُ تُحمَّل بعد ذلك
+    // (loading=lazy) فتزيد الطولَ بعد انتهاء الحركة — فتقف الشاشةُ في وسط
+    // المحادثة. الآن قفزةٌ فوريّة، ثمّ إعادةُ إلصاقٍ كلّما نما المحتوى، ما لم
+    // يصعد القارئُ بنفسه.
+    const STICK_PX = 120;
+    let pinned = true;
+
+    function atBottom() {
+        return messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < STICK_PX;
     }
+
+    function scrollToBottom(smooth) {
+        if (!messagesEl) return;
+        pinned = true;
+        messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    }
+
+    messagesEl.addEventListener('scroll', function () { pinned = atBottom(); });
+
     scrollToBottom();
+    requestAnimationFrame(function () { if (pinned) scrollToBottom(); });
+
+    // الصورُ والخطوطُ تصل متأخّرةً وتزيد الطول — فيُعاد الإلصاقُ عند كلّ نموّ
+    messagesEl.querySelectorAll('img').forEach(function (img) {
+        if (img.complete) return;
+        img.addEventListener('load', function () { if (pinned) scrollToBottom(); }, { once: true });
+        img.addEventListener('error', function () { if (pinned) scrollToBottom(); }, { once: true });
+    });
+    window.addEventListener('load', function () { if (pinned) scrollToBottom(); });
+    if (window.ResizeObserver) {
+        // مراقبةُ الفقاعات نفسِها: حاويةُ التمرير ثابتةُ الارتفاع فلا تُطلق الحدث
+        const grow = new ResizeObserver(function () { if (pinned) scrollToBottom(); });
+        messagesEl.querySelectorAll(':scope > div').forEach(function (row) { grow.observe(row); });
+        setTimeout(function () { grow.disconnect(); }, 8000);
+    }
 
     // Reply bar
     window.setReply = function(id, msg, name) {
@@ -748,9 +789,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }).then(data => {
             pollDelay = BASE_POLL;
             if (data.length) {
-                const stuck = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 120;
+                const stuck = atBottom();
                 data.forEach(m => { appendMessage(m, m.user_id === {{ auth()->id() }}); lastMessageId = m.id; });
-                if (stuck) scrollToBottom();
+                if (stuck) scrollToBottom(true);
+                // وصولُ رسالةٍ هنا يعني أنّها قُرئت: تُحدَّث الشاراتُ فوراً
+                if (typeof window.mudawalaChatUnread === 'function') window.mudawalaChatUnread();
             }
         }).catch(() => {
             pollDelay = Math.min(pollDelay * 2, 60000);
@@ -881,21 +924,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function updateUnread() {
-        fetch('{{ route('chat.unread') }}').then(r => r.json()).then(data => {
-            const badge = document.getElementById('chatUnreadBadge');
-            if (badge) {
-                if (data.count > 0) {
-                    badge.textContent = data.count;
-                    badge.classList.remove('hidden');
-                } else {
-                    badge.classList.add('hidden');
-                }
-            }
-        }).catch(() => {});
-    }
-    updateUnread();
-    setInterval(updateUnread, 10000);
+    // شارةُ الشريط تُحدّثها نبضةُ القالب (في كلّ صفحة)، وهذه تُحدّث صفوفَ
+    // القائمة معها: «كم» في الشريط، و«من أين» في الصفوف
+    window.addEventListener('mudawala:chat-unread', function (e) {
+        const per = (e.detail && e.detail.conversations) || {};
+
+        document.querySelectorAll('[data-conv-badge]').forEach(function (badge) {
+            const n = per[badge.getAttribute('data-conv-badge')] || 0;
+            badge.textContent = n > 9 ? '9+' : n;
+            badge.classList.toggle('hidden', n === 0);
+        });
+    });
+
+    if (typeof window.mudawalaChatUnread === 'function') window.mudawalaChatUnread();
 });
 </script>
 @endpush

@@ -32,12 +32,30 @@ class Notification extends Model
         'params',
     ];
 
+    /**
+     * إشعارٌ واحدٌ رسالةٌ واحدة — والعمودُ يبدأ من واحدٍ لا من فراغ.
+     *
+     * كان يُنشأ NULL، فـ‎increment‎ يحسب ‎NULL + 1 = NULL‎ في SQL ويبقى
+     * فارغاً أبداً: عشرُ رسائل متراكمةٍ في إشعارٍ واحدٍ بلا رقمٍ يقولها،
+     * والشرطُ ‎message_count > 1‎ في الجرس لا يتحقّق مرّة.
+     */
+    protected $attributes = [
+        'message_count' => 1,
+    ];
+
     protected function casts(): array
     {
         return [
             'is_read' => 'boolean',
             'params' => 'array',
+            'message_count' => 'integer',
         ];
+    }
+
+    /** زيادةٌ تنجو من الفراغ: صفوفُ ما قبل الافتراض تُعالَج بـCOALESCE. */
+    public function countAnotherMessage(): void
+    {
+        $this->forceFill(['message_count' => max(1, (int) $this->message_count) + 1]);
     }
 
     public function user(): BelongsTo

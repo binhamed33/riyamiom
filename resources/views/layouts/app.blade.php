@@ -2645,6 +2645,45 @@
         .catch(function() {});
     }
     setInterval(pollNotif, 15000);
+
+    // ═══ شارةُ المحادثات في كلّ صفحة ═══
+    //
+    // كانت النبضةُ تُكتب داخل صفحة المحادثات وحدَها، فالشارةُ في الشريط لا
+    // تتحرّك إلا وأنت داخلَها — ومن يعمل على القضايا لا يعرف أنّ أحداً كلّمه
+    // حتى يفتحها بنفسه. والنبضةُ هنا تخدم الشريطَ وصفوفَ القائمة معاً.
+    @if(Route::has('chat.unread') && !Auth::user()->isClient())
+    (function () {
+        const badge = document.getElementById('chatUnreadBadge');
+
+        window.mudawalaChatUnread = function () {
+            if (document.hidden) return;
+
+            fetch('{{ route("chat.unread") }}', {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data) return;
+
+                if (badge) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.classList.toggle('hidden', !data.count);
+                }
+
+                // صفوفُ قائمة المحادثات تستمع لهذا فتعرف من أين جاءت الرسائل
+                window.dispatchEvent(new CustomEvent('mudawala:chat-unread', { detail: data }));
+            })
+            .catch(function () {});
+        };
+
+        window.mudawalaChatUnread();
+        setInterval(window.mudawalaChatUnread, 20000);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) window.mudawalaChatUnread();
+        });
+    })();
+    @endif
     </script>
     @endauth
 
