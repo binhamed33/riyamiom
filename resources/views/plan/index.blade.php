@@ -42,7 +42,8 @@
                         <div class="h-2 rounded-full bg-gray-100 overflow-hidden">
                             <div class="h-full rounded-full transition-all
                                         {{ $row['reached'] ? 'bg-red-500' : ($row['percent'] >= 80 ? 'bg-amber-500' : 'bg-gold-dark') }}"
-                                 style="width: {{ max(2, $row['percent']) }}%"></div>
+                                 {{-- الحدُّ الأدنى لمن استعمل شيئاً: صفرٌ بلونٍ يُقرأ استعمالاً --}}
+                                 style="width: {{ $row['percent'] > 0 ? max(2, $row['percent']) : 0 }}%"></div>
                         </div>
                         @if ($row['reached'])
                             <p class="mt-1 text-xs text-red-600">بلغتَ الحدّ — لا يمكن إضافة المزيد حتى تُرقّى الباقة.</p>

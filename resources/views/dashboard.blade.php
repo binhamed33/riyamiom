@@ -247,11 +247,23 @@
             <p class="text-gray-400 text-xs mb-2">{{ __('app.tasks_completed_week') }}</p>
             <div class="flex items-end gap-2">
                 <p class="text-3xl font-bold text-purple-700">{{ $completedThisWeek }}</p>
-                <p class="text-xs text-gray-400 mb-1">{{ __('app.out_of') }} {{ $totalTasks }} {{ __('app.total') }}</p>
+                {{-- المقامُ عملُ الأسبوع لا تاريخُ المكتب: «من أصل ١٤٦ الإجمالي»
+                     كانت تُقرأ مع شريطٍ يقيس شيئاً ثالثاً --}}
+                <p class="text-xs text-gray-400 mb-1">
+                    @if($weekTaskTarget > 0)
+                        {{ __('app.out_of') }} {{ $weekTaskTarget }} {{ __('app.tasks_due_this_week') }}
+                    @else
+                        {{ __('app.no_tasks_due_this_week') }}
+                    @endif
+                </p>
             </div>
             <div class="mt-3 w-full bg-gray-100 rounded-full h-2">
-                <div class="bg-purple-500 h-2 rounded-full transition-all" style="width: {{ $tasksCompletionRate }}%"></div>
+                {{-- صفرٌ يعني شريطاً فارغاً: لونٌ بلا إنجازٍ يكذب على قارئه --}}
+                @if($weekCompletionRate > 0)
+                    <div class="bg-purple-500 h-2 rounded-full transition-all" style="width: {{ $weekCompletionRate }}%"></div>
+                @endif
             </div>
+            <p class="mt-2 text-[10px] text-gray-400">{{ __('app.total_tasks_all') }}: {{ $totalTasks }} · {{ __('app.task_completion') }} {{ $tasksCompletionRate }}٪</p>
         </div>
     </div>
 

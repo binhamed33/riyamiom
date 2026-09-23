@@ -163,4 +163,79 @@ class DashboardStatsTest extends TestCase
         $this->assertStringContainsString('1 ' . __('app.documents_new'), $html,
             'بطاقةُ «جديد هذا الشهر» لا تعرض جديدَ المستندات');
     }
+
+    /**
+     * ═══ صفرٌ لا يُلوَّن ═══
+     *
+     * «مهام مكتملة هذا الأسبوع: صفر» وشريطُها ممتلئٌ بلونٍ ثلثَ عرضه —
+     * لأنّ عرضَه كان نسبةَ الإنجاز الكلّيّة (كلُّ ما أُنجز منذ البداية على
+     * كلّ المهام)، وهي رقمُ بطاقةٍ أخرى في الشاشة نفسِها. فيقرأ المكتبُ
+     * صفراً ويرى إنجازاً.
+     */
+    public function test_a_zero_week_leaves_the_bar_empty(): void
+    {
+        $case = $this->makeCase();
+
+        // ستُّ مهامّ أُنجزت قبل شهر، وواحدةٌ مستحقّةٌ هذا الأسبوع لم تُنجَز
+        foreach (range(1, 6) as $i) {
+            $this->task($case, 'completed', now()->subMonth(), now()->subMonth());
+        }
+        $this->task($case, 'pending', now()->addDay());
+
+        $stats = $this->stats();
+
+        $this->assertSame(0, $stats['completedThisWeek']);
+        $this->assertSame(0.0, $stats['weekCompletionRate'], 'شريطُ الأسبوع مُلوَّنٌ وما أُنجز فيه صفر');
+        $this->assertGreaterThan(0, $stats['tasksCompletionRate'], 'النسبةُ الكلّيّة ليست هي المقصودة هنا');
+
+        $html = $this->actingAs($this->admin)->get(route('dashboard'))->assertOk()->getContent();
+        $this->assertStringNotContainsString('bg-purple-500 h-2 rounded-full transition-all" style="width: ' . $stats['tasksCompletionRate'], $html,
+            'الشريطُ ما زال يرسم النسبةَ الكلّيّة');
+    }
+
+    /** والشريطُ يقيس عملَ الأسبوع: ما أُنجز فيه على ما استُحقّ فيه. */
+    public function test_the_week_bar_measures_the_week(): void
+    {
+        $case = $this->makeCase();
+
+        $this->task($case, 'completed', now()->subMonth(), now()->subDay());   // أُنجزت هذا الأسبوع
+        $this->task($case, 'completed', now()->subMonth(), now()->subMonths(2)); // أُنجزت قبل شهرين
+        $this->task($case, 'pending', now()->addDay());                        // مستحقّة هذا الأسبوع
+        $this->task($case, 'pending', now()->addMonth());                      // مستحقّة بعد الأسبوع — خارج المقام
+
+        $stats = $this->stats();
+
+        $this->assertSame(1, $stats['completedThisWeek']);
+        $this->assertSame(2, $stats['weekTaskTarget'], 'المقامُ ليس عملَ الأسبوع');
+        $this->assertSame(50.0, $stats['weekCompletionRate']);
+    }
+
+    /** وحدُّ الأسبوع سبتٌ ثابتٌ لا يتبدّل بتبدّل لغة الواجهة. */
+    public function test_the_week_starts_on_saturday_whatever_the_interface_language(): void
+    {
+        $case = $this->makeCase();
+
+        // مهمّةٌ أُنجزت سبتَ هذا الأسبوع: تُعدّ في العربيّة والإنجليزيّة سواء
+        $saturday = now()->startOfWeek(\Carbon\Carbon::SATURDAY)->addHours(9);
+        $this->task($case, 'completed', now()->subMonth(), $saturday);
+
+        foreach (['ar', 'en'] as $locale) {
+            $this->app->setLocale($locale);
+            $this->assertSame(1, $this->stats()['completedThisWeek'], 'تبدّل معنى «هذا الأسبوع» بتبدّل اللغة: ' . $locale);
+        }
+    }
+
+    private function task(LegalCase $case, string $status, $dueDate = null, $completedAt = null): Task
+    {
+        return Task::create([
+            'title' => 'مهمة ' . uniqid(),
+            'case_id' => $case->id,
+            'assigned_to' => $this->admin->id,
+            'created_by' => $this->admin->id,
+            'status' => $status,
+            'priority' => 'medium',
+            'due_date' => $dueDate,
+            'completed_at' => $status === 'completed' ? ($completedAt ?? now()) : null,
+        ]);
+    }
 }

@@ -228,7 +228,7 @@
                                     </span>
                                 </div>
                                 <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                    <div class="h-full rounded-full {{ $capPct >= 90 ? 'bg-red-500' : ($capPct >= 70 ? 'bg-amber-500' : 'bg-gradient-to-l from-gold-light to-gold-dark') }}" style="width: {{ max(2, $capPct) }}%"></div>
+                                    <div class="h-full rounded-full {{ $capPct >= 90 ? 'bg-red-500' : ($capPct >= 70 ? 'bg-amber-500' : 'bg-gradient-to-l from-gold-light to-gold-dark') }}" {{-- صفرُ استهلاكٍ شريطٌ فارغ --}}style="width: {{ $capPct > 0 ? max(2, $capPct) : 0 }}%"></div>
                                 </div>
                             </div>
                         @endforeach

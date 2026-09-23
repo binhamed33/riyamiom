@@ -91,7 +91,8 @@
 
                     @if($column['workday'])
                         <div class="h-1 rounded-full bg-gray-100 mt-1.5 mb-2 overflow-hidden" title="الامتلاء {{ $load }}%">
-                            <div class="h-full {{ $bar }}" style="width: {{ max(3, $load) }}%"></div>
+                            {{-- يومٌ بلا موعدٍ شريطٌ فارغ: الشعرةُ الملوّنة كانت تُقرأ حجزاً --}}
+                            <div class="h-full {{ $bar }}" style="width: {{ $load > 0 ? max(3, $load) : 0 }}%"></div>
                         </div>
                     @else
                         <div class="text-[10px] text-gray-400 mt-1.5 mb-2">عطلة</div>

@@ -18,7 +18,14 @@ class DashboardController extends Controller
     public function index()
     {
         $now = Carbon::now();
-        $startOfWeek = $now->copy()->startOfWeek();
+        // ═══ الأسبوعُ يبدأ السبتَ في عُمان لا في اللغة ═══
+        //
+        // ‏startOfWeek() بلا وسيطٍ تأخذ أوّلَ الأسبوع من لغة الواجهة: السبتَ
+        // بالعربيّة والاثنينَ بالإنجليزيّة — فمن بدّل اللغة تبدّل معه معنى
+        // «هذا الأسبوع»، ويختلف الرقمُ عن سجلّ الحضور والمواعيد اللذين
+        // يقيسان السبتَ إلى الجمعة.
+        $startOfWeek = $now->copy()->startOfWeek(Carbon::SATURDAY);
+        $endOfWeek = $now->copy()->endOfWeek(Carbon::FRIDAY);
         $startOfMonth = $now->copy()->startOfMonth();
         $lastMonth = $now->copy()->subMonth();
         $user = auth()->user();
@@ -130,6 +137,24 @@ class DashboardController extends Controller
         $completedThisWeek = (clone $taskBase)->where('status', 'completed')
             ->where('completed_at', '>=', $startOfWeek)
             ->count();
+
+        // ═══ شريطُ الأسبوع يقيس الأسبوع ═══
+        //
+        // كانت البطاقةُ تقول «مكتملة هذا الأسبوع: صفر» ويمتلئ شريطُها بلونٍ
+        // ثلثَ عرضه، لأنّ عرضَه نسبةُ الإنجاز الكلّيّة (كلُّ ما أُنجز منذ
+        // البداية على كلّ المهام) — رقمٌ لبطاقةٍ أخرى في الشاشة نفسِها.
+        // فصار المقامُ عملَ الأسبوع: ما أُنجز فيه، وما هو مستحقٌّ فيه ولمّا
+        // يُنجَز (ومنه المتأخّر) — فالصفرُ شريطٌ فارغ، والشريطُ يرتفع بعمل
+        // الأسبوع لا بتاريخ المكتب كلِّه.
+        $weekTaskTarget = $completedThisWeek + (clone $taskBase)
+            ->where('status', '!=', 'completed')
+            ->whereNotNull('due_date')
+            ->where('due_date', '<=', $endOfWeek)
+            ->count();
+
+        $weekCompletionRate = $weekTaskTarget > 0
+            ? round(($completedThisWeek / $weekTaskTarget) * 100, 1)
+            : 0.0;
 
         // === Client & Document Statistics ===
         $totalClients = (clone $clientBase)->count();
@@ -407,6 +432,8 @@ class DashboardController extends Controller
             'overdueTasks',
             'tasksCompletionRate',
             'completedThisWeek',
+            'weekTaskTarget',
+            'weekCompletionRate',
             'totalClients',
             'newClientsThisMonth',
             'newClientsLastMonth',
