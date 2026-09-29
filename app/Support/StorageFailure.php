@@ -27,27 +27,39 @@ use Illuminate\Http\Response;
  */
 class StorageFailure
 {
-    /** رسائلُ PHP حين يخيب القرص — بأرقام errno كما يكتبها. */
+    /**
+     * رسائلُ PHP حين يخيب القرص — بأرقام errno كما يكتبها.
+     *
+     * ولا «Failed to open stream» وحدَها: هي عبارةُ PHP لكلّ فتحٍ خائب،
+     * ومنها قراءةُ ملفٍّ غيرِ موجود — فكانت ستُلبس عطبَ كودٍ ثوبَ قرصٍ
+     * ممتلئ. فتُقبل «Permission denied» حين يكون الهدفُ داخل storage/
+     * وحدَه: مجلّدٌ بملك root أنشأه أمرٌ شُغّل بـsudo.
+     */
     private const SIGNS = [
         'No space left on device',
         'errno=28',
         'Read-only file system',
         'errno=30',
-        'Failed to open stream',
-        'failed to open stream',
+        'Disk quota exceeded',
+        'errno=122',
         'could not be opened in append mode',
         'Writing to the log file failed',
-        'Disk quota exceeded',
     ];
 
     /** أهذا — أو ما تحته من أسباب — خيبةُ كتابةٍ على القرص؟ */
     public static function of(\Throwable $e): bool
     {
         for ($depth = 0; $e !== null && $depth < 8; $e = $e->getPrevious(), $depth++) {
+            $message = $e->getMessage();
+
             foreach (self::SIGNS as $sign) {
-                if (str_contains($e->getMessage(), $sign)) {
+                if (str_contains($message, $sign)) {
                     return true;
                 }
+            }
+
+            if (str_contains($message, 'Permission denied') && str_contains($message, '/storage/')) {
+                return true;
             }
         }
 

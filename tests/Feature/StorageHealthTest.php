@@ -38,14 +38,18 @@ class StorageHealthTest extends TestCase
         $this->assertSame([], StorageHealth::unwritable(['storage/logs' => sys_get_temp_dir()]));
     }
 
-    /** الحدُّ المطلق أوّلاً ثمّ النسبة: 3٪ من قرصٍ كبير حرجٌ ولو كان غيغابايتات. */
-    public function test_low_space_is_judged_by_absolute_and_relative_thresholds(): void
+    /** الحرجُ بالمطلق وحدَه (كما في سكربت النشر)، والضيقُ بالمطلق أو النسبة. */
+    public function test_critical_is_absolute_and_tight_is_absolute_or_relative(): void
     {
         $this->assertTrue(StorageHealth::judge(100 * self::MIB, 100 * self::GIB), 'دون 512 م.ب حرج');
-        $this->assertTrue(StorageHealth::judge(3 * self::GIB, 100 * self::GIB), '3٪ حرج');
+        $this->assertFalse(StorageHealth::judge(3 * self::GIB, 100 * self::GIB), '3٪ من قرصٍ كبير غيغاباياتٌ — ليس حرجاً');
         $this->assertFalse(StorageHealth::judge(10 * self::GIB, 100 * self::GIB));
-        $this->assertFalse(StorageHealth::judge(1 * self::GIB, null), 'بلا كلّيٍّ يُحكم بالمطلق وحده');
         $this->assertNull(StorageHealth::judge(null, null), 'ما لم يُقرأ لا يُحكم عليه');
+
+        $this->assertTrue(StorageHealth::tight(3 * self::GIB, 100 * self::GIB), '3٪ يضيق');
+        $this->assertTrue(StorageHealth::tight(1 * self::GIB, null), 'دون 2 غ.ب يضيق ولو جُهل الكلّيّ');
+        $this->assertFalse(StorageHealth::tight(10 * self::GIB, 100 * self::GIB));
+        $this->assertFalse(StorageHealth::tight(null, null));
     }
 
     public function test_human_sizes(): void

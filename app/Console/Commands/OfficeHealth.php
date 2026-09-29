@@ -155,6 +155,10 @@ class OfficeHealth extends Command
                 . ($total ? ' من ' . StorageHealth::human($total) : '')
                 . ' — القوالبُ لا تُجمَّع والسجلُّ لا يُكتب فتسقط الصفحات بيضاء (500)');
             $this->line('      أين المساحة:  sudo du -xsh ' . storage_path('app/backups') . ' ' . storage_path('logs') . ' /var/log');
+        } elseif (StorageHealth::tight($free, $total)) {
+            // تنبيهٌ لا إخفاق: يُقرأ في مخرَج النشر قبل أن يصير إنذاراً
+            $this->line('  <fg=yellow>!</> القرص يضيق: ' . StorageHealth::human($free) . ' حرّة'
+                . ($total ? ' من ' . StorageHealth::human($total) : '') . ' — راجع النسخَ والسجلّات قبل أن يمتلئ');
         } else {
             $this->ok('حرٌّ على القرص: ' . StorageHealth::human($free)
                 . ($total ? ' من ' . StorageHealth::human($total) : ''));

@@ -106,8 +106,6 @@ return Application::configure(basePath: dirname(__DIR__))
             // وجلسةً، فدار الزائرُ بين صفحتين أو رأى «تعذر تحميل لوحة
             // التحكم» بلا سبب. فيُردّ بصفحةٍ جاهزةٍ لا تحتاج إلى قرص.
             if (\App\Support\StorageFailure::of($e)) {
-                logger()->error('Storage write failure: ' . $e->getMessage(), ['url' => $request->fullUrl()]);
-
                 return \App\Support\StorageFailure::response();
             }
 

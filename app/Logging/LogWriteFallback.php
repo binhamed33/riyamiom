@@ -57,11 +57,15 @@ class LogWriteFallback
             // كان سيُكتب — وذاك قد يحمل اسمَ موكّل، وسجلُّ PHP ليس مكانَه
             $reason = strtok($e->getMessage(), "\n") ?: get_class($e);
 
-            if (isset($said[$reason])) {
+            // «Write of 812 bytes failed» — العددُ يختلف مع كلّ سطر، والسببُ
+            // واحد؛ فيُقارَن بلا أرقام وإلا كُتب سطرٌ لكلّ محاولة
+            $key = preg_replace('/\d+/', 'N', $reason);
+
+            if (isset($said[$key])) {
                 return;
             }
 
-            $said[$reason] = true;
+            $said[$key] = true;
 
             // بلا اسم القناة: لارافل يسمّي مسجّلات Monolog باسم البيئة
             // (production) لا باسم القناة، فلا يقول الاسمُ شيئاً

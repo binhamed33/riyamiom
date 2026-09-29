@@ -52,8 +52,9 @@ class LogWriteFallbackTest extends TestCase
         $handler = new class extends AbstractProcessingHandler {
             protected function write(LogRecord $record): void
             {
+                // العددُ يختلف مع كلّ سطر كما يكتبه PHP فعلاً
                 throw new \UnexpectedValueException(
-                    'Writing to the log file failed: Write of 512 bytes failed with errno=28 No space left on device'
+                    'Writing to the log file failed: Write of ' . strlen($record->message) . ' bytes failed with errno=28 No space left on device'
                     . "\nThe exception occurred while attempting to log: " . $record->message
                 );
             }
@@ -76,7 +77,7 @@ class LogWriteFallbackTest extends TestCase
         $this->assertStringContainsString('[mudawala] log write failed', $php);
         $this->assertStringContainsString('No space left on device', $php);
         $this->assertStringNotContainsString('أحمد', $php, 'نصُّ السطر لا يُنقل إلى سجلّ PHP — قد يحمل اسمَ موكّل');
-        $this->assertSame(1, substr_count($php, 'log write failed'), 'السببُ الواحد يُقال مرّةً في الطلب لا مع كلّ سطر');
+        $this->assertSame(1, substr_count($php, 'log write failed'), 'السببُ الواحد يُقال مرّةً في الطلب لا مع كلّ سطر — ولو اختلف عددُ البايتات');
     }
 
     /** والقناتان اللتان تُكتبان مباشرةً محميّتان كذلك — سطرٌ لكلٍّ منهما. */

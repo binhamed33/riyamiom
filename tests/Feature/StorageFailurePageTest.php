@@ -27,6 +27,11 @@ class StorageFailurePageTest extends TestCase
         $this->assertTrue(StorageFailure::of(new \RuntimeException('wrapped', 0, new \ErrorException(self::COMPILE_FAILURE))));
 
         $this->assertFalse(StorageFailure::of(new \RuntimeException('boom')));
+        // ملفٌّ مفقود ليس قرصاً ممتلئاً — عطبُ كودٍ يجب أن يظهر بوجهه
+        $this->assertFalse(StorageFailure::of(new \ErrorException('file_get_contents(/srv/public/lib/x.js): Failed to open stream: No such file or directory')));
+        // وصلاحيّةٌ مغلقة خارج storage/ ليست منّا
+        $this->assertFalse(StorageFailure::of(new \ErrorException('fopen(/etc/shadow): Failed to open stream: Permission denied')));
+        $this->assertTrue(StorageFailure::of(new \ErrorException('file_put_contents(/srv/storage/framework/views/a.php): Failed to open stream: Permission denied')));
         $this->assertFalse(StorageFailure::of(new \Illuminate\Database\QueryException('mysql', 'select 1', [], new \Exception('Column not found'))));
     }
 

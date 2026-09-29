@@ -30,8 +30,16 @@ class StorageHealth
     /** دون هذا القدر الحرّ تُعدّ الحالُ حرجة: نسخةٌ ليليّة واحدة قد تتجاوزه. */
     public const LOW_FREE_BYTES = 512 * 1024 * 1024;
 
-    /** أو دون هذه النسبة من القرص مهما كبر. */
-    public const LOW_FREE_RATIO = 0.05;
+    /**
+     * ودون هذا — أو دون هذه النسبة — يضيق: تنبيهٌ لا إنذار.
+     *
+     * النسبةُ وحدَها كانت تقول «ممتلئ» عن قرصٍ كبيرٍ فيه أربعةُ غيغابايت
+     * حرّة، بينما سكربتُ النشر يمضي عند 512 م.ب — فحكمان متناقضان عن
+     * الأرقام نفسِها. الحرجُ بالمطلق وحدَه، والضيقُ بالاثنين.
+     */
+    public const TIGHT_FREE_BYTES = 2 * 1024 * 1024 * 1024;
+
+    public const TIGHT_FREE_RATIO = 0.05;
 
     /**
      * ما يكتب فيه النظامُ مع كلّ طلب — إن أُغلق أحدُها سقطت الصفحات.
@@ -40,12 +48,18 @@ class StorageHealth
      */
     public static function paths(): array
     {
+        // لا framework/sessions: الجلساتُ في القاعدة، ومجلّدٌ لا يُكتب فيه
+        // بملك root إنذارٌ كاذب. وstorage/app/private حيث تُحفظ المستندات
+        // والمرفقات — رفعٌ يخيب فيه عطلٌ يراه المحامي.
         return [
             'storage/logs' => storage_path('logs'),
             'storage/framework/views' => storage_path('framework/views'),
             'storage/framework/cache' => storage_path('framework/cache'),
-            'storage/framework/sessions' => storage_path('framework/sessions'),
             'storage/app' => storage_path('app'),
+            'storage/app/private' => storage_path('app/private'),
+            // ‏composer وpackage:discover يكتبان هنا عند النشر: بملك root
+            // يخيب النشرُ كلُّه لا صفحةٌ واحدة
+            'bootstrap/cache' => base_path('bootstrap/cache'),
         ];
     }
 
@@ -78,7 +92,7 @@ class StorageHealth
     /**
      * الحكمُ على رقمين — بلا قراءةِ قرص، ليُختبر ويُعاد استعمالُه في اللوحة.
      *
-     * الحدُّ المطلق أوّلاً ثمّ النسبة؛ وبلا كلّيٍّ يُحكم بالمطلق وحده.
+     * أحرجٌ؟ بالمطلق وحدَه (دون 512 م.ب). ‎null‎ إن لم يُقرأ الحرّ.
      */
     public static function judge(?int $free, ?int $total): ?bool
     {
@@ -86,11 +100,21 @@ class StorageHealth
             return null;
         }
 
-        if ($free < self::LOW_FREE_BYTES) {
+        return $free < self::LOW_FREE_BYTES;
+    }
+
+    /** أيضيق؟ دون 2 غ.ب، أو دون 5٪ من قرصٍ يُعرف كلّيُّه. */
+    public static function tight(?int $free, ?int $total): bool
+    {
+        if ($free === null) {
+            return false;
+        }
+
+        if ($free < self::TIGHT_FREE_BYTES) {
             return true;
         }
 
-        return $total !== null && $total > 0 && ($free / $total) < self::LOW_FREE_RATIO;
+        return $total !== null && $total > 0 && ($free / $total) < self::TIGHT_FREE_RATIO;
     }
 
     /**

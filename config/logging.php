@@ -73,11 +73,20 @@ return [
         // ScrubSecrets: آخرُ نقطةٍ قبل أن تصير السطورُ بايتات على
         // القرص. تنقيةُ من يكتب لا تكفي — لارافل يسجّل الاستثناء مرّةً
         // ثانية بمُبلِّغه الافتراضي، فيُكتب خاماً بجانب المنقّى.
+        // الاسمُ «single» كما تُشير إليه ملفّاتُ .env في كلّ مكتب — والسائقُ
+        // ملفٌّ بسقف: سجلُّ مكتبِ اختبارٍ واحد بلغ 47 غيغابايت فامتلأ
+        // القرصُ وسقطت صفحاتُ كلّ المكاتب بيضاء. 100 م.ب × ثلاثة أجيال
+        // أقصى ما يأخذه مكتبٌ من القرص مهما عصفت حلقةُ إخفاق.
         'single' => [
-            'driver' => 'single',
-            'path' => storage_path('logs/laravel.log'),
+            'driver' => 'monolog',
+            'handler' => App\Logging\CappedFileHandler::class,
+            'with' => [
+                'stream' => storage_path('logs/laravel.log'),
+                'maxBytes' => 100 * 1024 * 1024,
+                'generations' => 2,
+            ],
             'level' => env('LOG_LEVEL', 'debug'),
-            'replace_placeholders' => true,
+            'processors' => [Monolog\Processor\PsrLogMessageProcessor::class],
             'tap' => [App\Logging\ScrubSecrets::class, App\Logging\LogWriteFallback::class],
         ],
 
