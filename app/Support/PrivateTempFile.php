@@ -44,4 +44,48 @@ class PrivateTempFile
 
         return $path;
     }
+
+    /**
+     * كنسُ ما تُرك من نسخٍ قُتلت في منتصفها.
+     *
+     * ═══ ما وقع ═══
+     *
+     * نسخةٌ تُقطع (قرصٌ امتلأ أثناء الضغط، عمليةٌ أُوقفت، خطأٌ قاتل) تترك
+     * هنا ملفَّ mysqldump كاملاً — قاعدةُ المكتب نصّاً صريحاً — ولا أحدَ
+     * يحذفه: الحذفُ في مسار النجاح وحدَه. فتراكمت نسخٌ خامٌ على القرص،
+     * وكلُّ واحدةٍ بحجم القاعدة، وكلُّها سرٌّ مكشوف.
+     *
+     * ═══ الشرطُ الدقيق ═══
+     *
+     * داخل مجلّد tmp هذا وحدَه، وباسمٍ من صنع create() (بادئةٌ ثمّ 24 خانةً
+     * ستّ عشريّة)، وأقدمُ من يوم: نسخةٌ جاريةٌ الآن لا تبلغ ذلك، فلا يُلمس
+     * ما قد يكون قيد الكتابة.
+     *
+     * @return int عددُ ما كُنس
+     */
+    public static function sweep(int $olderThanSeconds = 86400): int
+    {
+        $dir = storage_path('app/backups/tmp');
+
+        if (!is_dir($dir)) {
+            return 0;
+        }
+
+        $swept = 0;
+        $cutoff = time() - $olderThanSeconds;
+
+        foreach (glob($dir . '/*') ?: [] as $file) {
+            if (!is_file($file) || !preg_match('/^[a-z-]+[0-9a-f]{24}(\.[a-z0-9]+)?$/', basename($file))) {
+                continue;
+            }
+
+            $mtime = @filemtime($file);
+
+            if ($mtime !== false && $mtime < $cutoff && @unlink($file)) {
+                $swept++;
+            }
+        }
+
+        return $swept;
+    }
 }

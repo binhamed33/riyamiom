@@ -38,6 +38,13 @@ class DailyBackup extends Command
             mkdir($backupDir, 0700, true);
         }
 
+        // بقايا نسخٍ قُتلت في منتصفها — نصُّ القاعدة صريحاً — تُكنس قبل أن
+        // يُبدأ، لا بعد نجاحٍ قد لا يأتي على قرصٍ ملأته هي
+        $swept = \App\Support\PrivateTempFile::sweep();
+        if ($swept > 0) {
+            $this->line('كُنس ' . $swept . ' ملفّاً مؤقّتاً من نسخٍ لم تكتمل.');
+        }
+
         // البناء باسم مؤقت: النسخة الحالية لا تُمسّ حتى تنجح الجديدة
         $building = $backupDir . '/backup-new.zip';
         $latest = $backupDir . '/' . self::LATEST;

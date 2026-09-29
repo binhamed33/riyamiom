@@ -12,7 +12,11 @@ class BackupController extends Controller
 {
     use AuditLoggable;
 
-    private const BACKUP_PATTERN = '/^(backup|auto)-\d{4}-\d{2}-\d{2}-\d{6}\.zip$/';
+    // ‏manual- ضمن الصيغة: النسخةُ اليدويّة كانت تُعرض في القائمة ثمّ يُرفض
+    // حذفُها وتنزيلُها واستعادتُها بـ400 — فتتراكم ولا يستطيع صاحبُها أن
+    // يزيلها، وكلُّ واحدةٍ بحجم المكتب كلِّه. والاسمُ يبقى محكوماً بالصيغة
+    // لا حرّاً: لا مسارَ ولا نقطتين ولا شيءَ غيرَ ما يكتبه هذا المتحكّم.
+    private const BACKUP_PATTERN = '/^(backup|auto|manual)-\d{4}-\d{2}-\d{2}-\d{6}\.zip$/';
 
     private function getDbConfig(): array
     {
