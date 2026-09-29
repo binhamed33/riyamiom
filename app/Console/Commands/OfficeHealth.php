@@ -10,6 +10,7 @@ use App\Models\Suggestion;
 use App\Models\Task;
 use App\Models\User;
 use App\Support\BackupVerifier;
+use App\Support\StorageHealth;
 use Illuminate\Console\Command;
 
 /**
@@ -33,6 +34,7 @@ class OfficeHealth extends Command
         $this->line('');
         $this->components->info('فحص صحّة المكتب — ' . now()->format('Y-m-d H:i'));
 
+        $this->checkStorage();
         $this->checkBackups();
         $this->checkData();
         $this->checkFeatures();
@@ -123,6 +125,58 @@ class OfficeHealth extends Command
     }
 
     // ---------------------------------------------------------------- النسخ
+
+    // ---------------------------------------------------------------- القرص
+
+    /**
+     * القرصُ ومجلّداتُ storage — قبل كلّ فحصٍ آخر.
+     *
+     * ═══ ما وقع ═══
+     *
+     * امتلأ القرصُ فسقطت صفحاتُ مكتب الوالد بيضاءَ برمز 500، وهذا الفحصُ
+     * قال «لا أخطاء»: فحصُ السجلّ يقرأ ما كُتب، والقرصُ الممتلئ يمنع
+     * الكتابةَ نفسَها. فالسؤالُ الأوّل قبل أيّ سؤال: أيمكن أصلاً أن يُكتب
+     * شيء؟ — قالبٌ يُجمَّع، وخطأٌ يُدوَّن، وجلسةٌ تُحفظ.
+     *
+     * وبلا كتابة: is_writable والمساحةُ الحرّة، لا ملفَّ تجربة — الفحصُ
+     * يَعِد أنّه قراءةٌ فقط.
+     */
+    private function checkStorage(): void
+    {
+        $this->section('القرص والتخزين');
+
+        $free = StorageHealth::freeBytes();
+        $total = StorageHealth::totalBytes();
+
+        if ($free === null) {
+            $this->bad('تعذّرت قراءة المساحة الحرّة للقرص');
+        } elseif (StorageHealth::judge($free, $total)) {
+            $this->bad('القرص شبه ممتلئ: ' . StorageHealth::human($free) . ' حرّة'
+                . ($total ? ' من ' . StorageHealth::human($total) : '')
+                . ' — القوالبُ لا تُجمَّع والسجلُّ لا يُكتب فتسقط الصفحات بيضاء (500)');
+            $this->line('      أين المساحة:  sudo du -xsh ' . storage_path('app/backups') . ' ' . storage_path('logs') . ' /var/log');
+        } else {
+            $this->ok('حرٌّ على القرص: ' . StorageHealth::human($free)
+                . ($total ? ' من ' . StorageHealth::human($total) : ''));
+        }
+
+        $user = StorageHealth::processUser();
+        $bad = StorageHealth::unwritable();
+
+        if ($bad === []) {
+            $this->ok('مجلّدات storage والسجلّ تقبل الكتابة' . ($user ? ' من ' . $user : ''));
+
+            return;
+        }
+
+        foreach ($bad as $label => $path) {
+            $owner = StorageHealth::ownerOf($path);
+
+            $this->bad($label . (file_exists($path) ? ' لا يقبل الكتابة' : ' غيرُ موجود')
+                . ($user ? ' من ' . $user : '')
+                . ($owner !== null && $owner !== $user ? ' — بملك ' . $owner . '، أمرٌ شُغّل بـroot؟' : ''));
+        }
+    }
 
     private function checkBackups(): void
     {

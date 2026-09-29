@@ -52,10 +52,15 @@ return [
 
     'channels' => [
 
+        // LogWriteFallback: قرصٌ ممتلئ أو ملفُّ سجلٍّ بملك root كان يُحوّل
+        // كلَّ خطأٍ إلى صفحةٍ بيضاء — الكتابةُ تخيب داخل المُبلِّغ فيخرج
+        // الاستثناءُ من معالج الاستثناءات. وهنا على stack نفسِها لا على
+        // single وحدها: stack تستدعي المُخرِجات مباشرةً ولا تسأل single.
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', (string) env('LOG_STACK', 'single,discord')),
             'ignore_exceptions' => false,
+            'tap' => [App\Logging\LogWriteFallback::class],
         ],
 
         'discord' => [
@@ -73,7 +78,7 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
-            'tap' => [App\Logging\ScrubSecrets::class],
+            'tap' => [App\Logging\ScrubSecrets::class, App\Logging\LogWriteFallback::class],
         ],
 
         'daily' => [
@@ -82,7 +87,7 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
-            'tap' => [App\Logging\ScrubSecrets::class],
+            'tap' => [App\Logging\ScrubSecrets::class, App\Logging\LogWriteFallback::class],
         ],
 
         'slack' => [

@@ -99,6 +99,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return response()->json(['ok' => false, 'error' => 'تعذّر إتمام العملية'], 500);
             }
+            // ═══ قرصٌ لا يُكتب عليه ═══
+            //
+            // امتلأ القرصُ فصار كلُّ قالبٍ يُجمَّع خطأً، والعلاجُ أدناه —
+            // تحويلٌ إلى لوحة التحكّم برسالةٍ في الجلسة — يحتاج قالباً
+            // وجلسةً، فدار الزائرُ بين صفحتين أو رأى «تعذر تحميل لوحة
+            // التحكم» بلا سبب. فيُردّ بصفحةٍ جاهزةٍ لا تحتاج إلى قرص.
+            if (\App\Support\StorageFailure::of($e)) {
+                logger()->error('Storage write failure: ' . $e->getMessage(), ['url' => $request->fullUrl()]);
+
+                return \App\Support\StorageFailure::response();
+            }
+
             if ($e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
                 || $e instanceof \Illuminate\Auth\AuthenticationException
                 || $e instanceof \Illuminate\Validation\ValidationException) {
