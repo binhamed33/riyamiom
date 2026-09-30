@@ -158,12 +158,11 @@
 @if($isMgmt)
     {{-- Row 1: بطاقات KPI — عنوان، رقم بطل، مؤشر نسبة، وسطر إضافي لكلٍّ --}}
     @php
-        // مؤشر التغير الشهري: يُحسب فقط حين يوجد شهر سابق يُقارن به
-        $delta = function (int $now, int $prev): ?int {
-            return $prev > 0 ? (int) round((($now - $prev) / $prev) * 100) : null;
-        };
-        $casesDelta = $delta($newCasesThisMonth, $newCasesLastMonth);
-        $clientsDelta = $delta($newClientsThisMonth, $newClientsLastMonth);
+        // شارةُ بطاقة الإجمالي = نموُّ الإجمالي هذا الشهر (الجديدُ على ما سبقه)،
+        // لا نسبةُ جديدِ الشهر إلى جديدِ الماضي: ٢ → ٢٩ كانت تُطبع «+١٣٥٠٪»
+        // على بطاقة ١٦٠ قضية — رقمٌ صحيحٌ بلا معنى (App\Support\Trend)
+        $casesDelta = \App\Support\Trend::growthOfTotal($totalCases, $newCasesThisMonth);
+        $clientsDelta = \App\Support\Trend::growthOfTotal($totalClients, $newClientsThisMonth);
     @endphp
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <x-kpi-card :title="__('app.total_cases')" :value="$totalCases" accent="gold"
@@ -203,16 +202,10 @@
             <p class="text-gray-400 text-xs mb-2">{{ __('app.new_this_month') }}</p>
             <div class="flex items-end gap-2">
                 <p class="text-3xl font-bold text-gold-dark">{{ $newCasesThisMonth }}</p>
-                <p class="text-xs mb-1">
-                    @if($newCasesLastMonth > 0)
-                        @php $change = round((($newCasesThisMonth - $newCasesLastMonth) / $newCasesLastMonth) * 100); @endphp
-                        @if($change >= 0)
-                            <span class="text-green-700">+{{ $change }}%</span>
-                        @else
-                            <span class="text-red-700">{{ $change }}%</span>
-                        @endif
-                    @endif
-                    <span class="text-gray-400">{{ __('app.from_last_month') }}</span>
+                {{-- نسبةٌ حين يصحّ أساسُها (خمسٌ فأكثر)، وإلا العددُ: «مقابل 2 الشهر السابق» --}}
+                @php $trendPct = \App\Support\Trend::percent($newCasesThisMonth, $newCasesLastMonth); @endphp
+                <p class="text-xs mb-1 {{ $trendPct === null ? 'text-gray-400' : ($trendPct >= 0 ? 'text-green-700' : 'text-red-700') }}">
+                    {{ \App\Support\Trend::label($newCasesThisMonth, $newCasesLastMonth) }}
                 </p>
             </div>
             {{-- ═══ بطاقةُ «جديد هذا الشهر» تعرض جديدَ الشهر ═══
@@ -424,7 +417,8 @@
                 <a href="{{ route('sessions.index') }}" class="text-xs text-gray-600 hover:text-gold-dark">{{ __('app.view_all') }}</a>
             </div>
             <div class="space-y-2">
-                @forelse($upcomingSessions as $session)
+                {{-- خمسٌ كالعمودين جاريها: كانت اثنتي عشرة فيطول العمودُ الأوسط ويبقى جاراه فارغين --}}
+                @forelse($upcomingSessions->take(5) as $session)
                     <div class="flex items-center gap-3 p-2.5 rounded-lg bg-gray-100 border border-gray-100 hover:border-gold/25 transition-colors">
                         <div class="w-10 h-10 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0">
                             <div class="text-center leading-none">

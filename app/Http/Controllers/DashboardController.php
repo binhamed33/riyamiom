@@ -27,7 +27,9 @@ class DashboardController extends Controller
         $startOfWeek = $now->copy()->startOfWeek(Carbon::SATURDAY);
         $endOfWeek = $now->copy()->endOfWeek(Carbon::FRIDAY);
         $startOfMonth = $now->copy()->startOfMonth();
-        $lastMonth = $now->copy()->subMonth();
+        // الشهرُ السابق شهرٌ تقويميٌّ كامل — لا «الثلاثين يوماً قبل الآن»:
+        // نافذةٌ منزلقة تُقارن شهراً كاملاً بأيّامٍ متفرّقة من شهرٍ ناقص
+        $lastMonth = $startOfMonth->copy()->subMonth();
         $user = auth()->user();
 
         /*
@@ -265,13 +267,14 @@ class DashboardController extends Controller
             ]);
         });
 
-        // Audit log entries
+        // Audit log entries — بجملةٍ تقول ما جرى: كان يُقرأ عمودُ description
+        // ولا وجودَ له، فظهرت بطاقاتٌ فارغةٌ لا تحمل إلا «منذ 46 دقيقة»
         AuditLog::with('user')->latest()->limit(5)->get()->each(function ($item) use ($activityItems) {
             $activityItems->push([
                 'type' => 'log',
                 'icon' => 'log',
-                'title' => $item->description ?? '',
-                'subtitle' => $item->user?->name ?? '',
+                'title' => $item->describe(),
+                'subtitle' => $item->actorName(),
                 'time' => $item->created_at,
                 'url' => null,
             ]);

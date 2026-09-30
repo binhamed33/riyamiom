@@ -1961,13 +1961,17 @@
                 ['route' => 'cases.index', 'is' => 'cases.*', 'label' => __('app.cases'), 'icon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
                 ['route' => 'sessions.index', 'is' => 'sessions.*', 'label' => __('app.sessions'), 'icon' => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'],
                 ['route' => 'appointments.index', 'is' => 'appointments.*', 'label' => 'المواعيد', 'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
+                // خمسةٌ لا ستّة: الشبكةُ خمسةُ أعمدة، وكان «العملاء» سادساً فينزل
+                // سطراً وحده تحت الشريط. والعملاءُ من القائمة الجانبيّة.
                 ['route' => 'tasks.index', 'is' => 'tasks.*', 'label' => __('app.tasks'), 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4'],
-                ['route' => 'clients.index', 'is' => 'clients.*', 'label' => __('app.clients'), 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'],
             ];
         @endphp
         <style nonce="{{ $cspNonce }}">
             .bottom-nav { background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); }
             [data-theme="dark"] .bottom-nav { background: rgba(13,17,27,0.95) !important; border-color: rgba(212,175,55,0.15) !important; }
+            /* التذييلُ (اسمُ المكتب · مُداوَلة) كان يختفي تحت الشريط الثابت في الجوال */
+            .bottom-nav-space { padding-bottom: calc(4.25rem + env(safe-area-inset-bottom)); }
+            @media (min-width: 768px) { .bottom-nav-space { padding-bottom: 0; } }
         </style>
         <nav class="md:hidden fixed bottom-0 inset-x-0 z-40 bottom-nav border-t border-gray-200"
              style="padding-bottom: env(safe-area-inset-bottom);" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
@@ -1987,7 +1991,7 @@
         @endif
 
         {{-- Footer --}}
-        <footer style="border-top: 1px solid #E2E6EC; background: rgba(244,242,238,0.5);">
+        <footer class="{{ Auth::check() && !Auth::user()->isClient() ? 'bottom-nav-space' : '' }}" style="border-top: 1px solid #E2E6EC; background: rgba(244,242,238,0.5);">
             <div class="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <a href="{{ \App\Support\Mudawala::url() }}" target="_blank" class="text-sm font-heading font-bold hover:opacity-80 transition-opacity" style="color: #E5C158;">مُداوَلة</a>
