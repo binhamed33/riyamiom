@@ -245,7 +245,9 @@ function fileGlyph($name, $type) {
                     </button>
                 </div>
                 <div class="p-4">
-                    <form id="chatForm" enctype="multipart/form-data">
+                    {{-- data-no-progress: النموذجُ يُرسل بـAJAX ولا يغادر الصفحة — حارسُ التخطيط
+                         كان يعطّل زرَّه بعد أوّل رسالة فلا تُرسَل الثانية إلا بعد تحديث --}}
+                    <form id="chatForm" enctype="multipart/form-data" data-no-progress="1">
                         @csrf
                         <input type="hidden" id="replyToId" name="reply_to_id" value="">
                         <div class="flex gap-2">
@@ -647,10 +649,19 @@ document.addEventListener('DOMContentLoaded', function() {
         errorTimer = setTimeout(function () { box.remove(); }, 8000);
     }
 
+    // حارسٌ خاصٌّ بالمحادثة: لا إرسالَ مزدوجاً أثناء الطلب، والزرُّ يعود بعده
+    // نجح الطلبُ أو خاب — لا يبقى معطَّلاً كما كان يفعل حارسُ التخطيط
+    const sendBtn = form.querySelector('button[type="submit"]');
+    let sending = false;
+
     form.addEventListener('submit', function(e) {
         e.preventDefault();
+        if (sending) return;
         const msg = input.value.trim();
         if (!msg && !selectedFile) return;
+
+        sending = true;
+        if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '0.75'; }
 
         const formData = new FormData();
         if (msg) formData.append('message', msg);
@@ -675,6 +686,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // النصّ يعود إلى الحقل: فقدانُ ما كُتب أسوأ من فشل الإرسال
             input.value = msg;
             showComposerError('تعذّر الإرسال. تحقّق من الاتصال وأنّ المرفق لا يتجاوز ٢٠ م.ب، ثم أعد المحاولة.');
+        }).finally(() => {
+            sending = false;
+            if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = ''; }
+            input.focus();
         });
     });
 

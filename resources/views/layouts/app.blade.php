@@ -2345,13 +2345,24 @@
                 if (form) form.requestSubmit ? form.requestSubmit() : form.submit();
             });
 
-            // إرسال النماذج: شريط + منع الضغط المزدوج
+            // إرسال النماذج: شريط + منع الضغط المزدوج.
+            //
+            // ═══ لنموذجٍ يغادر الصفحة وحدَه ═══
+            //
+            // كان المستمعُ في طور الالتقاط فيسبق معالجَ النموذج نفسِه، ويعطّل
+            // زرَّ الإرسال لكلّ نموذج — ومنها نموذجُ المحادثة الذي يُرسل بـAJAX
+            // ولا يغادر الصفحة: فبقي الزرُّ معطَّلاً بعد أوّل رسالة، وEnter لا
+            // يُرسل (الإرسالُ الضمنيُّ يُلغى حين يكون زرُّ النموذج معطَّلاً)،
+            // حتى يُعاد تحميلُ الصفحة. فصار في طور الفقاعة: من ألغى الإرسالَ
+            // الافتراضيَّ (defaultPrevented) تولّى أمرَه بنفسه ولا يُمسّ.
             document.addEventListener('submit', function (e) {
                 var form = e.target;
                 if (!(form instanceof HTMLFormElement) || form.dataset.noProgress === '1') return;
+                if (e.defaultPrevented) return;
                 start();
                 var btns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
                 setTimeout(function () {
+                    if (e.defaultPrevented) return;
                     btns.forEach(function (b) {
                         if (b.disabled) return;
                         b.disabled = true;
@@ -2360,7 +2371,7 @@
                         b.style.cursor = 'progress';
                     });
                 }, 0);
-            }, true);
+            }, false);
 
             // العودة من ذاكرة المتصفح: أعد تفعيل الأزرار وأخفِ الشريط
             window.addEventListener('pageshow', function () {
