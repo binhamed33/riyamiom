@@ -44,17 +44,14 @@ class AttentionService
             ->get();
 
         foreach ($sessions as $s) {
-            $hasPrep = $s->case && Task::where('case_id', $s->case_id)
-                ->where('status', '!=', 'completed')
-                ->where('title', 'like', $this->prepKeyword($s))
-                ->exists();
+            $prep = $s->case ? $this->preparation($s) : null;
+            $hasPrep = $prep !== null;
             $isToday = $s->date->isSameDay($now);
             $items->push([
                 'severity' => $isToday && !$hasPrep ? 'critical' : ($hasPrep ? 'info' : 'warning'),
                 'title' => ($isToday ? 'جلسة اليوم' : 'جلسة قريبة') . ' — ' . ($s->case->case_number ?? 'قضية') . ' (' . ($s->location ?? '') . ')',
-                'description' => $hasPrep
-                    ? 'يوجد تحضير مرتبط بالقضية'
-                    : ($isToday ? 'جلسة اليوم بدون تحضير - أنشئ مهمة تحضير الآن' : 'جلسة خلال 48 ساعة بدون تحضير - أنشئ مهمة تحضير'),
+                'description' => $prep
+                    ?? ($isToday ? 'جلسة اليوم بدون تحضير - أضف تحديثاً على القضية أو مهمة تحضير الآن' : 'جلسة خلال 48 ساعة بدون تحضير - أضف تحديثاً على القضية أو مهمة تحضير'),
                 'url' => route('sessions.show', $s),
                 'action' => !$hasPrep ? ['label' => 'تحضير الجلسة', 'url' => route('cases.show', $s->case_id) . '#quick'] : null,
                 'icon' => 'gavel',
@@ -148,6 +145,57 @@ class AttentionService
     private function prepKeyword(Session $s): string
     {
         return '%تحضير%';
+    }
+
+    /**
+     * أمُحضَّرةٌ الجلسة؟ — جملةُ الحال إن كانت، وإلا null.
+     *
+     * ═══ ما وقع ═══
+     *
+     * زرُّ «تحضير الجلسة» في التنبيه يفتح نافذةَ «تحديث» على القضية،
+     * فيكتب المحامي ما حضّره ويحفظه — ويبقى التنبيه «بدون تحضير» كما
+     * هو: الحكمُ كان بمهمّةٍ مفتوحةٍ عنوانُها «تحضير» وحدَها. فالتحديثُ
+     * لا يُحتسب، والمهمّةُ إذا أُنجزت سقط الاحتسابُ أيضاً — فكان إتمامُ
+     * التحضير يُعيد التنبيهَ إلى «بدون تحضير».
+     *
+     * ═══ القاعدة ═══
+     *
+     * تُعدّ محضَّرةً بواحدٍ من ثلاثة، بهذا الترتيب:
+     * - مهمّةُ تحضيرٍ أُنجزت ⇐ «تم التحضير».
+     * - تحديثٌ (نشاطٌ يكتبه موظّف: ملاحظة/اتّصال/…) على القضية بعد
+     *   تحديد موعد الجلسة ⇐ «تم التحضير — تحديثٌ على القضية قبل …».
+     * - مهمّةُ تحضيرٍ مفتوحة ⇐ «التحضير قيد التنفيذ».
+     */
+    private function preparation(Session $s): ?string
+    {
+        $done = Task::where('case_id', $s->case_id)
+            ->where('status', 'completed')
+            ->where('title', 'like', $this->prepKeyword($s))
+            ->exists();
+
+        if ($done) {
+            return 'تم التحضير — مهمّة التحضير مُنجزة';
+        }
+
+        // منذ تحديدِ الجلسة لا منذ الأزل: تحديثٌ قديمٌ قبل الموعد ليس تحضيراً له
+        $since = $s->created_at ?? $s->date->copy()->subDays(14);
+        $update = \App\Models\CaseActivity::where('case_id', $s->case_id)
+            ->whereIn('type', [\App\Models\CaseActivity::TYPE_NOTE, \App\Models\CaseActivity::TYPE_CALL, \App\Models\CaseActivity::TYPE_APPOINTMENT, \App\Models\CaseActivity::TYPE_OTHER])
+            ->whereNotNull('user_id')
+            ->where('created_at', '>=', $since)
+            ->latest('id')
+            ->first();
+
+        if ($update) {
+            return 'تم التحضير — تحديثٌ على القضية ' . $update->created_at->diffForHumans() . ': ' . mb_substr($update->title, 0, 60);
+        }
+
+        $open = Task::where('case_id', $s->case_id)
+            ->where('status', '!=', 'completed')
+            ->where('title', 'like', $this->prepKeyword($s))
+            ->exists();
+
+        return $open ? 'التحضير قيد التنفيذ — مهمّة تحضير مفتوحة' : null;
     }
 
     public static function itemsCount(): int
