@@ -814,6 +814,7 @@ return [
     'hr_leave_type_unpaid' => 'Unpaid',
     'hr_leave_type_other' => 'Other',
     // Session warnings
+    'idle_logout_notice' => 'You were signed out automatically after :hours hours of inactivity — sign in to continue. No check-out was recorded.',
     'session_warning_title' => 'Session Expiring',
     'session_warning_message' => 'Your session will expire automatically in',
     'continue' => 'Continue',

@@ -170,28 +170,20 @@ class AttendanceShiftCapTest extends TestCase
     // ══════════ الخمول ══════════
 
     /**
-     * مهلةُ الخمول ساعةٌ لا عشرُ دقائق.
+     * مهلةُ خروج الخمول رقمٌ واحدٌ في config/session.php لا رقمٌ في القالب.
      *
-     * «المحامي يقرأ ملفّاً أو يقابل موكّلاً والشاشةُ مفتوحة» — فيعود
-     * فيجد نفسَه على وشك الخروج. ورقمٌ في ملفّ عرضٍ يُبدَّل بلا انتباه،
-     * فيُحرَس هنا.
+     * رقمٌ في ملفّ عرضٍ يُبدَّل بلا انتباه، ثمّ يقول المؤقّتُ ثمانيَ ساعات
+     * ورسالةُ الدخول غيرَها. والقيمةُ نفسها وعمرُ الجلسة فوقها يُحرسان في
+     * IdleLogoutTest.
      */
-    public function test_the_idle_window_is_one_hour_and_stays_under_the_session_lifetime(): void
+    public function test_the_idle_logout_window_comes_from_config_not_the_template(): void
     {
         $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
 
-        $this->assertMatchesRegularExpression(
-            '/var TIMEOUT = 60 \* 60 \* 1000;/',
+        $this->assertStringContainsString(
+            "var TIMEOUT = {{ (int) config('session.idle_logout_minutes') }} * 60 * 1000;",
             $layout,
-            'مهلةُ الخمول ليست ساعة',
-        );
-
-        // ومهلةُ الخمول دون عمر الجلسة: لو تجاوزته لسقط المستخدم في
-        // فراغٍ بين المهلتين — جلسةٌ ميتةٌ ونافذةٌ لم تظهر بعد
-        $this->assertLessThan(
-            (int) config('session.lifetime'),
-            60 + 1,
-            'مهلةُ الخمول بلغت عمرَ الجلسة',
+            'مهلةُ الخمول رقمٌ مكتوبٌ في القالب',
         );
     }
 }

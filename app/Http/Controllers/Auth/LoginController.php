@@ -202,9 +202,11 @@ class LoginController extends Controller
             AttendanceGuard::checkOut($user);
         }
 
-        // خروجُ الخمول (idle=1) يُرسله المؤقّتُ بعد ساعةٍ من الغياب — لا إنسانَ
-        // يُختم له أثر؛ ختمُه كان يكتب انصرافاً بعد الرحيل بساعة
-        if (! $request->boolean('idle')) {
+        // خروجُ الخمول (idle=1) يُرسله المؤقّتُ بعد ثماني ساعاتٍ من الغياب —
+        // لا إنسانَ يُختم له أثر؛ ختمُه كان يكتب انصرافاً بعد الرحيل بساعات
+        $idle = $request->boolean('idle');
+
+        if (! $idle) {
             AttendanceGuard::stampSeen($user);
         }
 
@@ -223,6 +225,13 @@ class LoginController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
+
+        // صفحةُ الدخول تقول لماذا هو هنا: خروجٌ صامتٌ بعد الخمول كان يُقرأ طرداً
+        if ($idle) {
+            return redirect()->route('login')->with('login_notice', __('app.idle_logout_notice', [
+                'hours' => intdiv((int) config('session.idle_logout_minutes'), 60),
+            ]));
+        }
 
         return redirect()->route('login');
     }

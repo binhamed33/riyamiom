@@ -814,6 +814,7 @@ return [
     'hr_leave_type_unpaid' => 'بدون راتب',
     'hr_leave_type_other' => 'أخرى',
     // Session warnings
+    'idle_logout_notice' => 'خرجتَ تلقائياً بعد :hours ساعاتٍ بلا نشاط — سجّل الدخول للمتابعة. ولم يُسجَّل لك انصراف.',
     'session_warning_title' => 'تنبيه انتهاء الجلسة',
     'session_warning_message' => 'ستنتهي جلستك تلقائياً خلال',
     'continue' => 'متابعة',
