@@ -265,7 +265,7 @@ class AttendanceResumeTest extends TestCase
         $this->assertSame(HrAttendance::CLOSED_BY_CAP, $record->closed_by);
     }
 
-    /** من رآه الخادمُ في آخر ساعة لا يُقفل عليه وهو على شاشته. */
+    /** من رآه الخادمُ خلال مهلة الخمول لا يُقفل عليه وهو على شاشته. */
     public function test_the_cap_skips_someone_still_active(): void
     {
         $user = $this->staff();
@@ -279,21 +279,100 @@ class AttendanceResumeTest extends TestCase
         $this->assertNull($record->fresh()->check_out_at);
     }
 
+    /**
+     * ومهلةُ الخمول تسعُ ساعاتٍ لا ساعة: من بلغ السقفَ وخرج لجلسةٍ ثلاثَ
+     * ساعاتٍ يعود فيجد يومَه مفتوحاً — كان يجده مقفَلاً على آخر نقرةٍ قبل خروجه.
+     */
+    public function test_the_cap_waits_more_than_eight_idle_hours(): void
+    {
+        $user = $this->staff();
+        $record = HrAttendance::create([
+            'user_id' => $user->id, 'work_date' => HrAttendance::today(),
+            'check_in_at' => now()->subHours(20), 'status' => 'present', 'source' => 'auto_login',
+        ]);
+        $this->seen($user, now()->subHours(3));
+
+        $this->assertSame(0, AttendanceGuard::closeOvertimeRecords(), 'أُقفل بعد ثلاث ساعاتٍ من الخمول');
+        $this->assertNull($record->fresh()->check_out_at);
+
+        // ثماني ساعاتٍ وخمسون دقيقة ما زالت دون المهلة
+        $this->seen($user, now()->subHours(8)->subMinutes(50));
+        $this->assertSame(0, AttendanceGuard::closeOvertimeRecords(), 'أُقفل قبل أن تكتمل مهلةُ الخمول');
+
+        // وبعد تسعٍ يُقفل على آخر ما رُئي (السقفُ قبل ١٢ ساعة، والرؤيةُ بعده بثلاثٍ إلا دقيقة) لا على ساعة المسحة
+        $this->seen($user, now()->subHours(9)->subMinute());
+        $this->assertSame(1, AttendanceGuard::closeOvertimeRecords());
+
+        $record->refresh();
+        $this->assertSame(HrAttendance::CLOSED_BY_SEEN, $record->closed_by);
+        $this->assertEqualsWithDelta(480 + 179, (int) $record->minutes, 1, 'كُتبت ساعةُ المسحة لا آخرُ نشاط');
+    }
+
+    /** وصفحةُ الإعدادات تحفظها فعلاً — حقلٌ يُعرض ولا يُكتب يبقى تسعاً إلى الأبد. */
+    public function test_the_settings_form_saves_the_idle_window(): void
+    {
+        $dev = User::factory()->create(['role' => 'developer', 'is_active' => true]);
+
+        $this->actingAs($dev)
+            ->put(route('settings.update'), ['hr_section' => '1', 'hr_idle_close_hours' => '10', 'hr_shift_cap_hours' => '8'])
+            ->assertRedirect(route('settings.index'));
+
+        $this->assertSame(10, AttendanceGuard::idleCloseHours());
+
+        // والقيمةُ خارج الحدّ تُرفض لا تُحبَس بصمت
+        $this->actingAs($dev)
+            ->from(route('settings.index'))
+            ->put(route('settings.update'), ['hr_section' => '1', 'hr_idle_close_hours' => '30'])
+            ->assertSessionHasErrors('hr_idle_close_hours');
+        $this->assertSame(10, AttendanceGuard::idleCloseHours());
+
+        $this->actingAs($dev)->get(route('settings.index', ['sec' => 'attendance']))->assertOk()
+            ->assertSee('name="hr_idle_close_hours"', false)
+            ->assertSee('value="10"', false);
+    }
+
+    /** المكتبُ يضبط مهلةَ الخمول من الإعدادات، والقيمُ المستحيلة تُحبَس. */
+    public function test_the_idle_window_is_configurable_and_bounded(): void
+    {
+        $this->assertSame(9, AttendanceGuard::idleCloseHours());
+
+        \App\Models\Setting::set('hr_idle_close_hours', '12');
+        $this->assertSame(12, AttendanceGuard::idleCloseHours());
+
+        // صفرٌ يُقفل على من هو على شاشته، وثمانٍ وأربعون لا تُقفل شيئاً
+        \App\Models\Setting::set('hr_idle_close_hours', '0');
+        $this->assertSame(1, AttendanceGuard::idleCloseHours());
+
+        \App\Models\Setting::set('hr_idle_close_hours', '48');
+        $this->assertSame(24, AttendanceGuard::idleCloseHours());
+
+        // ومهلةٌ أطول تُبقي من رُئي قبل عشر ساعاتٍ مفتوحاً
+        \App\Models\Setting::set('hr_idle_close_hours', '12');
+        $user = $this->staff();
+        $record = HrAttendance::create([
+            'user_id' => $user->id, 'work_date' => HrAttendance::today(),
+            'check_in_at' => now()->subHours(14), 'status' => 'present', 'source' => 'auto_login',
+        ]);
+        $this->seen($user, now()->subHours(10));
+        $this->assertSame(0, AttendanceGuard::closeOvertimeRecords());
+        $this->assertNull($record->fresh()->check_out_at);
+    }
+
     /** ومن جاوز السقفَ وهو يعمل ثمّ غاب يُقفل على آخر ما رُئي — لا على السقف. */
     public function test_the_cap_keeps_time_seen_after_the_cap(): void
     {
         $user = $this->staff();
         $record = HrAttendance::create([
             'user_id' => $user->id, 'work_date' => HrAttendance::today(),
-            'check_in_at' => now()->subHours(11), 'status' => 'present', 'source' => 'auto_login',
+            'check_in_at' => now()->subHours(20), 'status' => 'present', 'source' => 'auto_login',
         ]);
-        // رُئي قبل ساعتين (أي بعد السقف بساعة) ثمّ غاب
-        $this->seen($user, now()->subHours(2));
+        // رُئي قبل عشر ساعات (أي بعد السقف بساعتين) ثمّ غاب أكثرَ من مهلة الخمول
+        $this->seen($user, now()->subHours(10));
 
         $this->assertSame(1, AttendanceGuard::closeOvertimeRecords());
 
         $record->refresh();
-        $this->assertEqualsWithDelta(540, (int) $record->minutes, 1, 'قُصّت ساعةٌ رآها الخادم بعد السقف');
+        $this->assertEqualsWithDelta(600, (int) $record->minutes, 1, 'قُصّت ساعتان رآهما الخادم بعد السقف');
         $this->assertSame(HrAttendance::CLOSED_BY_SEEN, $record->closed_by, 'وقتٌ من آخر نشاطٍ وُسم سقفاً');
         $this->assertSame('آخر نشاط', $record->inferredLabel());
     }
@@ -306,7 +385,7 @@ class AttendanceResumeTest extends TestCase
             'user_id' => $user->id, 'work_date' => HrAttendance::today(),
             'check_in_at' => now()->subHours(10), 'status' => 'present', 'source' => 'auto_login',
         ]);
-        $this->seen($user, now()->subHours(6)); // آخرُ نقرةٍ بعد أربع ساعاتٍ من الحضور
+        $this->seen($user, now()->subHours(9)->subMinutes(30)); // آخرُ نقرةٍ بعد نصف ساعةٍ من الحضور، ثمّ غاب أكثرَ من مهلة الخمول
 
         AttendanceGuard::closeOvertimeRecords();
 

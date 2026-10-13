@@ -45,6 +45,7 @@ class SettingController extends Controller
             // العامّة أدناه تكتبه متى جاء، فلا يُصفّره حفظٌ من نموذجٍ
             // لا يعرضه — وسقفُ صفرٍ يُقفل كلَّ سجلٍّ لحظةَ فتحه
             'hr_shift_cap_hours' => 'nullable|integer|min:1|max:24',
+            'hr_idle_close_hours' => 'nullable|integer|min:1|max:24',
             'maintenance_note'   => 'nullable|string|max:300',
 
             // أوقاتُ المواعيد. أرقامٌ لا خانات: غيابُها «لم يُرسَل» لا
@@ -118,6 +119,7 @@ class SettingController extends Controller
             'hr_auto_checkin'    => 'hr',
             'hr_auto_close'      => 'hr',
             'hr_shift_cap_hours' => 'hr',
+            'hr_idle_close_hours' => 'hr',
             'maintenance_note'   => 'system',
             'appt_start'         => 'appointments',
             'appt_end'           => 'appointments',

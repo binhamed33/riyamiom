@@ -116,17 +116,17 @@ class AttendanceProvenanceTest extends TestCase
     public function test_the_cap_uses_the_durable_last_seen(): void
     {
         $user = $this->staff();
-        $record = $this->open($user, 11);
-        // خرج من النظام قبل ساعتين (أثرٌ دائم) — وجدولُ الجلسات فارغ
-        $this->seenAt($user, now()->subHours(2));
+        $record = $this->open($user, 20);
+        // خرج من النظام قبل عشر ساعات (أثرٌ دائم، بعد السقف بساعتين) — وجدولُ الجلسات فارغ
+        $this->seenAt($user, now()->subHours(10));
 
         $this->assertSame(1, AttendanceGuard::closeOvertimeRecords());
 
         $fresh = $record->fresh();
-        $this->assertLessThanOrEqual(2, abs($fresh->check_out_at->diffInSeconds(now()->subHours(2))),
+        $this->assertLessThanOrEqual(2, abs($fresh->check_out_at->diffInSeconds(now()->subHours(10))),
             'أُقفل بالسقف رغم أثرٍ بعده');
         $this->assertSame(HrAttendance::CLOSED_BY_SEEN, $fresh->closed_by);
-        $this->assertEqualsWithDelta(540, (int) $fresh->minutes, 1);
+        $this->assertEqualsWithDelta(600, (int) $fresh->minutes, 1);
     }
 
     /** ونشاطُ اليوم لا يمدّ سجلَّ الاثنين المنسيّ سبعةً وأربعين ساعة. */

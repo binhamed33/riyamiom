@@ -89,7 +89,7 @@
                 @error('attendance')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                 @if($isAdmin)
                     {{-- القاعدةُ التي تُقفل سجلّاتِ الفريق كانت خفيّةً عن مدير المكتب --}}
-                    <p class="text-[11px] text-gray-400 mt-2">سقفُ اليوم {{ \App\Support\AttendanceGuard::capHours() }} ساعات — يُقفل به من نسي الانصراف ولم يُرَ في آخر ساعة · الإقفالُ الليليّ بآخر نشاط {{ \App\Support\AttendanceGuard::autoCloseEnabled() ? 'مفعَّل' : 'معطَّل' }}</p>
+                    <p class="text-[11px] text-gray-400 mt-2">سقفُ اليوم {{ \App\Support\AttendanceGuard::capHours() }} ساعات — يُقفل به من نسي الانصراف ولم يُرَ منذ {{ \App\Support\AttendanceGuard::idleCloseHours() }} ساعات · الإقفالُ الليليّ بآخر نشاط {{ \App\Support\AttendanceGuard::autoCloseEnabled() ? 'مفعَّل' : 'معطَّل' }}</p>
                 @endif
             </div>
             <div>

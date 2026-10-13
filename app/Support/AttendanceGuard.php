@@ -51,12 +51,25 @@ class AttendanceGuard
     public const RESUME_WINDOW_HOURS = 6;
 
     /**
-     * من رآه الخادمُ في آخر ساعة لا يُقفل سجلُّه بالسقف.
+     * الإقفالُ بالسقف ينتظر خمولاً طويلاً: تسعُ ساعاتٍ من آخر نشاط.
      *
-     * ساعةٌ لأنّها مهلةُ الخمول في الواجهة: من غاب عن الشاشة ساعةً أُخرج
-     * من النظام — فمن ما زال أثرُه حيّاً فهو أمام شاشته.
+     * كانت ساعةً (مهلةَ خمول الواجهة)، فمن بلغ السقفَ وخرج لجلسةٍ أو
+     * اجتماعٍ ساعةً ونصفاً عاد فوجد يومَه مقفَلاً على آخر نقرةٍ قبل
+     * خروجه — والمكتبُ طلب ألّا يُقفل بالخمول إلا بعد أكثر من ثماني
+     * ساعات. ولا يضيع وقتٌ بالتأخير: الإقفالُ يكتب لحظةَ السقف أو آخرَ
+     * ما رُئي، لا ساعةَ المسحة.
+     *
+     * والمكتبُ يضبطها من الإعدادات (hr_idle_close_hours) — انظر idleCloseHours().
      */
-    public const CAP_IDLE_MINUTES = 60;
+    public const IDLE_CLOSE_HOURS = 9;
+
+    /**
+     * أمّا الإقفالُ الليليّ فمهلتُه ساعة: يعمل مرّةً قبل منتصف الليل
+     * ليُقفل المنسيَّ على آخر نشاط، فلو انتظر تسعَ ساعاتٍ لم يُقفل
+     * إلا من غاب منذ الظهيرة وصار الإعدادُ لا يفعل شيئاً. والساعةُ هنا
+     * حارسٌ لمن ما زال يكتب قربَ منتصف الليل فحسب.
+     */
+    public const NIGHT_IDLE_MINUTES = 60;
 
     /**
      * حدُّ اليوم للإقفال الآليّ: السادسةُ صباحَ اليوم التالي.
@@ -526,6 +539,18 @@ class AttendanceGuard
     }
 
     /**
+     * ساعاتُ الخمول قبل الإقفال بالسقف — انظر IDLE_CLOSE_HOURS.
+     */
+    public static function idleCloseHours(): int
+    {
+        $value = (int) Setting::get('hr_idle_close_hours', (string) self::IDLE_CLOSE_HOURS);
+
+        // صفرٌ يعيد الإقفالَ لحظةَ السقف ولو كان صاحبُه على شاشته، وأكثرُ
+        // من يومٍ لا يُقفل شيئاً قبل أن يبلغ الحدَّ اليوميّ. فتُحبَس بين ساعةٍ وأربعٍ وعشرين.
+        return max(1, min(24, $value));
+    }
+
+    /**
      * اللحظةُ التي يبلغ فيها اليومُ سقفَه: بدايةُ الفترة + ما بقي من السقف.
      */
     public static function capMoment(HrAttendance $record): CarbonInterface
@@ -563,8 +588,9 @@ class AttendanceGuard
             try {
                 $lastSeen = self::lastSeenFor($record);
 
-                // ما زال على شاشته: يُترك، ويُعاد النظرُ في المسحة التالية
-                if ($lastSeen && $lastSeen->greaterThan(now()->subMinutes(self::CAP_IDLE_MINUTES))) {
+                // رُئي خلال مهلة الخمول: يُترك، ويُعاد النظرُ في المسحة التالية —
+                // والوقتُ الذي سيُكتب عند الإقفال لا يتغيّر بالانتظار
+                if ($lastSeen && $lastSeen->greaterThan(now()->subHours(self::idleCloseHours()))) {
                     continue;
                 }
 
@@ -620,7 +646,7 @@ class AttendanceGuard
                 $lastSeen = self::lastSeenFor($record);
 
                 // لا أثرَ — أو ما زال على شاشته (محامٍ يعدّ مذكّرةً قربَ منتصف الليل)
-                if (! $lastSeen || $lastSeen->greaterThan(now()->subMinutes(self::CAP_IDLE_MINUTES))) {
+                if (! $lastSeen || $lastSeen->greaterThan(now()->subMinutes(self::NIGHT_IDLE_MINUTES))) {
                     continue;
                 }
 
