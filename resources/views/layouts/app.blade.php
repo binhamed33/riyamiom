@@ -1398,7 +1398,7 @@
                     <div x-show="askOut" x-cloak @keydown.escape.window="askOut = false" class="fixed inset-0 z-[9998] flex items-center justify-center" style="background: rgba(0,0,0,.45);" role="alertdialog" aria-modal="true" data-logout-dialog>
                         <div @click.outside="askOut = false" class="bg-white border border-gray-200 rounded-2xl p-6 max-w-sm mx-4 shadow-2xl card-premium text-start">
                             <h3 class="text-gray-900 font-bold text-base mb-1">هل تسجّل انصرافك أيضاً؟</h3>
-                            <p class="text-gray-500 text-sm mb-5">حضورُك مسجَّلٌ منذ <span dir="ltr">{{ $attOpen->intervalStart()->timezone('Asia/Muscat')->format('h:i A') }}</span>. الخروجُ من النظام وحدَه لا يُنهي يومَك.</p>
+                            <p class="text-gray-500 text-sm mb-5">حضورُك مسجَّلٌ منذ <span dir="ltr">{{ $attOpen->intervalStart()->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</span>. الخروجُ من النظام وحدَه لا يُنهي يومَك.</p>
                             <form method="POST" action="{{ route('logout') }}" class="mb-2">
                                 @csrf
                                 <input type="hidden" name="checkout" value="1">

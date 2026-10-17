@@ -184,7 +184,9 @@ class ClientController extends Controller
     public function show(Client $client): View
     {
         $this->authorizeClientAccess($client);
-        $client->load('cases.lawyer');
+        // loadCount مع load: البطاقةُ تقرأ cases_count، وكانت تقول «0 قضايا»
+        // فوق جدولٍ يسرد قضايا الموكّل
+        $client->load('cases.lawyer')->loadCount('cases');
 
         return view('clients.show', compact('client'));
     }

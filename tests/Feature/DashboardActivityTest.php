@@ -163,6 +163,20 @@ class DashboardActivityTest extends TestCase
         $this->assertStringContainsString('مُداوَلة', $html);
     }
 
+    // ───────────────────────────────────────── التاريخ
+
+    /** تاريخُ اليوم في الترحيب عربيٌّ: كان format('l d F Y') يكتب «Sunday 18 October 2026». */
+    public function test_the_greeting_date_follows_the_user_language(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-10-18 09:00', 'Asia/Muscat'));
+
+        $this->actingAs($this->admin)->get(route('dashboard'))->assertOk()
+            ->assertSee('الأحد 18 أكتوبر 2026')
+            ->assertDontSee('Sunday 18 October 2026');
+
+        \Illuminate\Support\Carbon::setTestNow();
+    }
+
     private function caseAt(\Illuminate\Support\Carbon $createdAt): LegalCase
     {
         $client = $this->client('موكّل ' . $createdAt->timestamp . random_int(1, 999));

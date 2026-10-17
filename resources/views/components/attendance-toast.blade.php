@@ -46,9 +46,9 @@
         <div class="flex-1 min-w-0">
             {{-- ما كتبه النظامُ لا يُنسب إلى صاحبه: «أُقفل يومُك آليّاً» لا «سجّلت انصرافك» --}}
             @if($closedToday->closedByInference())
-                <p class="font-semibold text-sm text-amber-700">أُقفل يومُك آليّاً الساعة <span dir="ltr">{{ $closedToday->check_out_at->timezone('Asia/Muscat')->format('h:i A') }}</span> ({{ $closedToday->inferredLabel() }}).</p>
+                <p class="font-semibold text-sm text-amber-700">أُقفل يومُك آليّاً الساعة <span dir="ltr">{{ $closedToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</span> ({{ $closedToday->inferredLabel() }}).</p>
             @else
-                <p class="font-semibold text-sm text-gray-700">سجّلت انصرافك الساعة <span dir="ltr">{{ $closedToday->check_out_at->timezone('Asia/Muscat')->format('h:i A') }}</span>.</p>
+                <p class="font-semibold text-sm text-gray-700">سجّلت انصرافك الساعة <span dir="ltr">{{ $closedToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</span>.</p>
             @endif
             <p class="text-xs mt-0.5 text-gray-400">إن كنت ما زلت في دوامك فاستأنفه — ما سبق محفوظٌ وتُضاف الدقائق من الآن.</p>
         </div>
@@ -123,7 +123,7 @@
                 @else
                     تم تسجيل حضورك الساعة
                 @endif
-                <span dir="ltr">{{ $open->intervalStart()->timezone('Asia/Muscat')->format('h:i A') }}</span>.
+                <span dir="ltr">{{ $open->intervalStart()->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</span>.
             </p>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">

@@ -93,7 +93,8 @@
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                     {{ $case->status === 'active' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
                                        ($case->status === 'closed' ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-gold/12 text-gold-dark border border-gold/15') }}">
-                                    {{ $case->status }}
+                                    {{-- التسميةُ لا المفتاح: كانت الشارةُ تقول «active» --}}
+                                    {{ \Illuminate\Support\Facades\Lang::has('app.status_' . $case->status) ? __('app.status_' . $case->status) : $case->status }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-gray-700">{{ $case->lawyer->name ?? '—' }}</td>

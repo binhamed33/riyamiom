@@ -190,14 +190,17 @@ class DashboardController extends Controller
         );
 
         // Monthly cases trend (last 6 months)
-        $monthlyTrend = Cache::remember('dashboard_monthly_trend' . $cacheSuffix, 60, function () use ($now, $caseBase) {
+        // المفتاحُ يحمل اللغة: أسماءُ الأشهر تُخبَّأ مترجمةً، ومستخدمٌ إنجليزيٌّ
+        // بعد عربيٍّ كان سيرى «أكتوبر» من الكاش
+        $monthlyTrend = Cache::remember('dashboard_monthly_trend' . $cacheSuffix . '_' . app()->getLocale(), 60, function () use ($now, $caseBase) {
             $trend = [];
             for ($i = 5; $i >= 0; $i--) {
                 $month = $now->copy()->subMonths($i);
                 $monthStart = $month->copy()->startOfMonth();
                 $monthEnd = $month->copy()->endOfMonth();
                 $trend[] = [
-                    'label' => $month->format('M'),
+                    // translatedFormat: format('M') كان يكتب «Oct» تحت رسمٍ عربيّ
+                    'label' => $month->translatedFormat('M'),
                     'new' => (clone $caseBase)->whereBetween('created_at', [$monthStart, $monthEnd])->count(),
                     'closed' => (clone $caseBase)->where('status', 'closed')
                         ->where('updated_at', '>=', $monthStart)
@@ -219,25 +222,30 @@ class DashboardController extends Controller
         // === Recent Activity (combined feed) ===
         $activityItems = collect();
 
+        // الحالةُ بتسميتها لا بمفتاحها: كان السطرُ يقول «2026/112 — pending»
+        $statusLabel = static fn (?string $status): string => $status === null || $status === ''
+            ? ''
+            : (\Illuminate\Support\Facades\Lang::has('app.status_' . $status) ? __('app.status_' . $status) : $status);
+
         // Recent cases
-        (clone $caseBase)->latest()->limit(3)->get()->each(function ($item) use ($activityItems) {
+        (clone $caseBase)->latest()->limit(3)->get()->each(function ($item) use ($activityItems, $statusLabel) {
             $activityItems->push([
                 'type' => 'case',
                 'icon' => 'case',
                 'title' => $item->title,
-                'subtitle' => $item->case_number . ' — ' . ($item->status ?? ''),
+                'subtitle' => $item->case_number . ' — ' . $statusLabel($item->status),
                 'time' => $item->created_at,
                 'url' => route('cases.show', $item),
             ]);
         });
 
         // Recent tasks
-        (clone $taskBase)->with('assignee')->latest()->limit(3)->get()->each(function ($item) use ($activityItems) {
+        (clone $taskBase)->with('assignee')->latest()->limit(3)->get()->each(function ($item) use ($activityItems, $statusLabel) {
             $activityItems->push([
                 'type' => 'task',
                 'icon' => 'task',
                 'title' => $item->title,
-                'subtitle' => ($item->assignee?->name ?? '') . ' — ' . ($item->status ?? ''),
+                'subtitle' => ($item->assignee?->name ?? '') . ' — ' . $statusLabel($item->status),
                 'time' => $item->created_at,
                 'url' => route('tasks.show', $item),
             ]);
@@ -250,6 +258,8 @@ class DashboardController extends Controller
                 'icon' => 'client',
                 'title' => $item->name,
                 'subtitle' => $item->phone ?? '',
+                // رقمٌ لا جملة: في سطرٍ عربيٍّ تنقلب مجموعاتُه «1220 9000 968+»
+                'subtitle_ltr' => true,
                 'time' => $item->created_at,
                 'url' => route('clients.show', $item),
             ]);

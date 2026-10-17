@@ -38,7 +38,8 @@
     <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between gap-3">
         <div>
             <h1 class="text-xl font-heading font-bold text-gray-900">{{ $greeting }}، {{ auth()->user()->name }}</h1>
-            <p class="text-xs text-gray-400 mt-0.5">إليك ما يحتاج انتباهك اليوم — {{ now()->format('l d F Y') }}</p>
+            {{-- translatedFormat لا format: الثاني يكتب «Sunday 18 October» في واجهةٍ عربيّة --}}
+            <p class="text-xs text-gray-400 mt-0.5">إليك ما يحتاج انتباهك اليوم — {{ now()->translatedFormat('l j F Y') }}</p>
         </div>
         {{-- الحضور من هنا مباشرة: نقرة واحدة صباحاً وواحدة مساءً --}}
         {{-- للأدوار التي لها حضور وحدها: المطوّر كان يرى الأزرارَ ويُنشئ سجلاً يُقفله السقف --}}
@@ -56,9 +57,9 @@
                 {{-- الوقتُ وكاتبُه لا «مكتمل» وحدها: من أُقفل يومُه بالسقف وهو في المحكمة
                      كان يعود إلى «يومك مكتمل ✓» بلا وقتٍ ولا سبب — العبارةُ التي شكا منها مكتبان --}}
                 @if($attendanceToday->closedByInference())
-                    <span class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">أُقفل يومك <span dir="ltr">{{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->format('h:i A') }}</span> ({{ $attendanceToday->inferredLabel() }})</span>
+                    <span class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">أُقفل يومك <span dir="ltr">{{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</span> ({{ $attendanceToday->inferredLabel() }})</span>
                 @else
-                    <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">يومك مكتمل ✓ <span dir="ltr">{{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->format('h:i A') }}</span></span>
+                    <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">يومك مكتمل ✓ <span dir="ltr">{{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</span></span>
                 @endif
                 {{-- عاد من استراحة الظهر فوجد يومَه «مكتملاً» ولا شيءَ يفتحه —
                      فكانت الفترةُ المسائيّة تضيع من كشف الشهر --}}
@@ -422,7 +423,7 @@
                     <div class="flex items-center gap-3 p-2.5 rounded-lg bg-gray-100 border border-gray-100 hover:border-gold/25 transition-colors">
                         <div class="w-10 h-10 rounded-lg bg-gold/12 flex items-center justify-center flex-shrink-0">
                             <div class="text-center leading-none">
-                                <p class="text-[10px] text-gray-600">{{ $session->date?->format('M') ?? '' }}</p>
+                                <p class="text-[10px] text-gray-600">{{ $session->date?->translatedFormat('M') ?? '' }}</p>
                                 <p class="text-sm font-bold text-gold-dark">{{ $session->date?->format('d') ?? '' }}</p>
                             </div>
                         </div>
@@ -499,7 +500,7 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-gray-900 text-xs font-medium truncate group-hover:text-gold-dark transition-colors">{{ $item['title'] }}</p>
-                        <p class="text-gray-500 text-[11px] truncate">{{ $item['subtitle'] }}</p>
+                        <p class="text-gray-500 text-[11px] truncate">@if(!empty($item['subtitle_ltr']))<bdi dir="ltr">{{ $item['subtitle'] }}</bdi>@else{{ $item['subtitle'] }}@endif</p>
                     </div>
                     <span class="text-gray-400 text-[11px] flex-shrink-0" dir="ltr">{{ $item['time']?->diffForHumans() ?? '' }}</span>
                 @if($item['url'])

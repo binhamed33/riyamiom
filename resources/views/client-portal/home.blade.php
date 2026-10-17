@@ -90,7 +90,7 @@
                 <div class="hm-next-body">
                     <p class="hm-next-title">{{ $appointment->title }}</p>
                     <p class="hm-next-meta">
-                        {{ $at->translatedFormat('l') }} · {{ $at->format('h:i A') }}
+                        {{ $at->translatedFormat('l') }} · {{ $at->translatedFormat('h:i A') }}
                         @if ($appointment->location) <br>{{ $appointment->location }} @endif
                         {{-- اسمُ الموظّف يتبع إعدادَ «إظهار المحامي» كما في
                              بقيّة البوابة: مكتبٌ أطفأه ليمرّ الموكّلون
@@ -120,7 +120,7 @@
             <div class="hm-next-body">
                 <p class="hm-next-title">{{ $nextSession->case?->title ?? __('portal.sessions.title') }}</p>
                 <p class="hm-next-meta">
-                    {{ $when->translatedFormat('l') }} · {{ $when->format('h:i A') }}
+                    {{ $when->translatedFormat('l') }} · {{ $when->translatedFormat('h:i A') }}
                     @if ($nextSession->location) <br>{{ $nextSession->location }} @endif
                 </p>
                 <p style="margin:.5rem 0 0">

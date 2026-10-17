@@ -558,7 +558,8 @@ document.addEventListener('alpine:init', () => {
             </div>
             <div>
                 <p class="text-gray-400 text-xs mb-1">{{ __('app.opponent_phone') }}</p>
-                <p class="text-gray-900 text-sm">{{ $case->opponent_phone ?? '—' }}</p>
+                {{-- bdi: الرقمُ في سطرٍ عربيٍّ تنقلب مجموعاتُه «2412 9000 968+» --}}
+                <p class="text-gray-900 text-sm"><bdi dir="ltr">{{ $case->opponent_phone ?? '—' }}</bdi></p>
             </div>
             <div>
                 <p class="text-gray-400 text-xs mb-1">{{ __('app.opponent_address') }}</p>

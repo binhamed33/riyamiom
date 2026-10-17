@@ -452,6 +452,8 @@ class CaseController extends Controller
                 'task' => 'مهمة',
                 'session' => 'جلسة',
                 'payment' => 'دفعة',
+                // نوعٌ يكتبه النظامُ عند تغيير الحالة (CaseActivity::TYPE_STATUS)، وكان يُعرض «status»
+                'status' => 'تغيير حالة',
                 'other' => 'إجراء',
             ][$a->type] ?? $a->type;
             $events->push([
@@ -463,21 +465,26 @@ class CaseController extends Controller
             ]);
         });
 
-        $case->sessions->each(function ($s) use ($events) {
+        // الحالةُ بتسميتها: كان الخطُّ الزمنيّ يقول «upcoming» و«completed»
+        $statusLabel = static fn (?string $st): string => $st && \Illuminate\Support\Facades\Lang::has('app.status_' . $st)
+            ? __('app.status_' . $st)
+            : (string) $st;
+
+        $case->sessions->each(function ($s) use ($events, $statusLabel) {
             $events->push([
                 'kind' => 'session',
                 'label' => 'جلسة — ' . ($s->location ?? '-'),
-                'sub' => $s->status . ($s->notes ? ' • ' . $s->notes : ''),
+                'sub' => $statusLabel($s->status) . ($s->notes ? ' • ' . $s->notes : ''),
                 'date' => $s->date,
                 'key' => 's' . $s->id,
             ]);
         });
 
-        $case->tasks->each(function ($t) use ($events) {
+        $case->tasks->each(function ($t) use ($events, $statusLabel) {
             $events->push([
                 'kind' => 'task',
                 'label' => ($t->status === 'completed' ? '✓ ' : '') . $t->title,
-                'sub' => $t->status . ($t->due_date ? ' • ' . $t->due_date->format('Y/m/d') : ''),
+                'sub' => $statusLabel($t->status) . ($t->due_date ? ' • ' . $t->due_date->format('Y/m/d') : ''),
                 'date' => $t->created_at,
                 'key' => 't' . $t->id,
             ]);

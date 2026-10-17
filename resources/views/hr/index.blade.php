@@ -440,7 +440,7 @@
                         <span class="text-[11px] font-semibold flex-shrink-0 {{ $tone[2] }}">{{ $tone[0] }}</span>
                         @if($row['record'])
                             <span class="text-[11px] text-gray-400 flex-shrink-0" dir="ltr">
-                                {{ $row['record']->check_in_at->timezone('Asia/Muscat')->format('h:i A') }}@if($row['record']->check_out_at) — {{ $row['record']->check_out_at->timezone('Asia/Muscat')->format('h:i A') }}@endif
+                                {{ $row['record']->check_in_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}@if($row['record']->check_out_at) — {{ $row['record']->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}@endif
                             </span>
                         @endif
                     </div>
@@ -594,7 +594,7 @@
                                      متوسّط: بلا عرضٍ ثابتٍ للرقم يتذبذب الوسطُ من صفٍّ
                                      إلى صفّ فيبدو العمودُ مهتزّاً. --}}
                                 <td class="px-4 py-3 text-gray-500 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->work_date->format('Y-m-d') }}</td>
-                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->check_in_at->timezone('Asia/Muscat')->format('h:i A') }}</td>
+                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->check_in_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</td>
                                 <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->checkOutDisplay('h:i A') ?? '—' }}@if($r->inferredLabel()) <span dir="rtl" class="text-[10px] text-amber-600 font-semibold" title="{{ $r->closedByInference() ? 'وقتٌ استنتجه النظام لا ضغطه صاحبُه' : 'صحّحه الإداري' }}">{{ $r->inferredLabel() }}</span>@endif</td>
                                 {{-- ‏rtl لا ltr: النصُّ يخلط أرقاماً لاتينيّةً بحرفين عربيّين،
                                      وفي سياقٍ لاتينيّ تقلبه خوارزميّةُ الاتّجاهين فيخرج

@@ -106,7 +106,7 @@
                 <div class="cd-item">
                     <div class="cd-item-body">
                         <p class="cd-item-title">{{ $when?->translatedFormat('l، j F Y') ?? '—' }}</p>
-                        <p class="cd-item-meta">{{ $when?->format('h:i A') }}@if ($s->location) · {{ $s->location }}@endif</p>
+                        <p class="cd-item-meta">{{ $when?->translatedFormat('h:i A') }}@if ($s->location) · {{ $s->location }}@endif</p>
                     </div>
                     <span class="p-badge {{ $s->status === 'completed' ? 'ok' : ($s->status === 'cancelled' ? 'mute' : ($s->status === 'postponed' ? 'warn' : 'info')) }}">
                         {{ __('portal.sessions.' . ($s->status ?: 'upcoming')) }}
