@@ -181,13 +181,23 @@ class ChatAttachmentTest extends TestCase
         $this->assertFalse(Attachments::exists($path));
     }
 
-    /** حجمٌ يُقرأ لا رقمٌ خام. */
+    /**
+     * حجمٌ يُقرأ لا رقمٌ خام — ووحدتُه بلغة الواجهة.
+     *
+     * كانت الوحدةُ عربيّةً أبداً: «65 ك.ب» في جدول المستندات الإنجليزيّ.
+     */
     public function test_sizes_are_written_for_humans(): void
     {
+        app()->setLocale('ar');
         $this->assertSame('', Attachments::humanSize(null));
         $this->assertSame('900 بايت', Attachments::humanSize(900));
         $this->assertSame('1.0 ك.ب', Attachments::humanSize(1024));
         $this->assertSame('2.4 م.ب', Attachments::humanSize(2516582));
+
+        app()->setLocale('en');
+        $this->assertSame('900 B', Attachments::humanSize(900));
+        $this->assertSame('1.0 KB', Attachments::humanSize(1024));
+        $this->assertSame('2.4 MB', Attachments::humanSize(2516582));
     }
 
     /** اسمٌ فيه سطرٌ جديد كان يشقّ ترويسة الردّ إلى ترويستين. */

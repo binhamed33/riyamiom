@@ -148,23 +148,30 @@
                         @enderror
                     </div>
 
-                    <div>
+                    {{-- ‏access يقود خانةَ «مرئي للموكّل» أدناه، وshareable من Document::canBeSharedBy
+                         لكلّ صلاحية: الخاصُّ لا يُشارَك، و«الفريق» لا يُتيحه الموظّف — كانت الخانةُ
+                         مفتوحةً له مع «الفريق» والزرُّ والمسارُ يمنعانه، فيُتيح بالرفع ولا يتراجع --}}
+                    @php
+                        $__shareable = collect([\App\Models\Document::ACCESS_ALL, \App\Models\Document::ACCESS_TEAM, \App\Models\Document::ACCESS_PRIVATE])
+                            ->mapWithKeys(fn ($level) => [$level => \App\Models\Document::canBeSharedBy(auth()->user(), $level)])->all();
+                    @endphp
+                    <div x-data="{ access: @js(old('access_level', 'all')), shareable: @js($__shareable) }">
                         <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('app.document_access') }} <span class="text-red-500">*</span></label>
                         <div class="flex items-center gap-6">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="access_level" value="all"
+                                <input type="radio" name="access_level" value="all" x-model="access"
                                        {{ old('access_level', 'all') === 'all' ? 'checked' : '' }}
                                        class="w-4 h-4 text-gold focus:ring-gold border-gray-300">
                                 <span class="text-sm text-gray-700">{{ __('app.access_public') }}</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="access_level" value="team"
+                                <input type="radio" name="access_level" value="team" x-model="access"
                                        {{ old('access_level') === 'team' ? 'checked' : '' }}
                                        class="w-4 h-4 text-gold focus:ring-gold border-gray-300">
                                 <span class="text-sm text-gray-700">{{ __('app.access_team') }}</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="access_level" value="private"
+                                <input type="radio" name="access_level" value="private" x-model="access"
                                        {{ old('access_level') === 'private' ? 'checked' : '' }}
                                        class="w-4 h-4 text-gold focus:ring-gold border-gray-300">
                                 <span class="text-sm text-gray-700">{{ __('app.access_private') }}</span>
@@ -173,6 +180,27 @@
                         @error('access_level')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
+
+                        {{-- ‏«مرئي للموكّل» عند الرفع: كان النموذجُ لا يرسل client_visible
+                             أصلاً، فلا يصل مستندٌ إلى بوابة الموكّل إلا بزرٍّ لا وجود له.
+                             والمخفيُّ «0» قبل الخانة: خانةٌ غيرُ معلَّمة لا تُرسَل، والمعطَّلةُ
+                             (لما لا يُتاح) لا تُرسَل كذلك — فيبقى «0» صريحاً. والخادمُ يسأل
+                             القاعدةَ نفسَها، فتعطيلُ الخانة تيسيرٌ لا حماية --}}
+                        <input type="hidden" name="client_visible" value="0">
+                        <label class="mt-3 flex items-start gap-2 cursor-pointer" :class="!shareable[access] ? 'opacity-50 cursor-not-allowed' : ''">
+                            <input type="checkbox" name="client_visible" value="1" data-client-visible
+                                   {{ old('client_visible') ? 'checked' : '' }}
+                                   :disabled="!shareable[access]"
+                                   x-effect="if (!shareable[access]) $el.checked = false"
+                                   class="mt-0.5 w-4 h-4 rounded border-gray-300 text-gold focus:ring-gold">
+                            <span>
+                                <span class="block text-sm text-gray-700">{{ __('app.visible_to_client') }}</span>
+                                <span class="block text-[11px] text-gray-400">{{ __('app.document_client_visible_hint') }}</span>
+                                @unless($__shareable[\App\Models\Document::ACCESS_TEAM])
+                                    <span class="block text-[11px] text-amber-600" x-show="access === 'team'" x-cloak data-team-share-hint>{{ __('app.document_team_share_lawyer_only') }}</span>
+                                @endunless
+                            </span>
+                        </label>
                     </div>
 
                     <div class="flex items-center gap-3 pt-2">
@@ -250,7 +278,8 @@
                         <span class="shrink-0 w-9 h-9 rounded-lg bg-gold/10 text-gold-dark grid place-items-center text-base">📁</span>
                         <span class="min-w-0 flex-1">
                             <span class="block text-xs font-bold text-gray-800 truncate group-hover:text-gold-dark">{{ $folder->name }}</span>
-                            <span class="block text-[11px] text-gray-400">{{ $folder->count }} مستند</span>
+                            {{-- «7 مستندات» لا «7 مستند» --}}
+                            <span class="block text-[11px] text-gray-400">{{ \App\Support\ArabicCount::of($folder->count, 'مستند واحد', 'مستندان', 'مستندات', 'مستنداً') }}</span>
                         </span>
                     </a>
                 @empty
@@ -270,7 +299,7 @@
                         <span class="shrink-0 w-9 h-9 rounded-lg bg-gray-200/70 text-gray-500 grid place-items-center text-base">🗃</span>
                         <span class="min-w-0 flex-1">
                             <span class="block text-xs font-bold text-gray-600 truncate">غير منسوبة</span>
-                            <span class="block text-[11px] text-gray-400">{{ $unassignedCount }} مستند</span>
+                            <span class="block text-[11px] text-gray-400">{{ \App\Support\ArabicCount::of($unassignedCount, 'مستند واحد', 'مستندان', 'مستندات', 'مستنداً') }}</span>
                         </span>
                     </a>
                 @endif
@@ -351,7 +380,9 @@
                     @if(($currentFolder ?? null) === null)
                         <a href="{{ route('documents.index', $folderBase + ['folder_id' => 0]) }}"
                            class="text-[11px] font-bold rounded-lg px-2.5 py-1 border transition {{ ($selectedFolderId ?? null) === 0 ? 'bg-gold/12 text-gold-dark border-gold/25' : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700' }}">
-                            {{ __('app.general') }} ({{ $unfiledCount ?? 0 }})
+                            {{-- «عام» كما في صفحة القضية: ‎app.general‎ «الجميع» كانت تُقرأ بجوار «الكل».
+                                 ومن lang لا نصّاً ثابتاً: كتبُها «عام» بيدها أظهرها عربيّةً في واجهةٍ إنجليزيّة --}}
+                            {{ __('app.folder_general_chip') }} ({{ $unfiledCount ?? 0 }})
                         </a>
                     @endif
 
@@ -480,6 +511,7 @@
                         <a href="{{ route('documents.download', $document) }}" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 transition" title="{{ __('app.download') }}">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
                         </a>
+                        @include('documents._share-toggle', ['document' => $document, 'size' => 'sm'])
                     </div>
                 </div>
             </div>
@@ -500,26 +532,30 @@
                         $__s = request('sort', 'created');
                         $__d = request('dir', in_array($__s, ['name', 'case', 'uploader'], true) ? 'asc' : 'desc');
                     @endphp
-                    <x-th-sort key="name" :label="__('app.title')" :sort="$__s" :dir="$__d" />
-                    <x-th-sort key="case" :label="__('app.case')" :sort="$__s" :dir="$__d" />
-                    <x-th-sort key="uploader" :label="__('app.uploaded_by')" :sort="$__s" :dir="$__d" />
-                    <x-th-sort key="type" :label="__('app.type')" :sort="$__s" :dir="$__d" />
-                    <x-th-sort key="size" :label="__('app.table_size')" :sort="$__s" :dir="$__d" />
-                    <x-th-sort key="access" :label="__('app.table_access')" :sort="$__s" :dir="$__d" />
-                    <x-th-sort key="created" :label="__('app.date')" :sort="$__s" :dir="$__d" />
-                    <th class="px-6 py-3 text-right font-semibold">{{ __('app.actions') }}</th>
+                    <x-th-sort key="name" :label="__('app.title')" :sort="$__s" :dir="$__d" th-class="px-3 py-3 text-right font-semibold whitespace-nowrap" />
+                    <x-th-sort key="case" :label="__('app.case')" :sort="$__s" :dir="$__d" th-class="px-3 py-3 text-right font-semibold whitespace-nowrap" />
+                    <x-th-sort key="uploader" :label="__('app.uploaded_by')" :sort="$__s" :dir="$__d" th-class="px-3 py-3 text-right font-semibold whitespace-nowrap" />
+                    <x-th-sort key="type" :label="__('app.type')" :sort="$__s" :dir="$__d" th-class="px-3 py-3 text-right font-semibold whitespace-nowrap" />
+                    <x-th-sort key="size" :label="__('app.table_size')" :sort="$__s" :dir="$__d" th-class="px-3 py-3 text-right font-semibold whitespace-nowrap" />
+                    <x-th-sort key="access" :label="__('app.table_access')" :sort="$__s" :dir="$__d" th-class="px-3 py-3 text-right font-semibold whitespace-nowrap" />
+                    <x-th-sort key="created" :label="__('app.date')" :sort="$__s" :dir="$__d" th-class="px-3 py-3 text-right font-semibold whitespace-nowrap" />
+                    <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">{{ __('app.actions') }}</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($documents as $document)
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 font-medium text-gray-900">
-                            <div class="flex items-center gap-2">
+                        {{-- ‏px-3 لا px-6 وعمودا القضية والرافع مقصوصان: على شاشة 1440 كان
+                             الجدولُ 1194 في حاوية 1118 فيخرج زرُّ الحذف عن الشاشة وتُقصّ
+                             «الإجراءات» إلى «ا»، و«القضية» تنكسر كلمةً في كلّ سطر --}}
+                        <td class="px-3 py-4 font-medium text-gray-900">
+                            {{-- السقفُ على الحاوية لا على الخليّة: المتصفّحاتُ تُهمل max-width على td --}}
+                            <div class="flex items-center gap-2 max-w-[14rem]">
                                 <svg class="w-5 h-5 {{ str_contains($document->file_type ?? '', 'pdf') ? 'text-red-500' : (str_contains($document->file_type ?? '', 'doc') ? 'text-blue-500' : (str_contains($document->file_type ?? '', 'xls') ? 'text-green-500' : (str_contains($document->file_type ?? '', 'jpg') || str_contains($document->file_type ?? '', 'jpeg') || str_contains($document->file_type ?? '', 'png') ? 'text-purple-500' : 'text-gray-400'))) }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                                 </svg>
                                 <div class="min-w-0">
-                                    <p class="truncate">{{ $document->title }}</p>
+                                    <p class="truncate" title="{{ $document->title }}">{{ $document->title }}</p>
                                     @if(!$document->doc_type)
                                         <span class="bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-gray-500">غير محدد</span>
                                     @endif
@@ -532,13 +568,14 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-gray-600">{{ $document->case->title ?? '—' }}</td>
-                        <td class="px-6 py-4 text-gray-600">{{ $document->uploader->name ?? '—' }}</td>
-                        <td class="px-6 py-4">
+                        <td class="px-3 py-4 text-gray-600"><p class="max-w-[9rem] truncate" title="{{ $document->case->title ?? '' }}">{{ $document->case->title ?? '—' }}</p></td>
+                        <td class="px-3 py-4 text-gray-600"><p class="max-w-[7rem] truncate" title="{{ $document->uploader->name ?? '' }}">{{ $document->uploader->name ?? '—' }}</p></td>
+                        <td class="px-3 py-4">
                             <span class="uppercase text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ strtoupper($document->file_type ?? '') }}</span>
                         </td>
-                        <td class="px-6 py-4 text-gray-600">{{ round(($document->file_size ?? 0) / 1024, 1) }} KB</td>
-                        <td class="px-6 py-4">
+                        {{-- ‏«65 ك.ب» معزولةً: «KB» اللاتينيّة كانت تتقدّم الرقمَ تحت RTL فتُقرأ «KB 65.2» --}}
+                        <td class="px-3 py-4 text-gray-600 whitespace-nowrap"><bdi>{{ \App\Support\Attachments::humanSize((int) $document->file_size) ?: '—' }}</bdi></td>
+                        <td class="px-3 py-4 whitespace-nowrap">
                             @if (($document->access_level ?? '') === 'all')
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">{{ __('app.access_public') }}</span>
                             @elseif (($document->access_level ?? '') === 'team')
@@ -546,11 +583,14 @@
                             @elseif (($document->access_level ?? '') === 'private')
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400">{{ __('app.access_private') }}</span>
                             @endif
+                            @if ($document->client_visible && ($document->access_level ?? '') !== 'private')
+                                <span class="block mt-1 text-[10px] font-bold text-blue-600">{{ __('app.document_shared_badge') }}</span>
+                            @endif
                         </td>
-                        <td class="px-6 py-4 text-gray-600">
+                        <td class="px-3 py-4 text-gray-600 whitespace-nowrap tabular-nums">
                             @if ($document->created_at){{ $document->created_at->format('Y-m-d') }}@endif
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-3 py-4 whitespace-nowrap">
                             <div class="flex items-center gap-1">
                                 @php $previewable = in_array(strtolower($document->file_type ?? ''), ['pdf', 'jpg', 'jpeg', 'png']) @endphp
                                 @if($previewable)
@@ -561,6 +601,7 @@
                                 <a href="{{ route('documents.download', $document) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors" title="{{ __('app.download') }}">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
                                 </a>
+                                @include('documents._share-toggle', ['document' => $document, 'size' => 'md'])
                                 <form method="POST" action="{{ route('documents.destroy', $document) }}" class="contents" x-data x-ref="deleteForm" @submit.prevent="if(confirm('{{ __('app.confirm_delete') }}')) $el.submit()">
                                     @csrf
                                     @method('DELETE')

@@ -46,9 +46,9 @@
         <div class="flex-1 min-w-0">
             {{-- ما كتبه النظامُ لا يُنسب إلى صاحبه: «أُقفل يومُك آليّاً» لا «سجّلت انصرافك» --}}
             @if($closedToday->closedByInference())
-                <p class="font-semibold text-sm text-amber-700">أُقفل يومُك آليّاً الساعة <span dir="ltr">{{ $closedToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</span> ({{ $closedToday->inferredLabel() }}).</p>
+                <p class="font-semibold text-sm text-amber-700">أُقفل يومُك آليّاً الساعة <bdi>{{ $closedToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</bdi> ({{ $closedToday->inferredLabel() }}).</p>
             @else
-                <p class="font-semibold text-sm text-gray-700">سجّلت انصرافك الساعة <span dir="ltr">{{ $closedToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</span>.</p>
+                <p class="font-semibold text-sm text-gray-700">سجّلت انصرافك الساعة <bdi>{{ $closedToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</bdi>.</p>
             @endif
             <p class="text-xs mt-0.5 text-gray-400">إن كنت ما زلت في دوامك فاستأنفه — ما سبق محفوظٌ وتُضاف الدقائق من الآن.</p>
         </div>
@@ -90,7 +90,9 @@
             </p>
             {{-- div لا p: نموذجٌ داخل فقرةٍ يُغلقها المتصفّح فيقفز الزرُّ إلى سطرٍ وحده --}}
             <div class="text-xs mt-0.5 text-gray-400">
-                {{ $resumed ? 'بدأت فترةٌ جديدة الساعة' : 'تم تسجيل حضورك اليوم الساعة' }} <span dir="ltr">{{ $flash['at'] }}</span>
+                {{-- ‏bdi بلا dir: الوقتُ «07:58 ص» عربيٌّ ينتهي بحرفٍ عربيّ، وdir="ltr" كان يقلبه
+                     «ص 07:58» — والعزلُ وحده يكفي كي لا يختلط بالنقطة بعده --}}
+                {{ $resumed ? 'بدأت فترةٌ جديدة الساعة' : 'تم تسجيل حضورك اليوم الساعة' }} <bdi>{{ $flash['at'] }}</bdi>
                 @if($cancellable && $flash['created'])
                     {{-- نموذجٌ لا رابطٌ بمعالجٍ مضمَّن: سياسةُ CSP تمنع onclick --}}
                     · <form method="POST" action="{{ route('hr.attendance.cancel') }}" class="inline">@csrf<button type="submit" data-attendance-cancel class="underline hover:text-gray-600" title="دخولٌ عابر لا دوام — يُلغى تسجيلُ الحضور التلقائيّ ما دام لم تمضِ عليه نصفُ ساعة">لستُ في دوامي</button></form>
@@ -123,7 +125,7 @@
                 @else
                     تم تسجيل حضورك الساعة
                 @endif
-                <span dir="ltr">{{ $open->intervalStart()->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</span>.
+                <bdi>{{ $open->intervalStart()->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</bdi>.
             </p>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">

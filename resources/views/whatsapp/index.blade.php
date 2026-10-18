@@ -212,9 +212,18 @@
 
                             $waContact = $conversation->contact;
                             $waName = $waContact?->displayName() ?: __('app.wa_unknown_contact');
+                            /* مستفسرٌ بلا اسمٍ يُعرض برقمه: يُعزل يساريّاً وإلا
+                               انقلبت مجموعاتُه «1502 9000 968+»، ويُرسم رمزُ هاتفٍ
+                               بدل حرفِ الاسم — فحرفُ رقمٍ دوليّ «+» دائماً. */
+                            $waNamed = $waContact === null || $waContact->hasName();
                             $waInitial = mb_substr(trim($waName), 0, 1) ?: '#';
                             $waUnread = (int) ($conversation->unread_count ?? 0);
-                            $waMinsLeft = $conversation->windowOpen() ? $conversation->windowMinutesLeft() : 0;
+                            /* ‏null = لا نافذةَ عند هذا المزوّد أصلاً (جسرُ Evolution)
+                               فلا تُرسم شريحتُها. كان يُحسب صفراً فتظهر «نافذة
+                               الردّ مغلقة» على كل صفّ والردُّ الحرّ متاحٌ فيه. */
+                            $waMinsLeft = !$conversation->windowApplies()
+                                ? null
+                                : ($conversation->windowOpen() ? $conversation->windowMinutesLeft() : 0);
 
                             /* رقمُ القضيّة واسمُ المُسنَد إليه زينةٌ في الشريحة،
                                والزينةُ لا تستحقّ استعلاماً لكل صفّ. تُقرأ إن
@@ -237,12 +246,18 @@
                                      تُجلب من خوادم Meta بكل فتحة قائمة —
                                      تسريبُ حركةٍ خارجيّ لا يستحقّه حرفٌ. --}}
                                 <span class="flex-shrink-0 w-10 h-10 rounded-xl bg-gold/12 border border-gold/20 text-gold-dark flex items-center justify-center font-bold text-sm" aria-hidden="true">
-                                    {{ $waInitial }}
+                                    @if($waNamed)
+                                        {{ $waInitial }}
+                                    @else
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" data-wa-avatar-phone>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
+                                        </svg>
+                                    @endif
                                 </span>
 
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-2">
-                                        <p class="font-semibold text-gray-800 truncate {{ $waUnread > 0 ? 'text-gray-900' : '' }}">{{ $waName }}</p>
+                                        <p class="font-semibold text-gray-800 truncate {{ $waUnread > 0 ? 'text-gray-900' : '' }}">@if($waNamed){{ $waName }}@else<bdi dir="ltr">{{ $waName }}</bdi>@endif</p>
 
                                         @if($waUnread > 0)
                                             <span class="flex-shrink-0 inline-flex items-center justify-center min-w-[1.35rem] h-5 px-1.5 rounded-full bg-gold text-[#111827] text-[11px] font-bold"
@@ -315,7 +330,9 @@
                                              يرى «تُغلق بعد ساعة» يردّ الآن؛ ومن
                                              لا يراه يكتب ردّاً يُرفض عند Meta
                                              ويظنّه وصل. --}}
-                                        @if($waMinsLeft > 0 && $waMinsLeft <= 120)
+                                        @if($waMinsLeft === null)
+                                            {{-- لا نافذةَ عند المزوّد: لا شريحة --}}
+                                        @elseif($waMinsLeft > 0 && $waMinsLeft <= 120)
                                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                                                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>

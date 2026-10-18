@@ -278,7 +278,8 @@ class AttentionDashboardFixesTest extends TestCase
 
         $html = $this->actingAs($this->admin)->get(route('dashboard'))->assertOk()->getContent();
 
-        $this->assertStringContainsString('القاعة 4 — <span dir="ltr">10:00 ص</span>', $html);
+        // ‏bdi بلا dir: تحت dir="ltr" كانت «10:00 ص» تُقرأ «ص 10:00»
+        $this->assertStringContainsString('القاعة 4 — <bdi>10:00 ص</bdi>', $html);
         $this->assertDoesNotMatchRegularExpression('/القاعة 4 —\s*<\/p>/u', $html);
     }
 

@@ -32,14 +32,15 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">{{ __('app.model_name') }}</label>
-                    <input
-                        type="text"
-                        name="model"
-                        value="{{ request('model') }}"
-                        placeholder="{{ __('app.model_name') }}"
-                        class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"
-                    >
+                    <label for="audit-model" class="block text-xs text-gray-400 mb-1">{{ __('app.model_name') }}</label>
+                    {{-- قائمةٌ لا خانةُ نصّ: العمودُ بالعربيّة («مستند») والبحثُ كان بـLIKE
+                         في اسم الصنف («Document») فلا يجد من كتب ما يراه شيئاً --}}
+                    <select id="audit-model" name="model" class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40">
+                        <option value="">{{ __('app.all') }}</option>
+                        @foreach($models ?? [] as $class => $label)
+                            <option value="{{ $class }}" @selected(request('model') === $class || request('model') === $label)>{{ $label }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
@@ -100,7 +101,8 @@
                     @forelse($logs ?? [] as $log)
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4 text-gray-500 text-sm whitespace-nowrap"><bdi dir="ltr">{{ $log->created_at?->format('Y-m-d H:i:s') ?? '—' }}</bdi></td>
-                            <td class="px-6 py-4 text-gray-700 font-medium">{{ $log->user->name ?? __('app.system') }}</td>
+                            {{-- ‏actorName: رابطُ البوابة يفتحه الموكّلُ لا «النظام» --}}
+                            <td class="px-6 py-4 text-gray-700 font-medium">{{ $log->actorName() }}</td>
                             <td class="px-6 py-4">
                                 @php
                                     $actionStyles = [
@@ -118,8 +120,11 @@
                                         'logout' => __('app.logout'),
                                     ];
                                 @endphp
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $actionStyles[$log->action] ?? 'bg-gray-100 text-gray-500 border-gray-200' }}">
-                                    {{ $actionLabels[$log->action] ?? $log->action }}
+                                {{-- ‏actionKey: «created» من المواعيد و«export» داخل قيم الإنشاء؛
+                                     وما سوى الخمسة اسمُه من lang لا مفتاحُه «client_portal_link_opened» --}}
+                                @php $__act = $log->actionKey(); @endphp
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $actionStyles[$__act] ?? 'bg-gray-100 text-gray-500 border-gray-200' }}">
+                                    {{ $actionLabels[$__act] ?? $log->actionLabel() }}
                                 </span>
                             </td>
                             {{-- كان اسمَ الصنف نفسَه: LegalCase وTask وClient — فصار اسمَه في لغة المكتب --}}

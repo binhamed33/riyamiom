@@ -88,7 +88,8 @@ class TrackUserActivity
                 session()->put('attendance_flash', [
                     'created' => $result['created'],
                     'resumed' => $result['resumed'],
-                    'at' => $result['record']->intervalStart()->timezone('Asia/Muscat')->format('h:i A'),
+                    // ‏«ص/م» لا AM/PM — كإشعار الدخول المباشر (RecordAttendanceOnLogin)
+                    'at' => \App\Support\AttendanceGuard::clock($result['record']->intervalStart()),
                 ]);
             }
         } catch (\Throwable $e) {

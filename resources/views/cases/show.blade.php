@@ -25,7 +25,7 @@ document.addEventListener('alpine:init', () => {
         quickErr: null,
         activityForm: { type: 'note', title: '', content: '' },
         taskForm: { title: '', description: '', priority: 'medium', due_date: '' },
-        docForm: { title: '', file: null },
+        docForm: { title: '', file: null, client_visible: false },
         async quickSubmit() {
             if (this.quickBusy) return;
             this.quickBusy = true;
@@ -58,13 +58,15 @@ document.addEventListener('alpine:init', () => {
                     fd.append('title', this.docForm.title || this.docForm.file.name);
                     fd.append('file', this.docForm.file);
                     fd.append('access_level', 'team');
+                    // كان الرفعُ السريع لا يرسل client_visible فلا يصل مستندٌ إلى بوابة الموكّل
+                    fd.append('client_visible', this.docForm.client_visible ? '1' : '0');
                     const res = await fetch('{{ route('documents.store') }}', {
                         method: 'POST',
                         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
                         body: fd
                     });
                     if (!res.ok) { this.quickErr = 'تعذر رفع المستند'; return; }
-                    this.docForm = { title: '', file: null };
+                    this.docForm = { title: '', file: null, client_visible: false };
                 }
                 this.quickMsg = 'تم الحفظ بنجاح';
                 this.$nextTick(() => setTimeout(() => { this.quickMsg = null; }, 4000));
@@ -837,7 +839,10 @@ document.addEventListener('alpine:init', () => {
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <span class="text-[11px] font-bold text-gray-400">🗂 {{ __('app.folders') }}:</span>
                         @forelse($case->folders as $folder)
-                            <span class="text-[11px] font-bold text-gold-dark bg-gold/12 border border-gold/20 rounded-lg px-2 py-0.5">{{ $folder->name }} ({{ $folder->documents->count() }})</span>
+                            {{-- العددُ ممّا يُعرض لهذا القارئ ($case->documents مرشَّحةٌ بـvisibleTo): كان
+                                 ‎$folder->documents‎ كلَّها فتقول «مسوّدات (1)» فوق «مسوّدات (فارغ)»
+                                 ويُفضح وجودُ مستندٍ خاصٍّ بزميل --}}
+                            <span class="text-[11px] font-bold text-gold-dark bg-gold/12 border border-gold/20 rounded-lg px-2 py-0.5">{{ $folder->name }} ({{ $case->documents->where('case_folder_id', $folder->id)->count() }})</span>
                         @empty
                             <span class="text-[11px] text-gray-400">{{ __('app.no_folders_yet') }}</span>
                         @endforelse
@@ -933,6 +938,7 @@ document.addEventListener('alpine:init', () => {
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                     </a>
                                 @endif
+                                @include('documents._share-toggle', ['document' => $document, 'size' => 'md'])
                             </div>
 
                             {{-- §2: نقل المستند بين مجلدات القضية — إرسالٌ فور الاختيار --}}
@@ -1246,7 +1252,9 @@ document.addEventListener('alpine:init', () => {
                             </svg>
                             تحليل الذكاء الاصطناعي
                         </h4>
-                        <span class="text-[10px] text-indigo-400 font-medium bg-white px-2 py-0.5 rounded-full border border-indigo-200">Gemini</span>
+                        {{-- لا اسمَ مزوّدٍ في الواجهة: المكتبُ لا يسمّي محرّكَه للموكّل ولا
+                             للموظّف، والمحرّكُ يُبدَّل من الإعدادات — فشارةُ «Gemini»
+                             كانت إنجليزيّةً في ترويسةٍ عربيّة، وكذباً حين يتغيّر. --}}
                         <button @click="runAnalysis(true)" class="text-[10px] text-indigo-500 hover:text-indigo-700 font-medium bg-white px-2 py-0.5 rounded-full border border-indigo-200 hover:bg-indigo-50 transition-colors">
                             <svg class="w-3 h-3 inline -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -1332,7 +1340,7 @@ document.addEventListener('alpine:init', () => {
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <span class="text-[10px] text-white bg-white/20 px-2 py-0.5 rounded-full">Gemini</span>
+                {{-- لا شارةَ اسمِ مزوّد — انظر شرحَ بطاقة التحليل أعلاه --}}
                 <button @click="chatOpen = false" aria-label="{{ __('app.close') }}" class="p-1 rounded-lg hover:bg-white/20 text-white transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -1517,6 +1525,17 @@ document.addEventListener('alpine:init', () => {
                         <label class="block text-xs font-bold text-gray-600 mb-1.5">الملف *</label>
                         <input type="file" @change="docForm.file = $event.target.files[0]; if (!docForm.title.trim()) { docForm.title = ($event.target.files[0].name || '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(); }" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-dark bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-gold/12 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-gold-dark hover:file:bg-gold/15">
                     </div>
+                    {{-- الرفعُ السريع «فريق» دائماً، و«الفريق» لا يُتيحه الموظّف (Document::canBeSharedBy):
+                         كانت الخانةُ لكلّ الأدوار فيُتيح الموظّفُ ما لا زرَّ له يتراجع به --}}
+                    @if(\App\Models\Document::canBeSharedBy(auth()->user(), \App\Models\Document::ACCESS_TEAM))
+                    <label class="flex items-start gap-2 cursor-pointer" data-quick-client-visible>
+                        <input type="checkbox" x-model="docForm.client_visible" class="mt-0.5 w-4 h-4 rounded border-gray-300 text-gold focus:ring-gold">
+                        <span>
+                            <span class="block text-xs font-bold text-gray-600">{{ __('app.visible_to_client') }}</span>
+                            <span class="block text-[11px] text-gray-400">{{ __('app.document_client_visible_hint') }}</span>
+                        </span>
+                    </label>
+                    @endif
                 </div>
                 <button @click="quickSubmit()" :disabled="quickBusy" class="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm transition-colors inline-flex items-center justify-center gap-2">
                     <svg x-show="quickBusy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>

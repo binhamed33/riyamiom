@@ -71,12 +71,16 @@ function fileGlyph($name, $type) {
                             <span data-conv-badge="{{ $conv->id }}" class="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center {{ $convUnread > 0 ? '' : 'hidden' }}">{{ $convUnread > 9 ? '9+' : $convUnread }}</span>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center justify-between">
-                                <p class="text-sm text-gray-900 font-medium truncate">
+                            {{-- بلا فجوةٍ بين الاسم والوقت كان الاسمُ الطويل يُقصّ عند حافة
+                                 الوقت تماماً فيلتصقان: «الحارثيمنذ 4 ساعات». ‏gap-2 تُبقي
+                                 بينهما مسافةً دائماً، وmin-w-0 صريحةٌ كي يضيق الاسمُ
+                                 ويُقصّ بدل أن يدفع الوقتَ خارج الصفّ. --}}
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-sm text-gray-900 font-medium truncate min-w-0" title="{{ $convTitle }}">
                                     {{ $convTitle }}@if($conv->isGroup())<span class="text-[10px] text-gray-400 font-normal"> · مجموعة</span>@endif
                                 </p>
                                 @if($conv->lastMessage)
-                                    <span class="text-[10px] text-gray-400 flex-shrink-0">{{ $conv->lastMessage->created_at->diffForHumans() }}</span>
+                                    <span class="text-[10px] text-gray-400 flex-shrink-0 whitespace-nowrap">{{ $conv->lastMessage->created_at->diffForHumans() }}</span>
                                 @endif
                             </div>
                             <p class="text-xs text-gray-400 truncate mt-0.5">

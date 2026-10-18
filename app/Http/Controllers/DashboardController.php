@@ -286,7 +286,10 @@ class DashboardController extends Controller
         AuditLog::with('user')
             ->when(!$seesAudit, fn ($q) => $q->where(fn ($w) => $w->where('user_id', $user->id)
                 ->orWhereIn('case_id', (clone $caseBase)->select('cases.id'))))
-            ->latest()->limit(5)->get()->each(function ($item) use ($activityItems) {
+            ->latest()->limit(5)->get()
+            // أسماءُ موكّلي «فتح رابط البوابة» باستعلامٍ واحد — لا واحدٍ لكلّ صفّ
+            ->tap(fn ($logs) => AuditLog::primeActorNames($logs))
+            ->each(function ($item) use ($activityItems) {
             $activityItems->push([
                 'type' => 'log',
                 'icon' => 'log',

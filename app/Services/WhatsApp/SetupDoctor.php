@@ -4,6 +4,7 @@ namespace App\Services\WhatsApp;
 
 use App\Models\WhatsAppMessage;
 use App\Models\WhatsAppTemplate;
+use App\Support\ArabicCount;
 use App\Support\WhatsAppSettings;
 
 /**
@@ -356,8 +357,10 @@ class SetupDoctor
             title: 'قالبٌ معتمَد (للإشعارات وحدها)',
             where: 'Meta Business ← WhatsApp Manager ← Message templates',
             done: $approved > 0,
+            // ‏ArabicCount لا «N قالباً معتمَداً»: التمييزُ المفردُ المنصوب
+            // لا يصحّ إلا من أحدَ عشر، فكانت الشاشةُ تقول «4 قالباً معتمَداً».
             reason: $approved > 0
-                ? $approved . ' قالباً معتمَداً.'
+                ? ArabicCount::of($approved, 'قالبٌ واحد معتمَد', 'قالبان معتمَدان', 'قوالب معتمَدة', 'قالباً معتمَداً') . '.'
                 : 'لا قالبَ معتمَداً بعد — والاستقبالُ والردُّ يعملان بدونه.',
             action: 'أنشئ قالباً عند Meta وانتظر اعتمادها، ثمّ اضغط «مزامنة القوالب». ولا تشغّل مفاتيح الإشعارات قبل ذلك: بلا قالبٍ معتمَد تُرفض كلُّ رسالةٍ مُبتدَأة.',
             required: false,

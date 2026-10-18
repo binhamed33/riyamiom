@@ -62,9 +62,10 @@ class SessionsPrintTest extends TestCase
 
     public function test_the_sheet_obeys_the_same_filters_as_the_screen(): void
     {
-        // بعد نصف ساعة لا بعد يوم: «+يوم» يسقط خارج الأسبوع كلما جرى
-        // الاختبار في آخر أيامه — عطل حدّي ظهر يوم أحدٍ حقيقي
-        $this->makeSession(['title' => 'قضية هذا الأسبوع'], now()->addMinutes(30)->toDateTimeString());
+        // وسطَ الأسبوع لا «بعد نصف ساعة»: الإزاحةُ عن الآن تسقط خارج الأسبوع كلّما
+        // جرى الاختبار قرب حدّه — فشل ليلةَ أحدٍ حقيقيّة (الساعة 23:40) لأنّ الأسبوع
+        // كان يبدأ الاثنين بالإنجليزيّة
+        $this->makeSession(['title' => 'قضية هذا الأسبوع'], now()->startOfWeek(\Carbon\Carbon::SATURDAY)->addDays(3)->setTime(10, 0)->toDateTimeString());
         $this->makeSession(['title' => 'قضية بعد شهرين'], now()->addMonths(2)->toDateTimeString());
 
         $html = $this->actingAs($this->staff())->get('/sessions/print?range=week')->assertOk()->getContent();
@@ -72,6 +73,21 @@ class SessionsPrintTest extends TestCase
         $this->assertStringContainsString('قضية هذا الأسبوع', $html);
         $this->assertStringNotContainsString('قضية بعد شهرين', $html, 'الورقة تجاوزت تصفية الشاشة');
         $this->assertStringContainsString('هذا الأسبوع', $html, 'الورقة تذكر التصفية المطبَّقة');
+    }
+
+    public function test_this_week_runs_saturday_to_friday_in_every_language(): void
+    {
+        // الأحد 18 أكتوبر 2026 أوّلُ أيّام العمل في عُمان: «هذا الأسبوع» هو السبت 17 حتى
+        // الجمعة 23، لا الاثنين 12 حتى الأحد 18 كما كانت تعطيه لغةُ الواجهة الإنجليزيّة
+        $this->travelTo(\Carbon\Carbon::parse('2026-10-18 10:00:00'));
+        app()->setLocale('en');
+        $this->makeSession(['title' => 'جلسة الخميس القادم'], '2026-10-22 09:00:00');
+        $this->makeSession(['title' => 'جلسة الاثنين الماضي'], '2026-10-12 09:00:00');
+
+        $html = $this->actingAs($this->staff())->get('/sessions/print?range=week')->assertOk()->getContent();
+
+        $this->assertStringContainsString('جلسة الخميس القادم', $html);
+        $this->assertStringNotContainsString('جلسة الاثنين الماضي', $html, 'أسبوعٌ يبدأ الاثنين');
     }
 
     public function test_the_lawyer_filter_reaches_the_sheet(): void

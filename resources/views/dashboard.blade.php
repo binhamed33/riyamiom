@@ -62,9 +62,9 @@
                 {{-- الوقتُ وكاتبُه لا «مكتمل» وحدها: من أُقفل يومُه بالسقف وهو في المحكمة
                      كان يعود إلى «يومك مكتمل ✓» بلا وقتٍ ولا سبب — العبارةُ التي شكا منها مكتبان --}}
                 @if($attendanceToday->closedByInference())
-                    <span class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">أُقفل يومك <span dir="ltr">{{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</span> ({{ $attendanceToday->inferredLabel() }})</span>
+                    <span class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">أُقفل يومك <bdi>{{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</bdi> ({{ $attendanceToday->inferredLabel() }})</span>
                 @else
-                    <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">يومك مكتمل ✓ <span dir="ltr">{{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</span></span>
+                    <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">يومك مكتمل ✓ <bdi>{{ $attendanceToday->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</bdi></span>
                 @endif
                 {{-- عاد من استراحة الظهر فوجد يومَه «مكتملاً» ولا شيءَ يفتحه —
                      فكانت الفترةُ المسائيّة تضيع من كشف الشهر --}}
@@ -435,7 +435,7 @@
                         <div class="flex-1 min-w-0">
                             <p class="text-gray-900 text-xs font-medium truncate">{{ $session->case->title ?? '' }}</p>
                             {{-- الساعةُ لا ‎$session->type‎: لا عمودَ بهذا الاسم، فكان كلُّ سطرٍ ينتهي بـ«القاعة 4 —» معلّقة --}}
-                            <p class="text-gray-400 text-[11px]">{{ $session->location ?? '' }}@if($session->date) — <span dir="ltr">{{ $session->date->translatedFormat('h:i A') }}</span>@endif</p>
+                            <p class="text-gray-400 text-[11px]">{{ $session->location ?? '' }}@if($session->date) — <bdi>{{ $session->date->translatedFormat('h:i A') }}</bdi>@endif</p>
                         </div>
                     </div>
                 @empty

@@ -56,11 +56,12 @@ class ClientCaseGateway
             return new Collection();
         }
 
+        // القاعدةُ نفسُها التي في summary(): من اليوم فصاعداً. كان «upcoming
+        // أو من اليوم» يُقدّم جلسةً نسي المكتبُ إغلاقها قبل أيّام — فتظهر
+        // «الجلسة القادمة … اليوم» بتاريخٍ مضى، والعدّادُ بجوارها لا يعدّها.
         return \App\Models\Session::query()
             ->whereIn('case_id', $this->cases()->select('id'))
-            ->where(function ($q) {
-                $q->where('status', 'upcoming')->orWhere('date', '>=', now()->startOfDay());
-            })
+            ->where('date', '>=', now()->startOfDay())
             ->whereNotIn('status', ['cancelled'])
             ->with('case:id,title,case_number')
             ->orderBy('date')
@@ -118,8 +119,12 @@ class ClientCaseGateway
             return $empty;
         }
 
-        $total = (float) ($fees->sum('amount') + $invoices->sum('amount'));
-        $paid = (float) ($fees->where('status', 'paid')->sum('amount') + $invoices->sum('paid_amount'));
+        // الملغاةُ تُعرض بشارتها ولا تدخل المجموع: فاتورةٌ شوركت ثمّ أُلغيت
+        // كانت تُحسب في «الإجمالي» و«المتبقّي عليكم» مبلغاً لا يُطالَب به أحد
+        $billable = $invoices->where('status', '!=', 'cancelled');
+
+        $total = (float) ($fees->sum('amount') + $billable->sum('amount'));
+        $paid = (float) ($fees->where('status', 'paid')->sum('amount') + $billable->sum('paid_amount'));
 
         return [
             'fees' => $fees,
@@ -177,7 +182,9 @@ class ClientCaseGateway
                     'kind' => 'invoice',
                     'label' => (string) ($invoice->invoice_number ?: '—'),
                     'amount' => (float) $invoice->amount,
-                    'remaining' => (float) max(0, $invoice->amount - $invoice->paid_amount),
+                    // ‏remaining_amount: الملغاةُ متبقّيها صفر — كانت «متبقٍّ» حمراء بمبلغها كاملاً
+                    'remaining' => (float) $invoice->remaining_amount,
+                    'cancelled' => $invoice->status === 'cancelled',
                     'date' => $invoice->issue_date,
                     'case' => $byCase[$case->id] ?? null,
                 ]);
@@ -189,6 +196,7 @@ class ClientCaseGateway
                     'label' => (string) ($fee->description ?: $fee->fee_type ?: '—'),
                     'amount' => (float) $fee->amount,
                     'remaining' => $fee->status === 'paid' ? 0.0 : (float) $fee->amount,
+                    'cancelled' => false,
                     'date' => $fee->date ?? $fee->created_at,
                     'case' => $byCase[$case->id] ?? null,
                 ]);

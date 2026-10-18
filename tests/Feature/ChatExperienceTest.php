@@ -109,6 +109,9 @@ class ChatExperienceTest extends TestCase
     /** ملفٌ غير صورة يُعرَض باسمه وحجمه ونوعه، لا كرابطٍ أصمّ. */
     public function test_a_document_shows_its_size_and_kind(): void
     {
+        // الوحدةُ بلغة الواجهة (Attachments::humanSize): «ك.ب» للعربيّة وحدها
+        $this->me->forceFill(['locale' => 'ar'])->save();
+
         Message::create([
             'conversation_id' => $this->conversation->id,
             'user_id' => $this->me->id,

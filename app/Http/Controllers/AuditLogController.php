@@ -17,13 +17,32 @@ class AuditLogController extends Controller
             $query->where('user_id', $request->user_id);
         }
 
+        // بمعنى الشارة لا بالعمود الخام (AuditLog::scopeActionIs): كان «إنشاء» يُرجع
+        // صفوفاً شارتُها «تصدير» ويُسقط المواعيدَ المكتوبة «created»
         if ($request->filled('action')) {
-            $query->where('action', $request->action);
+            $query->actionIs((string) $request->action);
         }
 
+        // ═══ «النموذج» قائمةٌ بأسمائه العربيّة لا خانةُ نصّ ═══
+        //
+        // العمودُ يعرض «قضية» و«مستند» و«موكّل»، والخانةُ كانت تبحث بـLIKE
+        // في اسم الصنف: من كتب «مستند» لم يجد شيئاً، ووحدها «Document»
+        // تعمل. فالقائمةُ تُبنى ممّا في السجلّ فعلاً، والقيمةُ اسمُ الصنف.
+        $models = $this->modelOptions();
+
         if ($request->filled('model')) {
-            $model = str_replace(['%', '_'], ['\\%', '\\_'], $request->model);
-            $query->where('model_type', 'like', '%' . $model . '%');
+            $wanted = (string) $request->model;
+            // اسمُ صنفٍ من القائمة، أو اسمُه العربيّ من رابطٍ قديمٍ أو مكتوبٍ باليد
+            $classes = array_key_exists($wanted, $models)
+                ? [$wanted]
+                : array_keys(array_filter($models, fn ($label) => $label === $wanted));
+
+            if ($classes) {
+                $query->whereIn('model_type', $classes);
+            } else {
+                $model = str_replace(['%', '_'], ['\\%', '\\_'], $wanted);
+                $query->where('model_type', 'like', '%' . $model . '%');
+            }
         }
 
         if ($request->filled('date_from')) {
@@ -41,8 +60,25 @@ class AuditLogController extends Controller
         $dir = strtolower($request->get('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $logs = $query->orderBy($sortMap[$sort], $dir)->orderBy('id', 'desc')->paginate(25)->withQueryString();
+        // أسماءُ موكّلي «فتح رابط البوابة» باستعلامٍ واحد — لا واحدٍ لكلّ صفّ
+        AuditLog::primeActorNames($logs->getCollection());
         $users = User::orderBy('name')->get();
 
-        return view('audit-log.index', compact('logs', 'users'));
+        return view('audit-log.index', compact('logs', 'users', 'models'));
+    }
+
+    /**
+     * أصنافُ السجلّ الموجودة فعلاً ⇐ اسمُها العربيّ، مرتّبةً بالاسم.
+     *
+     * @return array<string,string>
+     */
+    private function modelOptions(): array
+    {
+        return AuditLog::query()
+            ->whereNotNull('model_type')->where('model_type', '!=', '')
+            ->distinct()->pluck('model_type')
+            ->mapWithKeys(fn ($class) => [$class => (new AuditLog(['model_type' => $class]))->modelNoun()])
+            ->sort()
+            ->all();
     }
 }

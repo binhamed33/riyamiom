@@ -23,10 +23,18 @@
 
     $waContact = $conversation->contact;
     $waName    = $waContact?->displayName() ?: __('app.wa_unknown_contact');
-    $waPhone   = $waContact ? \App\Support\Phone::format($waContact->wa_id) : '';
+    /* بلا اسمٍ يكون العنوانُ هو الرقم: يُعزل يساريّاً وإلا انقلبت مجموعاتُه
+       في السطر العربيّ «1502 9000 968+»، ولا يُكرَّر تحته سطراً ثانياً،
+       ويُرسم رمزُ هاتفٍ بدل حرفِ الاسم الذي كان «+». */
+    $waNamed   = $waContact === null || $waContact->hasName();
+    $waPhone   = $waContact && $waNamed ? \App\Support\Phone::format($waContact->wa_id) : '';
     $waInitial = mb_substr(trim($waName), 0, 1) ?: '#';
 
     $waOpen     = $conversation->windowOpen();
+    /* جسرُ Evolution لا نافذةَ عنده: windowOpen() صادقةٌ دائماً وما بقي
+       صفر، فكانت الشريحةُ تقول «يتبقّى 0 دقيقة» على خيطٍ يُردّ فيه حرّاً
+       أيّ وقت. فلا شريحةَ نافذةٍ حيث لا نافذة. */
+    $waWindow   = $conversation->windowApplies();
     $waMinsLeft = $waOpen ? $conversation->windowMinutesLeft() : 0;
     $waClosed   = $conversation->status === \App\Models\WhatsAppConversation::STATUS_CLOSED;
 
@@ -89,11 +97,17 @@
             <div class="px-4 sm:px-5 py-3.5 border-b border-gray-200">
                 <div class="flex items-start gap-3">
                     <span class="flex-shrink-0 w-11 h-11 rounded-xl bg-gold/12 border border-gold/20 text-gold-dark flex items-center justify-center font-bold" aria-hidden="true">
-                        {{ $waInitial }}
+                        @if($waNamed)
+                            {{ $waInitial }}
+                        @else
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" data-wa-avatar-phone>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
+                            </svg>
+                        @endif
                     </span>
 
                     <div class="min-w-0 flex-1">
-                        <h1 class="text-base sm:text-lg font-bold text-gray-900 truncate">{{ $waName }}</h1>
+                        <h1 class="text-base sm:text-lg font-bold text-gray-900 truncate">@if($waNamed){{ $waName }}@else<bdi dir="ltr">{{ $waName }}</bdi>@endif</h1>
                         @if($waPhone !== '')
                             <p class="text-xs text-gray-500 mt-0.5" dir="ltr">{{ $waPhone }}</p>
                         @endif
@@ -140,7 +154,9 @@
                                 </span>
                             @endif
 
-                            @if($waOpen)
+                            @if(!$waWindow)
+                                {{-- لا نافذةَ عند المزوّد: لا شريحة --}}
+                            @elseif($waOpen)
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold
                                              {{ $waMinsLeft <= 120 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-green-100 text-green-700 border border-green-200' }}">
                                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -179,7 +195,30 @@
                  x-data="{}"
                  x-init="$nextTick(() => { $el.scrollTop = $el.scrollHeight })">
 
+                {{-- ══ فاصلُ اليوم ══
+                     الفقاعةُ تحمل الساعةَ وحدها، فرسائلُ الخميس والسبت كانت
+                     تُقرأ يوماً واحداً متّصلاً: «أراك غداً 10:00» بلا يومٍ
+                     يقول أيَّ غد. فاصلٌ واحدٌ لكل يوم — كما في المحادثات
+                     الداخليّة: «اليوم» و«أمس» ثمّ التاريخُ كاملاً. --}}
+                @php $waLastDay = null; @endphp
                 @forelse($messages as $message)
+                    @php
+                        $waDayAt = $message->sent_at ?? $message->created_at;
+                        $waDay = match (true) {
+                            $waDayAt === null => $waLastDay,
+                            $waDayAt->isToday() => __('app.wa_day_today'),
+                            $waDayAt->isYesterday() => __('app.wa_day_yesterday'),
+                            default => $waDayAt->translatedFormat('l j F Y'),
+                        };
+                    @endphp
+                    @if($waDay !== null && $waDay !== $waLastDay)
+                        <div class="flex items-center gap-3 py-1" data-day-separator>
+                            <span class="flex-1 h-px bg-gray-200"></span>
+                            <span class="text-[10px] text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded-full whitespace-nowrap">{{ $waDay }}</span>
+                            <span class="flex-1 h-px bg-gray-200"></span>
+                        </div>
+                        @php $waLastDay = $waDay; @endphp
+                    @endif
                     @include('whatsapp._message', ['message' => $message])
                 @empty
                     <div class="h-full flex flex-col items-center justify-center text-center px-6">

@@ -8,6 +8,7 @@ use App\Models\LegalCase;
 use App\Traits\AuditLoggable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -23,20 +24,15 @@ class DocumentController extends Controller
 
     public function index(Request $request): View
     {
-        $query = Document::with(['case', 'uploader']);
         $user = auth()->user();
 
-        $query->where(function ($q) use ($user) {
-            $q->where(function ($qq) {
-                $qq->where('access_level', 'all')->orWhereNull('access_level');
-            });
-            if ($user->isAdmin() || $user->isDeveloper() || $user->isLawyer() || $user->isStaff()) {
-                $q->orWhere('access_level', 'team');
-            }
-            $q->orWhere(function ($qq) use ($user) {
-                $qq->where('access_level', 'private')->where('uploaded_by', $user->id);
-            });
-        });
+        // القاعدةُ نفسُها في القائمة وفي كلّ عددٍ حولها (Document::visibleTo).
+        // كانت القائمةُ وحدها تُرشَّح والأعدادُ تُحسب على الجدول كلِّه، فيقرأ
+        // المديرُ «14 مستنداً» فوق قائمةٍ من ثلاثة عشر — والرابعَ عشرَ مستندٌ
+        // خاصٌّ بزميلةٍ صار العددُ يفضح وجودَه.
+        $visible = fn ($q) => $q->visibleTo($user);
+
+        $query = Document::with(['case', 'uploader'])->visibleTo($user);
 
         // مستندات القضايا المنجزة تُطوى خلف زر «المنجزة» — وما لا قضية له يبقى
         $done = $request->boolean('done');
@@ -146,7 +142,7 @@ class DocumentController extends Controller
             ->orderBy(isset($sortSub[$sort]) ? $sortSub[$sort]() : $sortMap[$sort], $dir)
             ->orderBy('documents.id', 'desc')->paginate(15)->withQueryString();
 
-        $doneCount = Document::whereHas('case', fn ($q) => $q->whereIn('status', \App\Models\LegalCase::DONE_STATUSES))->count();
+        $doneCount = Document::visibleTo($user)->whereHas('case', fn ($q) => $q->whereIn('status', \App\Models\LegalCase::DONE_STATUSES))->count();
         $cases = LegalCase::with('client')->orderBy('office_case_number')->get();
         $selectedCaseId = (int) $request->query('case_id', 0);
 
@@ -155,7 +151,7 @@ class DocumentController extends Controller
         $formClients = \App\Models\Client::orderBy('name')->get(['id', 'name']);
 
         $documentTypes = \App\Models\DocumentType::active()->pluck('name');
-        $untypedCount = Document::where(fn ($q) => $q->whereNull('doc_type')->orWhere('doc_type', ''))->count();
+        $untypedCount = Document::visibleTo($user)->where(fn ($q) => $q->whereNull('doc_type')->orWhere('doc_type', ''))->count();
 
         $selectedFolderId = $request->has('folder_id') && $request->input('folder_id') !== ''
             ? (int) $request->input('folder_id')
@@ -181,7 +177,7 @@ class DocumentController extends Controller
         $folders = $selectedCaseId > 0
             ? \App\Models\CaseFolder::where('case_id', $selectedCaseId)
                 ->where('parent_id', $currentFolder?->id)
-                ->withCount(['documents', 'children'])
+                ->withCount(['documents' => $visible, 'children'])
                 ->orderBy('sort')->orderBy('name')->get()
             : collect();
 
@@ -190,7 +186,7 @@ class DocumentController extends Controller
 
         // عدد ما لا مجلد له داخل القضية — ليُعرض بجانب «عام»
         $unfiledCount = $selectedCaseId > 0
-            ? Document::where('case_id', $selectedCaseId)->whereNull('case_folder_id')->count()
+            ? Document::visibleTo($user)->where('case_id', $selectedCaseId)->whereNull('case_folder_id')->count()
             : 0;
 
         // ═══ ما يُعرض في كلّ طبقة ═══
@@ -218,6 +214,7 @@ class DocumentController extends Controller
             $owner = 'COALESCE(documents.client_id, cases.client_id)';
 
             $counts = Document::query()
+                ->visibleTo($user)
                 ->leftJoin('cases', 'documents.case_id', '=', 'cases.id')
                 ->whereRaw($owner . ' is not null')
                 ->selectRaw($owner . ' as client_id, COUNT(*) as total')
@@ -237,7 +234,7 @@ class DocumentController extends Controller
 
             // «غير منسوبة»: ما لا قضيةَ له أو قضيتُه بلا موكّل — تبقى
             // كما هي بطلبٍ صريح، لكنّها تُجمع في مكانٍ واحدٍ يُعرف
-            $unassignedCount = Document::whereNull('client_id')
+            $unassignedCount = Document::visibleTo($user)->whereNull('client_id')
                 ->where(fn ($q) => $q->whereNull('case_id')
                     ->orWhereHas('case', fn ($c) => $c->whereNull('client_id')))
                 ->count();
@@ -247,7 +244,7 @@ class DocumentController extends Controller
             $selectedClient = \App\Models\Client::find($selectedClientId);
 
             $clientCases = LegalCase::where('client_id', $selectedClientId)
-                ->withCount('documents')
+                ->withCount(['documents' => $visible])
                 ->orderByDesc('id')
                 ->get();
         }
@@ -302,7 +299,7 @@ class DocumentController extends Controller
         $extension = strtolower($file->getClientOriginalExtension());
 
         if (!in_array($extension, self::ALLOWED_TYPES)) {
-            return back()->withErrors(['file' => 'File type not allowed.']);
+            return back()->withInput()->withErrors(['file' => __('app.document_type_not_allowed')]);
         }
 
         // الملف لا يُكتب إلا داخل القفل: العدّ والمساحة يُفحصان معاً
@@ -331,9 +328,10 @@ class DocumentController extends Controller
                     'file_type'    => $extension,
                     'file_size'    => $file->getSize(),
                     'access_level' => $validated['access_level'],
-                    // لا يُعرض للعميل إلا بقرار صريح، والخاص لا يُعرض مهما كان
+                    // لا يُعرض للعميل إلا بقرار صريح ممّن يملكه: الخاصُّ لا يُعرض مهما
+                    // كان، و«الفريق» لا يُتيحه الموظّف — كان الرفعُ يقبله منه والزرُّ يمنعه
                     'client_visible' => $request->boolean('client_visible')
-                        && $validated['access_level'] !== Document::ACCESS_PRIVATE,
+                        && Document::canBeSharedBy(auth()->user(), $validated['access_level']),
                 ]);
             }, (int) $file->getSize());
         } catch (\App\Support\LimitReached $e) {
@@ -351,7 +349,7 @@ class DocumentController extends Controller
         );
 
         return redirect()->route('documents.index')
-            ->with('success', 'Document uploaded successfully.');
+            ->with('success', __('app.document_uploaded'));
     }
 
     /**
@@ -368,17 +366,23 @@ class DocumentController extends Controller
             return back()->with('error', 'المستند الخاص لا يمكن مشاركته مع العميل. غيّر مستوى الوصول أولاً.');
         }
 
-        if ($document->access_level === 'team' && !in_array($user->role, ['developer', 'admin', 'lawyer'], true)) {
+        // القاعدةُ نفسُها التي يسألها الرفعُ والزرّ (Document::canBeSharedBy)
+        if (!Document::canBeSharedBy($user, $document->access_level)) {
             abort(403);
         }
 
-        $document->update(['client_visible' => !$document->client_visible]);
+        $was = (bool) $document->client_visible;
+        $document->update(['client_visible' => !$was]);
 
+        // القيمتان مصفوفتين كما يطلب logAudit: كان نصّاً في موضع
+        // ‎?array $oldValues‎ وبلا خامس، فيسقط الطلبُ بـArgumentCountError
+        // (500) بعد أن قُلب العلَمُ فعلاً — فلم يُشارَك مستندٌ قطّ من الواجهة
         $this->logAudit(
             AuditLog::ACTION_UPDATE,
             Document::class,
             $document->id,
-            'تغيير ظهور المستند للعميل: ' . ($document->client_visible ? 'مرئي' : 'مخفي')
+            ['client_visible' => $was, 'title' => $document->title, 'case_id' => $document->case_id],
+            ['client_visible' => !$was, 'title' => $document->title, 'case_id' => $document->case_id]
         );
 
         // الإشعار عند الإتاحة فقط: إخفاءُ مستندٍ لا يُبشَّر به أحد
@@ -420,7 +424,7 @@ class DocumentController extends Controller
         );
 
         return redirect()->route('documents.index')
-            ->with('success', 'Document deleted successfully.');
+            ->with('success', __('app.document_deleted'));
     }
 
 
@@ -463,12 +467,14 @@ class DocumentController extends Controller
                 ->with('error', __('app.file_not_found'));
         }
 
+        // العنوانُ لا مسارُ التخزين: «file_path: documents/xyz.pdf» لا يقول
+        // للمدير أيَّ ورقةٍ نُزّلت
         $this->logAudit(
             'download',
             Document::class,
             $document->id,
             null,
-            ['file_path' => $document->file_path]
+            ['title' => $document->title]
         );
 
         return Storage::disk('private')->download(
@@ -477,7 +483,7 @@ class DocumentController extends Controller
         );
     }
 
-    public function preview(Document $document): StreamedResponse|RedirectResponse
+    public function preview(Document $document): StreamedResponse|\Illuminate\Http\Response
     {
         $user = auth()->user();
 
@@ -492,18 +498,37 @@ class DocumentController extends Controller
             }
         }
 
+        // المعاينةُ تُفتح داخل إطار العارض أو مصغّرةً في بطاقة: التحويلُ إلى
+        // صفحة المستندات كان يرسم التطبيقَ كلَّه — الشريطَ الجانبيّ والترويسةَ —
+        // داخل النافذة الصغيرة وفوقه «الملف غير موجود». فصفحةٌ صغيرةٌ بـ٤٠٤.
         if (!Storage::disk('private')->exists($document->file_path)) {
-            return redirect()->route('documents.index')
-                ->with('error', __('app.file_not_found'));
+            return response()->view('documents.unavailable', ['document' => $document], 404);
         }
 
-        $this->logAudit(
-            'preview',
-            Document::class,
-            $document->id,
-            null,
-            ['file_path' => $document->file_path]
-        );
+        // ═══ كلُّ وصولٍ يُدوَّن، والتكرارُ وحده يُطوى ═══
+        //
+        // كان ‎?thumb=1‎ يُسقط سطرَ التدقيق، والمسارُ يردّ الملفَّ الأصليَّ كاملاً
+        // (و«مصغّرةُ» PDF هي الملفُّ كلُّه): من كتب المعامِلَ بيده قرأ المستندَ
+        // أو حفظه ولا أثرَ له في «من فتح ماذا». فلا يقرّر معامِلٌ في الرابط هل
+        // يُدوَّن الوصول. والذي شكا منه المكتبُ — صفحةُ مصغّراتٍ تُعاد فتكتب
+        // السطورَ نفسَها مرّةً بعد مرّة — يكفيه سطرٌ واحدٌ لكلّ مستخدمٍ ومستندٍ
+        // في عشر دقائق. وإن تعذّر المخزنُ المؤقّت دُوِّن السطر: التدقيقُ لا
+        // يسقط بعطلٍ في غيره.
+        try {
+            $first = Cache::add('audit:preview:' . $user->id . ':' . $document->id, 1, now()->addMinutes(10));
+        } catch (\Throwable) {
+            $first = true;
+        }
+
+        if ($first) {
+            $this->logAudit(
+                'preview',
+                Document::class,
+                $document->id,
+                null,
+                ['title' => $document->title]
+            );
+        }
 
         return Storage::disk('private')->response(
             $document->file_path,

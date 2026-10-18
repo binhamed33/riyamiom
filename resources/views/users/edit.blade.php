@@ -86,7 +86,11 @@
                     <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>{{ __('app.admin') }}</option>
                     <option value="lawyer" {{ old('role', $user->role) === 'lawyer' ? 'selected' : '' }}>{{ __('app.lawyer') }}</option>
                     <option value="staff" {{ old('role', $user->role) === 'staff' ? 'selected' : '' }}>{{ __('app.staff') }}</option>
+                    {{-- «موكّل» لحسابٍ قديمٍ بهذا الدور وحده — كي لا يُبدَّل دورُه صامتاً عند الحفظ.
+                         لا يُمنح لغيره: الموكّلُ يدخل البوابةَ برقم هويّته لا بحساب موظّف --}}
+                    @if($user->role === 'client')
                     <option value="client" {{ old('role', $user->role) === 'client' ? 'selected' : '' }}>{{ __('app.client_role') }}</option>
+                    @endif
                 </select>
                 @error('role')
                     <p class="mt-1 text-sm text-red-700">{{ $message }}</p>

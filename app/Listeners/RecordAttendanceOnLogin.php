@@ -63,7 +63,8 @@ class RecordAttendanceOnLogin
             session()->put('attendance_flash', [
                 'created' => $result['created'],
                 'resumed' => $result['resumed'] ?? false,
-                'at' => $result['record']->intervalStart()->timezone('Asia/Muscat')->format('h:i A'),
+                // ‏«01:22 ص» لا «01:22 AM»: الإشعارُ جملةٌ عربيّة («تم تسجيل حضورك الساعة …»)
+                'at' => \App\Support\AttendanceGuard::clock($result['record']->intervalStart()),
             ]);
         } catch (\Throwable) {
             // بلا جلسةٍ (طرفيّة/اختبار) لا إشعارَ — والسجلُّ كُتب

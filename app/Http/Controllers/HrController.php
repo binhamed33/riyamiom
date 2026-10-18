@@ -365,7 +365,8 @@ class HrController extends Controller
             return back()->withInput()->withErrors(['add_check_out' => 'لهذا الموظّف سجلٌّ في هذا اليوم أصلاً — صحّحه من الجدول.']);
         }
 
-        return back()->with('success', 'أُضيف يومُ ' . $employee->name . ': ' . $in->format('h:i A') . ' → ' . $out->format('h:i A') . '.');
+        // ‏«08:00 ص ← 04:00 م» لا «08:00 AM → 04:00 PM»: لاتينيّةٌ وسهمٌ يشير إلى البداية تحت RTL
+        return back()->with('success', 'أُضيف يومُ ' . $employee->name . ': ' . AttendanceGuard::clock($in) . ' ← ' . AttendanceGuard::clock($out) . '.');
     }
 
     /** سجلّاتُ اليوم، ومعها المفتوحُ منذ أقلَّ من يوم: من حضر ليلاً وما زال يعمل حاضرٌ لا غائب. */
@@ -472,7 +473,7 @@ class HrController extends Controller
             // يُقال له «سُجّل انصرافك» والوقتُ المحفوظ هو الأوّل، ويظنّ
             // الثاني هو المسجَّل ويعترض على الكشف بعدها
             $message = $today?->check_out_at
-                ? 'سجلُّ اليوم مقفَلٌ منذ ' . $today->check_out_at->timezone('Asia/Muscat')->format('h:i A') . ' — «استئناف الدوام» يفتحه إن كنت ما زلت في دوامك.'
+                ? 'سجلُّ اليوم مقفَلٌ منذ ' . AttendanceGuard::clock($today->check_out_at) . ' — «استئناف الدوام» يفتحه إن كنت ما زلت في دوامك.'
                 : 'لم تسجّل حضوراً اليوم بعد.';
 
             return redirect()->route('hr.index', ['tab' => 'attendance'])
@@ -529,7 +530,7 @@ class HrController extends Controller
 
         \App\Support\AttendanceGuard::correct($record, $user, $in, $out, $data['reason']);
 
-        return back()->with('success', 'صُحّح السجلّ: ' . $in->format('h:i A') . ' → ' . $out->format('h:i A') . ' (' . \App\Support\Duration::human($record->fresh()->minutes) . ').');
+        return back()->with('success', 'صُحّح السجلّ: ' . AttendanceGuard::clock($in) . ' ← ' . AttendanceGuard::clock($out) . ' (' . \App\Support\Duration::human($record->fresh()->minutes) . ').');
     }
 
     /**

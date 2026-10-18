@@ -54,7 +54,9 @@ class UserController extends Controller
             'name'       => \App\Support\PersonName::rule(),
             'email'      => 'required|email|unique:users,email',
             'password'   => ['required', 'string', 'confirmed', \App\Support\PasswordPolicy::rules()],
-            'role'       => 'required|in:developer,admin,lawyer,staff,client',
+            // لا «client»: حسابُ موظّفٍ بدور موكّل ينتهي إلى ‎/my/cases‎ بـ٤٠٤ — لا خانةَ
+            // تربطه بموكّل — والموكّلُ يدخل البوابةَ برقم هويّته أو برابط واتساب
+            'role'       => 'required|in:developer,admin,lawyer,staff',
             'phone'      => \App\Support\Phone::rule(),
             'is_active'  => 'boolean',
             'permissions' => 'nullable|array',
@@ -118,7 +120,8 @@ class UserController extends Controller
             'name'       => \App\Support\PersonName::rule(),
             'email'      => 'required|email|unique:users,email,' . $user->id,
             'password'   => ['nullable', 'string', 'confirmed', \App\Support\PasswordPolicy::rules()],
-            'role'       => 'required|in:developer,admin,lawyer,staff,client',
+            // «client» يبقى لمن كان عليه فلا يُرفض حفظُ حسابٍ قديم، ولا يُمنح لغيره
+            'role'       => ['required', \Illuminate\Validation\Rule::in(array_merge(['developer', 'admin', 'lawyer', 'staff'], $user->role === 'client' ? ['client'] : []))],
             'phone'      => \App\Support\Phone::rule(),
             'is_active'  => 'boolean',
             'permissions' => 'nullable|array',

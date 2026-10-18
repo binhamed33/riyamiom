@@ -87,7 +87,8 @@ class DocumentTypeController extends Controller
         $used = $documentType->usageCount();
 
         if ($used > 0) {
-            return back()->with('error', "لا يمكن حذف نوع تحته {$used} مستنداً. عطّله بدل حذفه.");
+            // «تحته 3 مستندات» لا «تحته 3 مستنداً»
+            return back()->with('error', 'لا يمكن حذف نوع تحته ' . \App\Support\ArabicCount::of($used, 'مستند واحد', 'مستندان', 'مستندات', 'مستنداً') . '. عطّله بدل حذفه.');
         }
 
         $documentType->delete();

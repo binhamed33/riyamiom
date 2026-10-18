@@ -24,7 +24,8 @@
 @section('content')
 <div class="p-in" style="margin-bottom:1.2rem">
     <h1 class="p-h1">{{ __('portal.cases.title') }}</h1>
-    <p class="p-lede">{{ trans_choice('{0}|{1}:count قضية|[2,*]:count قضايا', $cases->total(), ['count' => $cases->total()]) }}</p>
+    {{-- «قضية واحدة · قضيتان · 3 قضايا · 11 قضية» — كان trans_choice يكتب «2 قضايا» و«11 قضايا» --}}
+    <p class="p-lede">{{ $cases->total() > 0 ? \App\Support\ArabicCount::of($cases->total(), 'قضية واحدة', 'قضيتان', 'قضايا', 'قضية') : '' }}</p>
 </div>
 
 @if ($cases->count())

@@ -100,7 +100,10 @@ class CaseFolderController extends Controller
 
         $destination = $folder->parent_id ? 'إلى المجلد الأعلى' : 'إلى «عام»';
 
-        return back()->with('success', 'حُذف المجلد' . ($moved > 0 ? " ونُقل {$moved} مستنداً {$destination}." : '.'));
+        // «ونُقل 3 مستندات» لا «ونُقل 3 مستنداً» — التمييزُ المنصوب لما فوق العشرة وحدَه
+        return back()->with('success', 'حُذف المجلد' . ($moved > 0
+            ? ' ونُقل ' . \App\Support\ArabicCount::of($moved, 'مستند واحد', 'مستندان', 'مستندات', 'مستنداً') . ' ' . $destination . '.'
+            : '.'));
     }
 
     /**

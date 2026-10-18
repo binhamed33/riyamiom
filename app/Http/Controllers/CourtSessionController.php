@@ -136,7 +136,10 @@ class CourtSessionController extends Controller
         if ($request->filled('range')) {
             match ($request->range) {
                 'today' => $query->whereDate('date', now()->startOfDay()),
-                'week' => $query->whereBetween('date', [now()->startOfWeek(), now()->endOfWeek()]),
+                // السبتُ إلى الجمعة كلوحة التحكّم والحضور: startOfWeek() بلا وسيطٍ تأخذ أوّلَ
+                // الأسبوع من لغة الواجهة، فكان «هذا الأسبوع» بالإنجليزيّة يبدأ الاثنين — ويومَ
+                // الأحد يُظهر جلساتِ الأسبوع الماضي بدل الأسبوع الذي بدأ لتوّه
+                'week' => $query->whereBetween('date', [now()->startOfWeek(Carbon::SATURDAY), now()->endOfWeek(Carbon::FRIDAY)]),
                 'month' => $query->whereBetween('date', [now()->startOfMonth(), now()->endOfMonth()]),
                 default => null,
             };

@@ -85,7 +85,9 @@
                     <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>{{ __('app.admin') }}</option>
                     <option value="lawyer" {{ old('role') === 'lawyer' ? 'selected' : '' }}>{{ __('app.lawyer') }}</option>
                     <option value="staff" {{ old('role') === 'staff' ? 'selected' : '' }}>{{ __('app.staff') }}</option>
-                    <option value="client" {{ old('role') === 'client' ? 'selected' : '' }}>{{ __('app.client_role') }}</option>
+                    {{-- لا «موكّل» هنا: الموكّلُ يدخل البوابةَ برقم هويّته أو برابط واتساب، لا
+                         بحساب موظّف. الحسابُ بهذا الدور كان ينتهي إلى ‎/my/cases‎ بـ٤٠٤ — لا
+                         خانةَ تربطه بموكّل — وروابطُ صفحاته تردّه إلى ‎/client-access‎ --}}
                 </select>
                 @error('role')
                     <p class="mt-1 text-sm text-red-700">{{ $message }}</p>

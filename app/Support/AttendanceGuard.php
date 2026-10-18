@@ -331,8 +331,11 @@ class AttendanceGuard
      *
      * الأثرُ جملةٌ عربيّة يقرؤها المدير، وكان format('h:i A') يكتب «04:15 PM»
      * فيها أيّاً كانت لغةُ الواجهة؛ وPM لاتينيّةٌ تقلب ترتيبَ الأوقات تحت RTL.
+     *
+     * عامّةٌ لا خاصّة: إشعارُ الدخول ورسائلُ الموارد البشريّة جملٌ عربيّةٌ كذلك،
+     * وكانت تكتب «الساعة 01:22 AM» بـformat('h:i A') كلٌّ على حدة.
      */
-    private static function clock(CarbonInterface $t): string
+    public static function clock(CarbonInterface $t): string
     {
         return $t->copy()->timezone('Asia/Muscat')->locale('ar')->translatedFormat('h:i A');
     }

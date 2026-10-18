@@ -12,7 +12,7 @@
     .cd-sub { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-size: .76rem; color: var(--fg-3); }
 
     /* أقسام قابلة للطيّ — على الهاتف تُختصر الصفحة الطويلة */
-    .cd-sec { margin-bottom: .75rem; overflow: hidden; }
+    .cd-sec { margin-bottom: .75rem; overflow: hidden; scroll-margin-top: 1rem; }
     .cd-sum {
         display: flex; align-items: center; gap: .6rem; width: 100%;
         padding: 1.05rem 1.25rem; background: transparent; border: 0; cursor: pointer;
@@ -59,7 +59,11 @@
     {{ __('portal.cases.title') }}
 </a>
 
-<section class="p-card cd-hero p-in">
+{{-- ‏id لكلّ قسمٍ باسم وجهة رابط واتساب (ClientLinkController::destination):
+     الرابطُ يحمل «#documents» و«#sessions» و«#timeline»، والأقسامُ كانت sec-*
+     وحدها والمستنداتُ والمسارُ مطويّان — فيهبط الموكّلُ على رأس الصفحة ولا
+     يرى المستند الذي أُبلغ به. والسكربتُ أسفلُ يفتح القسمَ ويمرّر إليه. --}}
+<section class="p-card cd-hero p-in" id="case">
     <h1 class="cd-title">{{ $case->title }}</h1>
     <div class="cd-sub">
         @include('client-portal.partials.status', ['status' => $case->status])
@@ -94,7 +98,7 @@
 
 {{-- الجلسات --}}
 @if (\App\Support\ClientPortal::showsSessions())
-    <section class="p-card cd-sec p-in p-in-1">
+    <section class="p-card cd-sec p-in p-in-1" id="sessions">
         <button type="button" class="cd-sum" data-acc aria-expanded="true" aria-controls="sec-sessions">
             {{ __('portal.sessions.title') }}
             <span class="cd-sum-count">{{ $sessions->count() }}</span>
@@ -121,14 +125,16 @@
 
 {{-- §13: المحاسبة — ما علّمه المكتب للعرض فقط، ولا شيء إن لم يُعلَّم --}}
 @if (($accounting['fees']->count() ?? 0) + ($accounting['invoices']->count() ?? 0) > 0)
-    <section class="p-card cd-sec p-in p-in-2">
+    <section class="p-card cd-sec p-in p-in-2" id="accounting">
         <button type="button" class="cd-sum" data-acc aria-expanded="false" aria-controls="sec-accounting">
             {{ __('portal.accounting.title') }}
             <span class="cd-sum-count">{{ $accounting['fees']->count() + $accounting['invoices']->count() }}</span>
             <span class="cd-caret" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg></span>
         </button>
         <div class="cd-body" id="sec-accounting" hidden>
-            <dl class="cd-facts">
+            {{-- ‏cd-dl لا cd-facts: الصنفُ الأخير لا تعريفَ له، فكانت الأرقامُ تطفو
+                 يساراً في أسطرٍ منفصلةٍ بأنماط المتصفّح الافتراضيّة --}}
+            <dl class="cd-dl" style="margin-bottom:.4rem">
                 <div><dt>{{ __('portal.accounting.total') }}</dt><dd dir="ltr" style="text-align:start">{{ number_format($accounting['total'], 2) }} {{ __('portal.accounting.currency') }}</dd></div>
                 <div><dt>{{ __('portal.accounting.paid') }}</dt><dd dir="ltr" style="text-align:start">{{ number_format($accounting['paid'], 2) }} {{ __('portal.accounting.currency') }}</dd></div>
                 <div><dt>{{ __('portal.accounting.due') }}</dt><dd dir="ltr" style="text-align:start">{{ number_format($accounting['due'], 2) }} {{ __('portal.accounting.currency') }}</dd></div>
@@ -140,7 +146,8 @@
                         <p class="cd-item-title">{{ $fee->fee_type }}</p>
                         <p class="cd-item-meta">
                             <span dir="ltr">{{ number_format($fee->amount, 2) }} {{ __('portal.accounting.currency') }}</span>
-                            @if ($fee->date) · {{ $fee->date->format('Y-m-d') }} @endif
+                            {{-- بالشهر اسماً: ‏Y-m-d بعد نصٍّ عربيٍّ يُقرأ مقلوباً (انظر المستندات أسفل) --}}
+                            @if ($fee->date) · {{ $fee->date->translatedFormat('j F Y') }} @endif
                         </p>
                     </div>
                     <span class="p-badge {{ $fee->status === 'paid' ? 'ok' : 'warn' }}">
@@ -155,7 +162,7 @@
                         <p class="cd-item-title">{{ __('portal.accounting.invoice') }} <span dir="ltr">{{ $invoice->invoice_number }}</span></p>
                         <p class="cd-item-meta">
                             <span dir="ltr">{{ number_format($invoice->amount, 2) }} {{ __('portal.accounting.currency') }}</span>
-                            @if ($invoice->issue_date) · {{ $invoice->issue_date->format('Y-m-d') }} @endif
+                            @if ($invoice->issue_date) · {{ $invoice->issue_date->translatedFormat('j F Y') }} @endif
                         </p>
                     </div>
                     {{-- الملغاةُ متبقّيها صفر، فكانت تُعلَّم «مدفوع» وهي لم تُدفع --}}
@@ -176,7 +183,7 @@
 
 {{-- المسار الزمني --}}
 @if (\App\Support\ClientPortal::showsTimeline())
-    <section class="p-card cd-sec p-in p-in-2">
+    <section class="p-card cd-sec p-in p-in-2" id="timeline">
         <button type="button" class="cd-sum" data-acc aria-expanded="false" aria-controls="sec-timeline">
             {{ __('portal.timeline.title') }}
             <span class="cd-sum-count">{{ $timeline->count() }}</span>
@@ -204,7 +211,7 @@
 
 {{-- المستندات --}}
 @if (\App\Support\ClientPortal::showsDocuments())
-    <section class="p-card cd-sec p-in p-in-2">
+    <section class="p-card cd-sec p-in p-in-2" id="documents">
         <button type="button" class="cd-sum" data-acc aria-expanded="false" aria-controls="sec-docs">
             {{ __('portal.documents.title') }}
             <span class="cd-sum-count">{{ $documents->count() }}</span>
@@ -215,9 +222,12 @@
                 <div class="cd-item">
                     <div class="cd-item-body">
                         <p class="cd-item-title">{{ $doc->title }}</p>
+                        {{-- «أُضيف 27 سبتمبر 2026 · 75 ك.ب»: ‏Y-m-d بعد كلمةٍ عربيّة تتفكّك
+                             أرقاماً عربيّةً منفصلة فتُقرأ «27-09-2026»، و«KB» اللاتينيّة
+                             تتقدّم الرقم «KB 75» --}}
                         <p class="cd-item-meta">
-                            {{ __('portal.documents.added') }} {{ $doc->created_at?->format('Y-m-d') }}
-                            @if ($doc->file_size) · {{ number_format($doc->file_size / 1024, 0) }} KB @endif
+                            {{ __('portal.documents.added') }} {{ $doc->created_at?->translatedFormat('j F Y') }}
+                            @if ($doc->file_size) · <bdi>{{ \App\Support\Attachments::humanSize((int) $doc->file_size) }}</bdi> @endif
                         </p>
                     </div>
                     <a href="{{ route('client.portal.document', $doc->id) }}" class="cd-doc-btn">{{ __('portal.documents.download') }}</a>
@@ -243,5 +253,22 @@
             panel.hidden = open;
         });
     });
+
+    // رابطُ «أُتيح لكم مستند» يصل بـ#documents: يُفتح القسمُ المطويّ ويُمرَّر
+    // إليه — كان الموكّلُ يهبط على رأس الصفحة والقسمُ مغلقٌ تحت ثلاثة أقسام
+    function openFromHash() {
+        var id = (location.hash || '').slice(1);
+        var sec = id ? document.getElementById(id) : null;
+        if (!sec) return;
+        var btn = sec.querySelector('[data-acc]');
+        var panel = btn ? document.getElementById(btn.getAttribute('aria-controls')) : null;
+        if (btn && panel) {
+            btn.setAttribute('aria-expanded', 'true');
+            panel.hidden = false;
+        }
+        sec.scrollIntoView({ block: 'start' });
+    }
+    openFromHash();
+    window.addEventListener('hashchange', openFromHash);
 </script>
 @endpush

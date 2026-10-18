@@ -21,6 +21,7 @@
     .du-amt-tag { display:inline-block; font-size:.6rem; font-weight:700; border-radius:6px; padding:.1rem .4rem; margin-top:.2rem; }
     .du-tag-due { background:color-mix(in srgb,#C0392B 14%,transparent); color:#C0392B; }
     .du-tag-paid { background:var(--gold-soft); color:var(--gold); }
+    .du-tag-void { background:color-mix(in srgb,var(--fg-3) 14%,transparent); color:var(--fg-3); }
     .du-note { font-size:.7rem; color:var(--fg-3); margin-top:.7rem; line-height:1.6; }
 </style>
 @endpush
@@ -49,8 +50,11 @@
     .hm-next-title { font-weight: 700; font-size: .95rem; margin: 0 0 .25rem; }
     .hm-next-meta { font-size: .78rem; color: var(--fg-3); margin: 0; }
 
-    .hm-list { display: grid; gap: .6rem; }
+    /* ‏minmax(0,1fr): عمودُ الشبكة الضمنيّ «auto» يتّسع لعنوانٍ nowrap فيدفع
+       البطاقةَ خارج الشاشة — على 390px صار القسمُ 406 في 356 وقُصّت حافّتُها */
+    .hm-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: .6rem; }
     .hm-row {
+        min-width: 0;
         display: flex; align-items: center; gap: .8rem; padding: .95rem 1.1rem;
         transition: transform .18s cubic-bezier(.2,.7,.3,1), border-color .18s;
     }
@@ -123,14 +127,18 @@
                     {{ $when->translatedFormat('l') }} · {{ $when->translatedFormat('h:i A') }}
                     @if ($nextSession->location) <br>{{ $nextSession->location }} @endif
                 </p>
+                {{-- ما مضى لا يُقال «اليوم»: كان ‎$days <= 0‎ يكتبها لجلسةٍ قبل أربعة أيام.
+                     والعددُ بقاعدة العربيّة: «متبقٍّ 5 أيام» لا «متبقٍّ 5 يوماً» --}}
+                @if ($days >= 0)
                 <p style="margin:.5rem 0 0">
                     <span class="p-badge {{ $days <= 3 ? 'warn' : 'info' }}">
-                        @if ($days <= 0) {{ __('portal.home.remaining_today') }}
+                        @if ($days === 0) {{ __('portal.home.remaining_today') }}
                         @elseif ($days === 1) {{ __('portal.home.remaining_tomorrow') }}
-                        @else {{ __('portal.home.remaining_days', ['count' => $days]) }}
+                        @else {{ __('portal.home.remaining_days', ['count' => app()->getLocale() === 'ar' ? \App\Support\ArabicCount::of($days, 'يومٌ واحد', 'يومان', 'أيام', 'يوماً') : $days]) }}
                         @endif
                     </span>
                 </p>
+                @endif
             </div>
         </a>
     </section>
@@ -179,7 +187,11 @@
                     </span>
                 </span>
                 <span class="du-row-amt">
-                    @if ($item['remaining'] > 0)
+                    {{-- الملغاةُ بشارتها لا «مسدَّد» ولا «متبقٍّ» — ولا تدخل المجموع فوق --}}
+                    @if ($item['cancelled'] ?? false)
+                        <span class="du-amt-paid" dir="ltr" style="text-decoration:line-through">{{ number_format($item['amount'], 2) }}</span>
+                        <span class="du-amt-tag du-tag-void">{{ __('portal.accounting.cancelled_badge') }}</span>
+                    @elseif ($item['remaining'] > 0)
                         <span class="du-amt-due" dir="ltr">{{ number_format($item['remaining'], 2) }}</span>
                         <span class="du-amt-tag du-tag-due">متبقٍّ</span>
                     @else

@@ -443,7 +443,8 @@
                         <span class="text-sm font-medium text-gray-700 truncate flex-1">{{ $row['employee']->name }}</span>
                         <span class="text-[11px] font-semibold flex-shrink-0 {{ $tone[2] }}">{{ $tone[0] }}</span>
                         @if($row['record'])
-                            <span class="text-[11px] text-gray-400 flex-shrink-0" dir="ltr">
+                            {{-- بلا dir="ltr": «08:15 ص — 04:15 م» عربيّة، وتحت ltr كانت تُقرأ «م 04:15 — ص 08:15» --}}
+                            <span class="text-[11px] text-gray-400 flex-shrink-0">
                                 {{ $row['record']->check_in_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}@if($row['record']->check_out_at) — {{ $row['record']->check_out_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}@endif
                             </span>
                         @endif
@@ -607,8 +608,9 @@
                                      متوسّط: بلا عرضٍ ثابتٍ للرقم يتذبذب الوسطُ من صفٍّ
                                      إلى صفّ فيبدو العمودُ مهتزّاً. --}}
                                 <td class="px-4 py-3 text-gray-500 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->work_date->format('Y-m-d') }}</td>
-                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->check_in_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</td>
-                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums" dir="ltr">{{ $r->checkOutDisplay('h:i A') ?? '—' }}@if($r->inferredLabel()) <span dir="rtl" class="text-[10px] text-amber-600 font-semibold" title="{{ $r->closedByInference() ? 'وقتٌ استنتجه النظام لا ضغطه صاحبُه' : 'صحّحه الإداري' }}">{{ $r->inferredLabel() }}</span>@endif</td>
+                                {{-- الوقتان بلا dir="ltr": «ص/م» حرفٌ عربيّ، وتحت ltr يتقدّم الرقمَ فيُقرأ «ص 07:58» --}}
+                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums">{{ $r->check_in_at->timezone('Asia/Muscat')->translatedFormat('h:i A') }}</td>
+                                <td class="px-4 py-3 text-gray-700 text-center whitespace-nowrap tabular-nums">{{ $r->checkOutDisplay('h:i A') ?? '—' }}@if($r->inferredLabel()) <span class="text-[10px] text-amber-600 font-semibold" title="{{ $r->closedByInference() ? 'وقتٌ استنتجه النظام لا ضغطه صاحبُه' : 'صحّحه الإداري' }}">{{ $r->inferredLabel() }}</span>@endif</td>
                                 {{-- ‏rtl لا ltr: النصُّ يخلط أرقاماً لاتينيّةً بحرفين عربيّين،
                                      وفي سياقٍ لاتينيّ تقلبه خوارزميّةُ الاتّجاهين فيخرج
                                      «س 15د 6» بدل «6 س 15 د» — والرقمُ يقفز إلى آخر السطر. --}}

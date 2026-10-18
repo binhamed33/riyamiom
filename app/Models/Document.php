@@ -89,6 +89,32 @@ class Document extends Model
         ];
     }
 
+    /**
+     * هل يجوز لهذا المستخدم أن يُتيح مستنداً بهذه الصلاحية للموكّل؟
+     *
+     * ═══ لماذا قاعدةٌ واحدة ═══
+     *
+     * كان الزرُّ (‎_share-toggle‎) والمسارُ (toggleClientVisibility) يمنعان
+     * الموظّفَ من إتاحة مستند «الفريق»، والرفعُ (store) يقبل ‎client_visible=1‎
+     * لكلّ صلاحيةٍ عدا الخاصّ — وخانةُ «مرئي للموكّل» في نافذة الرفع وفي
+     * الرفع السريع بصفحة القضية (وهو «فريق» دائماً) ظاهرةٌ لكلّ الأدوار. فكان
+     * الموظّفُ يُتيح بالرفع ما يُمنع منه بالزرّ، ثم لا يجد زرّاً يتراجع به
+     * ويردّ المسارُ ٤٠٣. فالشرطُ هنا وحده، والثلاثةُ تسأله.
+     *
+     * الخاصُّ لا يُتاح أبداً، و«الفريق» للمحامي فمن فوقه، و«الجميع» (ومعه
+     * القديمُ بلا صلاحية) لكلّ مستخدم.
+     */
+    public static function canBeSharedBy(?User $user, ?string $accessLevel): bool
+    {
+        $level = $accessLevel ?? self::ACCESS_ALL;
+
+        if (!$user || $level === self::ACCESS_PRIVATE) {
+            return false;
+        }
+
+        return $level !== self::ACCESS_TEAM || in_array($user->role, ['developer', 'admin', 'lawyer'], true);
+    }
+
     /** هل يجوز عرضه للعميل؟ شرطان معاً — والخاص لا يُعرض أبداً. */
     public function visibleToClient(): bool
     {

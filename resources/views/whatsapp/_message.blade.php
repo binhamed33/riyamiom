@@ -44,12 +44,17 @@
         }
     }
 
-    $waSize = null;
-    if ($message->media_size > 0) {
-        $waSize = $message->media_size >= 1048576
-            ? round($message->media_size / 1048576, 1) . ' MB'
-            : max(1, (int) round($message->media_size / 1024)) . ' KB';
-    }
+    /* الحجمُ بوحداتٍ عربيّة من مصدرِ مرفقات المحادثات نفسِه («2.4 م.ب»)،
+       لا «MB/KB» مكتوبةً هنا بخطّ اليد تخالف بقيّةَ النظام. */
+    $waSize = \App\Support\Attachments::humanSize($message->media_size !== null ? (int) $message->media_size : null);
+
+    /* صورةٌ أو بصمةٌ صوتيّة بلا اسم ملفّ عنوانُها نوعُها، فالسطرُ تحته
+       الحجمُ وحده — كان يقول «صورة» ثمّ «صورة · 348 KB». */
+    $waMediaTitle = $message->media_name ?: $waTypeLabel;
+    $waMediaMeta = implode(' · ', array_filter([
+        $message->media_name ? $waTypeLabel : null,
+        $waSize !== '' ? $waSize : null,
+    ]));
 @endphp
 
 <div class="flex {{ $align }}">
@@ -132,12 +137,14 @@
                         </svg>
 
                         <div class="min-w-0 flex-1">
-                            <p class="text-xs font-semibold text-gray-700 truncate" title="{{ $message->media_name ?: $waTypeLabel }}">
-                                {{ $message->media_name ?: $waTypeLabel }}
+                            <p class="text-xs font-semibold text-gray-700 truncate" title="{{ $waMediaTitle }}">
+                                {{ $waMediaTitle }}
                             </p>
-                            <p class="text-[11px] text-gray-400">
-                                {{ $waTypeLabel }}@if($waSize) · <span dir="ltr">{{ $waSize }}</span>@endif
-                            </p>
+                            {{-- بلا dir="ltr": «2.4 م.ب» عربيّةٌ تُقرأ من اليمين،
+                                 وعزلُها يساريّاً كان يقدّم الوحدةَ على الرقم. --}}
+                            @if($waMediaMeta !== '')
+                                <p class="text-[11px] text-gray-400" data-wa-media-meta>{{ $waMediaMeta }}</p>
+                            @endif
                         </div>
 
                         @if($message->document_id)

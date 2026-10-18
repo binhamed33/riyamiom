@@ -60,7 +60,8 @@ return [
         'active_cases' => 'القضايا النشطة',
         'upcoming' => 'الجلسات القادمة',
         'next_session' => 'الجلسة القادمة',
-        'remaining_days' => 'متبقٍّ :count يوماً',
+        // ‏:count عددٌ بمعدوده من ArabicCount («5 أيام»، «11 يوماً») — كان «متبقٍّ 5 يوماً»
+        'remaining_days' => 'متبقٍّ :count',
         'remaining_today' => 'اليوم',
         'remaining_tomorrow' => 'غداً',
         'recent' => 'آخر ما تحدّث',

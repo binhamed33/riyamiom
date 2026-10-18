@@ -32,7 +32,10 @@
         <div class="flex-1 overflow-auto bg-gray-50 p-4 relative" dir="ltr">
             <template x-if="isImage">
                 <div class="h-full w-full flex items-center justify-center">
-                    <img :src="doc.url" :alt="doc.name || ''" :style="'max-width:' + zoom + '%;'" class="shadow-xl rounded-lg bg-white" />
+                    {{-- صورةٌ مفقودةٌ على الخادم: المعاينةُ تردّ ٤٠٤ فيبقى إطارٌ فارغٌ بأيقونةٍ مكسورة —
+                         فتُقال الجملةُ نفسُها التي يقولها إطارُ الـPDF (documents.unavailable) --}}
+                    <img x-show="!broken" x-on:error="broken = true" :src="doc.url" :alt="doc.name || ''" :style="'max-width:' + zoom + '%;'" class="shadow-xl rounded-lg bg-white" />
+                    <p x-show="broken" x-cloak class="text-sm font-bold text-gray-500" dir="rtl">{{ __('app.document_file_unavailable') }}</p>
                 </div>
             </template>
             <template x-if="isPdf">
@@ -59,6 +62,7 @@
             viewerOpen: false,
             zoom: 100,
             doc: { url: '', title: '', type: '', download: '' },
+            broken: false,
             get isPdf() { return (this.doc.type || '').toLowerCase() === 'pdf'; },
             get isImage() { return ['jpg', 'jpeg', 'png'].includes((this.doc.type || '').toLowerCase()); },
             openDoc(detail) {
@@ -69,6 +73,7 @@
                     download: detail.download || detail.url || '',
                 };
                 this.zoom = 100;
+                this.broken = false;
                 this.viewerOpen = true;
             },
         };

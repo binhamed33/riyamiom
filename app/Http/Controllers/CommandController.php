@@ -133,8 +133,14 @@ class CommandController extends Controller
             foreach ($documents as $d) {
                 $groups['document'][] = [
                     'label' => $d->title,
-                    'sub' => ($d->case->case_number ?? '') . ' • ' . $d->file_type,
-                    'url' => route('cases.show', ['case' => $d->case_id, '#documents']),
+                    'sub' => implode(' • ', array_filter([$d->case->case_number ?? null, $d->file_type])),
+                    // مستندٌ بلا قضية (وكالةٌ قبل فتح الملفّ، هويّة) كان يرمي
+                    // UrlGenerationException فيُفرغ try/catch البحثَ كلَّه: «اتفاقية»
+                    // لا تُرجع شيئاً أبداً. والمِرساةُ تُلصق بالعنوان — كانت
+                    // معاملاً رقميّاً فتصير «?%23documents» لا «#documents».
+                    'url' => $d->case_id
+                        ? route('cases.show', $d->case_id) . '#documents'
+                        : route('documents.index', ['all' => 1, 'search' => $d->title]),
                     'icon' => 'و',
                 ];
             }

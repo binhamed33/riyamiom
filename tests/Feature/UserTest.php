@@ -269,14 +269,36 @@ class UserTest extends TestCase
         $response->assertSessionDoesntHaveErrors('role');
     }
 
-    public function test_user_validation_role_client_passes()
+    /**
+     * لا يُنشأ حسابُ موظّفٍ بدور «موكّل»: كان ينتهي إلى ‎/my/cases‎ بـ٤٠٤ (لا خانةَ
+     * تربطه بموكّل)، والموكّلُ يدخل البوابةَ برقم هويّته أو برابط واتساب.
+     */
+    public function test_user_validation_role_client_is_refused_for_new_accounts()
     {
         $developer = $this->developer();
         $data = $this->validUserData(['role' => 'client']);
 
         $response = $this->actingAs($developer)->post('/users', $data);
 
-        $response->assertSessionDoesntHaveErrors('role');
+        $response->assertSessionHasErrors('role');
+        $this->actingAs($developer)->get('/users/create')->assertOk()->assertDontSee('value="client"', false);
+    }
+
+    /** وحسابٌ قديمٌ بهذا الدور يُحفظ كما هو — ولا يُمنح الدورُ لغيره بالتعديل. */
+    public function test_a_legacy_client_account_keeps_its_role_but_no_one_else_gets_it()
+    {
+        $developer = $this->developer();
+        $legacy = User::factory()->create(['role' => 'client', 'is_active' => true]);
+        $lawyer = User::factory()->create(['role' => 'lawyer', 'is_active' => true]);
+
+        $this->actingAs($developer)->get("/users/{$legacy->id}/edit")->assertOk()->assertSee('value="client"', false);
+        $this->actingAs($developer)->get("/users/{$lawyer->id}/edit")->assertOk()->assertDontSee('value="client"', false);
+
+        $this->actingAs($developer)->put("/users/{$legacy->id}", ['name' => $legacy->name, 'email' => $legacy->email, 'role' => 'client', 'is_active' => true])
+            ->assertSessionDoesntHaveErrors('role');
+        $this->actingAs($developer)->put("/users/{$lawyer->id}", ['name' => $lawyer->name, 'email' => $lawyer->email, 'role' => 'client', 'is_active' => true])
+            ->assertSessionHasErrors('role');
+        $this->assertSame('lawyer', $lawyer->fresh()->role);
     }
 
     public function test_user_validation_password_required()

@@ -36,7 +36,8 @@
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-gray-400 text-xs uppercase">{{ $document->file_type }}</td>
-                            <td class="px-4 py-3 text-gray-400 text-xs">{{ round($document->file_size / 1024, 1) }} KB</td>
+                            {{-- «75 ك.ب» معزولةً — «KB» اللاتينيّة كانت تتقدّم الرقم تحت RTL --}}
+                            <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap"><bdi>{{ \App\Support\Attachments::humanSize((int) $document->file_size) ?: '—' }}</bdi></td>
                             <td class="px-4 py-3 text-gray-400 text-xs">
                                 @if($document->case)
                                     <span class="font-mono">{{ $document->case->case_number }}</span>

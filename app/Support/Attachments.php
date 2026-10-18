@@ -143,21 +143,31 @@ class Attachments
         return $name !== '' ? mb_substr($name, 0, 120) : basename($path);
     }
 
-    /** حجمٌ يُقرأ: «2.4 م.ب» لا «2516582». */
+    /**
+     * حجمٌ يُقرأ: «2.4 م.ب» لا «2516582».
+     *
+     * والوحدةُ بلغة الواجهة: كانت عربيّةً أبداً، فلمّا صار هذا حجمَ جدول
+     * المستندات ومرفقِ واتساب ومستنداتِ البوابة قرأ المستخدمُ الإنجليزيّ
+     * «65 ك.ب» في جدولٍ إنجليزيٍّ من اليسار.
+     */
     public static function humanSize(?int $bytes): string
     {
         if ($bytes === null || $bytes <= 0) {
             return '';
         }
 
-        foreach ([['ج.ب', 1073741824], ['م.ب', 1048576], ['ك.ب', 1024]] as [$unit, $step]) {
+        [$units, $byteUnit] = app()->getLocale() === 'ar'
+            ? [['ج.ب', 'م.ب', 'ك.ب'], 'بايت']
+            : [['GB', 'MB', 'KB'], 'B'];
+
+        foreach ([1073741824, 1048576, 1024] as $i => $step) {
             if ($bytes >= $step) {
                 $value = $bytes / $step;
 
-                return ($value >= 10 ? number_format($value) : number_format($value, 1)) . ' ' . $unit;
+                return ($value >= 10 ? number_format($value) : number_format($value, 1)) . ' ' . $units[$i];
             }
         }
 
-        return $bytes . ' بايت';
+        return $bytes . ' ' . $byteUnit;
     }
 }

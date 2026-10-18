@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\WhatsAppManager;
+use App\Support\ArabicCount;
 use App\Support\WhatsAppSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -440,7 +441,9 @@ class WhatsAppSettingsController extends Controller
 
         $this->audit('whatsapp_templates_synced', ['count' => $seen]);
 
-        return back()->with('success', 'زُومنت ' . $seen . ' قالباً من Meta.');
+        // العددُ بـArabicCount كما في قائمة فحص الربط (SetupDoctor):
+        // «زُومنت 4 قالباً» كان خطأَها نفسَه في رسالة الزرّ الذي تشير إليه.
+        return back()->with('success', 'تمّت مزامنة ' . ArabicCount::of($seen, 'قالبٍ واحد', 'قالبين', 'قوالب', 'قالباً') . ' من Meta.');
     }
 
     private function audit(string $action, array $data): void
