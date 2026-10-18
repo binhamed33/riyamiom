@@ -117,7 +117,7 @@
 
     {{-- Footer for print --}}
     <div class="text-center text-gray-400 text-xs pt-4 hidden print:block">
-        <p>تم الإنشاء في {{ now()->format('Y-m-d H:i') }}</p>
+        <p>تم الإنشاء في <bdi dir="ltr">{{ now()->format('Y-m-d H:i') }}</bdi></p>
     </div>
 </div>
 

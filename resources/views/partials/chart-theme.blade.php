@@ -143,5 +143,11 @@
     };
 
     window.MdChart = MdChart;
+
+    // أرقامُ المحاور بأرقام الصفحة: Chart.js ينسّق بلغة المتصفّح، فكان
+    // متصفّحٌ عربيٌّ يكتب «١ ٢ ٣» تحت لوحةٍ أرقامُها كلُّها 1 2 3 (والصفرُ وحدَه «0»)
+    if (window.Chart && window.Chart.defaults) {
+        window.Chart.defaults.locale = 'en-US';
+    }
 })();
 </script>

@@ -31,7 +31,8 @@ class FinanceTransaction extends Model
 
     protected function casts(): array
     {
-        return ['date' => 'date', 'amount' => 'decimal:2'];
+        // ‏Y-m-d في JSON: نافذةُ التعديل تربط التاريخَ بـ<input type=date> مباشرةً
+        return ['date' => 'date:Y-m-d', 'amount' => 'decimal:2'];
     }
 
     public function user(): BelongsTo

@@ -200,8 +200,9 @@ class AttendanceProvenanceTest extends TestCase
         $this->assertSame(506, (int) $fresh->minutes);
         $this->assertSame(HrAttendance::CLOSED_BY_MANAGER, $fresh->closed_by);
         $this->assertSame('مصحَّح', $fresh->inferredLabel());
-        $this->assertStringContainsString('01:36 PM', (string) $fresh->note, 'الوقتُ القديم ضاع من الأثر');
-        $this->assertStringContainsString('03:57 PM', (string) $fresh->note);
+        // الأثرُ بالعربيّة «م» لا «PM» — يقرؤه المدير تحت اسم الموظّف
+        $this->assertStringContainsString('01:36 م', (string) $fresh->note, 'الوقتُ القديم ضاع من الأثر');
+        $this->assertStringContainsString('03:57 م', (string) $fresh->note);
         $this->assertStringContainsString($admin->name, (string) $fresh->note);
 
         $audit = AuditLog::where('action', 'attendance_correct')->where('model_id', $record->id)->first();

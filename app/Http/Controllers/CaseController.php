@@ -561,14 +561,9 @@ class CaseController extends Controller
             'date' => 'الموعد', 'location' => 'المكان', 'due_date' => 'الاستحقاق',
             'assigned_to' => 'المسؤول', 'notes' => 'الملاحظات', 'report' => 'القرار',
         ];
-        $statusLabels = [
-            'active' => 'نشطة', 'pending' => 'قيد المتابعة', 'overdue' => 'متأخرة',
-            'closed' => 'مغلقة', 'won' => 'مكسوبة', 'lost' => 'مخسورة',
-            'adjudicated' => 'مفصولة', 'fees_pending' => 'أتعاب معلقة',
-            'upcoming' => 'قادمة', 'completed' => 'منجزة', 'postponed' => 'مؤجلة',
-            'cancelled' => 'ملغاة', 'in_progress' => 'قيد الإنجاز',
-        ];
-        $fmt = fn ($v) => $statusLabels[$v] ?? (is_scalar($v) ? mb_substr((string) $v, 0, 40) : '—');
+        // القيمةُ بحسب حقلها: كانت خريطةُ الحالات وحدَها تُطبَّق على كلّ
+        // حقل، فتظهر «الأولوية: high ← medium» والتاريخُ بـ«T00:00:00Z»
+        $fmt = fn (string $field, $v) => \App\Models\AuditLog::formatValue($field, $v);
 
         if ($log->action === \App\Models\AuditLog::ACTION_DELETE) {
             $name = $log->old_values['title'] ?? '';
@@ -587,7 +582,7 @@ class CaseController extends Controller
                 if (!isset($fieldLabels[$field]) || $old == $new) {
                     continue;
                 }
-                $changes[] = $fieldLabels[$field] . ': ' . $fmt($old) . ' ← ' . $fmt($new);
+                $changes[] = $fieldLabels[$field] . ': ' . $fmt($field, $old) . ' ← ' . $fmt($field, $new);
                 if (count($changes) >= 3) {
                     break;
                 }

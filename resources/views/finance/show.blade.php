@@ -33,7 +33,7 @@
             @if($type === 'transaction')
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border {{ $item->type === 'income' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200' }}">{{ $item->type === 'income' ? 'دخل' : 'مصروف' }}</span>
             @elseif($type === 'invoice')
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border {{ $item->status === 'paid' ? 'bg-green-100 text-green-700 border-green-200' : ($item->status === 'partial' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : ($item->status === 'cancelled' ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-red-100 text-red-700 border-red-200')) }}">{{ $item->status === 'paid' ? 'مدفوعة' : ($item->status === 'partial' ? 'جزئي' : ($item->status === 'cancelled' ? 'ملغية' : 'غير مدفوعة')) }}</span>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border {{ $item->status === 'paid' ? 'bg-green-100 text-green-700 border-green-200' : ($item->status === 'partial' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : ($item->status === 'cancelled' ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-red-100 text-red-700 border-red-200')) }}">{{ __('app.invoice_status_' . $item->status) }}</span>
             @else
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border {{ $item->status === 'paid' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200' }}">{{ $item->status === 'paid' ? 'مدفوع' : 'غير مدفوع' }}</span>
             @endif
@@ -67,7 +67,7 @@
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">تاريخ الإضافة</dt>
-                    <dd class="text-gray-800 font-medium">{{ $item->created_at->format('Y-m-d H:i') }}</dd>
+                    <dd class="text-gray-800 font-medium"><bdi dir="ltr">{{ $item->created_at->format('Y-m-d H:i') }}</bdi></dd>
                 </div>
             </dl>
 
@@ -82,6 +82,16 @@
                     <dd class="text-gray-800 font-medium">{{ $item->client->name ?? '-' }}</dd>
                 </div>
                 <div>
+                    <dt class="text-sm text-gray-500 mb-1">{{ __('app.finance_case') }}</dt>
+                    <dd class="text-gray-800 font-medium">
+                        @if($item->case)
+                            <a href="{{ route('cases.show', $item->case) }}" class="text-gold-dark hover:underline"><bdi dir="ltr">{{ $item->case->office_case_number ? '#' . $item->case->office_case_number : $item->case->case_number }}</bdi> — {{ $item->case->title }}</a>
+                        @else
+                            -
+                        @endif
+                    </dd>
+                </div>
+                <div>
                     <dt class="text-sm text-gray-500 mb-1">المبلغ</dt>
                     <dd class="text-gray-800 font-medium">{{ number_format($item->amount, 2) }} ر.ع</dd>
                 </div>
@@ -91,7 +101,11 @@
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">المبلغ المتبقي</dt>
-                    <dd class="text-gray-800 font-medium {{ $item->remaining_amount > 0 ? 'text-red-700' : 'text-green-700' }}">{{ number_format($item->remaining_amount, 2) }} ر.ع</dd>
+                    @if($item->status === 'cancelled')
+                        <dd class="font-medium text-gray-400">{{ __('app.invoice_status_cancelled') }}</dd>
+                    @else
+                        <dd class="text-gray-800 font-medium {{ $item->remaining_amount > 0 ? 'text-red-700' : 'text-green-700' }}">{{ number_format($item->remaining_amount, 2) }} ر.ع</dd>
+                    @endif
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">تاريخ الإصدار</dt>
@@ -107,7 +121,7 @@
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">تاريخ الإضافة</dt>
-                    <dd class="text-gray-800 font-medium">{{ $item->created_at->format('Y-m-d H:i') }}</dd>
+                    <dd class="text-gray-800 font-medium"><bdi dir="ltr">{{ $item->created_at->format('Y-m-d H:i') }}</bdi></dd>
                 </div>
             </dl>
 
@@ -135,7 +149,7 @@
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">تاريخ الإضافة</dt>
-                    <dd class="text-gray-800 font-medium">{{ $item->created_at->format('Y-m-d H:i') }}</dd>
+                    <dd class="text-gray-800 font-medium"><bdi dir="ltr">{{ $item->created_at->format('Y-m-d H:i') }}</bdi></dd>
                 </div>
             </dl>
         @endif

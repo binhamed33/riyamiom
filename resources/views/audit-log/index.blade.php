@@ -99,7 +99,7 @@
                 <tbody>
                     @forelse($logs ?? [] as $log)
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 text-gray-500 text-sm whitespace-nowrap">{{ $log->created_at?->format('Y-m-d H:i:s') ?? '—' }}</td>
+                            <td class="px-6 py-4 text-gray-500 text-sm whitespace-nowrap"><bdi dir="ltr">{{ $log->created_at?->format('Y-m-d H:i:s') ?? '—' }}</bdi></td>
                             <td class="px-6 py-4 text-gray-700 font-medium">{{ $log->user->name ?? __('app.system') }}</td>
                             <td class="px-6 py-4">
                                 @php
@@ -122,23 +122,15 @@
                                     {{ $actionLabels[$log->action] ?? $log->action }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-gray-700 text-sm">{{ class_basename($log->model_type ?? '') ?: '—' }}</td>
+                            {{-- كان اسمَ الصنف نفسَه: LegalCase وTask وClient — فصار اسمَه في لغة المكتب --}}
+                            <td class="px-6 py-4 text-gray-700 text-sm">{{ $log->model_type ? $log->modelNoun() : '—' }}</td>
                             <td class="px-6 py-4 text-gray-500 text-sm max-w-xs truncate">
-                                @if($log->new_values)
-                                    @php
-                                        $details = '';
-                                        try {
-                                            $details = collect($log->new_values)->map(function ($v, $k) {
-                                                return '<span class="text-gray-400">' . e($k) . ':</span> ' . (is_array($v) ? e(json_encode($v, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) : e($v));
-                                            })->implode(', ');
-                                        } catch (\Throwable $e) {
-                                            $details = '— (decode error)';
-                                        }
-                                    @endphp
-                                    {!! $details !!}
-                                @else
+                                {{-- الحقولُ والقيمُ مترجمة (AuditLog::details): كان يطبع «title:» و«status: overdue» --}}
+                                @forelse($log->details() as $row)
+                                    <span class="text-gray-400">{{ $row['label'] }}:</span> <bdi>{{ $row['value'] }}</bdi>@if(!$loop->last){{ app()->getLocale() === 'ar' ? '، ' : ', ' }}@endif
+                                @empty
                                     —
-                                @endif
+                                @endforelse
                             </td>
                             <td class="px-6 py-4 text-gray-400 text-sm" dir="ltr">{{ $log->ip_address ?? '—' }}</td>
                         </tr>

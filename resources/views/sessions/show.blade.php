@@ -48,7 +48,7 @@
         <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <dt class="text-sm text-gray-500 mb-1">{{ __('app.session_datetime') }}</dt>
-                <dd class="text-gray-800 font-medium">{{ $session->date->format('Y-m-d H:i') }}</dd>
+                <dd class="text-gray-800 font-medium"><bdi dir="ltr">{{ $session->date->format('Y-m-d H:i') }}</bdi></dd>
             </div>
             <div>
                 <dt class="text-sm text-gray-500 mb-1">{{ __('app.location') }}</dt>
@@ -77,7 +77,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-800 font-medium">{{ $session->case->title }}</p>
-                    <p class="text-sm text-gray-500 mt-1">{{ __('app.case_number') }}: {{ $session->case->case_number }}</p>
+                    <p class="text-sm text-gray-500 mt-1">{{ __('app.case_number') }}: <bdi dir="ltr">{{ $session->case->case_number }}</bdi></p>
                     @if ($session->case->client)
                         <p class="text-sm text-gray-500">{{ __('app.case_client') }}: {{ $session->case->client->name }}</p>
                     @endif

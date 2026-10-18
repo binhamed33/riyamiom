@@ -14,6 +14,11 @@ use App\Exports\SessionsExport;
 use App\Exports\TasksExport;
 use App\Exports\ClientsExport;
 use App\Exports\AllExport;
+use App\Exports\FinanceExport;
+use App\Models\FinanceFee;
+use App\Models\FinanceInvoice;
+use App\Models\FinanceTransaction;
+use App\Models\Setting;
 
 class ExportController extends Controller
 {
@@ -28,7 +33,20 @@ class ExportController extends Controller
             'clients' => Client::count(),
         ];
 
-        return view('reports.index', compact('counts'));
+        // بطاقةُ الماليّة لمن يرى ماليّةَ المكتب وحده، وحين لا تكون الوحدةُ معطّلة
+        $canExportFinance = in_array(auth()->user()->role, ['developer', 'admin'], true)
+            && (Setting::get('feature_finance', '0') !== '1' || auth()->user()->role === 'developer');
+        if ($canExportFinance) {
+            $counts['finance'] = FinanceTransaction::count() + FinanceInvoice::count() + FinanceFee::count();
+        }
+
+        return view('reports.index', compact('counts', 'canExportFinance'));
+    }
+
+    public function finance()
+    {
+        $this->logAudit(AuditLog::ACTION_CREATE, null, null, null, ['action' => 'export', 'type' => 'finance']);
+        return Excel::download(new FinanceExport(), 'finance_' . now()->format('Y-m-d') . '.xlsx');
     }
 
     public function cases()

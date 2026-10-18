@@ -73,7 +73,7 @@ class CommandController extends Controller
                     if ($c->client) $label .= ' - ' . $c->client->name;
                     $groups['case'][] = [
                         'label' => $label,
-                        'sub' => ($c->court ?? '') . ($c->status ? ' • ' . $c->status : ''),
+                        'sub' => ($c->court ?? '') . ($c->status ? ' • ' . $this->label('app.status_', $c->status) : ''),
                         'url' => route('cases.show', $c),
                         'icon' => 'ق',
                     ];
@@ -139,15 +139,24 @@ class CommandController extends Controller
                 ];
             }
 
+            // ═══ الفواتيرُ بقاعدة صفحات المالية نفسِها ═══
+            //
+            // كان الاستعلامُ بلا visibleTo، و«orWhere» بلا قوسٍ يفتح ما
+            // قبله: فالموظّفُ يكتب حرفين فيرى فواتيرَ المكتب كلَّها برقمها
+            // واسم موكّلها ومبلغها — وصفحاتُ المالية تمنعه منها بـ403.
+            // والرابطُ إلى الفاتورة نفسِها لا إلى ‎/finance‎.
             $invoices = FinanceInvoice::with('client')
-                ->where('invoice_number', 'like', "%{$query}%")
-                ->orWhere('description', 'like', "%{$query}%")
+                ->visibleTo($user)
+                ->where(function ($q) use ($query) {
+                    $q->where('invoice_number', 'like', "%{$query}%")
+                        ->orWhere('description', 'like', "%{$query}%");
+                })
                 ->limit(5)->get();
             foreach ($invoices as $i) {
                 $groups['invoice'][] = [
                     'label' => $i->invoice_number . ' - ' . ($i->client->name ?? ''),
-                    'sub' => number_format($i->amount, 2) . ($i->status ? ' • ' . $i->status : ''),
-                    'url' => route('finance.index'),
+                    'sub' => number_format($i->amount, 2) . ($i->status ? ' • ' . $this->label('app.invoice_status_', $i->status) : ''),
+                    'url' => route('finance.invoices.show', $i),
                     'icon' => 'ف',
                 ];
             }
@@ -191,7 +200,7 @@ class CommandController extends Controller
         foreach ($cases as $c) {
             $groups['recent-case'][] = [
                 'label' => '#' . $c->office_case_number . ' - ' . $c->title,
-                'sub' => ($c->client->name ?? '') . ($c->priority ? ' • ' . $c->priority : ''),
+                'sub' => ($c->client->name ?? '') . ($c->priority ? ' • ' . $this->label('app.priority_', $c->priority) : ''),
                 'url' => route('cases.show', $c),
                 'icon' => 'ق',
             ];
@@ -211,18 +220,24 @@ class CommandController extends Controller
 
         $overdueTasks = Task::where('status', '!=', 'completed')
             ->when($isLawyer, fn ($q) => $q->where('assigned_to', $user->id))
-            ->where('due_date', '<', now())
+            ->overdue() // باليوم لا بالساعة: مهمّةُ اليوم ليست «متأخرة»
             ->orderBy('due_date')->limit(3)->get();
         foreach ($overdueTasks as $t) {
             $groups['recent-task'][] = [
                 'label' => $t->title,
-                'sub' => 'متأخرة • ' . optional($t->due_date)->format('Y-m-d'),
+                'sub' => __('app.status_overdue') . ' • ' . optional($t->due_date)->format('Y-m-d'),
                 'url' => route('tasks.show', $t),
                 'icon' => 'م',
             ];
         }
 
         return $groups;
+    }
+
+    /** الحالةُ والأولويةُ بتسميتهما: كان العنوانُ الفرعيّ يقول «active» و«paid» و«high». */
+    private function label(string $prefix, string $value): string
+    {
+        return \Illuminate\Support\Facades\Lang::has($prefix . $value) ? __($prefix . $value) : $value;
     }
 
     private function actions($user): array

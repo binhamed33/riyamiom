@@ -23,9 +23,14 @@
        class="flex items-center gap-3 rounded-2xl border px-5 py-3 transition hover:shadow-sm {{ $autoFailed ? 'bg-red-50/60 border-red-200' : 'bg-white border-gold/20' }}">
         <span class="text-xl">⚙️</span>
         <p class="flex-1 text-sm text-gray-700">
-            <b class="text-gold-dark">مُداوَلة</b> نفّذت <b>{{ $autoToday }}</b> إجراءً تلقائياً اليوم
+            {{-- العددُ يُطابق معدودَه: كانت «نفّذت 4 إجراءً» و«3 إخفاق يحتاج» --}}
+            @if($autoToday > 0)
+                <b class="text-gold-dark">مُداوَلة</b> نفّذت <b>{{ \App\Support\ArabicCount::of($autoToday, 'إجراءً واحداً', 'إجراءين', 'إجراءات', 'إجراءً') }}</b> تلقائياً اليوم
+            @else
+                <b class="text-gold-dark">مُداوَلة</b> لم تنفّذ أيَّ إجراءٍ تلقائيٍّ اليوم
+            @endif
             @if($autoFailed)
-                — <b class="text-red-600">{{ $autoFailed }} إخفاق يحتاج مراجعتك</b>
+                — <b class="text-red-600">{{ \App\Support\ArabicCount::of($autoFailed, 'إخفاقٌ واحد', 'إخفاقان', 'إخفاقات', 'إخفاقاً') }} بحاجة إلى مراجعتك</b>
             @endif
         </p>
         <span class="text-xs font-bold text-gold-dark whitespace-nowrap">التفاصيل ←</span>
@@ -122,7 +127,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
                 </svg>
                 <h2 class="font-heading font-bold text-gray-900 text-sm">مركز الانتباه</h2>
-                <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold">{{ $attentionItems->count() }} تنبيه</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold">{{ \App\Support\ArabicCount::of($attentionItems->count(), 'تنبيه واحد', 'تنبيهان', 'تنبيهات', 'تنبيهاً') }}</span>
             </div>
             <a href="{{ route('attention.index') }}" class="text-xs font-bold text-gold-dark hover:text-gold-dark transition inline-flex items-center gap-1">
                 عرض الكل
@@ -429,7 +434,8 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-gray-900 text-xs font-medium truncate">{{ $session->case->title ?? '' }}</p>
-                            <p class="text-gray-400 text-[11px]">{{ $session->location ?? '' }} — {{ $session->type ?? '' }}</p>
+                            {{-- الساعةُ لا ‎$session->type‎: لا عمودَ بهذا الاسم، فكان كلُّ سطرٍ ينتهي بـ«القاعة 4 —» معلّقة --}}
+                            <p class="text-gray-400 text-[11px]">{{ $session->location ?? '' }}@if($session->date) — <span dir="ltr">{{ $session->date->translatedFormat('h:i A') }}</span>@endif</p>
                         </div>
                     </div>
                 @empty
@@ -617,10 +623,21 @@ document.addEventListener('DOMContentLoaded', function () {
             var lawyerData = @json($casesByLawyer);
             // سلسلة واحدة = مقدار لا هويّة: لون واحد بلون سمة المكتب،
             // ولا مفتاح ألوان لأن العنوان يسمّيها
+            // الاسمُ الطويل يُلفّ أسطراً لا يُقصّ: «المحامي هلال بن سعيد الحا…»
+            // كان يُسقط اسمَ العائلة خارج الرسم
+            function wrapName(name) {
+                var lines = [], line = '';
+                String(name).split(/\s+/).forEach(function (w) {
+                    if (line && (line + ' ' + w).length > 16) { lines.push(line); line = w; }
+                    else { line = line ? line + ' ' + w : w; }
+                });
+                if (line) lines.push(line);
+                return lines.length > 1 ? lines : String(name);
+            }
             charts.push(new Chart(lawyerCtx.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(lawyerData),
+                    labels: Object.keys(lawyerData).map(wrapName),
                     datasets: [{
                         data: Object.values(lawyerData),
                         backgroundColor: MdChart.accent(0.85),

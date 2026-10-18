@@ -51,7 +51,8 @@ class HrLeave extends Model
             return $this->leaveType->name;
         }
 
-        $key = 'hr_leave_type_' . $this->type;
+        // بمجموعة app.: بدونها لم يوجد المفتاح قطّ فكان يُعرض الرمزُ «emergency»
+        $key = 'app.hr_leave_type_' . $this->type;
         $translated = __($key);
 
         return $translated === $key ? (string) $this->type : $translated;

@@ -65,7 +65,7 @@
                                     <span class="w-6 h-6 shrink-0 rounded-lg bg-gold-light/10 border border-gold-light/20 flex items-center justify-center text-[11px] font-bold text-gold-light" x-text="r.icon"></span>
                                     <span class="min-w-0">
                                         <span class="block truncate" x-text="r.label"></span>
-                                        <span x-show="r.sub" class="block text-[11px] text-gold-light/40 truncate" x-text="r.sub"></span>
+                                        <span x-show="r.sub" class="block text-[11px] text-gold-light/40 truncate"><bdi x-text="r.sub"></bdi></span>
                                     </span>
                                 </a>
                             </template>

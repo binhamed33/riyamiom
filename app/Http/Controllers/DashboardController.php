@@ -129,9 +129,8 @@ class DashboardController extends Controller
         $pendingTasks = (clone $taskBase)->where('status', 'pending')->count();
         $inProgressTasks = (clone $taskBase)->where('status', 'in_progress')->count();
         $completedTasks = (clone $taskBase)->where('status', 'completed')->count();
-        $overdueTasks = (clone $taskBase)->where('status', '!=', 'completed')
-            ->where('due_date', '<', $now)
-            ->count();
+        // ‏overdue() يقارن باليوم لا بالساعة: مهامُّ اليوم كانت تُعدّ في «المتأخر» منذ منتصف الليل
+        $overdueTasks = (clone $taskBase)->overdue()->count();
 
         $tasksCompletionRate = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100, 1) : 0;
 
@@ -279,7 +278,15 @@ class DashboardController extends Controller
 
         // Audit log entries — بجملةٍ تقول ما جرى: كان يُقرأ عمودُ description
         // ولا وجودَ له، فظهرت بطاقاتٌ فارغةٌ لا تحمل إلا «منذ 46 دقيقة»
-        AuditLog::with('user')->latest()->limit(5)->get()->each(function ($item) use ($activityItems) {
+        //
+        // وكان السجلُّ كلُّه لكلّ من فتح اللوحة: المحامي يقرأ دخولَ المدير
+        // وما فعله زملاؤه في قضاياهم. فمن لا يرى سجلَّ التدقيق يرى ما فعله
+        // هو، وما جرى على قضايا يراها.
+        $seesAudit = $user->isAdmin() || $user->isDeveloper() || $user->hasPermission('audit_log.view');
+        AuditLog::with('user')
+            ->when(!$seesAudit, fn ($q) => $q->where(fn ($w) => $w->where('user_id', $user->id)
+                ->orWhereIn('case_id', (clone $caseBase)->select('cases.id'))))
+            ->latest()->limit(5)->get()->each(function ($item) use ($activityItems) {
             $activityItems->push([
                 'type' => 'log',
                 'icon' => 'log',
@@ -295,15 +302,17 @@ class DashboardController extends Controller
 
         // === Overdue Tasks List ===
         $overdueTasksList = (clone $taskBase)->with(['assignee', 'case'])
-            ->where('status', '!=', 'completed')
-            ->where('due_date', '<', $now)
+            ->overdue()
             ->orderBy('due_date')
             ->limit(5)
             ->get();
 
         // === Pending Tasks List ===
+        // ما لا موعدَ له آخراً: SQLite يضع NULL أوّلاً فتتصدّر «بلا موعد نهائي»
+        // القائمةَ وتُدفع المستحقّةُ غداً خارجها
         $pendingTasksList = (clone $taskBase)->with('assignee', 'case')
             ->where('status', '!=', 'completed')
+            ->orderByRaw('due_date IS NULL')
             ->orderBy('due_date')
             ->limit(8)
             ->get();
@@ -347,10 +356,11 @@ class DashboardController extends Controller
                 ->whereDate('due_date', $now->toDateString())
                 ->limit(8)
                 ->get();
-            $dueTasks->each(function ($t) use ($brief, $now) {
+            // كلُّها مستحقّةٌ اليوم: due_date منتصفُ الليل فكان «< now» يسمّيها كلَّها متأخرة
+            $dueTasks->each(function ($t) use ($brief) {
                 $brief->push([
                     'sev' => 2,
-                    'title' => ($t->due_date < $now ? 'مهمة متأخرة — ' : 'مهمة مستحقة اليوم — ') . $t->title,
+                    'title' => 'مهمة مستحقة اليوم — ' . $t->title,
                     'sub' => $t->case?->case_number ? '#' . $t->case->case_number : '—',
                     'url' => route('tasks.show', $t),
                     'icon' => 'task',
@@ -377,17 +387,21 @@ class DashboardController extends Controller
 
             // الموجزُ كان يعرض فواتيرَ غيره: رقمَها واسمَ موكّلها
             // والمبلغَ الباقي — والرابطُ إليها معروضٌ وهو يردّه ٣٠٢
+            // الملغاةُ ليست مستحقّة، وما لا تاريخَ له آخراً: SQLite يضع NULL
+            // أوّلاً فكانت تملأ الموجزَ قبل المتأخّرة فعلاً
             $dueInvoices = \App\Models\FinanceInvoice::with('client')
                 ->visibleTo($user)
-                ->where('status', '!=', 'paid')
+                ->whereNotIn('status', ['paid', 'cancelled'])
                 ->where(function ($q) use ($now) {
-                    $q->whereNull('due_date')->orWhere('due_date', '<=', $now->copy()->addDays(7));
+                    $q->whereNull('due_date')->orWhereDate('due_date', '<=', $now->copy()->addDays(7)->toDateString());
                 })
+                ->orderByRaw('due_date IS NULL')
                 ->orderBy('due_date')
                 ->limit(5)
                 ->get();
             $dueInvoices->each(function ($i) use ($brief) {
-                $overdue = $i->due_date && $i->due_date->isPast();
+                // مستحقّةُ اليوم ليست متأخّرة: isPast() صادقةٌ منذ منتصف الليل
+                $overdue = $i->due_date && $i->due_date->copy()->startOfDay()->lt(today());
                 $brief->push([
                     'sev' => $overdue ? 2 : 3,
                     'title' => ($overdue ? 'فاتورة متأخرة — ' : 'فاتورة مستحقة — ') . $i->invoice_number,
@@ -404,7 +418,8 @@ class DashboardController extends Controller
             if ($todayCalls > 0) {
                 $brief->push([
                     'sev' => 4,
-                    'title' => $todayCalls . ' اتصال مسجل اليوم',
+                    // «3 اتصال مسجل» خطأ: المعدودُ يتبع العدد
+                    'title' => \App\Support\ArabicCount::of($todayCalls, 'اتصال واحد مسجّل', 'اتصالان مسجّلان', 'اتصالات مسجّلة', 'اتصالاً مسجّلاً') . ' اليوم',
                     'sub' => 'توثيق تلقائي ضمن الخط الزمني للقضايا',
                     'url' => route('attention.index'),
                     'icon' => 'call',

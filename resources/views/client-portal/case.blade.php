@@ -158,9 +158,14 @@
                             @if ($invoice->issue_date) · {{ $invoice->issue_date->format('Y-m-d') }} @endif
                         </p>
                     </div>
+                    {{-- الملغاةُ متبقّيها صفر، فكانت تُعلَّم «مدفوع» وهي لم تُدفع --}}
+                    @if ($invoice->status === 'cancelled')
+                        <span class="p-badge mute">{{ __('portal.accounting.cancelled_badge') }}</span>
+                    @else
                     <span class="p-badge {{ $invoice->remaining_amount <= 0 ? 'ok' : 'warn' }}">
                         {{ $invoice->remaining_amount <= 0 ? __('portal.accounting.paid_badge') : __('portal.accounting.remaining') . ' ' . number_format($invoice->remaining_amount, 2) }}
                     </span>
+                    @endif
                 </div>
             @endforeach
 

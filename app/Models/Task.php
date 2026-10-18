@@ -45,6 +45,35 @@ class Task extends Model
         ];
     }
 
+    /**
+     * المتأخّرةُ ما كان يومُ استحقاقها قبل اليوم (بتوقيت مسقط) — لا ما مضت ساعتُه.
+     *
+     * ‏due_date يُحفظ «Y-m-d 00:00:00»، فكانت المقارنةُ بـnow() تجعل مهمّةَ
+     * اليوم متأخّرةً منذ منتصف الليل: «متأخرة 0 يوم» في مركز الانتباه،
+     * و«مهمة متأخرة» في الموجز، و«متأخر» أحمرُ بجانب تاريخ اليوم.
+     */
+    public function scopeOverdue($query)
+    {
+        return $query->where('status', '!=', self::STATUS_COMPLETED)
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '<', today()->toDateString());
+    }
+
+    public function isOverdue(): bool
+    {
+        return $this->status !== self::STATUS_COMPLETED
+            && $this->due_date !== null
+            && $this->due_date->copy()->startOfDay()->lt(today());
+    }
+
+    /** أيّامُ التأخّر عدداً موجباً — وصفرٌ لما لم يتأخّر. */
+    public function daysOverdue(): int
+    {
+        return $this->isOverdue()
+            ? (int) $this->due_date->copy()->startOfDay()->diffInDays(today())
+            : 0;
+    }
+
     public function case(): BelongsTo
     {
         return $this->belongsTo(LegalCase::class, 'case_id');

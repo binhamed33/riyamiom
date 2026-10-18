@@ -6,6 +6,7 @@ use App\Models\LegalCase;
 use App\Models\Session;
 use App\Models\Task;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -38,7 +39,13 @@ class FeasibilityController extends Controller
      */
     public const PRODUCTIVITY_TARGET = 2.0;
 
-    public function index(): View
+    /**
+     * كفاءةُ الفريق مرتّبةً — الحسابُ الوحيد لها.
+     *
+     * صفحةُ المستخدم كانت تقرأ «نسبة الكفاءة» من حقلٍ لا وجودَ له فتعرض
+     * ٠٪ لكلّ محامٍ؛ فصار الحسابُ هنا يُستدعى من الصفحتين بدل صيغةٍ ثانية.
+     */
+    public static function teamEfficiency(): Collection
     {
         $userIds = User::whereIn('role', ['developer', 'admin', 'lawyer', 'staff'])->pluck('id');
 
@@ -94,8 +101,7 @@ class FeasibilityController extends Controller
             // Overdue tasks per lawyer
             $overdueTasksGrouped = Task::whereIn('assigned_to', $userIds)
                 ->where('status', '!=', 'completed')
-                ->whereNotNull('due_date')
-                ->where('due_date', '<', now())
+                ->overdue() // باليوم لا بالساعة: مهمّةُ اليوم ليست متأخّرة
                 ->selectRaw('assigned_to, count(*) as count')
                 ->groupBy('assigned_to')
                 ->get()
@@ -343,8 +349,18 @@ class FeasibilityController extends Controller
             ];
         })->sortByDesc('overall')->values();
 
-        $topPerformer = $efficiencyData->first();
-        $leastPerformer = $efficiencyData->last();
+        return $efficiencyData;
+    }
+
+    public function index(): View
+    {
+        $efficiencyData = self::teamEfficiency();
+
+        // من لا بيانات له لا يُسمّى «يحتاج تحسين ٠٪»: كانت المحاسبةُ بلا قضيّةٍ
+        // ولا مهمّة تُعرض أضعفَ الفريق وهي لم تُقَس أصلاً
+        $ranked = $efficiencyData->where('has_data', true)->values();
+        $topPerformer = $ranked->first();
+        $leastPerformer = $ranked->last();
 
         // Office-wide aggregate stats
         $officeStats = [
@@ -364,11 +380,16 @@ class FeasibilityController extends Controller
         $officeWinRate = $totalDecidedAll > 0 ? round(($wonCasesAll / $totalDecidedAll) * 100, 1) : 0;
         $officeTaskRate = $totalTasksAll > 0 ? round(($completedTasksAll / $totalTasksAll) * 100, 1) : 0;
 
-        $totalLawyers = $users->count();
-        $avgOverall = $efficiencyData->count() > 0 ? round($efficiencyData->avg('overall'), 1) : 0;
-        $avgSuccess = $efficiencyData->count() > 0 ? round($efficiencyData->avg('success_rate'), 1) : 0;
-        $avgTaskComp = $efficiencyData->count() > 0 ? round($efficiencyData->avg('task_completion'), 1) : 0;
-        $avgDeadline = $efficiencyData->count() > 0 ? round($efficiencyData->avg('deadline_compliance'), 1) : 0;
+        $totalLawyers = $efficiencyData->count();
+
+        // كلُّ متوسّطٍ على من له مقامُه وحدَه: كان «معدّل النجاح» يَعُدّ من لم
+        // يُفصَل له في قضيّةٍ ٠٪، فيُقرأ ٣٤٪ بجوار «نسبة فوز المكتب ٧٥٪»
+        $avgOf = fn (string $metric, string $has): float
+            => round((float) ($efficiencyData->where($has, true)->avg($metric) ?? 0), 1);
+        $avgOverall = $avgOf('overall', 'has_data');
+        $avgSuccess = $avgOf('success_rate', 'has_decided');
+        $avgTaskComp = $avgOf('task_completion', 'has_tasks');
+        $avgDeadline = $avgOf('deadline_compliance', 'has_due');
 
         // Charts data
         $casesByType = LegalCase::select('type', DB::raw('count(*) as count'))
@@ -391,7 +412,8 @@ class FeasibilityController extends Controller
             $start = $date->copy()->startOfMonth();
             $end = $date->copy()->endOfMonth();
             $monthlyTrend->push([
-                'label' => $date->format('M Y'),
+                // translatedFormat: format('M Y') كان يكتب «May 2026» تحت رسمٍ عربيّ
+                'label' => $date->translatedFormat('M Y'),
                 'new' => LegalCase::whereBetween('created_at', [$start, $end])->count(),
                 'won' => LegalCase::where('status', 'won')->whereBetween('updated_at', [$start, $end])->count(),
                 'lost' => LegalCase::where('status', 'lost')->whereBetween('updated_at', [$start, $end])->count(),

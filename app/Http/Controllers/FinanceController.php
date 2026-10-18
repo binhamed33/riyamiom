@@ -59,6 +59,8 @@ class FinanceController extends Controller
         $expenseByCategory = collect();
         $monthlyIncome = collect();
         $monthlyExpense = collect();
+        $financeTrend = [];
+        $incomeCategories = [];
 
         if ($isFinAdmin) {
             $stats = [
@@ -80,7 +82,12 @@ class FinanceController extends Controller
             //
             // معاملات مكتبٍ واحد لا تُثقل الذاكرة، والتجميع هنا يُزيل
             // اعتماداً على محرّك بعينه ويفتح الصفحة للاختبار.
+            //
+            // وكانت هذه الأرقامُ تُحسب ثمّ لا تُعرض: الصفحةُ بلا رسمٍ واحد.
+            // فصارت آخرَ اثني عشر شهراً بأصفارها، يرسمها «الدخل والمصروفات».
+            $trendStart = now()->startOfMonth()->subMonths(11);
             $byMonth = static fn (string $type) => FinanceTransaction::where('type', $type)
+                ->whereDate('date', '>=', $trendStart->toDateString())
                 ->orderBy('date')
                 ->get(['date', 'amount'])
                 ->groupBy(fn ($t) => \Illuminate\Support\Carbon::parse($t->date)->format('Y-m'))
@@ -88,9 +95,28 @@ class FinanceController extends Controller
 
             $monthlyIncome = $byMonth('income');
             $monthlyExpense = $byMonth('expense');
+
+            foreach (range(0, 11) as $i) {
+                $month = $trendStart->copy()->addMonths($i);
+                $key = $month->format('Y-m');
+                $financeTrend[] = [
+                    'label' => $month->translatedFormat('M'),
+                    'title' => $month->translatedFormat('F Y'),
+                    'income' => round($monthlyIncome[$key] ?? 0, 3),
+                    'expense' => round($monthlyExpense[$key] ?? 0, 3),
+                ];
+            }
+
+            // ثلاثةُ تصنيفاتٍ وما دونها «أخرى»: لوحةُ الفئات ثلاثةُ ألوانٍ مفحوصة لا تدور
+            $sorted = $incomeByCategory->map(fn ($v) => (float) $v)->sortDesc();
+            $incomeCategories = $sorted->take(3)->all();
+            if ($sorted->count() > 3) {
+                $other = __('app.other');
+                $incomeCategories[$other] = ($incomeCategories[$other] ?? 0) + (float) $sorted->slice(3)->sum();
+            }
         }
 
-        return view('finance.index', compact('tab', 'transactions', 'invoices', 'fees', 'clients', 'cases', 'stats', 'incomeByCategory', 'expenseByCategory', 'monthlyIncome', 'monthlyExpense', 'isFinAdmin'));
+        return view('finance.index', compact('tab', 'transactions', 'invoices', 'fees', 'clients', 'cases', 'stats', 'incomeByCategory', 'expenseByCategory', 'monthlyIncome', 'monthlyExpense', 'financeTrend', 'incomeCategories', 'isFinAdmin'));
     }
 
     public function storeTransaction(Request $request)
@@ -161,6 +187,13 @@ class FinanceController extends Controller
         $data['client_visible'] = (bool) ($data['client_visible'] ?? false);
         $data['user_id'] = auth()->id();
 
+        if (!empty($data['case_id'])) {
+            $case = $this->linkableCase((int) $data['case_id']);
+            // موكّلُ القضية موكّلُ فاتورتها إن تُرك الحقل: كانت تُنشأ بلا موكّلٍ
+            // فلا اسمَ في قائمة الفواتير ولا تنبيهَ يصله وهي ظاهرةٌ في بوابته
+            $data['client_id'] = $data['client_id'] ?? $case->client_id;
+        }
+
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
             $data['attachment_path'] = $file->store('finance-attachments', Attachments::DISK);
@@ -189,6 +222,19 @@ class FinanceController extends Controller
         ]);
         $data['paid_amount'] = $data['paid_amount'] ?? ($data['status'] === 'paid' ? $data['amount'] : 0);
 
+        if (!empty($data['case_id']) && (int) $data['case_id'] !== (int) $invoice->case_id) {
+            $this->linkableCase((int) $data['case_id']);
+        }
+
+        // حقلٌ فارغٌ في نافذة التعديل لا يفكّ ربطاً لم تعرضه: موكّلٌ أو قضيةٌ
+        // في سلّة المحذوفات ليسا في قائمتَيها، فيصل الحقلُ فارغاً وهو لم يُمسّ
+        foreach (['client_id' => Client::class, 'case_id' => LegalCase::class] as $key => $model) {
+            if (array_key_exists($key, $data) && $data[$key] === null && $invoice->{$key}
+                && !$model::whereKey($invoice->{$key})->exists()) {
+                unset($data[$key]);
+            }
+        }
+
         if ($request->hasFile('attachment')) {
             if ($invoice->attachment_path) Attachments::delete($invoice->attachment_path);
             $file = $request->file('attachment');
@@ -198,6 +244,19 @@ class FinanceController extends Controller
 
         $invoice->update($data);
         return redirect()->route('finance.index', ['tab' => 'invoices'])->with('success', 'تم تحديث الفاتورة');
+    }
+
+    /**
+     * القضيةُ التي تُربط بها فاتورة: غيرُ المدير لا يربط إلا بقضاياه —
+     * القاعدةُ نفسُها في updateFee. صار للفاتورة حقلُ قضية في النموذج،
+     * وبلا هذا يعلّق موظّفٌ فاتورتَه على قضيةِ غيره فتظهر في محاسبتها.
+     */
+    private function linkableCase(int $caseId): LegalCase
+    {
+        $case = LegalCase::findOrFail($caseId);
+        abort_unless($this->isAdmin() || (int) $case->lawyer_id === (int) auth()->id(), 403);
+
+        return $case;
     }
 
     public function storeFee(Request $request)
@@ -277,7 +336,7 @@ class FinanceController extends Controller
 
     public function showFee(FinanceFee $fee)
     {
-        abort_unless($this->isAdmin() || $fee->user_id === auth()->id() || $fee->case->lawyer_id === auth()->id(), 403);
+        abort_unless($this->isAdmin() || $fee->user_id === auth()->id() || $fee->case?->lawyer_id === auth()->id(), 403);
         return view('finance.show', compact('fee'));
     }
 
@@ -290,13 +349,13 @@ class FinanceController extends Controller
     public function printInvoice(FinanceInvoice $invoice)
     {
         abort_unless($this->isAdmin() || $invoice->user_id === auth()->id(), 403);
-        return view('finance.print', ['item' => $invoice, 'type' => 'invoice']);
+        return view('finance.print', ['item' => $invoice->loadMissing(['client', 'case', 'user']), 'type' => 'invoice']);
     }
 
     public function printFee(FinanceFee $fee)
     {
-        abort_unless($this->isAdmin() || $fee->user_id === auth()->id() || $fee->case->lawyer_id === auth()->id(), 403);
-        return view('finance.print', ['item' => $fee, 'type' => 'fee']);
+        abort_unless($this->isAdmin() || $fee->user_id === auth()->id() || $fee->case?->lawyer_id === auth()->id(), 403);
+        return view('finance.print', ['item' => $fee->loadMissing(['case.client', 'user']), 'type' => 'fee']);
     }
 
     public function destroyTransaction(FinanceTransaction $transaction)

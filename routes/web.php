@@ -411,6 +411,8 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::get('/export/tasks', [ExportController::class, 'tasks'])->name('export.tasks');
         Route::get('/export/clients', [ExportController::class, 'clients'])->name('export.clients');
         Route::get('/export/all', [ExportController::class, 'all'])->name('export.all');
+        Route::get('/export/finance', [ExportController::class, 'finance'])
+            ->middleware(['role:developer,admin', 'feature:finance'])->name('export.finance');
     });
     
     // Clients - developer, admin, lawyer, staff

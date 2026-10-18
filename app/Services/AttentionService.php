@@ -7,6 +7,7 @@ use App\Models\FinanceInvoice;
 use App\Models\LegalCase;
 use App\Models\Session;
 use App\Models\Task;
+use App\Support\ArabicCount;
 use Illuminate\Support\Collection;
 
 class AttentionService
@@ -59,19 +60,20 @@ class AttentionService
         }
 
         // 2. Overdue tasks
+        // ‏diffInDays(due, false) في Carbon 3 سالبٌ لتاريخٍ مضى: «متأخرة -6 يوم»،
+        // وشرطُ «ثلاثة أيام فأكثر = عاجل» لا يتحقّق أبداً — فصار العددُ من المهمّة نفسِها
         Task::with(['case', 'assignee'])
             ->when($isLawyer, fn ($q) => $q->where('assigned_to', $user->id))
-            ->where('status', '!=', 'completed')
-            ->where('due_date', '<', $now)
+            ->overdue()
             ->orderBy('due_date')
             ->limit(5)
             ->get()
-            ->each(function ($t) use ($items, $now) {
-                $days = (int) $now->diffInDays($t->due_date, false);
+            ->each(function ($t) use ($items) {
+                $days = $t->daysOverdue();
                 $items->push([
                     'severity' => $days >= 3 ? 'critical' : 'warning',
                     'title' => 'مهمة متأخرة — ' . $t->title,
-                    'description' => 'متأخرة ' . $days . ' يوم' . ($t->case ? ' — ' . $t->case->case_number : ''),
+                    'description' => 'متأخرة ' . ArabicCount::daysAccusative($days) . ($t->case ? ' — ' . $t->case->case_number : ''),
                     'url' => route('tasks.show', $t),
                     'action' => ['label' => 'إنهاء المهمة', 'url' => route('tasks.show', $t)],
                     'icon' => 'task',
@@ -94,22 +96,25 @@ class AttentionService
             });
 
         // 4. Unpaid invoices (due soon or overdue)
+        // الملغاةُ ليست غيرَ مدفوعة، والتأخّرُ يومُ استحقاقٍ قبل اليوم: كانت
+        // الإشارةُ مقلوبةً فتُعلَّم فاتورةٌ تستحقّ بعد يومين «متأخرة 1 يوم»
+        // وتمرّ المتأخّرةُ خمسةَ أشهرٍ «معلومةً» بلا كلمة
+        $today = $now->copy()->startOfDay();
         FinanceInvoice::with('client')
             ->visibleTo($user)
-            ->where('status', '!=', 'paid')
-            ->where(function ($q) use ($now) {
-                $q->where('due_date', '<=', $now->copy()->addDays(7));
-            })
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '<=', $today->copy()->addDays(7)->toDateString())
             ->orderBy('due_date')
             ->limit(5)
             ->get()
-            ->each(function ($i) use ($items, $now) {
-                $overdueDays = $i->due_date ? (int) $now->diffInDays($i->due_date, false) : 0;
+            ->each(function ($i) use ($items, $today) {
+                $overdueDays = $i->due_date->lt($today) ? (int) $i->due_date->copy()->startOfDay()->diffInDays($today) : 0;
                 $items->push([
                     'severity' => $overdueDays > 0 ? 'warning' : 'info',
                     'title' => 'فاتورة غير مدفوعة — ' . $i->invoice_number,
                     'description' => ($i->client->name ?? '') . ' — باقي ' . number_format($i->remaining_amount, 2)
-                        . ($overdueDays > 0 ? ' (متأخرة ' . $overdueDays . ' يوم)' : ''),
+                        . ($overdueDays > 0 ? ' (متأخرة ' . ArabicCount::daysAccusative($overdueDays) . ')' : ''),
                     'url' => route('finance.index'),
                     'action' => ['label' => 'الفاتورة', 'url' => route('finance.index')],
                     'icon' => 'invoice',
@@ -125,7 +130,8 @@ class AttentionService
                 $items->push([
                     'severity' => 'info',
                     'title' => 'موكل جديد بدون قضية — ' . $c->name,
-                    'description' => 'أُضيف قبل ' . $c->created_at->diffForHumans() . ' — أنشئ قضية له',
+                    // diffForHumans بالعربيّة تبدأ بـ«منذ»: «أُضيف قبل منذ يوم»
+                    'description' => 'أُضيف ' . $c->created_at->diffForHumans() . ' — أنشئ قضية له',
                     'url' => route('clients.show', $c),
                     'action' => ['label' => 'قضية جديدة', 'url' => route('cases.create', ['client_id' => $c->id])],
                     'icon' => 'client',

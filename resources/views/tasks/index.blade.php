@@ -1,11 +1,19 @@
 @extends('layouts.app')
 
-@section('title', __('app.page_tasks'))
+@php
+    // «مهامي» (‎/my-tasks‎ أو ‎?mine=1‎) تقول اسمَها، وروابطُها تبقى فيها:
+    // كان العنوانُ «المهام» والتبويباتُ تعود إلى مهامِّ المكتب كلِّه
+    $mine = request()->boolean('mine');
+    $listRoute = request()->routeIs('tasks.my') ? 'tasks.my' : 'tasks.index';
+    $keep = ($mine && $listRoute === 'tasks.index') ? ['mine' => 1] : [];
+@endphp
+
+@section('title', $mine ? __('app.page_my_tasks') : __('app.page_tasks'))
 
 @section('content')
 <div class="space-y-6">
     <div class="flex items-center justify-between">
-        <h2 class="text-2xl font-bold text-gray-900">{{ __('app.tasks') }}</h2>
+        <h2 class="text-2xl font-bold text-gray-900">{{ $mine ? __('app.page_my_tasks') : __('app.tasks') }}</h2>
         <a href="{{ route('tasks.create') }}"
            class="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,14 +39,14 @@
     {{-- Quick tabs --}}
     <div class="flex flex-wrap items-center gap-2">
         @foreach($tabs as $tab)
-            <a href="{{ route('tasks.index', $tab['params']) }}"
+            <a href="{{ route($listRoute, $tab['params'] + $keep) }}"
                class="md-tab inline-flex items-center px-4 py-2 rounded-full text-xs font-bold border transition-colors {{ $tab['active'] ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-gold/40 hover:text-gold-dark' }}">
                 {{ $tab['label'] }}
             </a>
         @endforeach
     </div>
 
-    <x-filter-panel :action="route('tasks.index')" :count="$activeFilters" :clear-url="route('tasks.index')">
+    <x-filter-panel :action="route($listRoute)" :count="$activeFilters" :clear-url="route($listRoute, $keep)" :hidden="$keep">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.status') }}</label>
@@ -125,7 +133,7 @@
             @php
                 $tStatus = ['pending' => 'bg-gray-100 text-gray-800', 'in_progress' => 'bg-blue-100 text-blue-700', 'completed' => 'bg-green-100 text-green-700'];
                 $tPrio = ['low' => 'bg-gray-100 text-gray-600', 'medium' => 'bg-blue-100 text-blue-700', 'high' => 'bg-orange-100 text-orange-700', 'urgent' => 'bg-red-100 text-red-700'];
-                $overdue = $task->due_date && $task->status !== 'completed' && $task->due_date->isPast();
+                $overdue = $task->isOverdue();
             @endphp
             <x-list-card :url="route('tasks.show', $task)" :title="$task->title" :subtitle="$task->case->title ?? null">
                 <x-slot:badges>
@@ -226,8 +234,12 @@
                                     @break
                             @endswitch
                         </td>
-                        <td class="px-6 py-4 text-gray-600">
+                        {{-- شارةُ «متأخرة» كانت في بطاقات الهاتف وحدها: الجدولُ لا يميّز المتأخّرَ بشيء --}}
+                        <td class="px-6 py-4 {{ $task->isOverdue() ? 'text-red-700 font-semibold' : 'text-gray-600' }}">
                             {{ $task->due_date ? $task->due_date->format('Y-m-d') : '—' }}
+                            @if($task->isOverdue())
+                                <span class="ms-1 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-700">{{ __('app.due_overdue') }}</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-1">

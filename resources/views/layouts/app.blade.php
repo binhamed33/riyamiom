@@ -617,10 +617,11 @@
             border: 1px solid var(--accent-a08);
         }
 
+        /* قائمةُ الجرس معتمة: الرأسُ نفسُه عليه backdrop-filter فلا يُغبِّش
+           ابنُه ما تحت الرأس، وبقيت شفافيةُ ‎0.98‎ وحدَها — فكانت شاراتُ
+           جدول الجلسات وتواريخُه تُقرأ من خلف الإشعارات */
         .dropdown-dark {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: #FFFFFF;
             border: 1px solid rgba(0,0,0,0.08);
             box-shadow: 0 8px 30px rgba(0,0,0,0.08);
         }
@@ -755,6 +756,10 @@
 ::-webkit-scrollbar-track { background: var(--surface-3); }
         ::-webkit-scrollbar-thumb { background: #C9CDD6; border-radius: 8px; }
         input[type=checkbox] { accent-color: var(--accent-dark) !important; }
+        /* الغلافُ يرث أصنافَ <select> (حدٌّ وحشوةٌ وخلفية) فكان يرسم صندوقاً حول
+           صندوق .ts-control — حقلٌ فارغٌ داخل حقل. الحقلُ المرئيّ واحد بقياس الحقول */
+        .ts-wrapper { padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; }
+        .ts-wrapper .ts-control { border-radius: 0.5rem; padding: 0.625rem 1rem; }
         .ts-wrapper .ts-control { background: #FFFFFF !important; border: 1px solid #E2E6EC !important; color: #111827 !important; }
         .ts-wrapper .ts-control input { color: #111827 !important; }
         .ts-wrapper .ts-control:hover { border-color: #C9CDD6 !important; }
@@ -818,7 +823,7 @@
         [data-theme="dark"] .text-orange-700 { color: #FB923C !important; }
         [data-theme="dark"] aside[style*="background"] { background: #0D111B !important; }
         [data-theme="dark"] aside div[style*="border-bottom"] { border-color: var(--accent-a10) !important; }
-        [data-theme="dark"] .dropdown-dark { background: rgba(8,11,18,0.98) !important; border-color: var(--accent-a15) !important; }
+        [data-theme="dark"] .dropdown-dark { background: #080B12 !important; border-color: var(--accent-a15) !important; }
         [data-theme="dark"] footer[style*="background"] { background: rgba(8,11,18,0.5) !important; }
         [data-theme="dark"] .btn-gold { background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important; color: #080B12 !important; }
         [data-theme="dark"] .card-premium { background: #121826 !important; border-color: var(--accent-a15) !important; }
@@ -2708,7 +2713,9 @@
                 create: !el.hasAttribute('data-no-create'),
                 createOnBlur: !el.hasAttribute('data-no-create'),
                 maxOptions: 100,
-                placeholder: el.getAttribute('placeholder') || '',
+                // لا «placeholder: ''»: كان النصُّ الفارغ يغلب نصَّ <option value="">
+                // الذي تأخذه TomSelect تلقائياً، فتظهر «جميع المستخدمين» و«كل القضايا»
+                // صناديقَ فارغة. وسمةُ placeholder على العنصر تقرؤها المكتبةُ بنفسها.
                 render: {
                     option_create: function(data, escape) {
                         return '<div class="create">إضافة: <strong>' + escape(data.input) + '</strong></div>';

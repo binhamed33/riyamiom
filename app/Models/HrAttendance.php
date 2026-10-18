@@ -118,7 +118,8 @@ class HrAttendance extends Model
         $out = $this->check_out_at->timezone('Asia/Muscat');
         $crossed = $this->work_date && $out->toDateString() > $this->work_date->toDateString();
 
-        return $out->format($format) . ($crossed ? ' (+1)' : '');
+        // translatedFormat: format() كان يكتب «04:15 PM» بجوار حضورٍ «08:15 ص»
+        return $out->translatedFormat($format) . ($crossed ? ' (+1)' : '');
     }
 
     /** «فترتان» لمن استأنف يومه — فلا يُقرأ «08:29 — 20:30» اثنتي عشرة ساعة. */

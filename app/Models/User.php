@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Http\Controllers\FeasibilityController;
 use App\Traits\Encryptable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -38,6 +40,22 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * نسبةُ الكفاءة كما تحسبها دراسةُ الجدوى، أو null لمن لا بيانات له.
+     *
+     * صفحةُ المستخدم كانت تقرأ $user->efficiency ولا عمودَ ولا مُحوِّلَ بهذا
+     * الاسم، فكانت «0%» لكلّ محامٍ أيّاً كان عمله.
+     */
+    protected function efficiency(): Attribute
+    {
+        return Attribute::get(function (): ?float {
+            $row = FeasibilityController::teamEfficiency()
+                ->first(fn (array $r) => $r['user']->id === $this->id);
+
+            return $row && $row['has_data'] ? (float) $row['overall'] : null;
+        })->shouldCache();
     }
 
     public function cases(): HasMany

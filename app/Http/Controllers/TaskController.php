@@ -53,9 +53,7 @@ class TaskController extends Controller
         if ($request->filled('due')) {
             $today = now()->startOfDay();
             match ($request->due) {
-                'overdue' => $query->whereNotNull('due_date')
-                    ->where('due_date', '<', $today)
-                    ->where('status', '!=', 'completed'),
+                'overdue' => $query->overdue(),
                 'today' => $query->whereDate('due_date', $today),
                 'week' => $query->whereBetween('due_date', [$today, $today->copy()->addDays(7)->endOfDay()]),
                 'upcoming' => $query->whereNotNull('due_date')
@@ -103,8 +101,10 @@ class TaskController extends Controller
             ->orderBy(isset($sortSub[$sort]) ? $sortSub[$sort]() : $sortMap[$sort], $dir)
             ->orderBy('tasks.id', 'desc')->paginate(15)->withQueryString();
 
-        $doneCount = Task::where('status', 'completed')
-            ->orWhereHas('case', fn ($c) => $c->whereIn('status', \App\Models\LegalCase::DONE_STATUSES))
+        // عددُ «المنجزة» من القائمة نفسِها: في «مهامي» كان يعدّ منجزَ المكتب كلِّه
+        $doneCount = Task::when($request->boolean('mine'), fn ($q) => $q->where('assigned_to', auth()->id()))
+            ->where(fn ($q) => $q->where('status', 'completed')
+                ->orWhereHas('case', fn ($c) => $c->whereIn('status', \App\Models\LegalCase::DONE_STATUSES)))
             ->count();
         $users = User::where('role', '!=', 'client')->orderBy('name')->get();
 
@@ -303,21 +303,18 @@ class TaskController extends Controller
             ->with('success', 'Task deleted successfully.');
     }
 
-    public function myTasks(): View
+    /**
+     * «مهامي» هي قائمةُ المهام نفسُها مقيَّدةً بصاحبها.
+     *
+     * كانت تبني قائمتَها بنفسها وتعرضها في القالب نفسِه بلا ‎$done‎ ولا
+     * ‎$doneCount‎: فزرُّ «المنجزة (0)» صفرٌ أبداً والمنجزةُ معروضةٌ تحته،
+     * والعنوانُ «المهام» وتبويبُ «الكل» مضاء — لا شيء يقول إنها «مهامي».
+     */
+    public function myTasks(Request $request): View
     {
-        $tasks = Task::with(['case', 'creator'])
-            ->where('assigned_to', auth()->id())
-            ->latest()
-            ->paginate(15);
+        $request->merge(['mine' => '1']);
 
-        $users = User::where('role', '!=', 'client')->orderBy('name')->get();
-
-        // نفس القالب يُستخدم هنا، فيحتاج نفس قوائم الفلترة
-        $filterCases = \App\Models\LegalCase::orderByDesc('id')
-            ->limit(300)
-            ->get(['id', 'office_case_number', 'title']);
-
-        return view('tasks.index', compact('tasks', 'users', 'filterCases'));
+        return $this->index($request);
     }
 
     private function authorizeTaskAccess(Task $task): void

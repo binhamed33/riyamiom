@@ -4,7 +4,8 @@
 
 @section('breadcrumb')
     <div class="flex items-center gap-2 text-sm">
-        <a href="{{ route('dashboard') }}" class="text-gray-400 hover:text-gold-dark transition">{{ __('app.calendar') }}</a>
+        {{-- الرابطُ إلى لوحة التحكّم فاسمُه اسمُها: كان يُقرأ «التقويم / مركز الانتباه» --}}
+        <a href="{{ route('dashboard') }}" class="text-gray-400 hover:text-gold-dark transition">{{ __('app.dashboard') }}</a>
         <span class="text-gray-300">/</span>
         <span class="font-medium text-gray-700">{{ app()->getLocale() === 'ar' ? 'مركز الانتباه' : 'Attention Center' }}</span>
     </div>

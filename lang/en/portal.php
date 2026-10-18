@@ -11,6 +11,7 @@ return [
         'invoice' => 'Invoice',
         'paid_badge' => 'Paid',
         'unpaid_badge' => 'Unpaid',
+        'cancelled_badge' => 'Cancelled',
         'remaining' => 'Remaining',
         'note' => 'These are the items your office chose to share. For any question about an amount, contact your office directly.',
     ],

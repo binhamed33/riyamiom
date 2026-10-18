@@ -610,7 +610,7 @@ document.addEventListener('alpine:init', () => {
         <div class="flex-1 min-w-0">
             <p class="text-xs text-gray-400">الجلسة القادمة</p>
             <p class="text-sm font-bold text-gray-900">
-                {{ $nextSession->date->format('Y-m-d H:i') }}
+                <bdi dir="ltr">{{ $nextSession->date->format('Y-m-d H:i') }}</bdi>
                 @if($nextSession->location) — {{ $nextSession->location }} @endif
             </p>
         </div>
@@ -732,7 +732,8 @@ document.addEventListener('alpine:init', () => {
                         <thead>
                             <tr class="border-b border-gray-200">
                                 <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.table_date') }}</th>
-                                <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.table_type') }}</th>
+                                {{-- العمودُ يحمل مكانَ الجلسة (المحكمة والقاعة)، وكان عنوانُه «النوع» --}}
+                                <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.location') }}</th>
                                 <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.status') }}</th>
                                 <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.table_notes') }}</th>
                                 <th class="px-3 py-2 text-gold-dark font-bold text-xs">{{ __('app.session_decision') }}</th>
@@ -741,7 +742,8 @@ document.addEventListener('alpine:init', () => {
                         <tbody>
                             <template x-for="s in sessions" :key="s.id">
                                 <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="px-3 py-2.5 text-gray-900 text-xs whitespace-nowrap" x-text="sessionDateLabel(s.date)"></td>
+                                    {{-- bdi ltr: في سياقٍ RTL كان «2026-06-21 09:30» يُعرض «09:30 2026-06-21» --}}
+                                    <td class="px-3 py-2.5 text-gray-900 text-xs whitespace-nowrap"><bdi dir="ltr" x-text="sessionDateLabel(s.date)"></bdi></td>
                                     <td class="px-3 py-2.5 text-gray-400 text-xs" x-text="s.location || '—'"></td>
                                     <td class="px-3 py-2.5">
                                         <span class="text-xs px-2 py-0.5 rounded-full" :class="sessionStatusClass(s.status)" x-text="sessionStatusLabel(s.status)"></span>
@@ -802,7 +804,8 @@ document.addEventListener('alpine:init', () => {
                                 @elseif(($task->priority ?? '') === 'high') bg-orange-100 text-orange-700
                                 @elseif(($task->priority ?? '') === 'medium') bg-yellow-100 text-yellow-700
                                 @else bg-gray-100 text-gray-400 @endif">
-                                {{ $task->priority ?? '' }}
+                                {{-- كان يطبع المفتاح نفسَه: high وurgent --}}
+                                {{ $task->priority && \Illuminate\Support\Facades\Lang::has('app.priority_' . $task->priority) ? __('app.priority_' . $task->priority) : ($task->priority ?? '') }}
                             </span>
                         </div>
                     @endforeach
@@ -1107,7 +1110,7 @@ document.addEventListener('alpine:init', () => {
                                     <p class="text-xs text-gray-500 mt-0.5 truncate">{{ $ev['sub'] }}</p>
                                 </div>
                                 <span class="text-[10px] px-2 py-0.5 rounded-full {{ $k['bg'] }} {{ $k['text'] }} font-bold">
-                                    {{ $ev['date']?->format('Y/m/d H:i') ?? '—' }}
+                                    <bdi dir="ltr">{{ $ev['date']?->format('Y/m/d H:i') ?? '—' }}</bdi>
                                 </span>
                             </div>
                         </div>

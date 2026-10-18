@@ -639,7 +639,11 @@ class AutomationEngine
     /** استبدال المتغيرات في النصوص: {case}, {client}, {date} */
     private function fillPlaceholders(string $text, Model $subject, ?LegalCase $case): string
     {
-        $date = $subject instanceof Session ? $subject->date?->format('Y-m-d') : now()->format('Y-m-d');
+        // «Y/m/d» لا «Y-m-d»: الشرطةُ بين أرقامٍ تلي حرفاً عربيّاً تفصلها في
+        // خوارزمية الاتجاه، فكان «تحضير جلسة 2026-10-19» يُقرأ «19-10-2026».
+        // والشرطةُ المائلة فاصلٌ يُبقي التاريخ قطعةً واحدة. والنصُّ يُخزَّن
+        // ويُرسل (مهمّة، إشعار) فلا وسمَ HTML يعزله.
+        $date = $subject instanceof Session ? $subject->date?->format('Y/m/d') : now()->format('Y/m/d');
 
         return str_replace(
             ['{case}', '{client}', '{date}'],

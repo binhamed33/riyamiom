@@ -30,7 +30,7 @@
             <p class="text-2xl font-bold text-red-700">{{ number_format($stats['total_penalties'], 2) }} ر.ع</p>
         </div>
         <div class="bg-white rounded-xl border border-gold/15 p-5">
-            <p class="text-xs text-gray-400 mb-1">إجازات pending</p>
+            <p class="text-xs text-gray-400 mb-1">{{ __('app.hr_pending_leaves') }}</p>
             <p class="text-2xl font-bold text-yellow-700">{{ $stats['pending_leaves'] }}</p>
         </div>
     </div>
@@ -177,10 +177,13 @@
                 <h3 class="text-sm font-bold text-gold-dark mb-4">توزيع التقييمات</h3>
                 <div class="flex items-center gap-8">
                     <div class="w-48 h-48"><canvas id="hrRatingChart"></canvas></div>
+                    {{-- نقاطُ المفتاح بألوان قطع الرسم نفسِها (MdChart.status) — كانت
+                         green/yellow/red-400 بجوار قطعٍ خضراءَ وبنّيّةٍ وحمراء --}}
                     <div class="space-y-3">
-                        <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-green-400"></span><span class="text-sm text-gray-700">ممتاز (4-5): <strong class="text-gray-900">{{ $ratingDistribution['excellent'] }}</strong></span></div>
-                        <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-yellow-400"></span><span class="text-sm text-gray-700">جيد (3-4): <strong class="text-gray-900">{{ $ratingDistribution['good'] }}</strong></span></div>
-                        <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-red-400"></span><span class="text-sm text-gray-700">ضعيف (>3): <strong class="text-gray-900">{{ $ratingDistribution['poor'] }}</strong></span></div>
+                        <div class="flex items-center gap-3"><span data-rating-dot="good" class="w-3 h-3 rounded-full bg-emerald-600"></span><span class="text-sm text-gray-700">ممتاز (4-5): <strong class="text-gray-900">{{ $ratingDistribution['excellent'] }}</strong></span></div>
+                        <div class="flex items-center gap-3"><span data-rating-dot="warn" class="w-3 h-3 rounded-full bg-amber-700"></span><span class="text-sm text-gray-700">جيد (3-4): <strong class="text-gray-900">{{ $ratingDistribution['good'] }}</strong></span></div>
+                        <div class="flex items-center gap-3"><span data-rating-dot="bad" class="w-3 h-3 rounded-full bg-red-600"></span><span class="text-sm text-gray-700">ضعيف (أقل من 3): <strong class="text-gray-900">{{ $ratingDistribution['poor'] }}</strong></span></div>
+                        <div class="flex items-center gap-3"><span data-rating-dot="idle" class="w-3 h-3 rounded-full bg-slate-500"></span><span class="text-sm text-gray-700">بلا تقييم: <strong class="text-gray-900">{{ $ratingDistribution['unrated'] ?? 0 }}</strong></span></div>
                     </div>
                 </div>
             </div>
@@ -190,14 +193,15 @@
                     <thead><tr class="border-b border-gray-200"><th class="text-start px-4 py-3 font-bold text-gold-dark">الاسم</th><th class="px-4 py-3 font-bold text-gold-dark">البريد</th><th class="px-4 py-3 font-bold text-gold-dark">الدور</th><th class="px-4 py-3 font-bold text-gold-dark">قضايا</th><th class="px-4 py-3 font-bold text-gold-dark">مهام</th><th class="px-4 py-3 font-bold text-gold-dark">التقييم</th><th class="px-4 py-3 font-bold text-gold-dark">الحالة</th></tr></thead>
                     <tbody>
                         @foreach($employees as $emp)
-                            @php $d = collect($chartData)->firstWhere('name', $emp->name) ?? ['cases'=>0,'tasks'=>0,'tasks_done'=>0,'rating'=>0]; @endphp
+                            @php $d = collect($chartData)->firstWhere('name', $emp->name) ?? ['cases'=>0,'tasks'=>0,'tasks_done'=>0,'rating'=>null]; @endphp
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                 <td class="px-4 py-3 text-gray-900">{{ $emp->name }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $emp->email }}</td>
-                                <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gold/10 text-gold-dark border-gold/25">{{ $emp->role }}</span></td>
+                                {{-- اسمُ الدور لا مفتاحُه: كان الوسمُ «admin / lawyer / staff» --}}
+                                <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gold/10 text-gold-dark border-gold/25">{{ ['developer' => __('app.developer'), 'admin' => __('app.admin'), 'lawyer' => __('app.lawyer'), 'staff' => __('app.staff')][$emp->role] ?? $emp->role }}</span></td>
                                 <td class="px-4 py-3 text-gray-500">{{ $d['cases'] }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $d['tasks_done'] }}/{{ $d['tasks'] }}</td>
-                                <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $d['rating'] >= 4 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ($d['rating'] >= 3 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-400 border-gray-200') }}">{{ $d['rating'] }}</span></td>
+                                <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $d['rating'] >= 4 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ($d['rating'] >= 3 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-400 border-gray-200') }}">{{ $d['rating'] ?? '—' }}</span></td>
                                 <td class="px-4 py-3">@if($emp->is_active)<span class="text-xs text-green-700">نشط</span>@else<span class="text-xs text-red-700">غير نشط</span>@endif</td>
                             </tr>
                         @endforeach
@@ -373,7 +377,7 @@
                         @forelse($leaves as $l)
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                 <td class="px-4 py-3 text-gray-900 text-start">{{ $l->employee->name }}</td>
-                                <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gray-100 text-gray-500 border-gray-200">{{ $l->type }}</span></td>
+                                <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gray-100 text-gray-500 border-gray-200">{{ $l->typeName() }}</span></td>
                                 <td class="px-4 py-3 text-gray-500">{{ $l->start_date->format('Y-m-d') }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $l->end_date->format('Y-m-d') }}</td>
                                 <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $l->status === 'approved' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ($l->status === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200') }}">{{ $l->status === 'approved' ? 'معتمدة' : ($l->status === 'rejected' ? 'مرفوضة' : 'قيد الانتظار') }}</span></td>
@@ -465,9 +469,13 @@
                        class="rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm">
             </div>
             @if($isManagerAtt)
-            <div>
+            {{-- عرضٌ ثابت: صندوقُ TomSelect كان بعرض محتواه (~130px) فيلفّ الأسماءَ سطرين.
+                 وسطرٌ واحد: بعد الاختيار يبقى حقلُ البحث بجوار الاسم فيلتفّ سطراً ثانياً،
+                 ويُخفى عند فقد التركيز فيقصر الصندوق — والصفُّ items-end فيقفز زرُّ «تصفية»
+                 بين الضغط والإفلات، فلا تُرسِل الضغطةُ الأولى النموذج. --}}
+            <div class="w-full sm:w-64 [&_.ts-control]:flex-nowrap [&_.ts-control>.item]:truncate">
                 <label class="block text-xs text-gray-400 mb-1">الموظف</label>
-                <select data-no-create name="employee_id" class="ts rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm">
+                <select data-no-create name="employee_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm">
                     <option value="">الجميع</option>
                     @foreach($employees as $e)
                         <option value="{{ $e->id }}" @selected(request('employee_id') == $e->id)>{{ $e->name }}</option>
@@ -546,9 +554,14 @@
                     @php $emp = $attEmployees->firstWhere('id', $uid); @endphp
                     <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
                         <span class="font-semibold text-gray-700">{{ $emp?->name ?? ('#' . $uid) }}</span>
-                        <span class="text-gray-500" dir="rtl">— {{ \App\Support\Duration::human($t['minutes']) }} في {{ $t['days'] }} يوم</span>
-                        @if($t['inferred'])<span class="text-amber-600" title="أوقاتٌ كتبها النظام لا أصحابُها — راجعها">· منها {{ $t['inferred'] }} مستنتَج</span>@endif
-                        @if($t['open'])<span class="text-emerald-600">· {{ $t['open'] }} مفتوح</span>@endif
+                        @if($t['minutes'] === null)
+                            {{-- كلُّ أيّامه في المدى مفتوحة: كان يُقرأ «أقلّ من دقيقة في 1 يوم · 1 مفتوح» --}}
+                            <span class="text-emerald-600" dir="rtl">— {{ \App\Support\ArabicCount::of($t['open'], 'يومٌ مفتوح', 'يومان مفتوحان', 'أيام مفتوحة', 'يوماً مفتوحاً') }}</span>
+                        @else
+                            <span class="text-gray-500" dir="rtl">— {{ \App\Support\Duration::human($t['minutes']) }} في {{ \App\Support\ArabicCount::of($t['days'], 'يوم واحد', 'يومين', 'أيام', 'يوماً') }}</span>
+                            @if($t['inferred'])<span class="text-amber-600" title="أوقاتٌ كتبها النظام لا أصحابُها — راجعها">· منها {{ $t['inferred'] }} مستنتَج</span>@endif
+                            @if($t['open'])<span class="text-emerald-600">· {{ $t['open'] }} مفتوح</span>@endif
+                        @endif
                     </div>
                 @endforeach
             </div>
@@ -988,14 +1001,17 @@
 @if($tab === 'employees' && $isAdmin && count($chartData) > 0)
 <script nonce="{{ $cspNonce }}">
 document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-rating-dot]').forEach(function (el) {
+        el.style.backgroundColor = MdChart.status(el.getAttribute('data-rating-dot'));
+    });
     new Chart(document.getElementById('hrRatingChart'), {
         type: 'doughnut',
         data: {
-            labels: ['ممتاز (4-5)', 'جيد (3-4)', 'ضعيف (>3)'],
+            labels: ['ممتاز (4-5)', 'جيد (3-4)', 'ضعيف (أقل من 3)', 'بلا تقييم'],
             datasets: [{
-                data: [{{ $ratingDistribution['excellent'] }}, {{ $ratingDistribution['good'] }}, {{ $ratingDistribution['poor'] }}],
+                data: [{{ $ratingDistribution['excellent'] }}, {{ $ratingDistribution['good'] }}, {{ $ratingDistribution['poor'] }}, {{ $ratingDistribution['unrated'] ?? 0 }}],
                 // تقدير لا فئة: ألوان الحالة، وتتبع الوضع الفاتح والداكن
-                backgroundColor: [MdChart.status('good'), MdChart.status('warn'), MdChart.status('bad')],
+                backgroundColor: [MdChart.status('good'), MdChart.status('warn'), MdChart.status('bad'), MdChart.status('idle')],
                 borderColor: MdChart.surface(),
                 borderWidth: 2,
                 hoverOffset: 6

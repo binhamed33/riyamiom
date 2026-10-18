@@ -62,7 +62,7 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
-                                {{ $case->deleted_at->format('Y/m/d H:i') }}
+                                <bdi dir="ltr">{{ $case->deleted_at->format('Y/m/d H:i') }}</bdi>
                             </td>
                             <td class="px-4 py-3">
                                 <form action="{{ route('cases.restore', $case->id) }}" method="POST" class="contents" data-confirm="{{ __('app.restore_case_confirm') }}">

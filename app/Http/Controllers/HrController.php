@@ -53,7 +53,8 @@ class HrController extends Controller
             ->when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))
             ->latest()->paginate(20);
 
-        $leaves = HrLeave::with(['employee', 'approver'])
+        // ‏leaveType: عمودُ «النوع» يعرض typeName() لا الرمزَ الخام
+        $leaves = HrLeave::with(['employee', 'approver', 'leaveType'])
             ->when(!$isAdmin, fn($q) => $q->where('employee_id', $user->id))
             ->latest()->paginate(20);
 
@@ -66,7 +67,7 @@ class HrController extends Controller
         ];
 
         $chartData = [];
-        $ratingDistribution = ['excellent' => 0, 'good' => 0, 'poor' => 0];
+        $ratingDistribution = ['excellent' => 0, 'good' => 0, 'poor' => 0, 'unrated' => 0];
 
         if ($isAdmin) {
             // كانت أربعة استعلامات لكل موظّف داخل حلقة — مكتبٌ بعشرين
@@ -100,13 +101,16 @@ class HrController extends Controller
 
                 $chartData[] = [
                     'name' => $emp->name,
-                    'rating' => round((float) ($avgRating ?? 0), 1),
+                    'rating' => $avgRating === null ? null : round((float) $avgRating, 1),
                     'cases' => (int) ($caseCounts[$emp->id] ?? 0),
                     'tasks' => (int) ($taskCounts[$emp->id] ?? 0),
                     'tasks_done' => (int) ($doneCounts[$emp->id] ?? 0),
                 ];
 
-                if ($avgRating >= 4) {
+                // من لم يُقيَّم قطّ ليس «ضعيفاً»: متوسّطُه null كان يسقط في الفئة الأخيرة
+                if ($avgRating === null) {
+                    $ratingDistribution['unrated']++;
+                } elseif ($avgRating >= 4) {
                     $ratingDistribution['excellent']++;
                 } elseif ($avgRating >= 3) {
                     $ratingDistribution['good']++;
@@ -216,7 +220,8 @@ class HrController extends Controller
             $totals = (clone $q)->reorder()->get(['user_id', 'minutes', 'inferred_minutes', 'closed_by', 'source', 'check_out_at'])
                 ->groupBy('user_id')
                 ->map(fn ($rows) => [
-                    'minutes' => (int) $rows->sum('minutes'),
+                    // ‏null إن لم يُقفل منها شيء: المفتوحُ كان يُجمع صفراً فيُقرأ «أقلّ من دقيقة»
+                    'minutes' => $rows->whereNotNull('minutes')->isEmpty() ? null : (int) $rows->sum('minutes'),
                     'days' => $rows->count(),
                     'inferred' => $rows->filter(fn ($r) => $r->hasInferredTime())->count(),
                     'open' => $rows->whereNull('check_out_at')->count(),

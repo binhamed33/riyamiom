@@ -31,9 +31,12 @@ class FinanceInvoice extends Model
 
     protected function casts(): array
     {
+        // ‏«date:Y-m-d» لا «date»: toJson() كان يكتب التاريخَ لحظةً بتوقيت UTC
+        // ‏(2026-10-17T20:00:00.000000Z) فتفتح نافذةُ التعديل حقلَي التاريخ
+        // فارغَين — <input type=date> لا يقبل غير Y-m-d — ويُرفض الحفظ
         return [
-            'issue_date' => 'date',
-            'due_date' => 'date',
+            'issue_date' => 'date:Y-m-d',
+            'due_date' => 'date:Y-m-d',
             'amount' => 'decimal:2',
             'paid_amount' => 'decimal:2',
             'client_visible' => 'boolean',
@@ -63,6 +66,11 @@ class FinanceInvoice extends Model
 
     public function getRemainingAmountAttribute(): float
     {
+        // الملغاةُ لا يبقى عليها شيء: كانت تُعرض بمبلغها كاملاً أحمرَ تحت «المتبقي»
+        if ($this->status === 'cancelled') {
+            return 0.0;
+        }
+
         return max(0, $this->amount - $this->paid_amount);
     }
 

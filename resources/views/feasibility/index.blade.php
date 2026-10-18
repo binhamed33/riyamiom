@@ -113,7 +113,8 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-700 text-xl font-bold">{{ $topPerformer['user']->name }}</p>
-                    <p class="text-gray-500 text-xs mt-1">{{ $topPerformer['total_cases'] }} {{ __('app.cases') }} · {{ $topPerformer['total_tasks'] }} {{ __('app.tasks') }} · {{ $topPerformer['active_days'] }} {{ __('app.days') }}</p>
+                    {{-- العددُ مع معدودِه: «7 القضايا · 196 يوم» كان يُلصق الرقمَ بعنوان العمود --}}
+                    <p class="text-gray-500 text-xs mt-1">{{ trans_choice('app.feas_n_cases', $topPerformer['total_cases']) }} · {{ trans_choice('app.feas_n_tasks', $topPerformer['total_tasks']) }} · {{ trans_choice('app.feas_n_days', $topPerformer['active_days']) }}</p>
                 </div>
                 <div class="text-left">
                     <p class="text-4xl font-bold text-gold-dark">{{ $topPerformer['overall'] }}%</p>
@@ -151,7 +152,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-700 text-xl font-bold">{{ $leastPerformer['user']->name }}</p>
-                    <p class="text-gray-500 text-xs mt-1">{{ $leastPerformer['total_cases'] }} {{ __('app.cases') }} · {{ $leastPerformer['total_tasks'] }} {{ __('app.tasks') }} · {{ $leastPerformer['active_days'] }} {{ __('app.days') }}</p>
+                    <p class="text-gray-500 text-xs mt-1">{{ trans_choice('app.feas_n_cases', $leastPerformer['total_cases']) }} · {{ trans_choice('app.feas_n_tasks', $leastPerformer['total_tasks']) }} · {{ trans_choice('app.feas_n_days', $leastPerformer['active_days']) }}</p>
                 </div>
                 <div class="text-left">
                     <p class="text-4xl font-bold text-gray-400">{{ $leastPerformer['overall'] }}%</p>
@@ -211,7 +212,7 @@
                                 @foreach($efficiencyData as $row)
                                     <tr>
                                         <td class="py-1.5 text-gray-700">{{ $row['user']['name'] ?? '—' }}</td>
-                                        <td class="py-1.5 text-gray-600">{{ $row['overall'] }}٪</td>
+                                        <td class="py-1.5 text-gray-600">{{ ($row['has_data'] ?? true) ? $row['overall'] . '٪' : '—' }}</td>
                                         <td class="py-1.5 text-gray-600">{{ ($row['has_decided'] ?? true) ? $row['success_rate'] . '٪' : '—' }}</td>
                                         <td class="py-1.5 text-gray-600">{{ ($row['has_tasks'] ?? true) ? $row['task_completion'] . '٪' : '—' }}</td>
                                     </tr>
@@ -394,12 +395,17 @@
                                     $barColor = $eff > 80 ? 'bg-emerald-500' : ($eff >= 60 ? 'bg-amber-500' : 'bg-red-500');
                                     $textColor = $eff > 80 ? 'text-emerald-700' : ($eff >= 60 ? 'text-gold-dark' : 'text-red-700');
                                 @endphp
+                                {{-- من لا بيانات له كان شريطاً أحمرَ «0%» كمن قيس فرسب --}}
+                                @if($entry['has_data'] ?? true)
                                 <div class="flex items-center gap-2">
                                     <div class="flex-1 bg-gray-100 rounded-full h-2">
                                         <div class="{{ $barColor }} h-2 rounded-full transition-all" style="width: {{ $eff }}%"></div>
                                     </div>
                                     <span class="{{ $textColor }} text-xs font-semibold w-10 text-left" dir="ltr">{{ $eff }}%</span>
                                 </div>
+                                @else
+                                <span class="text-gray-400 text-xs">{{ __('app.no_data') }}</span>
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-gray-700 text-sm">{{ $entry['total_cases'] }}</td>
                             {{-- «٪٠» لشيءٍ لم يُقَس ليس رقماً بل ادّعاء.

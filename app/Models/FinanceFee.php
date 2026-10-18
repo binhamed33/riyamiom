@@ -13,7 +13,8 @@ class FinanceFee extends Model
 
     protected function casts(): array
     {
-        return ['date' => 'date', 'amount' => 'decimal:2', 'client_visible' => 'boolean'];
+        // ‏Y-m-d في JSON: نافذةُ التعديل تربط التاريخَ بـ<input type=date> مباشرةً
+        return ['date' => 'date:Y-m-d', 'amount' => 'decimal:2', 'client_visible' => 'boolean'];
     }
 
     /** ما يراه الموكّل: ما علّمه المكتب صراحةً — والافتراضي لا يُرى. */
@@ -24,7 +25,9 @@ class FinanceFee extends Model
 
     public function case(): BelongsTo
     {
-        return $this->belongsTo(LegalCase::class, 'case_id');
+        // ‏withTrashed: القضيةُ المحذوفة تبقى في سلّة المحذوفات ورسومُها باقية،
+        // وكان تبويبُ الرسوم ينهار (500) على ‎$fee->case->case_number‎ = null
+        return $this->belongsTo(LegalCase::class, 'case_id')->withTrashed();
     }
 
     public function user(): BelongsTo

@@ -184,8 +184,9 @@
                         <td class="px-6 py-4 text-gray-600">
                             {{ $session->case->opponent ?? '—' }}
                         </td>
+                        {{-- bdi ltr: في سياقٍ RTL كان «2026-06-21 09:30» يُعرض «09:30 2026-06-21» --}}
                         <td class="px-6 py-4 text-gray-600 whitespace-nowrap">
-                            {{ $session->date->format('Y-m-d H:i') }}
+                            <bdi dir="ltr">{{ $session->date->format('Y-m-d H:i') }}</bdi>
                         </td>
                         <td class="px-6 py-4">
                             @switch($session->status)

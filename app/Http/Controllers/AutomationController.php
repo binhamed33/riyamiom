@@ -162,7 +162,12 @@ class AutomationController extends Controller
     {
         $count = $engine->dryRun($automation);
 
-        return back()->with('success', 'اختبار «' . $automation->name . '»: ' . $count . ' عنصراً يطابق القاعدة الآن (لم يُنفَّذ شيء).');
+        // «5 عنصراً يطابق» خطأ: المعدودُ يتبع العدد، والفعلُ مقدَّمٌ فلا يتبعه
+        $matches = $count === 0
+            ? 'لا يطابق القاعدةَ الآن أيُّ عنصر'
+            : 'يطابق القاعدةَ الآن ' . \App\Support\ArabicCount::of($count, 'عنصرٌ واحد', 'عنصران', 'عناصر', 'عنصراً');
+
+        return back()->with('success', 'اختبار «' . $automation->name . '»: ' . $matches . ' (لم يُنفَّذ شيء).');
     }
 
     public function runs(Request $request): View

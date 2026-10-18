@@ -90,7 +90,8 @@
                 <dt class="text-sm text-gray-500 mb-1">{{ __('app.due_date') }}</dt>
                 <dd class="text-gray-800 font-medium">
                     {{ $task->due_date ? $task->due_date->format('Y-m-d') : '—' }}
-                    @if ($task->due_date && $task->due_date->isPast() && $task->status !== 'completed')
+                    {{-- isOverdue لا isPast: تاريخُ اليوم «ماضٍ» منذ منتصف الليل فكان يُعلَّم «متأخر» --}}
+                    @if ($task->isOverdue())
                         <span class="text-red-700 text-xs font-semibold mr-2">{{ __('app.overdue') }}</span>
                     @endif
                 </dd>

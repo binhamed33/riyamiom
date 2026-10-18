@@ -76,16 +76,21 @@
                             <p class="text-3xl font-bold text-gold-dark">{{ $user->tasks_count ?? 0 }}</p>
                             <p class="text-gray-500 text-sm mt-1">{{ __('app.assigned_tasks') }}</p>
                         </div>
-                        <div class="bg-white rounded-lg p-4 text-center">
-                            <p class="text-3xl font-bold text-gold-dark">{{ $user->efficiency ?? 0 }}%</p>
+                        {{-- من حساب دراسة الجدوى نفسِه؛ ومن لا بيانات له «—» لا «0%» --}}
+                        @php
+                            $efficiency = $user->efficiency;
+                            $barColor = $efficiency > 80 ? 'bg-emerald-500' : ($efficiency >= 60 ? 'bg-amber-500' : 'bg-red-500');
+                        @endphp
+                        <div class="bg-white rounded-lg p-4 text-center" data-user-efficiency>
+                            <p class="text-3xl font-bold text-gold-dark">{{ $efficiency === null ? '—' : $efficiency . '%' }}</p>
                             <p class="text-gray-500 text-sm mt-1">{{ __('app.efficiency') }}</p>
-                            @php
-                                $efficiency = $user->efficiency ?? 0;
-                                $barColor = $efficiency > 80 ? 'bg-emerald-500' : ($efficiency >= 60 ? 'bg-amber-500' : 'bg-red-500');
-                            @endphp
-                            <div class="w-full bg-gray-100 rounded-full h-2 mt-2">
-                                <div class="{{ $barColor }} h-2 rounded-full transition-all" style="width: {{ $efficiency }}%"></div>
-                            </div>
+                            @if($efficiency === null)
+                                <p class="text-gray-400 text-xs mt-1">{{ __('app.no_data') }}</p>
+                            @else
+                                <div class="w-full bg-gray-100 rounded-full h-2 mt-2">
+                                    <div class="{{ $barColor }} h-2 rounded-full transition-all" style="width: {{ $efficiency }}%"></div>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>

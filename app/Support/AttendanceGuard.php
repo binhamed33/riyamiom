@@ -300,15 +300,14 @@ class AttendanceGuard
 
     private static function reopen(HrAttendance $record): ?HrAttendance
     {
-        $tz = 'Asia/Muscat';
         $previous = match ($record->closed_by) {
             HrAttendance::CLOSED_BY_CAP => 'إقفالٍ بالسقف',
             HrAttendance::CLOSED_BY_SEEN => 'إقفالٍ بآخر نشاط',
             HrAttendance::CLOSED_BY_MANAGER => 'تصحيحِ الإداري',
             default => 'انصرافٍ بالزرّ',
         };
-        $trail = 'استُؤنف ' . now()->timezone($tz)->format('h:i A')
-            . ' بعد ' . $previous . ' ' . $record->check_out_at->timezone($tz)->format('h:i A');
+        $trail = 'استُؤنف ' . self::clock(now())
+            . ' بعد ' . $previous . ' ' . self::clock($record->check_out_at);
 
         $record->update([
             'resumed_at' => now(),
@@ -325,6 +324,17 @@ class AttendanceGuard
         self::stampSeen($record->user);
 
         return $record;
+    }
+
+    /**
+     * وقتٌ في أثر الملاحظة: «04:15 م» بتوقيت مسقط.
+     *
+     * الأثرُ جملةٌ عربيّة يقرؤها المدير، وكان format('h:i A') يكتب «04:15 PM»
+     * فيها أيّاً كانت لغةُ الواجهة؛ وPM لاتينيّةٌ تقلب ترتيبَ الأوقات تحت RTL.
+     */
+    private static function clock(CarbonInterface $t): string
+    {
+        return $t->copy()->timezone('Asia/Muscat')->locale('ar')->translatedFormat('h:i A');
     }
 
     /** الملاحظةُ ٢٥٥ حرفاً: يُحتفظ بأحدث الأثر لا بأقدمه. */
@@ -347,11 +357,10 @@ class AttendanceGuard
     {
         $start = $record->intervalStart();
         $out = $out->greaterThan($start) ? $out : $start;
-        $tz = 'Asia/Muscat';
 
         $entry = match ($closedBy) {
-            HrAttendance::CLOSED_BY_CAP => 'أُقفل بالسقف ' . $out->copy()->timezone($tz)->format('h:i A'),
-            HrAttendance::CLOSED_BY_SEEN => 'أُقفل بآخر نشاط ' . $out->copy()->timezone($tz)->format('h:i A'),
+            HrAttendance::CLOSED_BY_CAP => 'أُقفل بالسقف ' . self::clock($out),
+            HrAttendance::CLOSED_BY_SEEN => 'أُقفل بآخر نشاط ' . self::clock($out),
             default => null,
         };
 
@@ -423,9 +432,11 @@ class AttendanceGuard
             'minutes' => $record->minutes, 'intervals' => $record->intervals, 'closed_by' => $record->closed_by,
         ];
 
-        $entry = 'صحّحه ' . $manager->name . ' ' . now()->timezone($tz)->format('Y-m-d')
-            . ': كان ' . ($record->check_in_at?->timezone($tz)->format('h:i A') ?? '—') . ' → ' . ($record->check_out_at?->timezone($tz)->format('h:i A') ?? '—')
-            . '، صار ' . $in->copy()->timezone($tz)->format('h:i A') . ' → ' . $out->copy()->timezone($tz)->format('h:i A')
+        // «←» لا «→»: السهمُ لا ينقلب تحت RTL، فكان «→» يشير من الجديد إلى القديم.
+        // والتاريخُ Y/m/d: الشَّرطةُ بعد حرفٍ عربيّ تقلب «2026-10-17» إلى «17-10-2026»
+        $entry = 'صحّحه ' . $manager->name . ' ' . now()->timezone($tz)->format('Y/m/d')
+            . ': كان ' . ($record->check_in_at ? self::clock($record->check_in_at) : '—') . ' ← ' . ($record->check_out_at ? self::clock($record->check_out_at) : '—')
+            . '، صار ' . self::clock($in) . ' ← ' . self::clock($out)
             . ' — ' . $reason;
 
         $record->update([
@@ -472,8 +483,8 @@ class AttendanceGuard
                 'status' => 'completed',
                 'source' => 'manual',
                 'closed_by' => HrAttendance::CLOSED_BY_MANAGER,
-                'note' => 'أضافه ' . $manager->name . ' ' . now()->timezone($tz)->format('Y-m-d') . ': '
-                    . $in->copy()->timezone($tz)->format('h:i A') . ' → ' . $out->copy()->timezone($tz)->format('h:i A') . ' — ' . $reason,
+                'note' => 'أضافه ' . $manager->name . ' ' . now()->timezone($tz)->format('Y/m/d') . ': '
+                    . self::clock($in) . ' ← ' . self::clock($out) . ' — ' . $reason,
             ]);
 
             self::audit($record, 'attendance_add', [], [

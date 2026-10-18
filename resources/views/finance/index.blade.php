@@ -31,6 +31,29 @@
     </div>
     @endif
 
+    @if($isFinAdmin && $tab === 'transactions')
+    {{-- الرسمان: كانت أرقامُهما تُحسب في المتحكّم ثمّ لا تُعرض، فالصفحةُ بلا رسمٍ واحد --}}
+    @php $hasTrend = collect($financeTrend)->contains(fn ($m) => $m['income'] > 0 || $m['expense'] > 0); @endphp
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="lg:col-span-2 bg-white rounded-xl border border-gold/15 p-6">
+            <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.finance_trend_title') }}</h2>
+            @if($hasTrend)
+                <div style="height: 240px;"><canvas id="financeTrendChart" role="img" aria-label="{{ __('app.finance_trend_title') }}"></canvas></div>
+            @else
+                <p class="text-xs text-gray-400 text-center py-16">{{ __('app.finance_no_transactions_yet') }}</p>
+            @endif
+        </div>
+        <div class="bg-white rounded-xl border border-gold/15 p-6">
+            <h2 class="text-sm font-bold text-gold-dark mb-4">{{ __('app.finance_income_by_category') }}</h2>
+            @if(count($incomeCategories))
+                <div class="flex justify-center" style="height: 240px;"><canvas id="financeCategoryChart" role="img" aria-label="{{ __('app.finance_income_by_category') }}"></canvas></div>
+            @else
+                <p class="text-xs text-gray-400 text-center py-16">{{ __('app.no_data') }}</p>
+            @endif
+        </div>
+    </div>
+    @endif
+
     {{-- Tabs --}}
     <div class="mb-6 border-b border-gray-200 flex gap-1 overflow-x-auto">
         <a href="{{ route('finance.index', ['tab' => 'transactions']) }}" class="px-5 py-3 text-sm font-medium transition rounded-t-lg whitespace-nowrap {{ $tab === 'transactions' ? 'text-gold-dark bg-gray-100 border-b-2 border-gold-dark' : 'text-gray-400 hover:text-gray-600' }}">المعاملات</a>
@@ -89,8 +112,8 @@
                                 <td class="px-4 py-3 text-gray-900 font-medium">{{ $inv->invoice_number }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $inv->client?->name ?? '-' }}</td>
                                 <td class="px-4 py-3 text-gray-900">{{ number_format($inv->amount, 2) }}</td>
-                                <td class="px-4 py-3 font-bold {{ $inv->remaining_amount > 0 ? 'text-red-700' : 'text-green-700' }}">{{ number_format($inv->remaining_amount, 2) }}</td>
-                                <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $inv->status === 'paid' ? 'bg-green-100 text-green-700 border-green-200' : ($inv->status === 'partial' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : ($inv->status === 'cancelled' ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-red-100 text-red-700 border-red-200')) }}">{{ $inv->status === 'paid' ? 'مدفوعة' : ($inv->status === 'partial' ? 'جزئي' : ($inv->status === 'cancelled' ? 'ملغية' : 'غير مدفوعة')) }}</span></td>
+                                <td class="px-4 py-3 font-bold {{ $inv->status === 'cancelled' ? 'text-gray-400' : ($inv->remaining_amount > 0 ? 'text-red-700' : 'text-green-700') }}">{{ $inv->status === 'cancelled' ? __('app.invoice_status_cancelled') : number_format($inv->remaining_amount, 2) }}</td>
+                                <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $inv->status === 'paid' ? 'bg-green-100 text-green-700 border-green-200' : ($inv->status === 'partial' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : ($inv->status === 'cancelled' ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-red-100 text-red-700 border-red-200')) }}">{{ __('app.invoice_status_' . $inv->status) }}</span></td>
                                 <td class="px-4 py-3 text-gray-500">{{ $inv->issue_date->format('Y-m-d') }}</td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-center gap-1">
@@ -148,7 +171,7 @@
 </div>
 
 {{-- Add Transaction Modal --}}
-<div id="txModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'txModal') open = true" @keydown.escape="open = false">
+<div id="txModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'txModal') open = true" @keydown.escape.window="open = false">
     <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-on:click.away="open = false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -201,7 +224,7 @@
 
 @if($isFinAdmin)
 {{-- Edit Transaction Modal --}}
-<div id="txEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, tx: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'txEditModal') open = true" x-on:set-tx.window="tx = $event.detail" @keydown.escape="open = false">
+<div id="txEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, tx: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'txEditModal') open = true" x-on:set-tx.window="tx = $event.detail" @keydown.escape.window="open = false">
     <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -255,7 +278,7 @@
 @endif
 
 {{-- Add Invoice Modal --}}
-<div id="invModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'invModal') open = true" @keydown.escape="open = false">
+<div id="invModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'invModal') open = true" @keydown.escape.window="open = false">
     <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -271,7 +294,13 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">العميل</label>
-                    <select data-no-create name="client_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="">اختر</option>@foreach($clients as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select>
+                    <select data-no-create name="client_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="">{{ __('app.finance_select') }}</option>@foreach($clients as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select>
+                </div>
+                {{-- كان storeInvoice يقبل case_id والنموذجُ لا يرسله: فاتورةٌ من الشاشة
+                     لا تظهر في «المحاسبة» على صفحة قضيتها أبداً --}}
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.finance_case') }}</label>
+                    <select data-no-create name="case_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="">{{ __('app.finance_no_case') }}</option>@foreach($cases as $case)<option value="{{ $case->id }}">#{{ $case->office_case_number }} - {{ $case->case_number ?? '' }} - {{ $case->client?->name ?? '' }}</option>@endforeach</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">المبلغ <span class="text-red-700">*</span></label>
@@ -279,7 +308,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">الحالة <span class="text-red-700">*</span></label>
-                    <select name="status" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="unpaid">غير مدفوعة</option><option value="paid">مدفوعة</option><option value="partial">مدفوعة جزئياً</option><option value="cancelled">ملغية</option></select>
+                    <select name="status" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required><option value="unpaid">غير مدفوعة</option><option value="paid">مدفوعة</option><option value="partial">مدفوعة جزئياً</option><option value="cancelled">{{ __('app.invoice_status_cancelled') }}</option></select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">تاريخ الإصدار <span class="text-red-700">*</span></label>
@@ -320,7 +349,7 @@
 
 @if($isFinAdmin)
 {{-- Edit Invoice Modal --}}
-<div id="invEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, inv: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'invEditModal') open = true" x-on:set-inv.window="inv = $event.detail" @keydown.escape="open = false">
+<div id="invEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, inv: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'invEditModal') open = true" x-on:set-inv.window="inv = $event.detail; $nextTick(() => finSyncTs($el))" @keydown.escape.window="open = false">
     <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -336,12 +365,20 @@
                     <input type="text" name="invoice_number" x-model="inv.invoice_number" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required>
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.client') }}</label>
+                    <select data-no-create name="client_id" x-model="inv.client_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="">{{ __('app.finance_select') }}</option>@foreach($clients as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-400 mb-1.5">{{ __('app.finance_case') }}</label>
+                    <select data-no-create name="case_id" x-model="inv.case_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="">{{ __('app.finance_no_case') }}</option>@foreach($cases as $case)<option value="{{ $case->id }}">#{{ $case->office_case_number }} - {{ $case->case_number ?? '' }} - {{ $case->client?->name ?? '' }}</option>@endforeach</select>
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">المبلغ</label>
                     <input type="number" step="0.001" name="amount" x-model="inv.amount" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">الحالة</label>
-                    <select name="status" x-model="inv.status" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="unpaid">غير مدفوعة</option><option value="paid">مدفوعة</option><option value="partial">مدفوعة جزئياً</option><option value="cancelled">ملغية</option></select>
+                    <select name="status" x-model="inv.status" class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="unpaid">غير مدفوعة</option><option value="paid">مدفوعة</option><option value="partial">مدفوعة جزئياً</option><option value="cancelled">{{ __('app.invoice_status_cancelled') }}</option></select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">تاريخ الإصدار</label>
@@ -380,7 +417,7 @@
 @endif
 
 {{-- Add Fee Modal --}}
-<div id="feeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'feeModal') open = true" @keydown.escape="open = false">
+<div id="feeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'feeModal') open = true" @keydown.escape.window="open = false">
     <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -437,7 +474,7 @@
 
 @if($isFinAdmin)
 {{-- Edit Fee Modal --}}
-<div id="feeEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, fee: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'feeEditModal') open = true" x-on:set-fee.window="fee = $event.detail" @keydown.escape="open = false">
+<div id="feeEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ open: false, fee: {} }" x-show="open" x-cloak x-on:open-modal.window="if ($event.detail === 'feeEditModal') open = true" x-on:set-fee.window="fee = $event.detail; $nextTick(() => finSyncTs($el))" @keydown.escape.window="open = false">
     <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="open = false"></div>
     <div class="relative bg-white border border-gold/25 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -450,7 +487,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">القضية</label>
-                    <select data-no-create name="case_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="">اختر</option>@foreach($cases as $case)<option value="{{ $case->id }}" x-bind:selected="fee.case_id == {{ $case->id }}">#{{ $case->office_case_number }} - {{ $case->case_number ?? '' }} - {{ $case->client?->phone ?? '' }} - {{ $case->client?->name ?? '' }}</option>@endforeach</select>
+                    <select data-no-create name="case_id" x-model="fee.case_id" class="ts w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40"><option value="">{{ __('app.finance_select') }}</option>@foreach($cases as $case)<option value="{{ $case->id }}">#{{ $case->office_case_number }} - {{ $case->case_number ?? '' }} - {{ $case->client?->phone ?? '' }} - {{ $case->client?->name ?? '' }}</option>@endforeach</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">نوع الرسم</label>
@@ -481,4 +518,104 @@
     </div>
 </div>
 @endif
+
+@push('scripts')
+<script nonce="{{ $cspNonce }}">
+// ‏TomSelect لا يرى ما يكتبه Alpine في <select> الأصليّ: كانت نافذةُ تعديل الرسم
+// تحفظ القضيةَ الصحيحة وتعرض «اختر». فيُزامَن العرضُ بعد كلّ فتحٍ للنافذة.
+window.finSyncTs = function (root) {
+    root.querySelectorAll('select.ts').forEach(function (s) {
+        if (s.tomselect) s.tomselect.setValue(s.value, true);
+    });
+};
+
+@if($isFinAdmin && $tab === 'transactions')
+document.addEventListener('DOMContentLoaded', function () {
+    var charts = [];
+    var trend = @json($financeTrend);
+    var categories = @json((object) $incomeCategories);
+    var otherLabel = @json(__('app.other'));
+    var currency = @json(__('app.currency_omr'));
+
+    function money(v) {
+        return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currency;
+    }
+
+    function build() {
+        charts.forEach(function (c) { c.destroy(); });
+        charts = [];
+
+        var trendCtx = document.getElementById('financeTrendChart');
+        if (trendCtx) {
+            var series = function (key, label, tone) {
+                return {
+                    label: label,
+                    data: trend.map(function (m) { return m[key]; }),
+                    backgroundColor: MdChart.status(tone),
+                    borderRadius: 4,
+                    borderSkipped: false,
+                };
+            };
+            charts.push(new Chart(trendCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: trend.map(function (m) { return m.label; }),
+                    datasets: [
+                        series('income', @json(__('app.finance_income')), 'good'),
+                        series('expense', @json(__('app.finance_expense')), 'bad'),
+                    ],
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: MdChart.scale({ grid: { display: false } }),
+                        y: MdChart.scale({ beginAtZero: true }),
+                    },
+                    plugins: {
+                        legend: MdChart.legend(),
+                        tooltip: Object.assign(MdChart.tooltip(), {
+                            callbacks: {
+                                title: function (items) { return trend[items[0].dataIndex].title; },
+                                label: function (item) { return item.dataset.label + ': ' + money(item.raw); },
+                            },
+                        }),
+                    },
+                },
+            }));
+        }
+
+        var catCtx = document.getElementById('financeCategoryChart');
+        var names = Object.keys(categories);
+        if (catCtx && names.length) {
+            charts.push(new Chart(catCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: names,
+                    datasets: [{
+                        data: names.map(function (n) { return categories[n]; }),
+                        backgroundColor: names.map(function (n, i) { return n === otherLabel ? MdChart.status('idle') : MdChart.series(i); }),
+                        borderColor: MdChart.surface(),
+                        borderWidth: 2,
+                        hoverOffset: 6,
+                    }],
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '66%',
+                    plugins: {
+                        legend: MdChart.legend(),
+                        tooltip: Object.assign(MdChart.tooltip(), {
+                            callbacks: { label: function (item) { return item.label + ': ' + money(item.raw); } },
+                        }),
+                    },
+                },
+            }));
+        }
+    }
+
+    build();
+    MdChart.onThemeChange(build);
+});
+@endif
+</script>
+@endpush
 @endsection
