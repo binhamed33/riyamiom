@@ -149,14 +149,16 @@ class Attachments
      * والوحدةُ بلغة الواجهة: كانت عربيّةً أبداً، فلمّا صار هذا حجمَ جدول
      * المستندات ومرفقِ واتساب ومستنداتِ البوابة قرأ المستخدمُ الإنجليزيّ
      * «65 ك.ب» في جدولٍ إنجليزيٍّ من اليسار.
+     *
+     * ‏$locale لمستندٍ لغتُه ثابتة لا تتبع الواجهة (ملفُّ القضية PDF عربيٌّ أبداً).
      */
-    public static function humanSize(?int $bytes): string
+    public static function humanSize(?int $bytes, ?string $locale = null): string
     {
         if ($bytes === null || $bytes <= 0) {
             return '';
         }
 
-        [$units, $byteUnit] = app()->getLocale() === 'ar'
+        [$units, $byteUnit] = ($locale ?? app()->getLocale()) === 'ar'
             ? [['ج.ب', 'م.ب', 'ك.ب'], 'بايت']
             : [['GB', 'MB', 'KB'], 'B'];
 

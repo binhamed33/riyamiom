@@ -561,16 +561,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileThumb = document.getElementById('fileThumb');
     let thumbUrl = null;
 
+    // الوحداتُ بلغة الواجهة كـ Attachments::humanSize على الخادم — كانت عربيّةً أبداً، فتُقرأ «2.4 م.ب» في واجهةٍ إنجليزيّة
+    const SIZE_AR = @json(app()->getLocale() === 'ar');
     function humanSize(bytes) {
         if (!bytes) return '';
-        const units = [['ج.ب', 1073741824], ['م.ب', 1048576], ['ك.ب', 1024]];
+        const units = SIZE_AR
+            ? [['ج.ب', 1073741824], ['م.ب', 1048576], ['ك.ب', 1024]]
+            : [['GB', 1073741824], ['MB', 1048576], ['KB', 1024]];
         for (const [unit, step] of units) {
             if (bytes >= step) {
                 const v = bytes / step;
                 return (v >= 10 ? Math.round(v) : v.toFixed(1)) + ' ' + unit;
             }
         }
-        return bytes + ' بايت';
+        return bytes + (SIZE_AR ? ' بايت' : ' B');
     }
 
     // مصدرٌ واحد لاختيار الملف: الزرّ والسحب واللصق كلها تمرّ من هنا

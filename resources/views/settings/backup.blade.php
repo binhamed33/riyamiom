@@ -96,7 +96,8 @@
                         @foreach($backups as $backup)
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-4 py-3 text-gray-900 text-xs font-mono">{{ $backup['name'] }}</td>
-                                <td class="px-4 py-3 text-gray-400 text-xs">{{ $backup['size'] }} MB</td>
+                                {{-- بوحدة الواجهة كجدول المستندات: «MB» ثابتةً كانت تتقدّم الرقمَ في الواجهة العربيّة «MB 12.4» --}}
+                                <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap"><bdi>{{ \App\Support\Attachments::humanSize($backup['bytes'] ?? null) ?: ($backup['size'] . ' MB') }}</bdi></td>
                                 <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{{ $backup['date'] }}</td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-2">

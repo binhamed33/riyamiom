@@ -344,6 +344,52 @@ class DocumentsAuditFixesTest extends TestCase
         $this->assertStringNotContainsString('ك.ب', $table);
     }
 
+    /**
+     * ملفُّ القضية PDF عربيٌّ أبداً: حجمُ مستنداته «65 ك.ب» معزولةً ولو طبعه
+     * مستخدمٌ واجهتُه إنجليزيّة. كان «65.2 KB» فينقلب تحت RTL «KB 65.2».
+     */
+    public function test_the_case_file_pdf_reads_arabic_sizes_in_any_ui_language(): void
+    {
+        $this->doc(['file_size' => 66765]);
+        app()->setLocale('en');
+
+        $html = view('pdf.case-file', [
+            'case' => $this->case->fresh()->load(['client', 'lawyer', 'sessions', 'tasks', 'documents']),
+            'title' => 'ملف القضية',
+        ])->render();
+
+        $this->assertStringContainsString('<bdi>65 ك.ب</bdi>', $html);
+        $this->assertStringNotContainsString(' KB', $html);
+        $this->assertSame('65 KB', \App\Support\Attachments::humanSize(66765));
+    }
+
+    /**
+     * والنسخُ الاحتياطيّة بوحدة الواجهة: «MB» كانت ثابتةً بعد الرقم في الواجهة
+     * العربيّة. وصفحةُ القضية تقول «عام» بمفتاحها فتقرؤها الإنجليزيّة «General».
+     */
+    public function test_backups_and_the_case_folder_chip_follow_the_ui_language(): void
+    {
+        \Illuminate\Support\Facades\File::ensureDirectoryExists(storage_path('app/backups'));
+        $zip = storage_path('app/backups/backup-2026-10-18-0300.zip');
+        file_put_contents($zip, str_repeat('x', 3 * 1048576));
+
+        try {
+            $html = $this->actingAs($this->admin)->get(route('backup.index'))->assertOk()->getContent();
+            $this->assertStringContainsString('<bdi>3.0 م.ب</bdi>', $html);
+            $this->assertDoesNotMatchRegularExpression('/\d MB</u', $html);
+        } finally {
+            @unlink($zip);
+        }
+
+        $english = User::factory()->create(['role' => 'admin', 'is_active' => true, 'locale' => 'en']);
+        // الشريحةُ تُكتب متى كان للقضية مجلّدات: المستندُ خارجها يُجمع تحت «عام»
+        CaseFolder::create(['case_id' => $this->case->id, 'name' => 'المذكرات', 'sort' => 1]);
+        $this->doc(['case_folder_id' => null]);
+        $case = $this->actingAs($english)->get(route('cases.show', $this->case))->assertOk()->getContent();
+        $this->assertStringContainsString('🗂 General', $case);
+        $this->assertStringNotContainsString('🗂 عام', $case);
+    }
+
     // ══════════ A17: معاينةُ ملفٍّ مفقود ══════════
 
     public function test_previewing_a_missing_file_is_a_small_arabic_page_not_the_app(): void

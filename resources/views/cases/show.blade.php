@@ -898,7 +898,7 @@ document.addEventListener('alpine:init', () => {
                 @foreach($docGroups->sortKeys() as $folderName => $docs)
                 <div class="mb-4 last:mb-0">
                     @if($case->folders->count() || $folderName !== '')
-                        <p class="text-xs font-bold text-gold-dark mb-2">🗂 {{ $folderName !== '' ? $folderName : 'عام' }} <span class="text-gray-400 font-normal">({{ $docs->count() }})</span></p>
+                        <p class="text-xs font-bold text-gold-dark mb-2">🗂 {{ $folderName !== '' ? $folderName : __('app.folder_general_chip') }} <span class="text-gray-400 font-normal">({{ $docs->count() }})</span></p>
                     @endif
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     @foreach($docs as $document)

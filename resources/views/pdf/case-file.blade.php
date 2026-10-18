@@ -237,7 +237,8 @@
                                 <td style="text-align: center;">{{ $i + 1 }}</td>
                                 <td>{{ $document->title ?? $document->name ?? 'مستند' }}</td>
                                 <td style="text-transform: uppercase; font-weight: bold;">{{ strtoupper($document->file_type ?? $document->mime_type ?? '—') }}</td>
-                                <td>{{ $document->file_size ? round($document->file_size / 1024, 1) . ' KB' : '—' }}</td>
+                                {{-- «65 ك.ب» معزولةً كبقيّة المكتب: «65.2 KB» اللاتينيّة في ملفٍّ عربيّ تنقلب تحت RTL «KB 65.2» --}}
+                                <td><bdi>{{ \App\Support\Attachments::humanSize((int) $document->file_size, 'ar') ?: '—' }}</bdi></td>
                                 <td>{{ $document->uploader->name ?? '—' }}</td>
                                 <td>
                                     @if(($document->access_level ?? '') === 'public' || ($document->access_level ?? '') === 'all') <span class="badge badge-access">عام</span>

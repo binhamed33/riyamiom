@@ -81,6 +81,7 @@ class BackupController extends Controller
                 $backups[] = [
                     'name' => basename($file),
                     'size' => round(filesize($file) / 1024 / 1024, 2),
+                    'bytes' => (int) filesize($file),
                     'date' => date('Y-m-d H:i:s', filemtime($file)),
                 ];
             }
