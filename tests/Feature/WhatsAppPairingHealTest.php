@@ -584,22 +584,108 @@ class WhatsAppPairingHealTest extends TestCase
 
     // ══════════ لا يُحذف شيءٌ على جهل ══════════
 
-    /** جسرٌ لا يجيب عن صفّ النسخة (٥٠٠ أو مهلة): لا حذفَ ولا إنشاء — صمتُه ليس «لم تقترن». */
-    public function test_an_unreadable_bridge_record_never_leads_to_a_delete(): void
+    /** جسرٌ صامتٌ كلُّه (لا حالةَ ولا صفّ): لا حذفَ ولا إنشاء — ويُقال لماذا. */
+    public function test_a_silent_bridge_is_never_touched_and_the_reason_is_named(): void
     {
         \App\Models\Setting::set(WhatsAppSettings::KEY_CONNECTED_AT, now()->subDay()->toIso8601String(), 'whatsapp');
 
+        Http::fake(fn () => Http::response(['status' => 500, 'error' => 'Internal Server Error'], 500));
+
+        $result = (new EvolutionProvider())->pair('96894249400');
+
+        $this->assertStringContainsString('لا يجيب الآن (HTTP 500)', (string) $result['message']);
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/instance/delete/') || str_contains($r->url(), '/instance/create'));
+    }
+
+    /**
+     * جسرٌ يردّ ٥٠٠ على صفّ النسخة والشاشةُ تسأل كلَّ ثانيتين ونصف: سطرٌ واحدٌ في
+     * السجلّ كلَّ دقيقة — لا نحو ١٤٠ سطراً متطابقاً في جلسة اقترانٍ واحدة تدفن غيرها.
+     */
+    public function test_a_failing_record_lookup_is_logged_once_a_minute(): void
+    {
         Http::fake(function ($request) {
+            if (str_contains($request->url(), '/instance/fetchInstances')) {
+                return Http::response(['status' => 500, 'error' => 'Internal Server Error'], 500);
+            }
+
             if (str_contains($request->url(), '/instance/connectionState/')) {
                 return Http::response(['instance' => ['state' => 'connecting']], 200);
+            }
+
+            return Http::response(['pairingCode' => 'Z9Y8X7W6', 'count' => 1], 200);
+        });
+        \Illuminate\Support\Facades\Log::spy();
+        $failed = fn ($m) => str_contains((string) $m, 'fetchInstances failed (500)');
+
+        $provider = new EvolutionProvider();
+        foreach (range(1, 5) as $_) {
+            $provider->currentPairing();
+        }
+
+        \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')->withArgs($failed)->once();
+
+        $this->travel(61)->seconds();
+        $provider->currentPairing();
+
+        \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')->withArgs($failed)->twice();
+    }
+
+    /**
+     * صفٌّ لا يُقرأ (fetchInstances يردّ ٥٠٠) والحالةُ تُقرأ: لا يُوقَف الربطُ أبداً —
+     * جلسةٌ بقيت تنتظر بعد ثوانٍ تُطوى وتُنشأ بالرقم. (ما رآه المكتب: «الجسرُ لا يجيب»
+     * عند كلّ ضغطة، والجسرُ يجيب عن كلّ شيءٍ إلا هذا الاستعلام.)
+     */
+    public function test_an_unreadable_record_with_a_readable_state_still_pairs(): void
+    {
+        \App\Models\Setting::set(WhatsAppSettings::KEY_CONNECTED_AT, now()->subDay()->toIso8601String(), 'whatsapp');
+        $created = [];
+
+        Http::fake(function ($request) use (&$created) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'connecting']], 200);
+            }
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                return Http::response(['status' => 500, 'error' => 'Internal Server Error',
+                    'response' => ['message' => ['PrismaClientKnownRequestError']]], 500);
+            }
+
+            if (str_contains($url, '/instance/delete/')) {
+                return Http::response(['status' => 'SUCCESS', 'error' => false], 200);
+            }
+
+            $created[] = $request->data();
+
+            return Http::response(['instance' => ['instanceName' => 'office'],
+                'qrcode' => ['pairingCode' => 'Z9Y8X7W6', 'base64' => 'iVBORw0KGgo=', 'count' => 1]], 201);
+        });
+
+        $result = (new EvolutionProvider())->pair('96894249400');
+
+        $this->assertSame('Z9Y8X7W6', $result['code']);
+        $this->assertSame('96894249400', $created[0]['number'] ?? null);
+    }
+
+    /** وجلسةٌ مقترنةٌ تعيد وصلَها في ثواني الانتظار تلك: تُترك — لا تُطوى. */
+    public function test_an_unreadable_record_never_costs_a_session_that_reopens(): void
+    {
+        $asks = 0;
+
+        Http::fake(function ($request) use (&$asks) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => ++$asks === 1 ? 'connecting' : 'open']], 200);
             }
 
             return Http::response(['status' => 500, 'error' => 'Internal Server Error'], 500);
         });
 
-        $result = (new EvolutionProvider())->pair('96894249400');
+        $result = (new EvolutionProvider())->pair();
 
-        $this->assertStringContainsString('لا يجيب', (string) $result['message']);
+        $this->assertSame('open', $result['state']);
         Http::assertNotSent(fn ($r) => str_contains($r->url(), '/instance/delete/') || str_contains($r->url(), '/instance/create'));
     }
 

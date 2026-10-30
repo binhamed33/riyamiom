@@ -117,8 +117,9 @@ class DashboardActivityTest extends TestCase
 
     public function test_the_dashboard_prints_the_count_comparison_instead_of_an_absurd_percent(): void
     {
-        // قضيّتان الشهر الماضي وستٌّ هذا الشهر
-        foreach ([now()->subMonth()->startOfMonth()->addDays(3), now()->subMonth()->startOfMonth()->addDays(4)] as $at) {
+        // قضيّتان الشهر الماضي وستٌّ هذا الشهر. بدايةُ الشهر قبل طرحه: يومَ ٣١ أكتوبر
+        // كان subMonth() يطفح إلى ١ أكتوبر (لا ٣١ سبتمبر) فتُحسب «قضيّتا الماضي» في الحاضر
+        foreach ([now()->startOfMonth()->subMonth()->addDays(3), now()->startOfMonth()->subMonth()->addDays(4)] as $at) {
             $this->caseAt($at);
         }
         for ($i = 0; $i < 6; $i++) {

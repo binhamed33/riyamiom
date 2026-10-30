@@ -67,6 +67,15 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
     protected float $pairDeadline = INF;
 
+    /** لماذا لم يُجب الجسرُ عن الحالة في آخر سؤال — null إن أجاب (٢٠٠). */
+    protected ?string $stateFailure = null;
+
+    /** وأجاب عن الحالة بأنّه لا يعرف النسخة (٤٠٤ من حارسه) — جوابٌ صريحٌ لا صمت. */
+    protected bool $stateMissing = false;
+
+    /** ولماذا لم يُجب عن صفّ النسخة — null إن أجاب أو أقرّ أنّه لا يعرفها. */
+    protected ?string $lookupFailure = null;
+
     /**
      * رمزُ اقترانٍ جديد — رمزُ مسحٍ، أو رمزُ ربطٍ بالرقم إن مُرِّر رقم.
      *
@@ -210,8 +219,35 @@ class EvolutionProvider implements WhatsAppProviderInterface
         //
         // جسرٌ لا يجيب عن صفّ النسخة (مهلة، ٥٠٠، قاعدتُه تُعاد) لا يُستدلّ بصمته
         // على أنّها لم تقترن: الحذفُ عنده يبدأ بإلغاء اقتران الهاتف. فيُقال ذلك.
+        // الحالةُ نفسُها قالت إنّ الجسر لا يعرف النسخة (٤٠٤): جوابٌ صريحٌ يغني عن
+        // الصفّ — فيُعامَل غيابُها بقواعد الغياب (ومنها مهلةُ الجسر الذي يقلع)
+        if ($found === 'unknown' && $this->stateMissing) {
+            $found = 'missing';
+        }
+
         if ($found === 'unknown') {
-            $this->lastError = 'الجسرُ لا يجيب الآن عن حالة نسخة المكتب — لم يُغيَّر شيء. أعد المحاولة بعد دقيقة.';
+            // ═══ صفٌّ لا يُقرأ وحالةٌ تُقرأ ═══
+            //
+            // جسرٌ يجيب عن الحالة صراحةً (٢٠٠) ويعجز عن الصفّ وحده (قاعدتُه تردّ
+            // ٥٠٠ على استعلام fetchInstances) ليس جسراً صامتاً: يُعرف منه أنّه لا
+            // جلسةَ مفتوحةٌ الآن. فتُعاد الحالةُ بعد ثوانٍ — جلسةٌ مقترنةٌ تعيد وصلَها
+            // تُفتح فيها — وما بقي مغلقاً أو ينتظر مسحاً لا يعمل، والمكتبُ يطلب الربط.
+            // ولو بقي الصفُّ عصيّاً على القراءة أبداً لما ارتبط رقمٌ على هذا الجسر.
+            if ($this->stateFailure === null) {
+                Log::warning('Evolution fetchInstances unreadable (' . $this->lookupFailure . ') — pairing from the live state alone');
+                $this->pause(4000);
+
+                if ($this->connectionState() === 'open') {
+                    return $this->opened('الرقم موصولٌ بالفعل.');
+                }
+
+                if ($this->stateFailure === null) {
+                    return $this->startFresh($instance, $phone);
+                }
+            }
+
+            $this->lastError = 'الجسرُ لا يجيب الآن (' . ($this->stateFailure ?? $this->lookupFailure ?? 'بلا ردّ')
+                . ') — لم يُغيَّر شيء. أعد المحاولة بعد دقيقة، وإن تكرّر فالجسرُ نفسُه متوقّف على الخادم.';
 
             return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $this->lastError];
         }
@@ -467,9 +503,11 @@ class EvolutionProvider implements WhatsAppProviderInterface
             return $none;
         }
 
-        $row = $this->instanceRow();
+        [$found, $row] = $this->instanceLookup();
 
-        if ((string) ($row['connectionStatus'] ?? '') !== 'connecting') {
+        // صفٌّ يُقرأ ولا ينتظر مسحاً (مقترنٌ يعيد وصلَه) أو غائب: لا رمزَ يُعرض. وصفٌّ
+        // لا يُقرأ أصلاً: الجلسةُ هي التي فتحها المكتبُ للتوّ (pairLocked)
+        if ($found === 'missing' || ($found === 'row' && (string) ($row['connectionStatus'] ?? '') !== 'connecting')) {
             return $none;
         }
 
@@ -540,14 +578,22 @@ class EvolutionProvider implements WhatsAppProviderInterface
             $response = $this->http()->timeout(8)->get(
                 $this->url('instance/connectionState/' . WhatsAppSettings::evolutionInstance())
             );
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->stateFailure = self::transportReason($e);
+            $this->stateMissing = false;
+
             return 'close';
         }
 
         if (!$response->successful()) {
+            $this->stateFailure = 'HTTP ' . $response->status();
+            $this->stateMissing = $response->status() === 404;
+
             return 'close';
         }
 
+        $this->stateFailure = null;
+        $this->stateMissing = false;
         $state = (string) ($response->json('instance.state') ?? $response->json('state') ?? 'close');
 
         return in_array($state, ['open', 'connecting', 'close'], true) ? $state : 'close';
@@ -666,11 +712,15 @@ class EvolutionProvider implements WhatsAppProviderInterface
      */
     protected function instanceLookup(): array
     {
+        $this->lookupFailure = null;
+
         try {
             $response = $this->http()->timeout(8)->get($this->url('instance/fetchInstances'), [
                 'instanceName' => WhatsAppSettings::evolutionInstance(),
             ]);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->lookupFailure = self::transportReason($e);
+
             return ['unknown', null];
         }
 
@@ -679,6 +729,15 @@ class EvolutionProvider implements WhatsAppProviderInterface
         }
 
         if (!$response->successful()) {
+            // جسمُ الخطأ لا رمزَ فيه (الرمزُ في صفوف النجاح وحدها) — فيُقال سببُه.
+            // وسطرٌ في الدقيقة لا أكثر: الشاشةُ تسأل كلَّ ثانيتين ونصف، فجسرٌ عاطلٌ
+            // كان يملأ السجلّ بنحو ١٤٠ سطراً متطابقاً في جلسة اقترانٍ واحدة
+            $this->lookupFailure = 'HTTP ' . $response->status();
+
+            if (Cache::add('wa:lookup-failure-logged', true, 60)) {
+                Log::warning('Evolution fetchInstances failed (' . $response->status() . '): ' . mb_substr((string) $response->body(), 0, 300));
+            }
+
             return ['unknown', null];
         }
 
@@ -688,13 +747,12 @@ class EvolutionProvider implements WhatsAppProviderInterface
             return ['missing', null];
         }
 
-        if (!is_array($rows)) {
-            return ['unknown', null];
-        }
-
-        $row = array_is_list($rows) ? ($rows[0] ?? null) : $rows;
+        $row = is_array($rows) ? (array_is_list($rows) ? ($rows[0] ?? null) : $rows) : null;
 
         if (!is_array($row)) {
+            // ردٌّ ناجحٌ بجسمٍ غير مفهوم (صفحةُ وكيلٍ مثلاً) — بلا سببٍ يُسمّى لقال المكتبُ «بلا ردّ»
+            $this->lookupFailure = 'ردٌّ غير مفهوم';
+
             return ['unknown', null];
         }
 
@@ -706,6 +764,19 @@ class EvolutionProvider implements WhatsAppProviderInterface
     protected function pastDeadline(): bool
     {
         return microtime(true) >= $this->pairDeadline;
+    }
+
+    /** سببُ انقطاعٍ قبل أيّ ردّ، بكلمةٍ يفهمها المشغّل. */
+    protected static function transportReason(\Throwable $e): string
+    {
+        $m = mb_strtolower($e->getMessage());
+
+        return match (true) {
+            str_contains($m, 'timed out') || str_contains($m, 'timeout') => 'مهلةٌ بلا ردّ',
+            str_contains($m, 'refused') => 'الاتصال مرفوض — الجسرُ متوقّف؟',
+            str_contains($m, 'resolve') => 'عنوانُ الجسر لا يُعرف',
+            default => 'انقطاع: ' . mb_substr($e->getMessage(), 0, 80),
+        };
     }
 
     /** مهلةٌ بين خطوات الجسر — تُطوى في الاختبارات. */

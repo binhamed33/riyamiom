@@ -1821,8 +1821,16 @@
             codeBox.classList.add('hidden');
         }
 
+        // الشارةُ رُسمت بحال لحظة فتح الصفحة: «● موصول» فوق رمزٍ ينتظر المسح
+        // تُوهم أنّ الرقم يعمل — فتُبدَّل ما دام رمزٌ معروضاً
+        function awaiting() {
+            badge.textContent = 'بانتظار الربط';
+            badge.className = 'text-[11px] px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200';
+        }
+
         function showCode(code, renewed) {
             shownCode = code;
+            awaiting();
             // كما يعرضه واتساب: أربعةٌ وأربعة
             codeBox.textContent = code.length === 8 ? code.slice(0, 4) + '-' + code.slice(4) : code;
             codeBox.classList.remove('hidden');
@@ -1834,6 +1842,7 @@
 
         function showQr(qr, renewed) {
             shownQr = qr;
+            awaiting();
             qrBox.textContent = '';
 
             if (qr.indexOf('data:') === 0) {
