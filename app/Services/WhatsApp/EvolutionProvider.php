@@ -4,6 +4,7 @@ namespace App\Services\WhatsApp;
 
 use App\Support\WhatsAppSettings;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -52,17 +53,48 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
     // ── الاقتران ─────────────────────────────────────────────────
 
+    /** المدّةُ التي يُعدّ فيها المكتبُ «يقترن الآن» فيكفّ الكنسُ والإصلاحُ عن نسخته. */
+    public const PAIRING_WINDOW_MIN = 6;
+
     /**
-     * إنشاءُ نسخة المكتب وإرجاعُ رمز المسح.
+     * لا تُبدأ خطوةٌ جديدةٌ مع الجسر بعد هذه الثواني من الطلب.
      *
-     * ═══ لماذا يُنشأ ثمّ يُتصل ═══
+     * ‏nginx يقطع الطلبَ عند ستّين ثانية فيرى المكتبُ «تعذّر الاتصال»، وPHP يمضي
+     * (مهلةُ التنفيذ تعدّ وقتَ المعالج لا الانتظار) يحذف وينشئ والمكتبُ يضغط ثانية.
+     * فجسرٌ عالقٌ يُقال عنه بعد أربعين ثانية بدل أن يُترك الطلبُ يتجاوز الستّين.
+     */
+    public const PAIR_DEADLINE_S = 40;
+
+    protected float $pairDeadline = INF;
+
+    /**
+     * رمزُ اقترانٍ جديد — رمزُ مسحٍ، أو رمزُ ربطٍ بالرقم إن مُرِّر رقم.
      *
-     * ‏Evolution يرفض إنشاءَ نسخةٍ موجودة بخطأ 403، وهو ليس عطلاً بل
-     * حالةً عاديّة: المكتب يفتح الصفحة مرّتين. فيُحاول الإنشاءُ، ثمّ
-     * يُطلب الرمزُ من `connect` في الحالتين — فتُقرأ نسخةٌ جديدة
-     * وقديمةٌ بنفس الطريق.
+     * ═══ لماذا جلسةٌ جديدةٌ في كلّ طلب ═══
      *
-     * @return array{qr: ?string, state: string, message: ?string}
+     * من مصدر Evolution 2.3.7 وBaileys 7.0.0-rc.9 (instance.controller.ts:309-331،
+     * whatsapp.baileys.service.ts:336-417):
+     *
+     * - جلسةٌ تنتظر المسح («connecting») يعيد لها «connect» رمزَها المخزَّن كما
+     *   هو ويُهمل الرقم. فكان «اطلب رمزاً» يعود برمز المسح القديم أو بلا شيء،
+     *   ولا يُطلب من واتساب رمزُ ربطٍ قطّ. والرقمُ لا يُعتمد إلا في جلسةٍ تُفتح.
+     * - عدّادُ الرموز (QRCODE_LIMIT=30) لا يُصفَّر إلا بإنشاء النسخة، فيتراكم
+     *   من كلّ محاولةٍ سابقة ومن جلساتٍ فتحها الكنسُ بلا أحدٍ ينظر — فتُرفض
+     *   جلسةُ المكتب في منتصف المسح.
+     * - طلبُ رمز ربطٍ مرّةً يكتب الرقمَ في اعتماد النسخة، فكلُّ جلسةٍ بعده تحاول
+     *   «الدخول» بدل «الربط» فتُرفض.
+     * - والرمزُ المخزَّن لا يُمحى عند سقوط جلسة: «connect» قد يعيد رمزاً ميتاً.
+     *
+     * فالنسخةُ التي لم تقترن تُطوى وتُنشأ من جديد عند كلّ طلبٍ من المكتب: عدّادٌ
+     * من الصفر، واعتمادٌ نظيف، والرقمُ — إن وُجد — يُعتمد من أوّل لحظة. والرموزُ
+     * تتجدّد كلَّ ٤٥ ثانية فتُقرأ بعد ذلك من currentPairing() لا من هذا الردّ.
+     *
+     * ═══ وما لا يُطوى أبداً ═══
+     *
+     * نسخةٌ مقترنة (حالتُها في قاعدة الجسر «open» ولها رقمُ مالك) — سقط اتصالُها
+     * أم لم يسقط: يُطرق بابُ وصلها ولا تُحذف. وحذفُها قطعُ اقترانِ مكتبٍ يعمل.
+     *
+     * @return array{qr: ?string, code: ?string, state: string, message: ?string}
      */
     public function pair(?string $phone = null): array
     {
@@ -80,149 +112,417 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
         $instance = WhatsAppSettings::evolutionInstance();
 
-        // موصولٌ أصلاً: لا يُعرض رمزٌ لمن لا يحتاجه
+        // ═══ طلبٌ واحدٌ في كلّ لحظة ═══
+        //
+        // زرُّ المسح وزرُّ الرقم وإعادةُ المحاولة والإصلاحُ من سطر الأوامر قد
+        // تتزامن: أحدُها يحذف النسخةَ والآخرُ أعاد للتوّ رمزَها — فيصل المكتبَ
+        // رمزٌ ميتٌ قبل أن يراه. وجلستان معاً عند الجسر تُضيّعان المسحَ الناجح
+        // (يُحفظ اعتمادُ الجلسة الأحدث لا التي اقترنت).
+        // أطولُ من أسوأ رحلةٍ يسمح بها موعدُ PAIR_DEADLINE_S — وإلا انقضى القفلُ
+        // والطلبُ ما زال يحذف وينشئ، فدخل طلبٌ ثانٍ عليه
+        $lock = Cache::lock('wa:pair:' . $instance, 90);
+
+        if (!$lock->get()) {
+            return ['qr' => null, 'code' => null, 'state' => 'connecting',
+                'message' => 'طلبُ رمزٍ سابقٌ ما زال يُجهَّز — انتظر ثوانيَ ثم أعد المحاولة.'];
+        }
+
+        try {
+            Cache::put(self::pairingKey($instance), true, now()->addMinutes(self::PAIRING_WINDOW_MIN));
+            $this->pairDeadline = microtime(true) + self::PAIR_DEADLINE_S;
+
+            return $this->pairLocked($instance, $phone);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /** المكتبُ يقترن الآن — الكنسُ والإصلاحُ لا يلمسان النسخة. */
+    public static function pairingInProgress(): bool
+    {
+        return (bool) Cache::get(self::pairingKey(WhatsAppSettings::evolutionInstance()), false);
+    }
+
+    protected static function pairingKey(string $instance): string
+    {
+        return 'wa:pairing-active:' . $instance;
+    }
+
+    protected static function latestKey(string $instance): string
+    {
+        return 'wa:pairing-latest:' . $instance;
+    }
+
+    /**
+     * أحدثُ رمزٍ أرسله الجسرُ في ويبهوك QRCODE_UPDATED — يُحفظ لتقرأه الشاشة.
+     *
+     * ‏أسلمُ من سؤال «connect»: ذاك في «close» يفتح جلسةً ثانية، والجلسةُ تمرّ
+     * بـ«close» ثانيةً أو اثنتين بعد المسح الناجح نفسِه (الجسرُ يعيد التشغيل
+     * 515)، وجلستان معاً تُضيّعان الاقترانَ الذي تمّ للتوّ. والويبهوكُ لا أثرَ له.
+     *
+     * يعيش ٥٥ ثانية: الرمزُ يتبدّل كلَّ ٤٥، فما فات ذلك قد مات.
+     *
+     * @param  array<string, mixed>  $qrcode  ‏{base64, code, pairingCode} كما في الحمولة
+     */
+    public static function rememberPairing(array $qrcode): void
+    {
+        $base64 = is_string($qrcode['base64'] ?? null) ? $qrcode['base64'] : '';
+        $raw = is_string($qrcode['code'] ?? null) ? $qrcode['code'] : '';
+        $code = is_string($qrcode['pairingCode'] ?? null) && $qrcode['pairingCode'] !== '' ? $qrcode['pairingCode'] : null;
+
+        $qr = $base64 !== ''
+            ? (str_starts_with($base64, 'data:') ? $base64 : 'data:image/png;base64,' . $base64)
+            : ($raw !== '' ? 'text:' . $raw : null);
+
+        if ($qr === null && $code === null) {
+            return;
+        }
+
+        $key = self::latestKey(WhatsAppSettings::evolutionInstance());
+        $prev = Cache::get($key);
+
+        Cache::put($key, [
+            'qr' => $qr,
+            'code' => $code,
+            'seq' => (int) (is_array($prev) ? ($prev['seq'] ?? 0) : 0) + 1,
+        ], now()->addSeconds(55));
+    }
+
+    /** جلسةٌ جديدةٌ أو اقترانٌ تمّ: لا يُعرض رمزُ ما قبلها. */
+    public static function forgetPairing(): void
+    {
+        Cache::forget(self::latestKey(WhatsAppSettings::evolutionInstance()));
+    }
+
+    /** @return array{qr: ?string, code: ?string, state: string, message: ?string} */
+    protected function pairLocked(string $instance, ?string $phone): array
+    {
         $state = $this->connectionState();
 
+        // موصولٌ أصلاً: لا يُعرض رمزٌ لمن لا يحتاجه
         if ($state === 'open') {
-            WhatsAppSettings::setEvolutionState('open');
-
-            return ['qr' => null, 'code' => null, 'state' => 'open', 'message' => 'الرقم موصولٌ بالفعل.'];
+            return $this->opened('الرقم موصولٌ بالفعل.');
         }
 
-        // ═══ الإنشاء يعيد الرمزَ بنفسه ═══
+        [$found, $row] = $this->instanceLookup();
+
+        // ═══ لا يُحذف شيءٌ على جهل ═══
         //
-        // ‏instance/create عند Evolution 2 — مع qrcode:true — يفتح الجلسة
-        // وينتظر خمسَ ثوانٍ ويعيد الرمزَ في جسم الردّ. فيُقرأ من هناك
-        // بدل رحلةٍ ثانية قد تصادف نسخةً لم تُحمَّل بعد.
-        $created = $this->createInstance($instance, $phone);
+        // جسرٌ لا يجيب عن صفّ النسخة (مهلة، ٥٠٠، قاعدتُه تُعاد) لا يُستدلّ بصمته
+        // على أنّها لم تقترن: الحذفُ عنده يبدأ بإلغاء اقتران الهاتف. فيُقال ذلك.
+        if ($found === 'unknown') {
+            $this->lastError = 'الجسرُ لا يجيب الآن عن حالة نسخة المكتب — لم يُغيَّر شيء. أعد المحاولة بعد دقيقة.';
+
+            return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $this->lastError];
+        }
+
+        // ═══ نسخةٌ لا يعرفها الجسرُ الآن — وقد يكون يقلع ═══
+        //
+        // بعد إعادة تشغيل الجسر لا تكون النسخُ المقترنةُ في ذاكرته حتى يفرغ من
+        // تحميلها (monitor.service.ts:296-307 — ومعه جلبُ إصدار واتساب بلا مهلة)،
+        // فتبدو «غير موجودة». والإنشاءُ حينها يصطدم بصفّها فيمسحه الجسرُ مع
+        // اعتمادها — يقطع اقتراناً صالحاً. فمكتبٌ اقترن من قبلُ يُمهَل الجسرُ له:
+        // ثوانيَ هنا، ثمّ لا يُنشأ بديلٌ إلا إن بقيت غائبةً دقيقةً ونصفاً على الأقلّ.
+        if ($found === 'missing' && (string) \App\Models\Setting::get(WhatsAppSettings::KEY_CONNECTED_AT, '') !== '') {
+            for ($i = 0; $i < 3 && $found === 'missing' && !$this->pastDeadline(); $i++) {
+                $this->pause(2500);
+                [$found, $row] = $this->instanceLookup();
+            }
+
+            if ($found === 'row' && $this->connectionState() === 'open') {
+                return $this->opened('الرقم موصولٌ بالفعل.');
+            }
+
+            if ($found !== 'row' && !$this->sustained('missing', $instance, 90)) {
+                return ['qr' => null, 'code' => null, 'state' => 'close',
+                    'message' => 'الجسرُ لا يعرف نسخةَ المكتب الآن — إن كان قد أُعيد تشغيلُه للتوّ فهو يحمّلها. انتظر دقيقتين ثم اضغط مرّةً أخرى.'];
+            }
+        }
+
+        // ═══ نسخةٌ مقترنةٌ سقط اتصالُها: تُوصَل ولا تُحذف ═══
+        if (self::isPairedRow($row)) {
+            if ($state === 'close') {
+                // ‏«close» مرّتين بينهما ثانيتان: الجسرُ يعيد الوصلَ بنفسه بعد كلّ سقوطٍ
+                // عابر، و«connect» في لحظته يفتح جلسةً ثانيةً تتنازع اعتمادَه
+                $this->pause(2000);
+                $state = $this->connectionState();
+
+                if ($state === 'close') {
+                    $this->nudge($instance);
+                    $this->pause(3000);
+                    $state = $this->connectionState();
+                }
+            }
+
+            WhatsAppSettings::setEvolutionState($state);
+
+            if ($state === 'open') {
+                return $this->opened('أُعيد وصلُ الرقم المقترن.');
+            }
+
+            // جلسةٌ مقترنةٌ لا تُصدر رموزاً. فإن بقيت لا تتّصل دقيقتين بين ضغطتين
+            // فاعتمادُها ميتٌ وإن لم يكتب الجسرُ ذلك (سقوطٌ بأسبابٍ يعيد معها الوصلَ
+            // أبداً) — فتُنشأ نسخةٌ نظيفةٌ في الضغطة التالية بعدهما.
+            if (!$this->sustained('stuck', $instance, 120)) {
+                return ['qr' => null, 'code' => null, 'state' => 'connecting',
+                    'message' => 'الرقمُ مقترنٌ من قبل والجسرُ يعيد وصلَه الآن — انتظر. إن لم يتّصل خلال دقيقتين فاضغط مرّةً أخرى لرمزٍ جديد.'];
+            }
+        }
+
+        // ═══ جلسةٌ في منتصف الربط: لا تُطوى قبل أن يُتأكَّد ═══
+        //
+        // بعد المسح الناجح يعيد واتساب تشغيلَ الاتصال (515) والصفُّ ما زال
+        // «connecting» بلا مالك ثوانيَ حتى يُفتح. وضغطةٌ في تلك الثواني كانت تطوي
+        // النسخة — والحذفُ يلغي اقترانَ الهاتف الذي تمّ للتوّ.
+        if ((string) ($row['connectionStatus'] ?? '') === 'connecting') {
+            $this->pause(2500);
+
+            if ($this->connectionState() === 'open') {
+                return $this->opened('تمّ الاقتران.');
+            }
+        }
+
+        // ═══ لم تقترن، أو انتهت رموزُها، أو فصلها الهاتف: جلسةٌ نظيفة ═══
+        return $this->startFresh($instance, $phone);
+    }
+
+    /** @return array{qr: null, code: null, state: string, message: string} */
+    protected function opened(string $message): array
+    {
+        // يمحو معه رمزَ الجلسة وأختامَ «الغياب» و«التعثّر» (setEvolutionState)
+        WhatsAppSettings::setEvolutionState('open');
+
+        return ['qr' => null, 'code' => null, 'state' => 'open', 'message' => $message];
+    }
+
+    /** ما لم يُرَ خلالها يُعدّ انقطاعاً في الحال — تبدأ المدّةُ من جديد. */
+    protected const SUSTAIN_GAP_S = 300;
+
+    /**
+     * أدامت هذه الحالُ هذه الثواني متّصلةً؟
+     *
+     * ما يُعدّ غيابَ نسخةٍ أو موتَ اقترانٍ لا يُبنى على لحظةٍ واحدة: الجسرُ يقلع
+     * ويعيد الوصل في ثوانٍ. فيُبنى على حالٍ رُئيت مرّتين بينهما هذه المدّة —
+     * ومتّصلةً: سقوطٌ رُئي قبل عشر دقائق ثمّ عاد الوصلُ بعده لا يُحسب مع سقوطٍ
+     * عابرٍ الآن (وإلا طوت ضغطةٌ واحدةٌ اقتراناً يعمل). فتُختم أوّلُ رؤيةٍ وآخرُها،
+     * وفجوةٌ أطولُ من SUSTAIN_GAP_S تبدأ العدَّ من جديد، والفتحُ يمحو الختم
+     * (WhatsAppSettings::setEvolutionState).
+     */
+    protected function sustained(string $what, string $instance, int $seconds): bool
+    {
+        $key = self::sustainKey($what, $instance);
+        $now = now()->getTimestamp();
+        $seen = Cache::get($key);
+
+        if (!is_array($seen) || $now - (int) ($seen['last'] ?? 0) > self::SUSTAIN_GAP_S) {
+            $seen = ['first' => $now, 'last' => $now];
+        }
+
+        $seen['last'] = $now;
+        Cache::put($key, $seen, now()->addMinutes(20));
+
+        return $now - (int) $seen['first'] >= $seconds;
+    }
+
+    protected static function sustainKey(string $what, string $instance): string
+    {
+        return 'wa:sustained:' . $what . ':' . $instance;
+    }
+
+    /** الرقمُ موصول: لا رمزَ يُعرض، ولا تُحسب غيبةٌ أو تعثّرٌ سبقا الوصل. */
+    public static function clearPairingTraces(): void
+    {
+        $instance = WhatsAppSettings::evolutionInstance();
+
+        Cache::forget(self::latestKey($instance));
+        Cache::forget(self::sustainKey('missing', $instance));
+        Cache::forget(self::sustainKey('stuck', $instance));
+    }
+
+    /**
+     * حالُ نسخة المكتب عند الجسر بكلمة — لأوامر الإصلاح، بلا أيّ تغيير.
+     *
+     * @return 'open'|'paired'|'unpaired'|'missing'|'unknown'
+     */
+    public function pairingStatus(): string
+    {
+        if ($this->connectionState() === 'open') {
+            return 'open';
+        }
+
+        [$found, $row] = $this->instanceLookup();
+
+        return match (true) {
+            $found !== 'row' => $found,
+            self::isPairedRow($row) => 'paired',
+            default => 'unpaired',
+        };
+    }
+
+    /**
+     * نسخةٌ مقترنة: آخرُ ما كتبه الجسرُ في قاعدته «open» ولها رقمُ مالك.
+     *
+     * ‏ownerJid يُكتب عند الفتح ولا يُمحى أبداً، والحالةُ في القاعدة تصير
+     * «connecting» مع كلّ رمز مسح و«close» عند الفصل من الهاتف — وسقوطٌ عابرٌ
+     * لا يغيّرها (whatsapp.baileys.service.ts:413-497). ونسخةٌ أُنشئت للتوّ
+     * حالتُها «open» افتراضاً بلا مالك (Instance.connectionStatus @default(open)).
+     *
+     * @param  array<string, mixed>|null  $row
+     */
+    protected static function isPairedRow(?array $row): bool
+    {
+        return $row !== null
+            && (string) ($row['connectionStatus'] ?? '') === 'open'
+            && trim((string) ($row['ownerJid'] ?? $row['owner'] ?? '')) !== '';
+    }
+
+    /**
+     * طيُّ النسخة غير المقترنة وإنشاؤها من جديد — بالرقم إن وُجد.
+     *
+     * @return array{qr: ?string, code: ?string, state: string, message: ?string}
+     */
+    protected function startFresh(string $instance, ?string $phone): array
+    {
+        self::forgetPairing();
+
+        // ‏٤٠٤ هنا لا شيءَ يُحذف (لم تُنشأ أو ليست في ذاكرة الجسر) — يُمضى إلى الإنشاء
+        if (!$this->deleteInstance($instance) && !$this->pastDeadline()) {
+            $this->pause(1500);
+            $this->deleteInstance($instance);
+        }
+
+        // الحذفُ يُكمل تنظيفَ قاعدة الجسر بعد أن يردّ (monitor.service.ts:393-406)،
+        // فإنشاءٌ فوريٌّ قد يجد الاسمَ «مستعمَلاً» أو الصفَّ باقياً (٤٠٠). يُعاد
+        // ثلاثاً بمهلةٍ قصيرة، ولا يُعاد على رفض المفتاح أو عطلٍ في الخادم.
+        $created = ['qr' => null, 'code' => null, 'error' => null, 'status' => 0];
+
+        for ($try = 0; $try < 4; $try++) {
+            if ($try > 0 && $this->pastDeadline()) {
+                break;
+            }
+
+            $created = $this->createInstance($instance, $phone);
+
+            // ‏٤٠٣ برفض المفتاح يحمل سببَه (error) ولا يُعاد؛ و٤٠٣ «مستعمَل» بلا سبب
+            $busy = in_array($created['status'], [400, 409], true)
+                || ($created['status'] === 403 && $created['error'] === null);
+
+            if (!$busy) {
+                break;
+            }
+
+            $this->pause(1500);
+        }
 
         if ($created['qr'] !== null || $created['code'] !== null) {
-            return ['qr' => $created['qr'], 'code' => $created['code'], 'state' => 'connecting', 'message' => null];
+            WhatsAppSettings::setEvolutionState('connecting');
+
+            // بالرقم يُعرض الرمزُ وحده: رمزُ المسح المرافق له ليس ما طلبه المكتب
+            return [
+                'qr' => $phone === null ? $created['qr'] : null,
+                'code' => $created['code'],
+                'state' => 'connecting',
+                'message' => $phone !== null && $created['code'] === null ? 'يُطلب رمزُ الربط من واتساب…' : null,
+            ];
         }
 
-        // إخفاقٌ حقيقيٌّ في الإنشاء (لا «الاسم مستعمَل») يُقال ويُوقَف عنده
         if ($created['error'] !== null) {
             $this->lastError = $created['error'];
 
             return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $created['error']];
         }
 
-        // النسخةُ قائمةٌ من قبل: يُطلب الرمزُ منها
-        $this->applyWebhook($instance);
-        $connect = $this->connectQr($instance, $phone);
+        if ($created['status'] >= 200 && $created['status'] < 300) {
+            // أُنشئت ولم يصل رمزُها في مهلة الجسر (خمسُ ثوانٍ): يصل في السؤال التالي
+            WhatsAppSettings::setEvolutionState('connecting');
 
-        if ($connect['qr'] !== null || $connect['code'] !== null) {
-            return ['qr' => $connect['qr'], 'code' => $connect['code'], 'state' => 'connecting', 'message' => null];
+            return ['qr' => null, 'code' => null, 'state' => 'connecting',
+                'message' => $phone !== null ? 'يُطلب رمزُ الربط من واتساب…' : 'يُجهَّز رمزُ المسح…'];
         }
 
-        if ($connect['state'] === 'open') {
-            WhatsAppSettings::setEvolutionState('open');
-
-            return ['qr' => null, 'code' => null, 'state' => 'open', 'message' => 'الرقم موصولٌ بالفعل.'];
-        }
-
-        // ═══ الطريقُ المسدود الذي كان يقتل الاقتران للأبد ═══
-        //
-        // حارسُ Evolution على «create» يقول «الاسم مستعمَل» إن وُجد صفُّ
-        // النسخة في قاعدته، بينما «connect» يقرأ النسخةَ من ذاكرة العملية
-        // فيقول «does not exist» إن لم تكن محمَّلة. وهما يجتمعان في حالٍ
-        // واحدة: نسخةٌ أُنشئت ولم يُمسح رمزُها قطّ ثم أُعيد تشغيل الجسر —
-        // فلا اعتمادَ محفوظاً يُحمَّل، والصفُّ باقٍ في القاعدة.
-        //
-        // فالمكتب يضغط «ابدأ الاقتران» فيُنشأ ⇐ ٤٠٣، ثمّ يُوصَل ⇐ ٤٠٠
-        // «النسخة غير موجودة» — أبداً، بلا رمزٍ ولا مخرج. وهذا ما كان.
-        //
-        // العلاجُ حذفُ الصفِّ الميت وإنشاءٌ نظيف. ولا يُفعل إلا هنا: بعد
-        // أن قال الجسرُ صراحةً إنّ النسخة غير موجودة عنده، وحالتُها ليست
-        // مفتوحةً ولا قيد الاتصال — فلا جلسةَ حيّةٌ تُقطع بحال.
-        if ($connect['missing']) {
-            $this->deleteInstance($instance);
-            $fresh = $this->createInstance($instance, $phone);
-
-            if ($fresh['qr'] !== null || $fresh['code'] !== null) {
-                return ['qr' => $fresh['qr'], 'code' => $fresh['code'], 'state' => 'connecting', 'message' => null];
-            }
-
-            if ($fresh['error'] !== null) {
-                $this->lastError = $fresh['error'];
-
-                return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $fresh['error']];
-            }
-
-            $retry = $this->connectQr($instance, $phone);
-
-            if ($retry['qr'] !== null || $retry['code'] !== null) {
-                return ['qr' => $retry['qr'], 'code' => $retry['code'], 'state' => 'connecting', 'message' => null];
-            }
-        }
-
-        $this->lastError = $connect['error']
-            ?? 'لم يُصدر الجسرُ رمزَ اقترانٍ الآن — أعد المحاولة بعد لحظات.';
+        $this->lastError = 'لم يقبل الجسرُ إنشاءَ جلسةٍ جديدة الآن — أعد المحاولة بعد دقيقة.';
 
         return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $this->lastError];
     }
 
     /**
-     * طلبُ الرمز من نسخةٍ قائمة.
+     * الرمزُ الحاليّ لجلسةٍ تنتظر — تسأله الشاشةُ كلَّ ثوانٍ.
      *
-     * @return array{qr: ?string, code: ?string, state: string, missing: bool, error: ?string}
+     * الجسرُ يبدّل رمزَ المسح كلَّ ٤٥ ثانية، ومع الرقم يطلب رمزَ ربطٍ جديداً مع
+     * كلّ تبديلة — وواتساب لا يقبل إلا الأحدث. فالرمزُ الذي عُرض مرّةً يموت
+     * والشاشةُ ما زالت تقول «امسح». وهنا يُقرأ الأحدثُ دائماً.
+     *
+     * ولا يُسأل «connect» إلا وجلسةٌ تنتظر مسحاً فعلاً: في «connecting» يعيد
+     * الرمزَ المخزَّن بلا أثر، أمّا في «close» ففتحُ جلسةٍ جديدة — وجلسةٌ مقترنةٌ
+     * تعيد وصلَها تحمل رمزاً قديماً لا يُعرض.
+     *
+     * @return array{state: string, qr: ?string, code: ?string, count: ?int}
      */
-    protected function connectQr(string $instance, ?string $phone = null): array
+    public function currentPairing(): array
     {
+        $state = $this->connectionState();
+        $none = ['state' => $state, 'qr' => null, 'code' => null, 'count' => null];
+
+        if ($state !== 'connecting') {
+            return $none;
+        }
+
+        $row = $this->instanceRow();
+
+        if ((string) ($row['connectionStatus'] ?? '') !== 'connecting') {
+            return $none;
+        }
+
+        // ما أرسله الجسرُ نفسُه في ويبهوكه — بلا نداءٍ قد يفتح جلسةً ثانية
+        $latest = Cache::get(self::latestKey(WhatsAppSettings::evolutionInstance()));
+
+        if (is_array($latest)) {
+            return ['state' => 'connecting', 'qr' => $latest['qr'] ?? null, 'code' => $latest['code'] ?? null,
+                'count' => isset($latest['seq']) ? (int) $latest['seq'] : null];
+        }
+
+        // الويبهوكُ لا يصلنا (الجسرُ لا يبلغ عنوانَ المكتب): يُسأل «connect» —
+        // بعد تأكيد الحالة في اللحظة نفسها، فـ«close» عنده يعني جلسةً ثانية
+        if ($this->connectionState() !== 'connecting') {
+            return $none;
+        }
+
         try {
-            // الرقمُ يسافر في الاستعلام: الجسرُ يدمج معاملاتِ الاستعلام
-            // في بيانات النسخة، فيطلب رمزَ ربطٍ من واتساب بدل المسح
-            $response = $this->http()->get($this->url('instance/connect/' . $instance)
-                . ($phone !== null ? '?number=' . $phone : ''));
+            $response = $this->http()->timeout(8)->get($this->url('instance/connect/' . WhatsAppSettings::evolutionInstance()));
         } catch (\Throwable) {
-            return ['qr' => null, 'code' => null, 'state' => 'close', 'missing' => false, 'error' => 'تعذّر الاتصال بخادم الجسر.'];
+            return $none;
         }
 
-        $body = (string) $response->body();
-
-        // «غير موجودة» تأتي بـ٤٠٠ من المتحكّم وبـ٤٠٤ من الحارس، وقد
-        // تأتي بـ٢٠٠ وجسمٍ فيه error:true — فالنصُّ هو الفيصل لا الرمز
-        $missing = str_contains(mb_strtolower($body), 'does not exist')
-            || str_contains(mb_strtolower($body), 'not exist')
-            || $response->status() === 404;
-
-        if (!$response->successful()) {
-            if (!$missing) {
-                $this->failureFrom($response);
-            }
-
-            return ['qr' => null, 'code' => null, 'state' => 'close', 'missing' => $missing, 'error' => $missing ? null : $this->lastError];
+        if (!$response->successful() || $response->json('error') === true) {
+            return $none;
         }
 
-        // حالةٌ مفتوحة تعود من connect نفسِه حين تكون الجلسةُ حيّة
-        $state = (string) ($response->json('instance.state') ?? $response->json('state') ?? '');
+        $count = $response->json('count') ?? $response->json('qrcode.count');
 
         return [
+            'state' => 'connecting',
             'qr' => $this->qrFrom($response),
             'code' => $this->pairingCodeFrom($response),
-            'state' => $state === 'open' ? 'open' : 'connecting',
-            'missing' => $missing,
-            'error' => null,
+            'count' => is_numeric($count) ? (int) $count : null,
         ];
     }
 
     /**
-     * حذفُ نسخةٍ ميتة — تمهيداً لإنشاءٍ نظيف.
+     * حذفُ نسخةٍ غير مقترنة — تمهيداً لإنشاءٍ نظيف.
      *
-     * لا يُنادى إلا بعد أن يُقرّ الجسرُ أنّ النسخة غير موجودة عنده:
-     * حذفُ نسخةٍ حيّة يعني قطعَ اقترانِ مكتبٍ يعمل، وذلك ما لا نفعله
-     * من طرفنا أبداً.
+     * لا يُنادى إلا من startFresh بعد أن ثبت أنّ النسخة غير مقترنة: حذفُ
+     * نسخةٍ مقترنة يعني قطعَ اقترانِ مكتبٍ يعمل، وذلك ما لا نفعله من طرفنا.
      */
     protected function deleteInstance(string $instance): bool
     {
         try {
-            $response = $this->http()->delete($this->url('instance/delete/' . $instance));
+            $response = $this->http()->timeout(15)->delete($this->url('instance/delete/' . $instance));
         } catch (\Throwable) {
             return false;
         }
 
         if (!$response->successful()) {
-            // ‏٤٠٤ هنا نجاحٌ: لا صفَّ يُحذف أصلاً
+            // ‏٤٠٤ هنا نجاحٌ: لا شيءَ في ذاكرة الجسر يُحذف
             return $response->status() === 404;
         }
 
@@ -237,7 +537,7 @@ class EvolutionProvider implements WhatsAppProviderInterface
         }
 
         try {
-            $response = $this->http()->get(
+            $response = $this->http()->timeout(8)->get(
                 $this->url('instance/connectionState/' . WhatsAppSettings::evolutionInstance())
             );
         } catch (\Throwable) {
@@ -283,9 +583,14 @@ class EvolutionProvider implements WhatsAppProviderInterface
      * صالحاً. كان المكتب يبقى مفصولاً حتى يفتح أحدُهم الإعدادات
      * صدفةً — والرسائلُ تُقيَّد «في البوابة» أياماً.
      *
-     * فيُنادى `connect`: الاعتمادُ الصالح يُعيد الفتح فوراً بلا رمز،
-     * والساقطُ فعلاً يبقى ساقطاً — إعادةُ المسح قرارُ المكتب وحده،
-     * ولا يُمسح اقترانُه من طرفنا بحال.
+     * ═══ ولا يُفتح بابٌ لمن لم يقترن ═══
+     *
+     * ‏«connect» على نسخةٍ بلا اعتمادٍ صالح لا يُحيي شيئاً: يفتح جلسةَ رموزٍ
+     * لا أحدَ ينظر إليها. وكان الكنسُ يفعل ذلك كلَّ خمس دقائق لمكتبٍ فصله
+     * هاتفُه — فبقيت نسختُه «تنتظر مسحاً» أبداً: يُهمَل فيها الرقمُ حين يطلب
+     * المكتبُ رمزَ ربط، ويستنفد عدّادَ رموزها فتُرفض في منتصف مسحه، ويرى
+     * واتساب من الخادم طلباتِ ربطٍ لا تنتهي. فلا يُطرق البابُ إلا لنسخةٍ
+     * مقترنة (isPairedRow)، ولا وهي تعيد وصلَ نفسها، ولا والمكتبُ يقترن الآن.
      */
     public function reconnect(): string
     {
@@ -293,11 +598,31 @@ class EvolutionProvider implements WhatsAppProviderInterface
             return 'close';
         }
 
-        try {
-            $this->http()->get($this->url('instance/connect/' . WhatsAppSettings::evolutionInstance()));
-        } catch (\Throwable) {
-            // الجسرُ نفسُه لا يردّ: الحالةُ التالية ستقول ذلك
+        $state = $this->connectionState();
+
+        if ($state === 'open' || $state === 'connecting' || self::pairingInProgress()) {
+            WhatsAppSettings::setEvolutionState($state);
+
+            return $state;
         }
+
+        if (!self::isPairedRow($this->instanceRow())) {
+            WhatsAppSettings::setEvolutionState($state);
+
+            return $state;
+        }
+
+        // ‏«close» مرّتين: الجسرُ يعيد وصلَ ما سقط بنفسه، و«connect» في لحظة
+        // إعادته يفتح جلسةً ثانيةً تتنازع الاعتمادَ نفسَه
+        $this->pause(3000);
+
+        if (($again = $this->connectionState()) !== 'close') {
+            WhatsAppSettings::setEvolutionState($again);
+
+            return $again;
+        }
+
+        $this->nudge(WhatsAppSettings::evolutionInstance());
 
         try {
             $state = $this->connectionState();
@@ -308,6 +633,87 @@ class EvolutionProvider implements WhatsAppProviderInterface
         WhatsAppSettings::setEvolutionState($state);
 
         return $state;
+    }
+
+    /** طرقُ باب الوصل بلا رقم — الاعتمادُ المحفوظُ يفتح الجلسةَ وحده. */
+    protected function nudge(string $instance): void
+    {
+        try {
+            $this->http()->timeout(15)->get($this->url('instance/connect/' . $instance));
+        } catch (\Throwable) {
+            // الجسرُ نفسُه لا يردّ: الحالةُ التالية ستقول ذلك
+        }
+    }
+
+    /**
+     * صفُّ النسخة في قاعدة الجسر — أو null إن لم تكن في ذاكرته.
+     *
+     * فيه رمزُ النسخة السرّيّ (token): لا يُكتب في سجلٍّ ولا يُعاد إلى الواجهة.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function instanceRow(): ?array
+    {
+        return $this->instanceLookup()[1];
+    }
+
+    /**
+     * صفُّ النسخة بثلاثة أجوبة: وُجد، أو أقرّ الجسرُ أنّه لا يعرفها (٤٠٤)، أو لم
+     * يُعرف (مهلة، ٥٠٠، جسمٌ غريب). والثالثُ لا يُعامَل معاملةَ الثاني: صمتُ الجسر
+     * ليس دليلاً على أنّ النسخة لم تقترن.
+     *
+     * @return array{0: 'row'|'missing'|'unknown', 1: array<string, mixed>|null}
+     */
+    protected function instanceLookup(): array
+    {
+        try {
+            $response = $this->http()->timeout(8)->get($this->url('instance/fetchInstances'), [
+                'instanceName' => WhatsAppSettings::evolutionInstance(),
+            ]);
+        } catch (\Throwable) {
+            return ['unknown', null];
+        }
+
+        if ($response->status() === 404) {
+            return ['missing', null];
+        }
+
+        if (!$response->successful()) {
+            return ['unknown', null];
+        }
+
+        $rows = $response->json();
+
+        if (is_array($rows) && $rows === []) {
+            return ['missing', null];
+        }
+
+        if (!is_array($rows)) {
+            return ['unknown', null];
+        }
+
+        $row = array_is_list($rows) ? ($rows[0] ?? null) : $rows;
+
+        if (!is_array($row)) {
+            return ['unknown', null];
+        }
+
+        $row = is_array($row['instance'] ?? null) ? $row['instance'] : $row;
+
+        return $row === [] ? ['missing', null] : ['row', $row];
+    }
+
+    protected function pastDeadline(): bool
+    {
+        return microtime(true) >= $this->pairDeadline;
+    }
+
+    /** مهلةٌ بين خطوات الجسر — تُطوى في الاختبارات. */
+    protected function pause(int $ms): void
+    {
+        if (!app()->runningUnitTests()) {
+            usleep($ms * 1000);
+        }
     }
 
     // ── الإرسال ──────────────────────────────────────────────────
@@ -502,14 +908,9 @@ class EvolutionProvider implements WhatsAppProviderInterface
     // ── داخلي ────────────────────────────────────────────────────
 
     /**
-     * إنشاءُ النسخة — يعيد null عند النجاح، أو سببَ الإخفاق بالعربية.
-     *
-     * ونسخةٌ موجودةٌ نجاحٌ لا إخفاق: المكتب يفتح الصفحة مرّتين، وأن
-     * تكون النسخةُ قائمةً هو ما نريده أصلاً.
-     */
-    /**
      * إنشاءُ النسخة — يعيد الرمزَ إن أُنشئت، أو سببَ الإخفاق، أو لا شيء
-     * إن كانت قائمةً من قبل.
+     * إن كانت قائمةً من قبل. ومعه رمزُ حالة الردّ: «مستعمَل» (٤٠٣ بلا سبب)
+     * و٤٠٠ بعد حذفٍ للتوّ يعنيان أنّ الجسر لم يُكمل تنظيفَه بعد فيُعاد.
      *
      * ═══ لماذا الويبهوك في جسم الإنشاء ═══
      *
@@ -518,12 +919,13 @@ class EvolutionProvider implements WhatsAppProviderInterface
      * عنوانِ استقبال — وكان ضبطُه بطلبٍ ثانٍ يفشل أحياناً فيُوقف
      * الاقترانَ كلَّه ويبقى المكتب بلا رمز.
      *
-     * @return array{qr: ?string, code: ?string, error: ?string}
+     * @return array{qr: ?string, code: ?string, error: ?string, status: int}
      */
     protected function createInstance(string $instance, ?string $phone = null): array
     {
         try {
-            $response = $this->http()->post($this->url('instance/create'), array_filter([
+            // الجسرُ يُمسك الإنشاءَ خمسَ ثوانٍ ينتظر أوّلَ رمز (instance.controller.ts:153-157)
+            $response = $this->http()->timeout(25)->post($this->url('instance/create'), array_filter([
                 'instanceName' => $instance,
                 'qrcode' => true,
                 'integration' => (string) config('whatsapp.evolution.integration', 'WHATSAPP-BAILEYS'),
@@ -534,19 +936,19 @@ class EvolutionProvider implements WhatsAppProviderInterface
         } catch (\Throwable $e) {
             Log::warning('Evolution instance create failed: ' . $e->getMessage());
 
-            return ['qr' => null, 'code' => null, 'error' => 'تعذّر الاتصال بخادم الجسر لإنشاء نسخة المكتب.'];
+            return ['qr' => null, 'code' => null, 'error' => 'تعذّر الاتصال بخادم الجسر لإنشاء نسخة المكتب.', 'status' => 0];
         }
 
         if ($response->successful()) {
             // الرمزُ في جسم الإنشاء نفسِه (qrcode.base64) — يُقرأ الآن
-            return ['qr' => $this->qrFrom($response), 'code' => $this->pairingCodeFrom($response), 'error' => null];
+            return ['qr' => $this->qrFrom($response), 'code' => $this->pairingCodeFrom($response), 'error' => null, 'status' => $response->status()];
         }
 
         $body = (string) $response->body();
 
         // «الاسم مستعمَل» = النسخةُ قائمة: لا رمزَ هنا ولا خطأ — يُطلب الرمزُ منها
         if (str_contains(mb_strtolower($body), 'already in use') || $response->status() === 409) {
-            return ['qr' => null, 'code' => null, 'error' => null];
+            return ['qr' => null, 'code' => null, 'error' => null, 'status' => $response->status()];
         }
 
         Log::warning('Evolution instance create rejected (' . $response->status() . '): ' . mb_substr($body, 0, 500));
@@ -568,7 +970,7 @@ class EvolutionProvider implements WhatsAppProviderInterface
         // واحد يترك المشغّل يجرّب على غير هدى.
         $probe = 'sudo bash scripts/install-evolution.sh status';
 
-        return ['qr' => null, 'code' => null, 'error' => match (true) {
+        return ['qr' => null, 'code' => null, 'status' => $response->status(), 'error' => match (true) {
             $response->status() === 401 || $response->status() === 403
                 => 'خادم الجسر رفض المفتاح — راجع EVOLUTION_API_KEY في ملفّ بيئة المكتب.',
             $response->status() === 404
@@ -659,21 +1061,11 @@ class EvolutionProvider implements WhatsAppProviderInterface
     /** @return array{number: string, name: string}|null */
     protected function instanceOwner(): ?array
     {
-        try {
-            $response = $this->http()->get($this->url('instance/fetchInstances'), [
-                'instanceName' => WhatsAppSettings::evolutionInstance(),
-            ]);
-        } catch (\Throwable) {
+        $instance = $this->instanceRow();
+
+        if ($instance === null) {
             return null;
         }
-
-        if (!$response->successful()) {
-            return null;
-        }
-
-        $rows = (array) $response->json();
-        $row = $rows[0] ?? $rows;
-        $instance = (array) ($row['instance'] ?? $row);
 
         $owner = (string) ($instance['owner'] ?? $instance['ownerJid'] ?? '');
         $number = $owner !== '' ? (string) strtok($owner, '@') : '';

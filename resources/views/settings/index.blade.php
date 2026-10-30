@@ -370,7 +370,9 @@
                       data-pair-badge>{{ $waState === 'open' ? '● موصول' : 'غير موصول' }}</span>
             </div>
             <div class="p-4 grid sm:grid-cols-[auto_1fr] gap-5 items-center">
-                <div class="w-48 h-48 mx-auto rounded-xl border border-gray-200 bg-white flex items-center justify-center overflow-hidden"
+                {{-- ‏٢٦٤ بكسلاً لا ١٩٢: رمزُ الجسر كثيف (نحو ٨٥ وحدةً بتصحيحٍ عالٍ)، وفي ١٩٢
+                     تصير الوحدةُ بكسلين تُنعَّم فلا تقرؤها كاميرا الهاتف من شاشة حاسوب --}}
+                <div class="w-[264px] h-[264px] max-w-full mx-auto rounded-xl border border-gray-200 bg-white flex items-center justify-center overflow-hidden"
                      data-pair-qr-box>
                     <span class="text-xs text-gray-400 text-center px-4" data-pair-placeholder>
                         {{ $waState === 'open' ? 'الرقم موصول — لا حاجة للمسح.' : 'اضغط «ابدأ الاقتران» ليظهر الرمز.' }}
@@ -421,7 +423,8 @@
                                 في الهاتف: واتساب ← الأجهزة المرتبطة ← ربط جهاز ←
                                 <span class="font-semibold">«الربط برقم الهاتف بدلاً من ذلك»</span> ← اكتب الرمز الظاهر هنا.
                             </p>
-                            <div class="hidden text-center font-mono tracking-[0.35em] text-lg font-bold text-gray-900
+                            {{-- ‏dir=ltr: «ABCD-EFGH» بين حرفين لاتينيّين، فلا تقلبه الصفحةُ العربيّة --}}
+                            <div dir="ltr" class="hidden text-center font-mono tracking-[0.35em] text-lg font-bold text-gray-900
                                         bg-gray-50 border border-gray-200 rounded-lg py-3" data-pair-code></div>
                         </div>
                     </div>
@@ -1674,10 +1677,17 @@
 
     // ── اقتران الجسر بمسح رمز ────────────────────────────────
     //
-    // الشاشةُ تسأل الحالةَ كل ثانيتين لا تنتظر ويبهوكاً: الويبهوك
-    // يصل فعلاً، لكنّ المكتب ينظر إلى الشاشة لا إلى السجلّ — ولو
-    // انتظرناه وحده لبقي الرمزُ معروضاً بعد نجاح المسح، فيعيد
-    // المكتبُ المسحَ ظنّاً أنّه أخفق.
+    // ═══ الرمزُ يتبدّل، فالشاشةُ تتبدّل معه ═══
+    //
+    // الجسرُ يبدّل رمزَ المسح كلَّ ٤٥ ثانية، ومع الرقم يطلب من واتساب رمزَ ربطٍ
+    // جديداً مع كلّ تبديلة — وواتساب لا يقبل إلا الأحدث. كانت الشاشةُ تعرض أوّلَ
+    // رمزٍ وتسأل عن «open» وحده، فيمسح المكتبُ أو يكتب رمزاً مات منذ ثوانٍ ولا
+    // يُقبل. فالسؤالُ كلَّ ثانيتين ونصف يعيد الرمزَ الأحدث معه، ويُعرض متى تغيّر.
+    //
+    // ═══ والسببُ الحقيقيّ يُقال ═══
+    //
+    // ردودُ الأخطاء (٤٢٩، ٤١٩، ٥٠٠) لا تمرّ بالمتحكّم، فكانت تصل بلا message
+    // ويُكتب «تعذّر إحضار الرمز» عامّةً. والسببُ يُقرأ الآن من message أو error.
     var pairBox = card.querySelector('[data-wa-pair]');
 
     if (pairBox) {
@@ -1686,12 +1696,18 @@
         var status = pairBox.querySelector('[data-pair-status]');
         var start = pairBox.querySelector('[data-pair-start]');
         var poll = null;
+        var busy = false;
+        // جيلُ الطلب: ردُّ سؤالٍ خرج قبل الطلب الأخير لا يرسم جلسةً طُويت
+        var gen = 0;
 
         var phoneToggle = pairBox.querySelector('[data-pair-phone-toggle]');
         var phoneBox = pairBox.querySelector('[data-pair-phone-box]');
         var phoneInput = pairBox.querySelector('[data-pair-phone]');
         var phoneStart = pairBox.querySelector('[data-pair-phone-start]');
         var codeBox = pairBox.querySelector('[data-pair-code]');
+
+        // ما يُعرض الآن — ليُعرف متى تبدّل
+        var shownQr = null, shownCode = null, mode = null;
 
         start.addEventListener('click', function () { request(null, start, 'أعد إحضار الرمز'); });
 
@@ -1714,11 +1730,36 @@
             });
         }
 
+        // سببُ الإخفاق من ردٍّ ليس نجاحاً — بالحالة لا بالتخمين
+        function reasonOf(r, data) {
+            var text = data && (data.message || data.error);
+
+            if (r.status === 429) { return text || 'محاولات كثيرة خلال وقت قصير — انتظر دقيقة ثم أعد المحاولة.'; }
+            if (r.status === 419 || r.status === 401) { return 'انتهت صلاحية الصفحة — حدّثها ثم أعد المحاولة.'; }
+
+            return text || ('تعذّر إحضار الرمز (' + r.status + ').');
+        }
+
+        function readJson(r) {
+            return r.json().catch(function () { return null; }).then(function (data) { return { r: r, data: data }; });
+        }
+
         // طلبٌ واحدٌ للبابين: الفرقُ رقمٌ يُرسَل أو لا يُرسَل
         function request(phone, button, doneLabel) {
-            button.disabled = true;
+            if (busy) { return; }
+            busy = true;
+
+            // الزرّان معاً: طلبان متزامنان يحذف أحدُهما جلسةَ الآخر
+            start.disabled = true;
+            if (phoneStart) { phoneStart.disabled = true; }
             button.textContent = 'جارٍ التحضير…';
-            setStatus(phone ? 'يُطلب رمزُ الربط من واتساب…' : 'يُنشأ الاتصال بالخادم…', 'wait');
+
+            stopPolling();
+            gen++;
+            var mine = gen;
+            mode = phone ? 'code' : 'qr';
+            clearShown();
+            setStatus(phone ? 'يُطلب رمزُ الربط من واتساب… (قرابة عشر ثوانٍ)' : 'تُفتح جلسةٌ جديدة عند الخادم…', 'wait');
 
             fetch(pairBox.dataset.pairUrl, {
                 method: 'POST',
@@ -1730,36 +1771,78 @@
                 credentials: 'same-origin',
                 body: JSON.stringify({ phone: phone || '' })
             })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
+            .then(readJson)
+            .then(function (res) {
+                var data = res.data || {};
+
+                if (mine !== gen) { return; }
+                if (!res.r.ok) { setStatus(reasonOf(res.r, res.data), 'bad'); return; }
                 if (data.state === 'open') { connected(); return; }
 
-                if (data.code) { showCode(data.code); startPolling(); return; }
-                if (data.qr) { showQr(data.qr); startPolling(); return; }
+                show(data);
+
+                if (data.state === 'connecting') {
+                    if (!shownQr && !shownCode) { setStatus(data.message || 'يُجهَّز الرمز…', 'wait'); }
+                    startPolling(true);
+
+                    return;
+                }
 
                 setStatus(data.message || 'تعذّر إحضار الرمز.', 'bad');
             })
-            .catch(function () { setStatus('تعذّر الاتصال بالخادم.', 'bad'); })
+            .catch(function () { setStatus('تعذّر الاتصال بالخادم — تحقّق من الشبكة وأعد المحاولة.', 'bad'); })
             .finally(function () {
-                button.disabled = false;
+                busy = false;
+                start.disabled = false;
+                if (phoneStart) { phoneStart.disabled = false; }
                 button.textContent = doneLabel;
             });
         }
 
-        function showCode(code) {
-            codeBox.textContent = code;
-            codeBox.classList.remove('hidden');
-            phoneBox.classList.remove('hidden');
-            setStatus('اكتب هذا الرمز في هاتفك خلال دقيقة — بعدها اطلب غيره.', 'wait');
+        // يُعرض ما يناسب البابَ الذي اختاره المكتب، ويُبدَّل متى تغيّر
+        function show(data) {
+            if (mode === 'code') {
+                if (data.code && data.code !== shownCode) { showCode(data.code, shownCode !== null); }
+            } else if (data.qr && data.qr !== shownQr) {
+                showQr(data.qr, shownQr !== null);
+            }
         }
 
-        function showQr(qr) {
+        function clearShown() {
+            shownQr = null;
+            shownCode = null;
+            qrBox.textContent = '';
+            var wait = document.createElement('span');
+            wait.className = 'text-xs text-gray-400 text-center px-4';
+            // في باب الرقم لا رمزَ مسحٍ هنا: يُقال أين الرمز بدل إطارٍ فارغ
+            wait.textContent = mode === 'code' ? 'الربطُ برقم الهاتف — الرمزُ يظهر تحت خانة الرقم.' : '…';
+            qrBox.appendChild(wait);
+            codeBox.textContent = '';
+            codeBox.classList.add('hidden');
+        }
+
+        function showCode(code, renewed) {
+            shownCode = code;
+            // كما يعرضه واتساب: أربعةٌ وأربعة
+            codeBox.textContent = code.length === 8 ? code.slice(0, 4) + '-' + code.slice(4) : code;
+            codeBox.classList.remove('hidden');
+            phoneBox.classList.remove('hidden');
+            setStatus(renewed
+                ? 'تجدّد الرمز — اكتب الظاهر الآن. واتساب يقبل الأحدثَ وحده، ويتجدّد كلَّ ٤٥ ثانية.'
+                : 'في الهاتف: الأجهزة المرتبطة ← ربط جهاز ← «الربط برقم الهاتف بدلاً من ذلك» ← اكتب هذا الرمز. يتجدّد كلَّ ٤٥ ثانية، والظاهرُ هنا هو الصالح دائماً.', 'wait');
+        }
+
+        function showQr(qr, renewed) {
+            shownQr = qr;
             qrBox.textContent = '';
 
             if (qr.indexOf('data:') === 0) {
                 var img = document.createElement('img');
                 img.src = qr;
                 img.alt = 'رمز الاقتران';
+                // حادٌّ بلا تنعيم: الرمزُ كثيف (تصحيحُ أخطاءٍ عالٍ)، والتنعيمُ عند
+                // التصغير يُفسد قراءةَ الكاميرا
+                img.style.imageRendering = 'pixelated';
                 img.className = 'w-full h-full object-contain';
                 qrBox.appendChild(img);
             } else {
@@ -1770,32 +1853,84 @@
                 qrBox.appendChild(pre);
             }
 
-            setStatus('امسح الرمز خلال دقيقة — بعدها يُعاد إحضاره.', 'wait');
+            setStatus(renewed
+                ? 'تجدّد الرمز — امسح الظاهر الآن.'
+                : 'امسح الرمز الآن. يتجدّد وحده كلَّ ٤٥ ثانية — لا حاجة لإعادة الطلب.', 'wait');
         }
 
-        function startPolling() {
-            if (poll) { clearInterval(poll); }
+        function stopPolling() {
+            if (poll) { clearInterval(poll); poll = null; }
+        }
+
+        function startPolling(waiting) {
+            stopPolling();
 
             var ticks = 0;
+            var mine = gen;
+            // الطلبُ نفسُه قال «connecting»: الجلسةُ تنتظر منذ البداية
+            var sawWaiting = !!waiting;
+            // ‏«close» متتالية: بعد المسح الناجح يعيد واتساب تشغيلَ الاتصال (515)
+            // فتمرّ الجلسةُ بـ«close» ثانيةً أو اثنتين ثمّ تُفتح — فلا يُعلن الانتهاء
+            // من سؤالٍ واحد، بل من «close» تدوم قرابة عشر ثوانٍ
+            var closedFor = 0;
 
             poll = setInterval(function () {
+                // صفحةٌ في الخلفية لا تسأل: لا أحدَ يرى الرمز
+                if (document.hidden) { return; }
+
                 ticks++;
 
-                // ‏١٥٠ ثانية ثمّ نتوقّف: صفحةٌ تُركت مفتوحةً ليلاً لا
-                // تسأل الخادمَ ألفَ مرّة بلا أحدٍ ينظر
-                if (ticks > 75) { clearInterval(poll); setStatus('انتهت المهلة — اضغط لإحضار رمزٍ جديد.', 'bad'); return; }
+                // ستُّ دقائق ثمّ نتوقّف: صفحةٌ تُركت مفتوحةً لا تسأل الخادمَ بلا أحدٍ ينظر
+                if (ticks > 144) {
+                    stopPolling();
+                    setStatus('انتهت المهلة — اضغط لإحضار رمزٍ جديد.', 'bad');
+
+                    return;
+                }
 
                 fetch(pairBox.dataset.stateUrl, {
                     headers: { 'Accept': 'application/json' },
                     credentials: 'same-origin'
                 })
-                .then(function (r) { return r.json(); })
-                .then(function (data) { if (data.state === 'open') { clearInterval(poll); connected(); } })
+                .then(readJson)
+                .then(function (res) {
+                    var data = res.data || {};
+
+                    if (mine !== gen || !poll) { return; }
+
+                    if (!res.r.ok) {
+                        // ٤١٩ أو ٤٠١ لا يزولان بالانتظار؛ وغيرُهما عابرٌ يُتجاوز
+                        if (res.r.status === 419 || res.r.status === 401) { stopPolling(); setStatus(reasonOf(res.r, res.data), 'bad'); }
+
+                        return;
+                    }
+
+                    if (data.state === 'open') { stopPolling(); connected(); return; }
+
+                    if (data.state === 'connecting') {
+                        sawWaiting = true;
+                        closedFor = 0;
+                        show(data);
+
+                        return;
+                    }
+
+                    // أُغلقت الجلسةُ بعد أن كانت تنتظر — ودامت مغلقة: نفدت رموزُها أو رُفض الربط
+                    if (data.state === 'close' && sawWaiting && ++closedFor >= 4) {
+                        stopPolling();
+                        clearShown();
+                        setStatus('انتهت صلاحية رموز هذه الجلسة — اضغط لإحضار رمزٍ جديد.', 'bad');
+                    }
+                })
                 .catch(function () {});
-            }, 2000);
+            }, 2500);
         }
 
         function connected() {
+            shownQr = null;
+            shownCode = null;
+            codeBox.textContent = '';
+            codeBox.classList.add('hidden');
             qrBox.textContent = '';
             var ok = document.createElement('div');
             ok.className = 'text-center text-emerald-700 font-bold text-sm px-4';

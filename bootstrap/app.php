@@ -79,25 +79,30 @@ return Application::configure(basePath: dirname(__DIR__))
                     return;   // Laravel يردّ 422 بتفاصيل الحقول
                 }
 
+                // ‏«message» مع «error» بالنصّ نفسِه: ردودُ المتحكّمات وأخطاءُ التحقّق (٤٢٢)
+                // تحمل message، فقرأتها الشاشات وحدها — وكان ٤٢٩ و٤١٩ و٥٠٠ يصلها بلا
+                // message فتكتب «تعذّر إحضار الرمز» عامّةً والسببُ الحقيقيّ في error
+                $json = fn (string $reason, int $status) => response()->json([
+                    'ok' => false, 'error' => $reason, 'message' => $reason,
+                ], $status);
+
                 if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
                     $status = $e->getStatusCode();
 
-                    return response()->json([
-                        'ok' => false,
-                        'error' => match (true) {
-                            $status === 403 => $e->getMessage() ?: 'غير مصرح لك بالوصول',
-                            $status === 404 => 'غير موجود',
-                            $status === 429 => 'محاولات كثيرة خلال وقت قصير',
-                            default => $e->getMessage() ?: 'تعذّر إتمام العملية',
-                        },
-                    ], $status);
+                    return $json(match (true) {
+                        $status === 403 => $e->getMessage() ?: 'غير مصرح لك بالوصول',
+                        $status === 404 => 'غير موجود',
+                        $status === 419 => 'انتهت صلاحية الصفحة — حدّثها ثم أعد المحاولة.',
+                        $status === 429 => 'محاولات كثيرة خلال وقت قصير — انتظر دقيقة ثم أعد المحاولة.',
+                        default => $e->getMessage() ?: 'تعذّر إتمام العملية',
+                    }, $status);
                 }
 
                 if ($e instanceof \Illuminate\Auth\AuthenticationException) {
-                    return response()->json(['ok' => false, 'error' => 'الجلسة منتهية'], 401);
+                    return $json('الجلسة منتهية', 401);
                 }
 
-                return response()->json(['ok' => false, 'error' => 'تعذّر إتمام العملية'], 500);
+                return $json('تعذّر إتمام العملية', 500);
             }
             // ═══ قرصٌ لا يُكتب عليه ═══
             //

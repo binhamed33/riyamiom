@@ -41,6 +41,8 @@ class WhatsAppRevivalTest extends TestCase
     {
         $this->pairedThenDropped();
 
+        // جلسةٌ مقترنة (حالتُها في قاعدة الجسر open ولها مالك) سقط اتصالُها: close
+        // حتى يُطرق بابُ الوصل، ثمّ open باعتمادها المحفوظ
         $connectCalled = false;
         Http::fake(function ($request) use (&$connectCalled) {
             if (str_contains($request->url(), '/instance/connect/')) {
@@ -50,7 +52,11 @@ class WhatsAppRevivalTest extends TestCase
             }
 
             if (str_contains($request->url(), '/instance/connectionState/')) {
-                return Http::response(['instance' => ['state' => 'open']], 200);
+                return Http::response(['instance' => ['state' => $connectCalled ? 'open' : 'close']], 200);
+            }
+
+            if (str_contains($request->url(), '/instance/fetchInstances')) {
+                return Http::response([['name' => 'office', 'connectionStatus' => 'open', 'ownerJid' => '96894249400@s.whatsapp.net']], 200);
             }
 
             return Http::response([], 200);
@@ -98,5 +104,53 @@ class WhatsAppRevivalTest extends TestCase
         $this->artisan('whatsapp:sweep')->assertSuccessful();
 
         Http::assertNothingSent();
+    }
+
+    /**
+     * مكتبٌ فصله هاتفُه: لا تُفتح له جلسةُ رموزٍ كلَّ خمس دقائق.
+     *
+     * كانت تُفتح، فبقيت نسختُه تنتظر مسحاً أبداً — والجسرُ يُهمل الرقمَ في جلسةٍ
+     * تنتظر، فلم يصل المكتبَ رمزُ ربطٍ قطّ حين طلبه.
+     */
+    public function test_the_sweep_never_opens_a_session_nobody_is_watching(): void
+    {
+        $this->pairedThenDropped();
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            if (str_contains($request->url(), '/instance/fetchInstances')) {
+                // انتهت رموزُ جلسةٍ سابقة: القاعدةُ تقول connecting بلا مالك
+                return Http::response([['name' => 'office', 'connectionStatus' => 'connecting', 'ownerJid' => null]], 200);
+            }
+
+            return Http::response([], 200);
+        });
+
+        $this->artisan('whatsapp:sweep')->assertSuccessful();
+
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/instance/connect/')
+            || str_contains($r->url(), '/instance/create') || str_contains($r->url(), '/instance/delete/'));
+    }
+
+    /** والمكتبُ يقترن الآن: الكنسُ لا يطرق بابَ النسخة ولو كانت مقترنةً من قبل. */
+    public function test_the_sweep_keeps_its_hands_off_while_the_office_pairs(): void
+    {
+        $this->pairedThenDropped();
+        \Illuminate\Support\Facades\Cache::put('wa:pairing-active:' . WhatsAppSettings::evolutionInstance(), true, now()->addMinutes(6));
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            return Http::response([['name' => 'office', 'connectionStatus' => 'open', 'ownerJid' => '96894249400@s.whatsapp.net']], 200);
+        });
+
+        $this->artisan('whatsapp:sweep')->assertSuccessful();
+
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/instance/connect/'));
     }
 }

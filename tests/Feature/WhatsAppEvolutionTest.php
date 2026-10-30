@@ -320,11 +320,12 @@ class WhatsAppEvolutionTest extends TestCase
 
     public function test_pairing_returns_a_qr_and_sets_the_webhook_with_the_secret(): void
     {
+        // كما يردّ Evolution 2.3.7: الإنشاءُ ينتظر أوّلَ رمزٍ ويعيده في جسمه
         Http::fake([
             '*/instance/connectionState/*' => Http::response(['instance' => ['state' => 'close']], 200),
-            '*/instance/create' => Http::response(['instance' => []], 201),
-            '*/webhook/set/*' => Http::response(['webhook' => ['enabled' => true]], 200),
-            '*/instance/connect/*' => Http::response(['base64' => 'iVBORw0KGgo='], 200),
+            '*/instance/fetchInstances*' => Http::response(['status' => 404, 'error' => 'Not Found'], 404),
+            '*/instance/delete/*' => Http::response(['status' => 404, 'error' => 'Not Found'], 404),
+            '*/instance/create' => Http::response(['instance' => [], 'qrcode' => ['count' => 1, 'base64' => 'iVBORw0KGgo=']], 201),
         ]);
 
         $result = (new EvolutionProvider())->pair();
@@ -332,11 +333,12 @@ class WhatsAppEvolutionTest extends TestCase
         $this->assertSame('connecting', $result['state']);
         $this->assertStringStartsWith('data:image/png;base64,', (string) $result['qr']);
 
+        // الويبهوك يسافر داخل الإنشاء نفسِه وفي مساره السرّ
         Http::assertSent(function ($request) {
             $body = $request->data();
             $url = $body['webhook']['url'] ?? $body['url'] ?? '';
 
-            return str_contains($request->url(), '/webhook/set/')
+            return str_contains($request->url(), '/instance/create')
                 && str_contains((string) $url, WhatsAppSettings::evolutionSecret());
         });
     }

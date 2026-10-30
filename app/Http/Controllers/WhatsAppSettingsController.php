@@ -342,7 +342,15 @@ class WhatsAppSettingsController extends Controller
             ], 200);
         }
 
-        $result = $provider->pair($phone !== '' ? $phone : null);
+        try {
+            $result = $provider->pair($phone !== '' ? $phone : null);
+        } catch (\Throwable $e) {
+            // عطلٌ غير متوقَّع يُسجَّل بأثره ويُقال للمكتب بلغته — لا «تعذّر» بلا سبب
+            report($e);
+
+            return response()->json(['qr' => null, 'code' => null, 'state' => 'close',
+                'message' => 'تعذّر الحديثُ مع جسر واتساب الآن — أعد المحاولة بعد دقيقة.'], 200);
+        }
 
         // لا يُدوَّن الرقمُ ولا الرمز في سجلّ الحركات — أثرٌ يكفي
         $this->audit('whatsapp_evolution_pair', [
@@ -353,7 +361,16 @@ class WhatsAppSettingsController extends Controller
         return response()->json($result, 200);
     }
 
-    /** حالةُ الاقتران الحاليّة — تسألها الشاشةُ لتعرف متى تتوقّف. */
+    /**
+     * حالةُ الاقتران الحاليّة ورمزُها الأحدث — تسألها الشاشةُ كلَّ ثوانٍ.
+     *
+     * ═══ لماذا الرمزُ هنا لا في الطلب الأوّل وحده ═══
+     *
+     * الجسرُ يبدّل رمزَ المسح كلَّ ٤٥ ثانية، ومع الرقم يطلب رمزَ ربطٍ جديداً مع
+     * كلّ تبديلة وواتساب لا يقبل إلا الأحدث. كانت الشاشةُ تعرض أوّلَ رمزٍ وتسأل
+     * هنا عن «open» وحده، فبقي الرمزُ الميتُ أمام المكتب يمسحه أو يكتبه ولا يُقبل.
+     * فيعود الأحدثُ مع عدّاده، والشاشةُ تبدّل ما تعرضه متى تغيّر.
+     */
     public function pairState(): JsonResponse
     {
         if (!WhatsAppSettings::usingEvolution()) {
@@ -361,13 +378,16 @@ class WhatsAppSettingsController extends Controller
         }
 
         $provider = WhatsAppManager::make();
-        $state = $provider instanceof \App\Services\WhatsApp\EvolutionProvider
-            ? $provider->connectionState()
-            : 'close';
 
-        WhatsAppSettings::setEvolutionState($state);
+        if (!$provider instanceof \App\Services\WhatsApp\EvolutionProvider) {
+            return response()->json(['state' => 'close', 'qr' => null, 'code' => null, 'count' => null], 200);
+        }
 
-        return response()->json(['state' => $state], 200);
+        $now = $provider->currentPairing();
+
+        WhatsAppSettings::setEvolutionState($now['state']);
+
+        return response()->json($now, 200);
     }
 
     /** فحصُ اتصالٍ حقيقي — الاستجابة لا تحتوي الرمز. */

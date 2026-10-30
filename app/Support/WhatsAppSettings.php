@@ -238,6 +238,11 @@ class WhatsAppSettings
             Setting::set(self::KEY_CONNECTED_AT, now()->toIso8601String(), self::GROUP);
             Setting::set(self::KEY_DISCONNECTED, '0', self::GROUP);
             Setting::set(self::KEY_LAST_ERROR, '', self::GROUP);
+
+            // من أيّ طريقٍ رُئي الفتح (الويبهوك، الكنس، سؤالُ الشاشة، الاقتران):
+            // رمزُ الجلسة وأختامُ «الغياب» و«التعثّر» تُمحى — ختمٌ قديمٌ بقي بعد
+            // عودة الوصل كان يجعل ضغطةً بعد سقوطٍ عابرٍ تطوي اقتراناً يعمل
+            \App\Services\WhatsApp\EvolutionProvider::clearPairingTraces();
         }
     }
 

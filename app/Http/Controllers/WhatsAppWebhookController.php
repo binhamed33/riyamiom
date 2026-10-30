@@ -116,12 +116,29 @@ class WhatsAppWebhookController extends Controller
 
         WhatsAppSettings::touchWebhook();
 
+        // أحدثُ رمز مسحٍ أو ربط: تقرؤه شاشةُ الاقتران — الجسرُ يبدّله كلَّ ٤٥ ثانية
+        if (str_replace('.', '_', $event) === 'QRCODE_UPDATED') {
+            if (is_array($data['qrcode'] ?? null)) {
+                \App\Services\WhatsApp\EvolutionProvider::rememberPairing($data['qrcode']);
+            }
+
+            return response('', 200);
+        }
+
         if (str_replace('.', '_', $event) === 'CONNECTION_UPDATE') {
             $state = (string) ($data['state'] ?? $data['connection'] ?? '');
+
+            // ‏«refused» يرسله الجسرُ حين تنفد رموزُ الجلسة (QRCODE_LIMIT) فيغلقها
+            // (whatsapp.baileys.service.ts:350-357) — كان يُسقَط فتبقى الحالةُ
+            // «connecting» والشاشةُ تقول «امسح» لرمزٍ لم يعد له وجود
+            if ($state === 'refused') {
+                $state = 'close';
+            }
 
             if (in_array($state, ['open', 'connecting', 'close'], true)) {
                 WhatsAppSettings::setEvolutionState($state);
             }
+
 
             return response('', 200);
         }

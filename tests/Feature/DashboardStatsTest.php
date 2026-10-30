@@ -196,6 +196,10 @@ class DashboardStatsTest extends TestCase
     /** والشريطُ يقيس عملَ الأسبوع: ما أُنجز فيه على ما استُحقّ فيه. */
     public function test_the_week_bar_measures_the_week(): void
     {
+        // منتصفُ أسبوع المكتب (السبت–الجمعة): «غداً» و«أمس» داخله. كان يُختبر بتاريخ
+        // التشغيل فيسقط كلَّ جمعة (غداً سبتٌ من أسبوعٍ جديد) وكلَّ سبت (أمس جمعةٌ مضت)
+        $this->travelTo(now()->startOfWeek(\Carbon\Carbon::SATURDAY)->addDays(3)->setTime(10, 0));
+
         $case = $this->makeCase();
 
         $this->task($case, 'completed', now()->subMonth(), now()->subDay());   // أُنجزت هذا الأسبوع

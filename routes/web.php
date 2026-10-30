@@ -167,6 +167,14 @@ Route::middleware('auth')->get('/maintenance', function () {
 Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     
     // Rate limit all protected routes
+    //
+    // ═══ كلُّ حدٍّ داخل هذه المجموعة يحمل اسمَه (الوسيطُ الثالث) ═══
+    //
+    // مفتاحُ throttle بلا بادئةٍ هو المستخدمُ وحده، فتتقاسمه هذه المجموعةُ وكلُّ
+    // حدٍّ داخلها: ‎throttle:20,1‎ على طلب رمز واتساب كان يعني «عشرون طلباً من أيّ
+    // صفحةٍ في الدقيقة» لا «عشرون طلباً للرمز» — وسؤالُ الحالة كلَّ ثانيتين
+    // يُحسب فيه مرّتين، فيُرفض «اطلب رمزاً» بـ٤٢٩ بعد ستّ عشرة ثانية من ظهور
+    // الرمز. فكلُّ حدٍّ يُضاف هنا يُكتب ‎throttle:N,M,اسمه‎ (يحرسه RouteThrottleKeysTest).
     Route::middleware('throttle:120,1')->group(function () {
     
     // لوحة المتابعة ومركز الانتباه: يفتحهما كل دور، ومركز الانتباه
@@ -183,7 +191,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::middleware('role:developer,admin,lawyer,staff')->group(function () {
         Route::get('/ai-assistant/history', [App\Http\Controllers\AssistantController::class, 'history'])->name('assistant.history');
         // ‏٢٠ طلباً في الدقيقة تكفي أسرع محامٍ، وتوقف أي إغراق (§90)
-        Route::post('/ai-assistant', [App\Http\Controllers\AssistantController::class, 'chat'])->middleware('throttle:20,1')->name('assistant.chat');
+        Route::post('/ai-assistant', [App\Http\Controllers\AssistantController::class, 'chat'])->middleware('throttle:20,1,assistant-chat')->name('assistant.chat');
         Route::post('/ai-assistant/clear', [App\Http\Controllers\AssistantController::class, 'clear'])->name('assistant.clear');
     });
 
@@ -435,7 +443,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::middleware(['role:developer,admin,permission:templates.manage', 'feature:case_templates', 'engine:templates'])->group(function () {
         Route::resource('case-templates', App\Http\Controllers\CaseTemplateController::class)
             ->only(['index', 'store', 'update', 'destroy']);
-        Route::post('/case-templates/ai-draft', [App\Http\Controllers\CaseTemplateController::class, 'aiDraft'])->middleware('throttle:10,10')->name('case-templates.ai-draft');
+        Route::post('/case-templates/ai-draft', [App\Http\Controllers\CaseTemplateController::class, 'aiDraft'])->middleware('throttle:10,10,case-templates-ai-draft')->name('case-templates.ai-draft');
         Route::post('/case-templates/seed-defaults', [App\Http\Controllers\CaseTemplateController::class, 'seedDefaults'])->name('case-templates.seed');
         Route::post('/case-templates/{case_template}/duplicate', [App\Http\Controllers\CaseTemplateController::class, 'duplicate'])->name('case-templates.duplicate');
         Route::post('/case-templates/{case_template}/toggle', [App\Http\Controllers\CaseTemplateController::class, 'toggle'])->name('case-templates.toggle');
@@ -450,7 +458,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::get('/runs', [App\Http\Controllers\AutomationController::class, 'runs'])->name('automations.runs');
         Route::post('/seed-defaults', [App\Http\Controllers\AutomationController::class, 'seedDefaults'])->name('automations.seed');
         Route::post('/bulk', [App\Http\Controllers\AutomationController::class, 'bulkToggle'])->name('automations.bulk');
-        Route::post('/ai-draft', [App\Http\Controllers\AutomationController::class, 'aiDraft'])->middleware('throttle:10,10')->name('automations.ai-draft');
+        Route::post('/ai-draft', [App\Http\Controllers\AutomationController::class, 'aiDraft'])->middleware('throttle:10,10,automations-ai-draft')->name('automations.ai-draft');
         Route::post('/suggestions/accept', [App\Http\Controllers\AutomationController::class, 'acceptSuggestion'])->name('automations.suggestions.accept');
         Route::post('/suggestions/dismiss', [App\Http\Controllers\AutomationController::class, 'dismissSuggestion'])->name('automations.suggestions.dismiss');
         Route::put('/{automation}', [App\Http\Controllers\AutomationController::class, 'update'])->name('automations.update');
@@ -467,7 +475,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     Route::get('/plan', [\App\Http\Controllers\PlanController::class, 'index'])
         ->middleware('role:developer,admin')->name('plan.index');
     Route::post('/plan/upgrade', [\App\Http\Controllers\PlanController::class, 'requestUpgrade'])
-        ->middleware(['role:developer,admin', 'throttle:5,60'])->name('plan.upgrade');
+        ->middleware(['role:developer,admin', 'throttle:5,60,plan-upgrade'])->name('plan.upgrade');
 
     Route::get('/settings', [SettingController::class, 'index'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.update');
@@ -491,7 +499,7 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
             ->middleware('role:developer,admin,permission:whatsapp.view')->name('whatsapp.show');
 
         Route::post('/{conversation}/send', [App\Http\Controllers\WhatsAppInboxController::class, 'send'])
-            ->middleware(['role:developer,admin,permission:whatsapp.send', 'throttle:60,1'])->name('whatsapp.send');
+            ->middleware(['role:developer,admin,permission:whatsapp.send', 'throttle:60,1,whatsapp-send'])->name('whatsapp.send');
         Route::post('/{conversation}/note', [App\Http\Controllers\WhatsAppInboxController::class, 'note'])
             ->middleware('role:developer,admin,permission:whatsapp.send')->name('whatsapp.note');
         Route::post('/{conversation}/assign', [App\Http\Controllers\WhatsAppInboxController::class, 'assign'])
@@ -511,15 +519,15 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
     // ربطُ الرقم — مع إعدادات المكتب، لمن يدير الإعدادات وحده
     Route::post('/settings/whatsapp', [App\Http\Controllers\WhatsAppSettingsController::class, 'update'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.whatsapp.update');
     Route::delete('/settings/whatsapp', [App\Http\Controllers\WhatsAppSettingsController::class, 'disconnect'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings'])->name('settings.whatsapp.disconnect');
-    Route::post('/settings/whatsapp/test', [App\Http\Controllers\WhatsAppSettingsController::class, 'test'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.test');
+    Route::post('/settings/whatsapp/test', [App\Http\Controllers\WhatsAppSettingsController::class, 'test'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1,wa-test'])->name('settings.whatsapp.test');
     // فحصُ خطوات الربط — محدودٌ كالفحص: ثلاثةُ نداءاتٍ إلى Meta لكلّ ضغطة
-    Route::post('/settings/whatsapp/checkup', [App\Http\Controllers\WhatsAppSettingsController::class, 'checkup'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.checkup');
+    Route::post('/settings/whatsapp/checkup', [App\Http\Controllers\WhatsAppSettingsController::class, 'checkup'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1,wa-checkup'])->name('settings.whatsapp.checkup');
     // إتمامُ الربط نيابةً عن المكتب — يكتب عند Meta، فحدُّه أضيق
-    Route::post('/settings/whatsapp/autowire', [App\Http\Controllers\WhatsAppSettingsController::class, 'autowire'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:6,1'])->name('settings.whatsapp.autowire');
+    Route::post('/settings/whatsapp/autowire', [App\Http\Controllers\WhatsAppSettingsController::class, 'autowire'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:6,1,wa-autowire'])->name('settings.whatsapp.autowire');
     // اقترانُ جسر واتساب ويب — رمزُ المسح وحالتُه
-    Route::post('/settings/whatsapp/pair', [App\Http\Controllers\WhatsAppSettingsController::class, 'pair'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:20,1'])->name('settings.whatsapp.pair');
-    Route::get('/settings/whatsapp/pair-state', [App\Http\Controllers\WhatsAppSettingsController::class, 'pairState'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:60,1'])->name('settings.whatsapp.pair-state');
-    Route::post('/settings/whatsapp/templates', [App\Http\Controllers\WhatsAppSettingsController::class, 'syncTemplates'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1'])->name('settings.whatsapp.templates.sync');
+    Route::post('/settings/whatsapp/pair', [App\Http\Controllers\WhatsAppSettingsController::class, 'pair'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:20,1,wa-pair'])->name('settings.whatsapp.pair');
+    Route::get('/settings/whatsapp/pair-state', [App\Http\Controllers\WhatsAppSettingsController::class, 'pairState'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:60,1,wa-pair-state'])->name('settings.whatsapp.pair-state');
+    Route::post('/settings/whatsapp/templates', [App\Http\Controllers\WhatsAppSettingsController::class, 'syncTemplates'])->middleware(['role:developer,admin,permission:settings.manage', 'feature:settings', 'throttle:10,1,wa-templates'])->name('settings.whatsapp.templates.sync');
 
     // إعدادات الذكاء الاصطناعي — خاصة بهذا المكتب، ومقصورة على من يدير الإعدادات
     // ═══ مفتاحُ الذكاء الاصطناعي: للمطوّر وحدَه ═══
@@ -558,12 +566,12 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
 
     // Backup - developer, admin (أو بصلاحية backup.manage)
     Route::get('/backup', [BackupController::class, 'index'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.index');
-    Route::post('/backup/create', [BackupController::class, 'create'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:30,10')->name('backup.create');
+    Route::post('/backup/create', [BackupController::class, 'create'])->middleware('role:developer,admin,permission:backup.manage', 'throttle:30,10,backup-create')->name('backup.create');
     Route::get('/backup/{filename}/download', [BackupController::class, 'download'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.download');
     // الاستعادةُ تكتب فوق قاعدة المكتب كلِّها: لمدير المكتب وحدَه، لا
     // لموظّفٍ مُنح backup.manage ليُنشئ نسخةً ويُنزّلها
-    Route::post('/backup/upload-restore', [BackupController::class, 'uploadRestore'])->middleware('role:developer,admin', 'throttle:10,60')->name('backup.upload-restore');
-    Route::post('/backup/{filename}/restore', [BackupController::class, 'restore'])->middleware('role:developer,admin', 'throttle:10,60')->name('backup.restore');
+    Route::post('/backup/upload-restore', [BackupController::class, 'uploadRestore'])->middleware('role:developer,admin', 'throttle:10,60,backup-upload-restore')->name('backup.upload-restore');
+    Route::post('/backup/{filename}/restore', [BackupController::class, 'restore'])->middleware('role:developer,admin', 'throttle:10,60,backup-restore')->name('backup.restore');
     Route::delete('/backup/{filename}', [BackupController::class, 'destroy'])->middleware('role:developer,admin,permission:backup.manage')->name('backup.destroy');
 
     // HR - all authenticated non-client users (controller handles per-role logic)

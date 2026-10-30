@@ -34,7 +34,36 @@ class WhatsAppRepairTest extends TestCase
         ]);
     }
 
-    /** الحالةُ الميتة: يُحذف الصفُّ ويُنشأ نظيفٌ ويُعرض الرمز. */
+    /**
+     * الإصلاحُ كما يُشغَّل مع كلّ تحديث (بلا خيار): لا يفتح جلسةَ رموزٍ لمكتبٍ غير مقترن.
+     *
+     * كان ينادي pair() «ليجد المكتبُ رمزاً حاضراً»: رمزٌ لا يُحفظ ويتبدّل كلَّ ٤٥ ثانية،
+     * وجلسةٌ تنتظر عشرين دقيقة يُهمل فيها الجسرُ رقمَ المكتب حين يطلب رمزَ ربط.
+     */
+    public function test_a_plain_repair_opens_no_pairing_session(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            if (str_contains($request->url(), '/instance/fetchInstances')) {
+                // نسخةٌ لم تقترن قطّ: نفدت رموزُ جلستها السابقة
+                return Http::response([['name' => 'office', 'connectionStatus' => 'connecting', 'ownerJid' => null]], 200);
+            }
+
+            return Http::response(['status' => 404, 'error' => 'Not Found'], 404);
+        });
+
+        $this->artisan('whatsapp:repair')
+            ->expectsOutputToContain('ابدأ الاقتران')
+            ->assertSuccessful();
+
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/instance/create')
+            || str_contains($r->url(), '/instance/delete/') || str_contains($r->url(), '/instance/connect/'));
+    }
+
+    /** وبطلبٍ صريح (--force-qr): تُحذف النسخةُ الميتةُ وتُنشأ نظيفة. */
     public function test_it_heals_a_dead_instance_so_the_office_gets_a_code(): void
     {
         $deleted = false;
@@ -64,8 +93,8 @@ class WhatsAppRepairTest extends TestCase
             return Http::response([], 201);
         });
 
-        $this->artisan('whatsapp:repair')
-            ->expectsOutputToContain('رمزُ الاقتران')
+        $this->artisan('whatsapp:repair', ['--force-qr' => true])
+            ->expectsOutputToContain('النسخة نظيفةٌ وجاهزة')
             ->assertSuccessful();
 
         $this->assertTrue($deleted);
@@ -164,5 +193,34 @@ class WhatsAppRepairTest extends TestCase
             ->assertSuccessful();
 
         Http::assertNothingSent();
+    }
+
+    /**
+     * رقمٌ مقترنٌ يعيد وصلَه: الإصلاحُ لا يسمّيه «غير مقترن»، و--force-qr لا يطويه.
+     *
+     * كان يقول «غير مقترن» ويدلّ على --force-qr، وذاك يتخطّى الحرّاسَ فيحذف النسخة —
+     * والحذفُ عند الجسر يبدأ بإلغاء اقتران الهاتف.
+     */
+    public function test_a_paired_number_reconnecting_is_neither_misnamed_nor_unlinked(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'connecting']], 200);
+            }
+
+            if (str_contains($request->url(), '/instance/fetchInstances')) {
+                return Http::response([['name' => 'office', 'connectionStatus' => 'open', 'ownerJid' => '96894249400@s.whatsapp.net']], 200);
+            }
+
+            return Http::response([], 200);
+        });
+
+        $this->artisan('whatsapp:repair')
+            ->expectsOutputToContain('مقترنٌ والجسرُ يعيد وصلَه')
+            ->assertSuccessful();
+
+        $this->artisan('whatsapp:repair', ['--force-qr' => true])->run();
+
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/instance/delete/') || str_contains($r->url(), '/instance/create'));
     }
 }
