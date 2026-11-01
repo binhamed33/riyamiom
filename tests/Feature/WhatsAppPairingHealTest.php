@@ -1314,6 +1314,51 @@ class WhatsAppPairingHealTest extends TestCase
         $this->assertEqualsWithDelta(30, $result['took'], 0.1);
     }
 
+    /**
+     * نسخةٌ عالقةٌ في الجسر (رأيناها عند مكتب والدي): الحالةُ «connecting»، وسجلُّ النسخة
+     * يردّ ٥٠٠، والحذفُ بلا ردّ، والإنشاءُ ٤٠٣ «مستعمَلة». إعادةُ المحاولة عبثٌ: يُقال
+     * إنّ الجسرَ نفسَه عالقٌ ويحتاج إعادةَ تشغيل — لا «انقضى الموعد» المبهمة.
+     */
+    public function test_a_wedged_instance_names_the_bridge_restart_instead_of_a_blind_timeout(): void
+    {
+        $p = new ClockedProvider();
+        $creates = 0;
+
+        Http::fake(function ($request) use ($p, &$creates) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'connecting']], 200);
+            }
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                $p->now += 5;
+
+                return Http::response(['status' => 500, 'error' => 'Internal Server Error'], 500);
+            }
+
+            if (str_contains($url, '/instance/delete/')) {
+                $p->now += end($p->timeouts);
+
+                throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out after 10000 milliseconds');
+            }
+
+            $creates++;
+
+            return Http::response(['status' => 403, 'error' => 'Forbidden',
+                'response' => ['message' => ['This name "x" is already in use.']]], 403);
+        });
+
+        $result = $p->pair();
+
+        $this->assertSame('close', $result['state']);
+        $this->assertStringContainsString('عالقةٌ في الجسر', (string) $result['message']);
+        $this->assertStringContainsString('إعادةَ تشغيل', (string) $result['message']);
+        // لم يُعَد الإنشاءُ عبثاً: ضربةٌ واحدةٌ كشفت العلوق، ولم يُقل «انقضى الموعد»
+        $this->assertSame(1, $creates);
+        $this->assertStringNotContainsString('انقضى موعد', (string) $result['message']);
+    }
+
     /** علامةُ «يعمل الآن» أقدمُ من أيّ طلبٍ ممكن (عاملٌ قُتل) لا تُصدَّق. */
     public function test_a_stale_running_mark_from_a_killed_worker_is_ignored(): void
     {

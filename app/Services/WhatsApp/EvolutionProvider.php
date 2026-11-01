@@ -570,9 +570,11 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
         // ‏٤٠٤ هنا لا شيءَ يُحذف (لم تُنشأ أو ليست في ذاكرة الجسر) — يُمضى إلى الإنشاء.
         // ويُعاد الحذفُ مرّةً إن بقي بعد مهلته (١٫٥ + ١ ث على الأقلّ) وقتُ الإنشاء
-        if (!$this->deleteInstance($instance) && $this->remaining() >= self::CREATE_RESERVE_S + 3) {
+        $deleted = $this->deleteInstance($instance);
+
+        if (!$deleted && $this->remaining() >= self::CREATE_RESERVE_S + 3) {
             $this->pause(1500);
-            $this->deleteInstance($instance);
+            $deleted = $this->deleteInstance($instance);
         }
 
         // الحذفُ يُكمل تنظيفَ قاعدة الجسر بعد أن يردّ (monitor.service.ts:393-406)،
@@ -595,6 +597,19 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
             if (!$busy) {
                 break;
+            }
+
+            // ═══ نسخةٌ عالقةٌ في ذاكرة الجسر لا تُحذف ولا تُستبدل ═══
+            //
+            // «مستعمَلة» بعد حذفٍ لم نتمكّن من تأكيده (مهلةٌ بلا ردّ، أو خطأ): الجسرُ لم
+            // يُخرجها من ذاكرته — إلغاءُ اقترانها علق، أو قاعدتُه لا تُجيب (fetchInstances
+            // يردّ ٥٠٠) — فيصطدم الإنشاءُ باسمها أبداً. إعادةُ المحاولة عبثٌ تأكل الموعدَ
+            // ثمّ تقول «انقضى»، والعلّةُ الحقيقيّة أنّ الجسرَ نفسَه يحتاج إعادةَ تشغيل.
+            if (!$deleted) {
+                $this->lastError = 'نسخةُ المكتب عالقةٌ في الجسر: لا تُحذف (تعذّر إخراجها) ولا يقبل الجسرُ إنشاءَ بديلٍ عنها «مستعمَلة». '
+                    . 'الجسرُ نفسُه يحتاج إعادةَ تشغيلٍ على الخادم — بعدها أعد المحاولة.';
+
+                return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $this->lastError];
             }
 
             $this->pause(1500);
