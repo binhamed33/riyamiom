@@ -182,4 +182,106 @@ class WhatsAppPairingScreenTest extends TestCase
 
         $this->assertSame('close', WhatsAppSettings::evolutionState());
     }
+
+    // ══════════ الطلبُ الطويل: ما تراه الشاشةُ أثناءه وبعده ══════════
+
+    /**
+     * طلبُ ربطٍ يعمل الآن عند الخادم (أو قطعه الوسيطُ قبل ردّه وما زال يحذف وينشئ):
+     * سؤالُ الحالة يقول منذ متى، ولا يسأل الجسرَ — سؤالٌ ثانٍ يتنازع معه ويشغل عاملاً آخر.
+     */
+    public function test_the_state_poll_reports_a_running_request_without_asking_the_bridge(): void
+    {
+        Http::fake();
+        \Illuminate\Support\Facades\Cache::put('wa:pair:running:' . WhatsAppSettings::evolutionInstance(), microtime(true) - 12, 120);
+
+        $this->actingAs($this->admin)->getJson(route('settings.whatsapp.pair-state'))
+            ->assertOk()
+            ->assertJsonPath('state', 'connecting')
+            ->assertJsonPath('preparing', true)
+            ->assertJsonPath('message', fn ($m) => str_contains($m, 'منذ 12 ث'));
+
+        Http::assertNothingSent();
+    }
+
+    /**
+     * طلبٌ قطعه الوسيطُ (٥٠٤) ثمّ أخفق في الخلفية: الشاشةُ التي تتابع تقرأ سببَه ورحلتَه
+     * من آخر محاولة — وإلا بقيت تسأل عن جلسةٍ لم تُفتح حتى تيأس بلا سبب.
+     */
+    public function test_a_failed_background_attempt_reaches_the_poller_for_two_minutes(): void
+    {
+        Http::fake(fn () => Http::response(['instance' => ['state' => 'close']], 200));
+        $key = 'wa:pair:last:' . WhatsAppSettings::evolutionInstance();
+        $attempt = ['at' => time() - 30, 'state' => 'close', 'message' => 'انقضى موعدُ الطلب (30 ث) قبل إنشاء الجلسة',
+            'trace' => ['الحذف: مهلةٌ بلا ردّ (10.0 ث)'], 'took' => 31.2];
+        \Illuminate\Support\Facades\Cache::put($key, $attempt, 600);
+
+        $this->actingAs($this->admin)->getJson(route('settings.whatsapp.pair-state'))
+            ->assertOk()
+            ->assertJsonPath('state', 'close')
+            ->assertJsonPath('failed', true)
+            ->assertJsonPath('message', $attempt['message'])
+            ->assertJsonPath('trace.0', 'الحذف: مهلةٌ بلا ردّ (10.0 ث)')
+            ->assertJsonPath('took', 31.2);
+
+        // محاولةٌ قديمة (أكثرُ من دقيقتين) ليست خبراً عمّا يجري الآن
+        \Illuminate\Support\Facades\Cache::put($key, ['at' => time() - 300] + $attempt, 600);
+
+        $this->actingAs($this->admin)->getJson(route('settings.whatsapp.pair-state'))
+            ->assertOk()
+            ->assertJsonMissingPath('failed');
+    }
+
+    /** ومحاولةٌ أخفقت لا تحجب جلسةً حيّةً فُتحت بعدها. */
+    public function test_a_failed_record_never_overrides_a_live_session(): void
+    {
+        $this->waitingBridge('Q1W2E3R4', 5);
+        \Illuminate\Support\Facades\Cache::put('wa:pair:last:' . WhatsAppSettings::evolutionInstance(),
+            ['at' => time() - 10, 'state' => 'close', 'message' => 'أخفق', 'trace' => [], 'took' => 9.0], 600);
+
+        $this->actingAs($this->admin)->getJson(route('settings.whatsapp.pair-state'))
+            ->assertOk()
+            ->assertJsonPath('state', 'connecting')
+            ->assertJsonPath('code', 'Q1W2E3R4')
+            ->assertJsonMissingPath('failed');
+    }
+
+    /** ردُّ «اطلب رمزاً» يحمل رحلتَه ومدّتَه — صورةٌ من الشاشة تكفي لتشخيص الجسر. */
+    public function test_the_pair_answer_carries_its_journey_and_duration(): void
+    {
+        $this->waitingBridge();
+
+        $this->actingAs($this->admin)->postJson(route('settings.whatsapp.pair'), ['phone' => '96894249400'])
+            ->assertOk()
+            ->assertJsonPath('state', 'connecting')
+            ->assertJsonPath('code', 'K7M2QX9P')
+            ->assertJsonPath('trace', fn ($t) => is_array($t) && count($t) >= 3 && str_starts_with($t[0], 'الحالة: connecting'))
+            ->assertJsonPath('took', fn ($t) => is_numeric($t) && $t < 5);
+    }
+
+    /** محاولةٌ أخفقت قبل أن تبدأ الشاشةُ متابعتَها (ضغطةٌ سابقة) ليست خبرَ هذه الضغطة. */
+    public function test_a_failure_older_than_the_pollers_own_wait_is_not_its_news(): void
+    {
+        Http::fake(fn () => Http::response(['instance' => ['state' => 'close']], 200));
+        \Illuminate\Support\Facades\Cache::put('wa:pair:last:' . WhatsAppSettings::evolutionInstance(),
+            ['at' => time() - 30, 'state' => 'close', 'message' => 'أخفق', 'trace' => [], 'took' => 9.0], 600);
+
+        $this->actingAs($this->admin)->getJson(route('settings.whatsapp.pair-state', ['elapsed' => 10]))
+            ->assertOk()->assertJsonMissingPath('failed');
+
+        $this->actingAs($this->admin)->getJson(route('settings.whatsapp.pair-state', ['elapsed' => 40]))
+            ->assertOk()->assertJsonPath('failed', true);
+    }
+
+    /** إنشاءٌ قُبل والجسرُ بعدُ يفتح جلستَه: «close» في السؤال ليس انتهاءً بل انتظارٌ يُقال بمدّته. */
+    public function test_the_state_poll_waits_while_an_accepted_create_is_still_opening(): void
+    {
+        Http::fake(fn () => Http::response(['instance' => ['state' => 'close']], 200));
+        \Illuminate\Support\Facades\Cache::put('wa:pair:pending:' . WhatsAppSettings::evolutionInstance(), time() - 9, 90);
+
+        $this->actingAs($this->admin)->getJson(route('settings.whatsapp.pair-state'))
+            ->assertOk()
+            ->assertJsonPath('state', 'connecting')
+            ->assertJsonPath('preparing', true)
+            ->assertJsonPath('message', fn ($m) => str_contains($m, 'منذ 9 ث'));
+    }
 }

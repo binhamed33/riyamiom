@@ -388,6 +388,8 @@
                     <p class="text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2" data-pair-status>
                         الرقمُ الذي تمسحه يصبح رقمَ المكتب في النظام. جرّب برقمٍ جانبيّ أوّلاً.
                     </p>
+                    {{-- رحلةُ الطلب خطوةً خطوة — تظهر مع الإخفاق وحده: صورةٌ منها تكفي لتشخيص الجسر --}}
+                    <p class="hidden text-[11px] text-gray-500 leading-relaxed mt-1 break-words" data-pair-trace></p>
                     <button type="button" data-pair-start
                             class="mt-1 text-xs font-bold px-4 py-2 rounded-lg bg-gold text-white hover:bg-gold-dark">
                         {{ $waState === 'open' ? 'إعادة الاقتران' : 'ابدأ الاقتران' }}
@@ -1694,6 +1696,7 @@
         var qrBox = pairBox.querySelector('[data-pair-qr-box]');
         var badge = pairBox.querySelector('[data-pair-badge]');
         var status = pairBox.querySelector('[data-pair-status]');
+        var trace = pairBox.querySelector('[data-pair-trace]');
         var start = pairBox.querySelector('[data-pair-start]');
         var poll = null;
         var busy = false;
@@ -1759,7 +1762,18 @@
             var mine = gen;
             mode = phone ? 'code' : 'qr';
             clearShown();
-            setStatus(phone ? 'يُطلب رمزُ الربط من واتساب… (قرابة عشر ثوانٍ)' : 'تُفتح جلسةٌ جديدة عند الخادم…', 'wait');
+            var base = phone ? 'يُطلب رمزُ الربط من واتساب… (قرابة عشر ثوانٍ)' : 'تُفتح جلسةٌ جديدة عند الخادم…';
+            setStatus(base, 'wait');
+            showTrace(null);
+
+            // عدّادٌ يُرى به أنّ الطلبَ حيّ، ومهلةٌ (٤٥ ث) لا يُترك بعدها المكتبُ أمام
+            // «جارٍ التحضير» بلا نهاية — الخادمُ يردّ في ثلاثين ثانية أو يقول لماذا لا
+            var t0 = Date.now();
+            var ticker = setInterval(function () {
+                if (mine === gen && busy) { status.textContent = base + ' ' + Math.round((Date.now() - t0) / 1000) + ' ث'; }
+            }, 1000);
+            var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+            var killer = setTimeout(function () { if (ctrl) { ctrl.abort(); } }, 45000);
 
             fetch(pairBox.dataset.pairUrl, {
                 method: 'POST',
@@ -1769,14 +1783,34 @@
                     'Content-Type': 'application/json'
                 },
                 credentials: 'same-origin',
-                body: JSON.stringify({ phone: phone || '' })
+                body: JSON.stringify({ phone: phone || '' }),
+                signal: ctrl ? ctrl.signal : undefined
             })
             .then(readJson)
             .then(function (res) {
                 var data = res.data || {};
 
                 if (mine !== gen) { return; }
-                if (!res.r.ok) { setStatus(reasonOf(res.r, res.data), 'bad'); return; }
+
+                if (!res.r.ok) {
+                    // ‏٥٠٢/٥٠٤/٥٢٤ بصفحةٍ لا JSON: الوسيطُ (nginx أو Cloudflare) قطع الطلبَ قبل
+                    // أن يردّ المكتب — والمكتبُ غالباً ما زال يعمل عليه؛ فتُتابَع نتيجتُه
+                    // أمّا ٥٠٢ فوريّة (PHP نفسُه متوقّف) فليست قطعاً لطلبٍ يعمل: يُقال سببُها ولا تُتابَع
+                    var cut = res.r.status === 504 || res.r.status === 524 || (Date.now() - t0) >= 20000;
+
+                    if (res.r.status >= 500 && !res.data && cut) {
+                        setStatus('قطع الخادمُ الوسيطُ الطلبَ (' + res.r.status + ') قبل أن يردّ المكتب — الشاشةُ تتابع ما يجري في الخلفية.', 'wait');
+                        startPolling(false, true);
+
+                        return;
+                    }
+
+                    setStatus(reasonOf(res.r, res.data), 'bad');
+                    showTrace(res.data);
+
+                    return;
+                }
+
                 if (data.state === 'open') { connected(); return; }
 
                 show(data);
@@ -1789,9 +1823,22 @@
                 }
 
                 setStatus(data.message || 'تعذّر إحضار الرمز.', 'bad');
+                showTrace(data);
             })
-            .catch(function () { setStatus('تعذّر الاتصال بالخادم — تحقّق من الشبكة وأعد المحاولة.', 'bad'); })
+            .catch(function (e) {
+                // المهلةُ من هنا (٤٥ ث): الخادمُ ربّما ما زال يعمل — فتُتابَع نتيجتُه بدل «تعذّر»
+                if (e && e.name === 'AbortError') {
+                    setStatus('لم يردّ الخادمُ خلال ٤٥ ثانية — ربّما ما زال يعمل على الطلب؛ الشاشةُ تتابعه.', 'wait');
+                    startPolling(false, true);
+
+                    return;
+                }
+
+                setStatus('تعذّر الاتصال بالخادم — تحقّق من الشبكة وأعد المحاولة.', 'bad');
+            })
             .finally(function () {
+                clearInterval(ticker);
+                clearTimeout(killer);
                 busy = false;
                 start.disabled = false;
                 if (phoneStart) { phoneStart.disabled = false; }
@@ -1806,6 +1853,18 @@
             } else if (data.qr && data.qr !== shownQr) {
                 showQr(data.qr, shownQr !== null);
             }
+        }
+
+        // رحلةُ الطلب خطوةً خطوة — مع الإخفاق وحده؛ تُخفى متى ظهر رمزٌ أو تمّ الاقتران
+        function showTrace(data) {
+            if (!trace) { return; }
+
+            var steps = data && data.trace;
+
+            if (!steps || !steps.length) { trace.textContent = ''; trace.classList.add('hidden'); return; }
+
+            trace.textContent = 'رحلة الطلب' + (data.took != null ? ' (' + data.took + ' ث)' : '') + ': ' + steps.join(' ← ');
+            trace.classList.remove('hidden');
         }
 
         function clearShown() {
@@ -1831,6 +1890,7 @@
         function showCode(code, renewed) {
             shownCode = code;
             awaiting();
+            showTrace(null);
             // كما يعرضه واتساب: أربعةٌ وأربعة
             codeBox.textContent = code.length === 8 ? code.slice(0, 4) + '-' + code.slice(4) : code;
             codeBox.classList.remove('hidden');
@@ -1843,6 +1903,7 @@
         function showQr(qr, renewed) {
             shownQr = qr;
             awaiting();
+            showTrace(null);
             qrBox.textContent = '';
 
             if (qr.indexOf('data:') === 0) {
@@ -1871,10 +1932,9 @@
             if (poll) { clearInterval(poll); poll = null; }
         }
 
-        function startPolling(waiting) {
+        function startPolling(waiting, recovering) {
             stopPolling();
 
-            var ticks = 0;
             var mine = gen;
             // الطلبُ نفسُه قال «connecting»: الجلسةُ تنتظر منذ البداية
             var sawWaiting = !!waiting;
@@ -1882,24 +1942,37 @@
             // فتمرّ الجلسةُ بـ«close» ثانيةً أو اثنتين ثمّ تُفتح — فلا يُعلن الانتهاء
             // من سؤالٍ واحد، بل من «close» تدوم قرابة عشر ثوانٍ
             var closedFor = 0;
+            var since = Date.now();
+            // أسئلةٌ قُطعت تباعاً (٢٠ ث بلا ردّ): الخادمُ نفسُه لا يجيب عن الحالة
+            var dead = 0;
+
+            // سؤالٌ واحدٌ في الطريق: جسرٌ بطيءٌ كان يجعل الأسئلةَ تتراكم كلَّ ثانيتين ونصف،
+            // كلٌّ منها يشغل عاملَ PHP حتى يردّ الجسر — فيختنق الموقعُ كلُّه لا هذه الشاشة
+            var inFlight = false;
 
             poll = setInterval(function () {
                 // صفحةٌ في الخلفية لا تسأل: لا أحدَ يرى الرمز
-                if (document.hidden) { return; }
+                if (document.hidden || inFlight) { return; }
 
-                ticks++;
-
-                // ستُّ دقائق ثمّ نتوقّف: صفحةٌ تُركت مفتوحةً لا تسأل الخادمَ بلا أحدٍ ينظر
-                if (ticks > 144) {
+                // ستُّ دقائق ثمّ نتوقّف: صفحةٌ تُركت مفتوحةً لا تسأل الخادمَ بلا أحدٍ ينظر —
+                // بالساعة لا بعدد الأسئلة: سؤالٌ بطيءٌ يُسقط دقّاتٍ (inFlight) فلا تُعدّ
+                if (Date.now() - since > 360000) {
                     stopPolling();
                     setStatus('انتهت المهلة — اضغط لإحضار رمزٍ جديد.', 'bad');
 
                     return;
                 }
 
-                fetch(pairBox.dataset.stateUrl, {
+                inFlight = true;
+                var pc = typeof AbortController === 'function' ? new AbortController() : null;
+                var pk = setTimeout(function () { if (pc) { pc.abort(); } }, 20000);
+
+                // في المتابعة بعد قطع الوسيط يُقال للخادم منذ كم ثانية نتابع: محاولةٌ أخفقت قبل
+                // ذلك (ضغطةٌ سابقة) ليست خبرَ هذه الضغطة
+                fetch(pairBox.dataset.stateUrl + (recovering ? '?elapsed=' + Math.round((Date.now() - since) / 1000) : ''), {
                     headers: { 'Accept': 'application/json' },
-                    credentials: 'same-origin'
+                    credentials: 'same-origin',
+                    signal: pc ? pc.signal : undefined
                 })
                 .then(readJson)
                 .then(function (res) {
@@ -1908,11 +1981,24 @@
                     if (mine !== gen || !poll) { return; }
 
                     if (!res.r.ok) {
-                        // ٤١٩ أو ٤٠١ لا يزولان بالانتظار؛ وغيرُهما عابرٌ يُتجاوز
-                        if (res.r.status === 419 || res.r.status === 401) { stopPolling(); setStatus(reasonOf(res.r, res.data), 'bad'); }
+                        // ٤١٩ أو ٤٠١ لا يزولان بالانتظار؛ وغيرُهما عابرٌ يُتجاوز — إلا في المتابعة:
+                        // ثلاثُ ٥xx متتالية بلا JSON تعني أنّ الخادم نفسَه ساقط، لا طلباً يُكمَل
+                        if (res.r.status === 419 || res.r.status === 401) { stopPolling(); setStatus(reasonOf(res.r, res.data), 'bad'); return; }
+                        if (recovering && res.r.status >= 500 && !res.data && ++dead >= 3) {
+                            stopPolling();
+                            setStatus('الخادمُ لا يجيب عن حالة الربط (' + res.r.status + ') — أعد المحاولة بعد دقيقة.', 'bad');
+                        }
 
                         return;
                     }
+
+                    dead = 0;
+
+                    // طلبُ الربط ما زال يعمل عند الخادم (أو قطعه الوسيطُ وما زال يحذف وينشئ): يُقال كم مضى
+                    if (data.preparing) { closedFor = 0; setStatus(data.message || 'يُجهَّز الرمزُ عند الخادم…', 'wait'); return; }
+
+                    // أخفق في الخلفية بعد أن قطعه الوسيط: سببُه ورحلتُه بدل انتظارٍ لا ينتهي
+                    if (data.failed) { stopPolling(); clearShown(); setStatus(data.message || 'لم يكمل الخادمُ الطلب — أعد المحاولة.', 'bad'); showTrace(data); return; }
 
                     if (data.state === 'open') { stopPolling(); connected(); return; }
 
@@ -1924,20 +2010,33 @@
                         return;
                     }
 
-                    // أُغلقت الجلسةُ بعد أن كانت تنتظر — ودامت مغلقة: نفدت رموزُها أو رُفض الربط
-                    if (data.state === 'close' && sawWaiting && ++closedFor >= 4) {
+                    // أُغلقت الجلسةُ بعد أن كانت تنتظر — ودامت مغلقة: نفدت رموزُها أو رُفض الربط.
+                    // وفي المتابعة بعد قطع الوسيط: لم تُفتح جلسةٌ أصلاً
+                    if (data.state === 'close' && (sawWaiting || recovering) && ++closedFor >= 4) {
                         stopPolling();
                         clearShown();
-                        setStatus('انتهت صلاحية رموز هذه الجلسة — اضغط لإحضار رمزٍ جديد.', 'bad');
+                        setStatus(sawWaiting
+                            ? 'انتهت صلاحية رموز هذه الجلسة — اضغط لإحضار رمزٍ جديد.'
+                            : 'لم يكمل الخادمُ الطلب — أعد المحاولة بعد دقيقة.', 'bad');
                     }
                 })
-                .catch(function () {});
+                .catch(function (e) {
+                    // إغلاقٌ قديم (ضغطةٌ جديدة بدّلت الجيل) لا يمسّ متابعةَ الجلسة الحاليّة
+                    if (mine !== gen || !poll) { return; }
+
+                    if (recovering && e && e.name === 'AbortError' && ++dead >= 3) {
+                        stopPolling();
+                        setStatus('الخادمُ لا يجيب عن حالة الربط — أعد المحاولة بعد دقيقة.', 'bad');
+                    }
+                })
+                .finally(function () { clearTimeout(pk); inFlight = false; });
             }, 2500);
         }
 
         function connected() {
             shownQr = null;
             shownCode = null;
+            showTrace(null);
             codeBox.textContent = '';
             codeBox.classList.add('hidden');
             qrBox.textContent = '';

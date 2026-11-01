@@ -63,7 +63,15 @@ class EvolutionProvider implements WhatsAppProviderInterface
      * (مهلةُ التنفيذ تعدّ وقتَ المعالج لا الانتظار) يحذف وينشئ والمكتبُ يضغط ثانية.
      * فجسرٌ عالقٌ يُقال عنه بعد أربعين ثانية بدل أن يُترك الطلبُ يتجاوز الستّين.
      */
-    public const PAIR_DEADLINE_S = 40;
+    /**
+     * موعدُ الطلب كلِّه: ثلاثون ثانية من الضغطة إلى الردّ.
+     *
+     * الخادمُ الوسيط (nginx) يقطع ما طال عن دقيقة بصفحة ٥٠٤، وCloudflare بعد مئة
+     * ثانية — ولا يصل المكتبَ حينها رمزٌ ولا سبب، بل «جارٍ التحضير» بلا نهاية.
+     * فكلُّ نداءٍ للجسر يُمهَل ما بقي من الموعد لا أكثر (within)، وما لم يُنجَز
+     * قبله يُقال بخطواته (trace).
+     */
+    public const PAIR_BUDGET_S = 30;
 
     protected float $pairDeadline = INF;
 
@@ -75,6 +83,20 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
     /** ولماذا لم يُجب عن صفّ النسخة — null إن أجاب أو أقرّ أنّه لا يعرفها. */
     protected ?string $lookupFailure = null;
+
+    /**
+     * رحلةُ آخر طلبٍ خطوةً خطوة («الخطوة: الردّ (المدّة)») — تُعاد إلى الشاشة مع
+     * الإخفاق وتُكتب في السجلّ: صورةٌ منها تكفي لمعرفة أيَّ نداءٍ أبطأ أو أخفق.
+     *
+     * @var list<string>
+     */
+    protected array $trace = [];
+
+    /** الصفُّ لم يُجب في مهلته (لا ٥٠٠ ولا ٤٠٤): قد يكون هناك — مقترناً — وقاعدةُ الجسر بطيئة. */
+    protected bool $lookupUnanswered = false;
+
+    /** ما يُترك للإنشاء بعد كلّ ما قبله: الجسرُ يُمسكه خمسَ ثوانٍ ينتظر أوّلَ رمز. */
+    protected const CREATE_RESERVE_S = 8;
 
     /**
      * رمزُ اقترانٍ جديد — رمزُ مسحٍ، أو رمزُ ربطٍ بالرقم إن مُرِّر رقم.
@@ -127,23 +149,119 @@ class EvolutionProvider implements WhatsAppProviderInterface
         // تتزامن: أحدُها يحذف النسخةَ والآخرُ أعاد للتوّ رمزَها — فيصل المكتبَ
         // رمزٌ ميتٌ قبل أن يراه. وجلستان معاً عند الجسر تُضيّعان المسحَ الناجح
         // (يُحفظ اعتمادُ الجلسة الأحدث لا التي اقترنت).
-        // أطولُ من أسوأ رحلةٍ يسمح بها موعدُ PAIR_DEADLINE_S — وإلا انقضى القفلُ
-        // والطلبُ ما زال يحذف وينشئ، فدخل طلبٌ ثانٍ عليه
+        // أطولُ من أسوأ رحلةٍ يسمح بها موعدُ PAIR_BUDGET_S (مع آخر نداءٍ يُقطع عنده)
+        // — وإلا انقضى القفلُ والطلبُ ما زال يحذف وينشئ، فدخل طلبٌ ثانٍ عليه
         $lock = Cache::lock('wa:pair:' . $instance, 90);
 
         if (!$lock->get()) {
+            $since = self::pairingRunningFor();
+
             return ['qr' => null, 'code' => null, 'state' => 'connecting',
-                'message' => 'طلبُ رمزٍ سابقٌ ما زال يُجهَّز — انتظر ثوانيَ ثم أعد المحاولة.'];
+                'message' => 'طلبُ رمزٍ سابقٌ ما زال يُجهَّز عند الخادم' . ($since !== null ? ' منذ ' . $since . ' ث' : '')
+                    . ' — انتظر ثوانيَ ثم أعد المحاولة.'];
         }
+
+        $this->trace = [];
+        $startedAt = $this->clock();
 
         try {
             Cache::put(self::pairingKey($instance), true, now()->addMinutes(self::PAIRING_WINDOW_MIN));
-            $this->pairDeadline = microtime(true) + self::PAIR_DEADLINE_S;
+            // علامةُ «يعمل الآن»: الشاشةُ تسأل الحالةَ كلَّ ثوانٍ، وطلبٌ قطعه الوسيطُ
+            // ما زال يحذف وينشئ — فتُقال مدّتُه بدل سؤالٍ ثانٍ يتنازع معه
+            Cache::put(self::runningKey($instance), $startedAt, 90);
+            $this->pairDeadline = $startedAt + self::PAIR_BUDGET_S;
 
-            return $this->pairLocked($instance, $phone);
+            $result = $this->pairLocked($instance, $phone);
+        } catch (\Throwable $e) {
+            // عطلٌ في منتصف الرحلة: يُسجَّل بأثره، وتبقى الخطواتُ التي سبقته للشاشة
+            report($e);
+            $this->lastError = 'عطلٌ غير متوقَّع أثناء الربط — سُجِّل بأثره للمطوّر.';
+            $result = ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $this->lastError];
         } finally {
+            $this->pairDeadline = INF;
+            Cache::forget(self::runningKey($instance));
             $lock->release();
         }
+
+        $result['took'] = round($this->clock() - $startedAt, 1);
+        $result['trace'] = $this->trace;
+
+        // آخرُ محاولةٍ تُحفظ: طلبٌ قطعه الوسيطُ قبل ردّه تقرأ الشاشةُ نتيجتَه من هنا
+        Cache::put(self::lastAttemptKey($instance), [
+            'at' => time(), 'state' => $result['state'], 'message' => $result['message'] ?? null,
+            'trace' => $this->trace, 'took' => $result['took'],
+        ], 600);
+
+        if ($result['state'] === 'close' || $result['took'] > 15) {
+            Log::info('WhatsApp pair ' . $result['state'] . ' in ' . $result['took'] . 's: ' . implode(' | ', $this->trace)
+                . (($result['message'] ?? null) ? ' — ' . $result['message'] : ''));
+        }
+
+        return $result;
+    }
+
+    protected static function runningKey(string $instance): string
+    {
+        return 'wa:pair:running:' . $instance;
+    }
+
+    protected static function lastAttemptKey(string $instance): string
+    {
+        return 'wa:pair:last:' . $instance;
+    }
+
+    protected static function deletedKey(string $instance): string
+    {
+        return 'wa:pair:deleted:' . $instance;
+    }
+
+    protected static function pendingKey(string $instance): string
+    {
+        return 'wa:pair:pending:' . $instance;
+    }
+
+    /** إنشاءٌ قُبل وما زال الجسرُ يفتح جلستَه: منذ كم ثانية — أو null. */
+    public static function createPendingFor(): ?int
+    {
+        $since = Cache::get(self::pendingKey(WhatsAppSettings::evolutionInstance()));
+
+        return is_numeric($since) ? max(0, time() - (int) $since) : null;
+    }
+
+    /** المكتبُ نفسُه طوى النسخةَ في الدقائق الخمس الأخيرة — فغيابُها عند الجسر متوقَّع. */
+    protected static function deletedByUsRecently(string $instance): bool
+    {
+        $at = Cache::get(self::deletedKey($instance));
+
+        return is_numeric($at) && time() - (int) $at <= 300;
+    }
+
+    /** طلبُ ربطٍ يعمل الآن عند الخادم: منذ كم ثانية — أو null إن لم يكن. */
+    public static function pairingRunningFor(): ?int
+    {
+        $since = Cache::get(self::runningKey(WhatsAppSettings::evolutionInstance()));
+
+        if (!is_numeric($since)) {
+            return null;
+        }
+
+        $age = (int) round(microtime(true) - (float) $since);
+
+        // عاملٌ قُتل في منتصف الطلب لا يمحو علامتَه (finally لا يجري): علامةٌ أقدمُ من أيّ
+        // طلبٍ ممكن (الموعدُ وآخرُ نداءٍ بعده) لا تُصدَّق — وإلا بقيت الشاشةُ «تُجهَّز» دقيقتين
+        return $age <= self::PAIR_BUDGET_S + 25 ? max(0, $age) : null;
+    }
+
+    /**
+     * نتيجةُ آخر طلبِ ربط (at, state, message, trace, took) — أو null.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function lastAttempt(): ?array
+    {
+        $last = Cache::get(self::lastAttemptKey(WhatsAppSettings::evolutionInstance()));
+
+        return is_array($last) ? $last : null;
     }
 
     /** المكتبُ يقترن الآن — الكنسُ والإصلاحُ لا يلمسان النسخة. */
@@ -201,6 +319,7 @@ class EvolutionProvider implements WhatsAppProviderInterface
     public static function forgetPairing(): void
     {
         Cache::forget(self::latestKey(WhatsAppSettings::evolutionInstance()));
+        Cache::forget(self::pendingKey(WhatsAppSettings::evolutionInstance()));
     }
 
     /** @return array{qr: ?string, code: ?string, state: string, message: ?string} */
@@ -213,7 +332,12 @@ class EvolutionProvider implements WhatsAppProviderInterface
             return $this->opened('الرقم موصولٌ بالفعل.');
         }
 
-        [$found, $row] = $this->instanceLookup();
+        // الصفُّ يُمهَل اثنتي عشرةَ ثانية لا ستّاً: استعلامُه يعدّ رسائلَ النسخة وجهاتِها كلَّها
+        // (instanceInfo: _count) فيبطئ على قاعدةٍ كبيرة — وجوابُه هو ما يمنع حذفَ نسخةٍ مقترنة
+        [$found, $row] = $this->instanceLookup(12);
+
+        // مكتبٌ اقترن من قبل (يُختم عند أوّل فتحٍ ولا يُمحى): نسختُه لا تُطوى على جهل
+        $pairedBefore = (string) \App\Models\Setting::get(WhatsAppSettings::KEY_CONNECTED_AT, '') !== '';
 
         // ═══ لا يُحذف شيءٌ على جهل ═══
         //
@@ -233,6 +357,16 @@ class EvolutionProvider implements WhatsAppProviderInterface
             // جلسةَ مفتوحةٌ الآن. فتُعاد الحالةُ بعد ثوانٍ — جلسةٌ مقترنةٌ تعيد وصلَها
             // تُفتح فيها — وما بقي مغلقاً أو ينتظر مسحاً لا يعمل، والمكتبُ يطلب الربط.
             // ولو بقي الصفُّ عصيّاً على القراءة أبداً لما ارتبط رقمٌ على هذا الجسر.
+            // ومهلةٌ على الصفّ ليست جواباً كالـ٥٠٠: قد يكون الصفُّ هناك — مقترناً — وقاعدةُ
+            // الجسر بطيئةٌ وحسب. فمكتبٌ اقترن من قبلُ لا تُطوى نسختُه عليها: الحذفُ يُلغي
+            // اقترانَ هاتفه، ولا شيءَ يعيده إلا مسحٌ جديد
+            if ($this->stateFailure === null && $this->lookupUnanswered && $pairedBefore) {
+                $this->lastError = 'سجلُّ نسخة المكتب لم يُجب (' . $this->lookupFailure . ') والرقمُ اقترن من قبل — لم يُغيَّر شيء حتى لا يُلغى اقترانُه. '
+                    . 'قاعدةُ الجسر بطيئة؛ أعد المحاولة بعد دقيقة، وإن تكرّر فافحص الجسرَ على الخادم.';
+
+                return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $this->lastError];
+            }
+
             if ($this->stateFailure === null) {
                 Log::warning('Evolution fetchInstances unreadable (' . $this->lookupFailure . ') — pairing from the live state alone');
                 $this->pause(4000);
@@ -259,8 +393,10 @@ class EvolutionProvider implements WhatsAppProviderInterface
         // فتبدو «غير موجودة». والإنشاءُ حينها يصطدم بصفّها فيمسحه الجسرُ مع
         // اعتمادها — يقطع اقتراناً صالحاً. فمكتبٌ اقترن من قبلُ يُمهَل الجسرُ له:
         // ثوانيَ هنا، ثمّ لا يُنشأ بديلٌ إلا إن بقيت غائبةً دقيقةً ونصفاً على الأقلّ.
-        if ($found === 'missing' && (string) \App\Models\Setting::get(WhatsAppSettings::KEY_CONNECTED_AT, '') !== '') {
-            for ($i = 0; $i < 3 && $found === 'missing' && !$this->pastDeadline(); $i++) {
+        // (ونسخةٌ طواها المكتبُ نفسُه للتوّ — حذفٌ صدر ولم يتبعه إنشاء — غيابُها متوقَّع لا يُنتظر)
+        if ($found === 'missing' && $pairedBefore && !self::deletedByUsRecently($instance)) {
+            // ويُترك للإنشاء بعدها وقتُه: الجسرُ يُمسكه خمسَ ثوانٍ
+            for ($i = 0; $i < 3 && $found === 'missing' && $this->remaining() > 10; $i++) {
                 $this->pause(2500);
                 [$found, $row] = $this->instanceLookup();
             }
@@ -373,6 +509,8 @@ class EvolutionProvider implements WhatsAppProviderInterface
         Cache::forget(self::latestKey($instance));
         Cache::forget(self::sustainKey('missing', $instance));
         Cache::forget(self::sustainKey('stuck', $instance));
+        Cache::forget(self::deletedKey($instance));
+        Cache::forget(self::pendingKey($instance));
     }
 
     /**
@@ -421,8 +559,18 @@ class EvolutionProvider implements WhatsAppProviderInterface
     {
         self::forgetPairing();
 
-        // ‏٤٠٤ هنا لا شيءَ يُحذف (لم تُنشأ أو ليست في ذاكرة الجسر) — يُمضى إلى الإنشاء
-        if (!$this->deleteInstance($instance) && !$this->pastDeadline()) {
+        // ═══ لا حذفَ بلا وقتٍ لإنشاءٍ بعده ═══
+        //
+        // الجسرُ ينفّذ الحذفَ وإن انقضت مهلتُنا، فحذفٌ لا يتبعه إنشاءٌ يترك المكتبَ بلا
+        // نسخة والضغطةُ التالية تجدها «غائبة». فإن لم يبقَ للحذف ثمّ الإنشاء وقتُهما لم
+        // يُبدأ شيء — والضغطةُ التالية تبدأ نظيفة
+        if ($this->remaining() < self::CREATE_RESERVE_S + 1) {
+            return $this->expired('قبل طيّ الجلسة القديمة');
+        }
+
+        // ‏٤٠٤ هنا لا شيءَ يُحذف (لم تُنشأ أو ليست في ذاكرة الجسر) — يُمضى إلى الإنشاء.
+        // ويُعاد الحذفُ مرّةً إن بقي بعد مهلته (١٫٥ + ١ ث على الأقلّ) وقتُ الإنشاء
+        if (!$this->deleteInstance($instance) && $this->remaining() >= self::CREATE_RESERVE_S + 3) {
             $this->pause(1500);
             $this->deleteInstance($instance);
         }
@@ -433,8 +581,10 @@ class EvolutionProvider implements WhatsAppProviderInterface
         $created = ['qr' => null, 'code' => null, 'error' => null, 'status' => 0];
 
         for ($try = 0; $try < 4; $try++) {
-            if ($try > 0 && $this->pastDeadline()) {
-                break;
+            // الإنشاءُ الأوّل يُجرى أبداً بعد حذفٍ صدر (within تحدّه بما بقي)؛ والإعادةُ
+            // تحتاج ستَّ ثوانٍ على الأقلّ فلا تُبدأ لتُقطع
+            if ($try > 0 && $this->remaining() < self::CREATE_RESERVE_S) {
+                return $this->expired('قبل إعادة الإنشاء');
             }
 
             $created = $this->createInstance($instance, $phone);
@@ -451,6 +601,10 @@ class EvolutionProvider implements WhatsAppProviderInterface
         }
 
         if ($created['qr'] !== null || $created['code'] !== null) {
+            // الإنشاءُ تمّ: علامةُ «طواها المكتبُ بنفسه» تُمحى — بقاؤها بعد اقترانٍ جديد كانت
+            // تُسقط مهلةَ إقلاع الجسر في الدقائق الخمس التالية، فضغطةٌ أثناء إعادة تشغيله
+            // تجد النسخةَ «غائبة» وتنشئ فوقها فيمحو الجسرُ صفَّها المقترن
+            Cache::forget(self::deletedKey($instance));
             WhatsAppSettings::setEvolutionState('connecting');
 
             // بالرقم يُعرض الرمزُ وحده: رمزُ المسح المرافق له ليس ما طلبه المكتب
@@ -462,6 +616,42 @@ class EvolutionProvider implements WhatsAppProviderInterface
             ];
         }
 
+        // ═══ إنشاءٌ قطعته مهلتُنا لا رفضُ الجسر ═══
+        //
+        // الجسرُ يفتح الجلسةَ ثمّ يُمسك الردَّ خمسَ ثوانٍ ينتظر أوّلَ رمز: فقد تكون فُتحت
+        // ورمزُها يصل في الويبهوك — ولا يُقال «تعذّر» عن جلسةٍ حيّة، وإلا طوتها الضغطةُ
+        // التالية وأُنشئت أخرى تُقطع مثلَها فلا يرى المكتبُ رمزاً أبداً
+        if ($created['status'] === 0 && !empty($created['timedOut'])) {
+            // ثلاثُ نظراتٍ في ستّ ثوانٍ لا واحدة: حالةُ النسخة تبقى «close» حتى يفتح
+            // Baileys مقبسَه، والجسرُ البطيء قد يكون بعدُ في إدراج صفّها
+            $this->pairDeadline = max($this->pairDeadline, $this->clock() + 7);
+
+            for ($look = 0; $look < 3; $look++) {
+                if ($this->connectionState() === 'connecting') {
+                    Cache::forget(self::deletedKey($instance));
+                    WhatsAppSettings::setEvolutionState('connecting');
+
+                    return ['qr' => null, 'code' => null, 'state' => 'connecting',
+                        'message' => 'الجسرُ بطيء — فُتحت الجلسةُ عند الخادم ويصل رمزُها خلال ثوانٍ…'];
+                }
+
+                $this->pause(2000);
+            }
+
+            // النسخةُ في ذاكرة الجسر («close» بـ٢٠٠ لا ٤٠٤): الإنشاءُ قُبل والجسرُ بعدُ يقرأ
+            // الاعتمادَ أو يجلب إصدارَ واتساب (بلا مهلة عنده) قبل أن يفتح المقبس. فلا يُقال
+            // «تعذّر» — وإلا طوت الضغطةُ التالية جلسةً كانت على وشك أن تُصدر رمزَها —
+            // بل «ما زال يفتحها»، وتُرفع علامةٌ تجعل سؤالَ الشاشة ينتظر لا يعلن انتهاءً
+            if ($this->stateFailure === null) {
+                Cache::forget(self::deletedKey($instance));
+                Cache::put(self::pendingKey($instance), time(), 90);
+                WhatsAppSettings::setEvolutionState('connecting');
+
+                return ['qr' => null, 'code' => null, 'state' => 'connecting',
+                    'message' => 'الجسرُ بطيء — ما زال يفتح الجلسةَ عند الخادم، والشاشةُ تتابع…'];
+            }
+        }
+
         if ($created['error'] !== null) {
             $this->lastError = $created['error'];
 
@@ -470,6 +660,7 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
         if ($created['status'] >= 200 && $created['status'] < 300) {
             // أُنشئت ولم يصل رمزُها في مهلة الجسر (خمسُ ثوانٍ): يصل في السؤال التالي
+            Cache::forget(self::deletedKey($instance));
             WhatsAppSettings::setEvolutionState('connecting');
 
             return ['qr' => null, 'code' => null, 'state' => 'connecting',
@@ -477,6 +668,15 @@ class EvolutionProvider implements WhatsAppProviderInterface
         }
 
         $this->lastError = 'لم يقبل الجسرُ إنشاءَ جلسةٍ جديدة الآن — أعد المحاولة بعد دقيقة.';
+
+        return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $this->lastError];
+    }
+
+    /** انقضى الموعدُ قبل خطوةٍ لا تُبدأ لتُقطع — بلا تغييرٍ عند الجسر. */
+    protected function expired(string $where): array
+    {
+        $this->lastError = 'انقضى موعدُ الطلب (' . self::PAIR_BUDGET_S . ' ث) ' . $where . ' — الجسرُ بطيءٌ في الردّ. '
+            . 'أعد المحاولة، وإن تكرّر فالجسرُ أو قاعدتُه على الخادم هي البطيئة.';
 
         return ['qr' => null, 'code' => null, 'state' => 'close', 'message' => $this->lastError];
     }
@@ -496,11 +696,37 @@ class EvolutionProvider implements WhatsAppProviderInterface
      */
     public function currentPairing(): array
     {
+        // موعدُ سؤال الشاشة خمسَ عشرةَ ثانية: أقلُّ من مهلة المتصفّح (٢٠ ث)، فلا يبقى عاملُ PHP
+        // على الجسر بعد أن يئس المتصفّحُ وأرسل سؤالاً ثانياً — اثنان على جسرٍ بطيء بدل واحد
+        $this->pairDeadline = $this->clock() + 15;
+
+        try {
+            return $this->currentPairingWithin();
+        } finally {
+            $this->pairDeadline = INF;
+        }
+    }
+
+    /** @return array{state: string, qr: ?string, code: ?string, count: ?int} */
+    protected function currentPairingWithin(): array
+    {
         $state = $this->connectionState();
         $none = ['state' => $state, 'qr' => null, 'code' => null, 'count' => null];
 
         if ($state !== 'connecting') {
             return $none;
+        }
+
+        // ما أرسله الجسرُ نفسُه في ويبهوكه — بلا نداءٍ قد يفتح جلسةً ثانية. ويُقرأ قبل
+        // صفّ النسخة: استعلامُ الصفّ يعدّ رسائلَ النسخة وجهاتِها ومحادثاتِها كلَّها في
+        // قاعدة الجسر (monitor.service.ts instanceInfo: _count)، والشاشةُ تسأل كلَّ
+        // ثانيتين ونصف — فعدٌّ ثقيلٌ لا يُطلب والرمزُ في اليد. والرمزُ يُمحى عند الفتح
+        // (clearPairingTraces) وعند طيّ الجلسة (forgetPairing) فلا يُعرض رمزُ جلسةٍ ماضية.
+        $latest = Cache::get(self::latestKey(WhatsAppSettings::evolutionInstance()));
+
+        if (is_array($latest)) {
+            return ['state' => 'connecting', 'qr' => $latest['qr'] ?? null, 'code' => $latest['code'] ?? null,
+                'count' => isset($latest['seq']) ? (int) $latest['seq'] : null];
         }
 
         [$found, $row] = $this->instanceLookup();
@@ -511,25 +737,23 @@ class EvolutionProvider implements WhatsAppProviderInterface
             return $none;
         }
 
-        // ما أرسله الجسرُ نفسُه في ويبهوكه — بلا نداءٍ قد يفتح جلسةً ثانية
-        $latest = Cache::get(self::latestKey(WhatsAppSettings::evolutionInstance()));
-
-        if (is_array($latest)) {
-            return ['state' => 'connecting', 'qr' => $latest['qr'] ?? null, 'code' => $latest['code'] ?? null,
-                'count' => isset($latest['seq']) ? (int) $latest['seq'] : null];
-        }
-
         // الويبهوكُ لا يصلنا (الجسرُ لا يبلغ عنوانَ المكتب): يُسأل «connect» —
         // بعد تأكيد الحالة في اللحظة نفسها، فـ«close» عنده يعني جلسةً ثانية
         if ($this->connectionState() !== 'connecting') {
             return $none;
         }
 
+        $from = $this->clock();
+
         try {
-            $response = $this->http()->timeout(8)->get($this->url('instance/connect/' . WhatsAppSettings::evolutionInstance()));
-        } catch (\Throwable) {
+            $response = $this->http()->timeout($this->within(6))->get($this->url('instance/connect/' . WhatsAppSettings::evolutionInstance()));
+        } catch (\Throwable $e) {
+            $this->traced('الرمز', $from, self::transportReason($e));
+
             return $none;
         }
+
+        $this->traced('الرمز', $from, 'HTTP ' . $response->status());
 
         if (!$response->successful() || $response->json('error') === true) {
             return $none;
@@ -553,16 +777,28 @@ class EvolutionProvider implements WhatsAppProviderInterface
      */
     protected function deleteInstance(string $instance): bool
     {
+        $from = $this->clock();
+        // مهلتُه لا تأكل نافذةَ الإنشاء بعده: الجسرُ ينفّذ الحذفَ وإن انقطعنا عنه
+        $cap = $this->remaining() === INF ? 10 : max(1, min(10, (int) floor($this->remaining() - self::CREATE_RESERVE_S)));
+
         try {
-            $response = $this->http()->timeout(15)->delete($this->url('instance/delete/' . $instance));
-        } catch (\Throwable) {
+            $response = $this->http()->timeout($this->within($cap))->delete($this->url('instance/delete/' . $instance));
+        } catch (\Throwable $e) {
+            $this->traced('الحذف', $from, self::transportReason($e));
+            // قد يكون نُفِّذ رغم انقطاعنا: يُحسب حذفاً صدر
+            Cache::put(self::deletedKey($instance), time(), 300);
+
             return false;
         }
+
+        $this->traced('الحذف', $from, 'HTTP ' . $response->status());
 
         if (!$response->successful()) {
             // ‏٤٠٤ هنا نجاحٌ: لا شيءَ في ذاكرة الجسر يُحذف
             return $response->status() === 404;
         }
+
+        Cache::put(self::deletedKey($instance), time(), 300);
 
         return true;
     }
@@ -574,13 +810,16 @@ class EvolutionProvider implements WhatsAppProviderInterface
             return 'close';
         }
 
+        $from = $this->clock();
+
         try {
-            $response = $this->http()->timeout(8)->get(
+            $response = $this->http()->timeout($this->within(6))->get(
                 $this->url('instance/connectionState/' . WhatsAppSettings::evolutionInstance())
             );
         } catch (\Throwable $e) {
             $this->stateFailure = self::transportReason($e);
             $this->stateMissing = false;
+            $this->traced('الحالة', $from, $this->stateFailure);
 
             return 'close';
         }
@@ -588,6 +827,7 @@ class EvolutionProvider implements WhatsAppProviderInterface
         if (!$response->successful()) {
             $this->stateFailure = 'HTTP ' . $response->status();
             $this->stateMissing = $response->status() === 404;
+            $this->traced('الحالة', $from, $this->stateFailure);
 
             return 'close';
         }
@@ -595,8 +835,10 @@ class EvolutionProvider implements WhatsAppProviderInterface
         $this->stateFailure = null;
         $this->stateMissing = false;
         $state = (string) ($response->json('instance.state') ?? $response->json('state') ?? 'close');
+        $state = in_array($state, ['open', 'connecting', 'close'], true) ? $state : 'close';
+        $this->traced('الحالة', $from, $state);
 
-        return in_array($state, ['open', 'connecting', 'close'], true) ? $state : 'close';
+        return $state;
     }
 
     /** فصلُ الجلسة عند الخادم — الهاتفُ يُلغي الاقتران. */
@@ -684,10 +926,14 @@ class EvolutionProvider implements WhatsAppProviderInterface
     /** طرقُ باب الوصل بلا رقم — الاعتمادُ المحفوظُ يفتح الجلسةَ وحده. */
     protected function nudge(string $instance): void
     {
+        $from = $this->clock();
+
         try {
-            $this->http()->timeout(15)->get($this->url('instance/connect/' . $instance));
-        } catch (\Throwable) {
+            $response = $this->http()->timeout($this->within(10))->get($this->url('instance/connect/' . $instance));
+            $this->traced('طرقُ الوصل', $from, 'HTTP ' . $response->status());
+        } catch (\Throwable $e) {
             // الجسرُ نفسُه لا يردّ: الحالةُ التالية ستقول ذلك
+            $this->traced('طرقُ الوصل', $from, self::transportReason($e));
         }
     }
 
@@ -710,19 +956,25 @@ class EvolutionProvider implements WhatsAppProviderInterface
      *
      * @return array{0: 'row'|'missing'|'unknown', 1: array<string, mixed>|null}
      */
-    protected function instanceLookup(): array
+    protected function instanceLookup(int $timeoutS = 6): array
     {
         $this->lookupFailure = null;
+        $this->lookupUnanswered = false;
+        $from = $this->clock();
 
         try {
-            $response = $this->http()->timeout(8)->get($this->url('instance/fetchInstances'), [
+            $response = $this->http()->timeout($this->within($timeoutS))->get($this->url('instance/fetchInstances'), [
                 'instanceName' => WhatsAppSettings::evolutionInstance(),
             ]);
         } catch (\Throwable $e) {
             $this->lookupFailure = self::transportReason($e);
+            $this->lookupUnanswered = true;
+            $this->traced('السجلّ', $from, $this->lookupFailure);
 
             return ['unknown', null];
         }
+
+        $this->traced('السجلّ', $from, 'HTTP ' . $response->status());
 
         if ($response->status() === 404) {
             return ['missing', null];
@@ -761,26 +1013,74 @@ class EvolutionProvider implements WhatsAppProviderInterface
         return $row === [] ? ['missing', null] : ['row', $row];
     }
 
-    protected function pastDeadline(): bool
+    /** ما بقي من موعد الطلب بالثواني — بلا حدٍّ (INF) خارج طلب الربط. */
+    protected function remaining(): float
     {
-        return microtime(true) >= $this->pairDeadline;
+        return $this->pairDeadline === INF ? INF : $this->pairDeadline - $this->clock();
     }
 
-    /** سببُ انقطاعٍ قبل أيّ ردّ، بكلمةٍ يفهمها المشغّل. */
+    /**
+     * مهلةُ نداءٍ واحد: المعتادةُ، أو ما بقي من موعد الطلب إن كان أقلّ.
+     *
+     * مهلٌ ثابتةٌ كانت تتراكم: حذفٌ بلا ردّ (١٥ ث) ثمّ إعادتُه ثمّ إنشاءٌ (٢٥ ث)
+     * يتجاوز دقيقةَ الوسيط — فيصل المكتبَ ٥٠٤ بلا رمزٍ ولا سبب.
+     */
+    protected function within(int $nominalS): int
+    {
+        $left = $this->remaining();
+
+        return $left === INF ? $nominalS : max(1, min($nominalS, (int) ceil($left)));
+    }
+
+    /** الساعةُ — تُبدَّل في الاختبارات لتمضي الثواني بلا انتظار. */
+    protected function clock(): float
+    {
+        return microtime(true);
+    }
+
+    /** خطوةٌ في رحلة الطلب: اسمُها وردُّها ومدّتُها. */
+    protected function traced(string $step, float $from, string $result): void
+    {
+        $this->trace[] = $step . ': ' . $result . ' (' . number_format($this->clock() - $from, 1) . ' ث)';
+    }
+
+    /**
+     * سببُ انقطاعٍ قبل أيّ ردّ، بكلمةٍ يفهمها المشغّل.
+     *
+     * ‏curl ٨ يقول عن جسرٍ متوقّف «Failed to connect … Couldn't connect to server»
+     * لا «Connection refused» — فكان نصُّه بعنوان الجسر ومنفذه يُعرض على الشاشة
+     * بدل «متوقّف». وما لم يُعرف يُقتطع بلا عنوان: رسالةُ Guzzle تحمل الرابطَ كلَّه.
+     */
     protected static function transportReason(\Throwable $e): string
     {
         $m = mb_strtolower($e->getMessage());
 
         return match (true) {
             str_contains($m, 'timed out') || str_contains($m, 'timeout') => 'مهلةٌ بلا ردّ',
-            str_contains($m, 'refused') => 'الاتصال مرفوض — الجسرُ متوقّف؟',
+            str_contains($m, 'refused') || str_contains($m, 'failed to connect') || str_contains($m, "couldn't connect")
+                => 'الاتصال مرفوض — الجسرُ متوقّف؟',
+            str_contains($m, 'reset by peer') || str_contains($m, 'empty reply') || str_contains($m, 'connection closed')
+                => 'انقطع الاتصالُ قبل الردّ — الجسرُ يُعاد تشغيلُه؟',
             str_contains($m, 'resolve') => 'عنوانُ الجسر لا يُعرف',
-            default => 'انقطاع: ' . mb_substr($e->getMessage(), 0, 80),
+            default => 'انقطاع: ' . mb_substr(trim((string) preg_replace('~\(see https?://\S+\)|\bfor https?://\S+|https?://\S+~i', '', $e->getMessage())), 0, 60),
         };
     }
 
     /** مهلةٌ بين خطوات الجسر — تُطوى في الاختبارات. */
     protected function pause(int $ms): void
+    {
+        // لا يُنام بعد الموعد: ما بقي منه يُترك للنداء التالي ليُقال سببُه
+        if ($this->remaining() !== INF) {
+            $ms = (int) min($ms, max(0, $this->remaining() * 1000));
+        }
+
+        if ($ms > 0) {
+            $this->sleep($ms);
+        }
+    }
+
+    /** النومُ نفسُه — يُطوى في الاختبارات، وتُبدَّل به ساعةٌ تُحرَّك باليد. */
+    protected function sleep(int $ms): void
     {
         if (!app()->runningUnitTests()) {
             usleep($ms * 1000);
@@ -994,9 +1294,11 @@ class EvolutionProvider implements WhatsAppProviderInterface
      */
     protected function createInstance(string $instance, ?string $phone = null): array
     {
+        $from = $this->clock();
+
         try {
             // الجسرُ يُمسك الإنشاءَ خمسَ ثوانٍ ينتظر أوّلَ رمز (instance.controller.ts:153-157)
-            $response = $this->http()->timeout(25)->post($this->url('instance/create'), array_filter([
+            $response = $this->http()->timeout($this->within(20))->post($this->url('instance/create'), array_filter([
                 'instanceName' => $instance,
                 'qrcode' => true,
                 'integration' => (string) config('whatsapp.evolution.integration', 'WHATSAPP-BAILEYS'),
@@ -1006,9 +1308,15 @@ class EvolutionProvider implements WhatsAppProviderInterface
             ], static fn ($v) => $v !== null));
         } catch (\Throwable $e) {
             Log::warning('Evolution instance create failed: ' . $e->getMessage());
+            $this->traced('الإنشاء', $from, self::transportReason($e));
 
-            return ['qr' => null, 'code' => null, 'error' => 'تعذّر الاتصال بخادم الجسر لإنشاء نسخة المكتب.', 'status' => 0];
+            $reason = self::transportReason($e);
+
+            return ['qr' => null, 'code' => null, 'error' => 'تعذّر الاتصال بخادم الجسر لإنشاء نسخة المكتب (' . $reason . ').',
+                'status' => 0, 'timedOut' => $reason === 'مهلةٌ بلا ردّ'];
         }
+
+        $this->traced('الإنشاء', $from, 'HTTP ' . $response->status());
 
         if ($response->successful()) {
             // الرمزُ في جسم الإنشاء نفسِه (qrcode.base64) — يُقرأ الآن

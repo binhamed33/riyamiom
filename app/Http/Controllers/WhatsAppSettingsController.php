@@ -371,7 +371,7 @@ class WhatsAppSettingsController extends Controller
      * هنا عن «open» وحده، فبقي الرمزُ الميتُ أمام المكتب يمسحه أو يكتبه ولا يُقبل.
      * فيعود الأحدثُ مع عدّاده، والشاشةُ تبدّل ما تعرضه متى تغيّر.
      */
-    public function pairState(): JsonResponse
+    public function pairState(Request $request): JsonResponse
     {
         if (!WhatsAppSettings::usingEvolution()) {
             return response()->json(['state' => WhatsAppSettings::isConnected() ? 'open' : 'close'], 200);
@@ -383,9 +383,37 @@ class WhatsAppSettingsController extends Controller
             return response()->json(['state' => 'close', 'qr' => null, 'code' => null, 'count' => null], 200);
         }
 
+        // طلبُ ربطٍ يعمل الآن (أو قطعه الوسيطُ قبل ردّه وما زال يحذف وينشئ): لا يُسأل
+        // الجسرُ معه — سؤالٌ ثانٍ يتنازع معه ويشغل عاملَ PHP آخر على جسرٍ بطيء —
+        // وتُقال مدّتُه بدل «جارٍ التحضير» الصامتة
+        if (($since = \App\Services\WhatsApp\EvolutionProvider::pairingRunningFor()) !== null) {
+            return response()->json(['state' => 'connecting', 'qr' => null, 'code' => null, 'count' => null, 'preparing' => true,
+                'message' => 'يُجهَّز الرمزُ عند الخادم منذ ' . $since . ' ث — الجسرُ بطيءٌ في الردّ، والشاشةُ تتابع.'], 200);
+        }
+
         $now = $provider->currentPairing();
 
+        // إنشاءٌ قُبل والجسرُ بعدُ يفتح جلستَه (مقبسُه لم يقم): «close» هنا ليس انتهاءً —
+        // وإلا أعلنت الشاشةُ «انتهت الصلاحية» بعد أربعة أسئلة عن جلسةٍ على وشك أن تُصدر رمزَها
+        if ($now['state'] === 'close' && ($pending = \App\Services\WhatsApp\EvolutionProvider::createPendingFor()) !== null) {
+            return response()->json(['state' => 'connecting', 'qr' => null, 'code' => null, 'count' => null, 'preparing' => true,
+                'message' => 'الجسرُ ما زال يفتح الجلسةَ منذ ' . $pending . ' ث — والشاشةُ تتابع.'], 200);
+        }
+
         WhatsAppSettings::setEvolutionState($now['state']);
+
+        // طلبٌ قطعه الوسيطُ (٥٠٤) ثمّ أخفق في الخلفية: نتيجتُه تُقرأ من آخر محاولة —
+        // وإلا بقيت الشاشةُ تسأل عن جلسةٍ لم تُفتح حتى تيأس بلا سبب
+        if ($now['state'] === 'close') {
+            $last = \App\Services\WhatsApp\EvolutionProvider::lastAttempt();
+
+            // الشاشةُ تقول منذ كم ثانية تتابع (elapsed): محاولةٌ انتهت قبل ذلك ليست خبرَ هذه الضغطة
+            $window = $request->filled('elapsed') ? min(120, max(0, (int) $request->query('elapsed')) + 5) : 120;
+
+            if (is_array($last) && ($last['state'] ?? '') === 'close' && time() - (int) ($last['at'] ?? 0) <= $window) {
+                $now += ['failed' => true, 'message' => $last['message'] ?? null, 'trace' => $last['trace'] ?? [], 'took' => $last['took'] ?? null];
+            }
+        }
 
         return response()->json($now, 200);
     }

@@ -916,4 +916,589 @@ class WhatsAppPairingHealTest extends TestCase
         $this->assertNull($result['qr']);
         Http::assertNotSent(fn ($r) => str_contains($r->url(), '/instance/delete/') || str_contains($r->url(), '/instance/create'));
     }
+
+    // ══════════ موعدُ الطلب ورحلتُه ══════════
+
+    /**
+     * حذفٌ بلا ردّ مرّتين: الإنشاءُ بعدهما يُمهَل ما بقي من الثلاثين لا خمساً وعشرين —
+     * فيردّ الطلبُ قبل أن يقطعه الوسيط (nginx بعد دقيقة) بصفحة ٥٠٤ بلا رمزٍ ولا سبب.
+     */
+    public function test_a_slow_delete_never_pushes_the_request_past_its_budget(): void
+    {
+        $p = new ClockedProvider();
+
+        Http::fake(function ($request) use ($p) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                return Http::response([['name' => 'x', 'connectionStatus' => 'close', 'ownerJid' => null]], 200);
+            }
+
+            if (str_contains($url, '/instance/delete/')) {
+                // الجسرُ يُمسك الحذفَ حتى تنقضي مهلتُه (١٠ ث)
+                $p->now += 10;
+
+                throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out after 10000 milliseconds');
+            }
+
+            return Http::response($this->qrCreated(), 201);
+        });
+
+        $result = $p->pair();
+
+        $this->assertSame('connecting', $result['state']);
+        $this->assertNotNull($result['qr']);
+        // ‏١٠ + ١٫٥ + ١٠ = ٢١٫٥ ث مضت: الإنشاءُ أُمهل ما بقي (٨٫٥ ⇐ ٩) لا عشرين
+        $this->assertSame(9, end($p->timeouts), 'مهلةُ الإنشاء لا تتجاوز ما بقي من الموعد');
+        $this->assertEqualsWithDelta(21.5, $result['took'], 0.2);
+        $this->assertSame(2, count(array_filter($result['trace'], fn ($t) => str_starts_with($t, 'الحذف: مهلةٌ بلا ردّ'))));
+        $this->assertContains('الإنشاء: HTTP 201 (0.0 ث)', $result['trace']);
+    }
+
+    /**
+     * الحذفُ يُنفَّذ عند الجسر وإن انقضت مهلتُنا، فحذفٌ لا يتبعه إنشاءٌ يترك المكتبَ بلا
+     * نسخة — والضغطةُ التالية تجدها «غائبة» فتنتظر دقيقةً ونصفاً. فإن لم يبقَ للحذف ثمّ
+     * الإنشاء وقتُهما لم يُبدأ شيء، ويُقال «انقضى الموعد» مع الخطوات التي أكلته.
+     */
+    public function test_no_delete_is_started_when_no_time_is_left_to_create_after_it(): void
+    {
+        \App\Models\Setting::set(WhatsAppSettings::KEY_CONNECTED_AT, now()->subDay()->toIso8601String(), 'whatsapp');
+        $p = new ClockedProvider();
+
+        // الجسرُ يقلع: الذاكرةُ لا تعرف النسخة (٤٠٤) وكلُّ سؤالٍ عن صفّها يأخذ ستَّ ثوانٍ
+        Http::fake(function ($request) use ($p) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                $p->now += 6;
+            }
+
+            if (str_contains($url, '/instance/create')) {
+                return Http::response($this->qrCreated(), 201);
+            }
+
+            return Http::response(['status' => 404, 'error' => 'Not Found'], 404);
+        });
+
+        // الضغطةُ الأولى: غيابٌ لم يدم بعدُ — يُنتظر
+        $first = $p->pair();
+        $this->assertStringContainsString('انتظر دقيقتين', (string) $first['message']);
+
+        // وبعد دقيقةٍ ونصف: الغيابُ دام، لكنّ انتظارَ الصفّ ثلاثاً أكل الموعد (٦ + ٢٫٥ + ٦ + ٢٫٥ + ٦ = ٢٣ ث)
+        $this->travel(100)->seconds();
+        $result = $p->pair();
+
+        $this->assertSame('close', $result['state']);
+        $this->assertStringContainsString('انقضى موعدُ الطلب (30 ث) قبل طيّ الجلسة القديمة', (string) $result['message']);
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/instance/delete/') || str_contains($r->url(), '/instance/create'));
+        $this->assertLessThanOrEqual(30, $result['took']);
+    }
+
+    /**
+     * جسرٌ متوقّف: curl ٨ يقول «Failed to connect … Couldn't connect to server» لا
+     * «Connection refused» — فكان يُعرض نصُّ curl بعنوان الجسر ومنفذه بدل «متوقّف».
+     */
+    public function test_a_bridge_that_is_down_is_named_as_down_not_quoted(): void
+    {
+        Http::fake(function () {
+            throw new \Illuminate\Http\Client\ConnectionException("cURL error 7: Failed to connect to 127.0.0.1 port 18999 after 0 ms: Couldn't connect to server");
+        });
+
+        $result = (new EvolutionProvider())->pair();
+
+        $this->assertSame('close', $result['state']);
+        $this->assertStringContainsString('الاتصال مرفوض — الجسرُ متوقّف؟', (string) $result['message']);
+        $this->assertStringNotContainsString('127.0.0.1', (string) $result['message'] . implode(' ', $result['trace']));
+    }
+
+    /** ردُّ الطلب يحمل رحلتَه: كلُّ نداءٍ وجوابُه ومدّتُه — ولا سرَّ فيها. */
+    public function test_the_answer_carries_the_journey_step_by_step(): void
+    {
+        Http::fake(function ($request) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                return Http::response(['status' => 500, 'error' => 'Internal Server Error'], 500);
+            }
+
+            if (str_contains($url, '/instance/delete/')) {
+                return Http::response(['status' => 'SUCCESS', 'error' => false, 'token' => 'SECRET-TOKEN'], 200);
+            }
+
+            return Http::response($this->qrCreated() + ['hash' => 'SECRET-HASH'], 201);
+        });
+
+        $result = (new EvolutionProvider())->pair();
+
+        $this->assertSame('connecting', $result['state']);
+        $this->assertIsFloat($result['took']);
+        $steps = implode(' | ', $result['trace']);
+        $this->assertStringContainsString('الحالة: close', $steps);
+        $this->assertStringContainsString('السجلّ: HTTP 500', $steps);
+        $this->assertStringContainsString('الحذف: HTTP 200', $steps);
+        $this->assertStringContainsString('الإنشاء: HTTP 201', $steps);
+        $this->assertStringNotContainsString('SECRET', $steps);
+        $this->assertStringNotContainsString('bridge-key', $steps);
+    }
+
+    /** ومن حُجب لأنّ طلباً آخر يعمل يُقال له منذ متى — لا «انتظر» مبهمة. */
+    public function test_the_busy_message_says_how_long_the_other_request_has_run(): void
+    {
+        Http::fake();
+        $instance = WhatsAppSettings::evolutionInstance();
+        \Illuminate\Support\Facades\Cache::lock('wa:pair:' . $instance, 60)->get();
+        \Illuminate\Support\Facades\Cache::put('wa:pair:running:' . $instance, microtime(true) - 7, 120);
+
+        $result = (new EvolutionProvider())->pair();
+
+        $this->assertStringContainsString('منذ 7 ث', (string) $result['message']);
+        Http::assertNothingSent();
+    }
+
+    /** علامةُ «يعمل الآن» تُرفع مع الطلب وتُمحى بعده، ونتيجتُه تُحفظ للشاشة. */
+    public function test_the_last_attempt_is_kept_and_the_running_mark_is_cleared(): void
+    {
+        $seen = [];
+
+        // تُقرأ العلامةُ من داخل نداء الجسر: الموضعُ الوحيد الذي يكون الطلبُ فيه «يعمل الآن»
+        Http::fake(function () use (&$seen) {
+            $seen[] = EvolutionProvider::pairingRunningFor();
+
+            return Http::response(['status' => 500], 500);
+        });
+
+        $result = (new EvolutionProvider())->pair();
+
+        $this->assertSame('close', $result['state']);
+        $this->assertNotEmpty($seen);
+        $this->assertNotNull($seen[0], 'علامةُ «يعمل الآن» مرفوعةٌ أثناء الطلب');
+        $this->assertLessThanOrEqual(1, $seen[0]);
+        $this->assertNull(EvolutionProvider::pairingRunningFor());
+
+        $last = EvolutionProvider::lastAttempt();
+        $this->assertSame('close', $last['state']);
+        $this->assertSame($result['message'], $last['message']);
+        $this->assertNotEmpty($last['trace']);
+        $this->assertEqualsWithDelta(time(), $last['at'], 2);
+    }
+
+    /**
+     * سؤالُ الشاشة يقرأ ما بعث به الجسرُ في ويبهوكه قبل أن يسأله عن صفّ النسخة:
+     * استعلامُ الصفّ يعدّ رسائلَ النسخة وجهاتِها كلَّها (instanceInfo: _count) —
+     * والشاشةُ تسأل كلَّ ثانيتين ونصف، فكان العدُّ الثقيلُ يُطلب والرمزُ في اليد.
+     */
+    public function test_the_poll_serves_the_webhook_code_without_counting_the_bridge_records(): void
+    {
+        Http::fake(fn () => Http::response(['instance' => ['state' => 'connecting']], 200));
+        EvolutionProvider::rememberPairing(['pairingCode' => 'ABCD1234', 'base64' => 'iVBORw0KGgoQ=', 'count' => 3]);
+
+        $now = (new EvolutionProvider())->currentPairing();
+
+        $this->assertSame('ABCD1234', $now['code']);
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/instance/fetchInstances'));
+    }
+
+    // ══════════ لا يُحذف شيءٌ على جهل — ولو كان الجهلُ مهلةً ══════════
+
+    /**
+     * مكتبٌ اقترن من قبل، وصفُّ نسخته لم يُجب في مهلته (قاعدةُ الجسر تعدّ رسائلَه كلَّها
+     * وتبطئ)، والحالةُ «close» (سقوطٌ عابر): كان يُطوى ويُنشأ بديلٌ — والطيُّ يُلغي اقترانَ
+     * الهاتف. الآن لا يُمَسّ، ويُقال لماذا، والصفُّ يُمهَل اثنتي عشرةَ ثانية لا ستّاً.
+     */
+    public function test_a_slow_record_never_costs_a_paired_office_its_session(): void
+    {
+        \App\Models\Setting::set(WhatsAppSettings::KEY_CONNECTED_AT, now()->subDay()->toIso8601String(), 'whatsapp');
+        $p = new ClockedProvider();
+
+        Http::fake(function ($request) use ($p) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                $p->now += end($p->timeouts);
+
+                throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out after 12000 milliseconds');
+            }
+
+            return Http::response(['status' => 'SUCCESS'], 200);
+        });
+
+        $result = $p->pair();
+
+        $this->assertSame('close', $result['state']);
+        $this->assertStringContainsString('لم يُغيَّر شيء حتى لا يُلغى اقترانُه', (string) $result['message']);
+        $this->assertSame(12, $p->timeouts[1], 'الصفُّ يُمهَل اثنتي عشرةَ ثانية');
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/instance/delete/') || str_contains($r->url(), '/instance/create'));
+    }
+
+    /** ومكتبٌ لم يقترن قطّ لا نسخةَ له تُحمى: مهلةُ الصفّ لا توقف ربطَه الأوّل. */
+    public function test_a_never_paired_office_still_pairs_when_the_record_is_slow(): void
+    {
+        $p = new ClockedProvider();
+
+        Http::fake(function ($request) use ($p) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                $p->now += end($p->timeouts);
+
+                throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out after 12000 milliseconds');
+            }
+
+            if (str_contains($url, '/instance/delete/')) {
+                return Http::response(['status' => 404, 'error' => 'Not Found'], 404);
+            }
+
+            return Http::response($this->qrCreated(), 201);
+        });
+
+        $result = $p->pair();
+
+        $this->assertSame('connecting', $result['state']);
+        $this->assertNotNull($result['qr']);
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/instance/create'));
+    }
+
+    /**
+     * حذفٌ صدر يتبعه إنشاءٌ أبداً: مهلةُ الحذف لا تأكل نافذةَ الإنشاء، والإنشاءُ الأوّل
+     * بعده لا يُتخطّى — وإلا بقي المكتبُ بلا نسخةٍ والضغطةُ التالية «غائبة».
+     */
+    public function test_a_delete_that_was_issued_is_always_followed_by_a_create(): void
+    {
+        $p = new ClockedProvider();
+        $deletes = 0;
+
+        Http::fake(function ($request) use ($p, &$deletes) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                // الصفُّ بطيء (٥٫٩ ث) لكنّه يُجيب: غيرُ مقترن
+                $p->now += 5.9;
+
+                return Http::response([['name' => 'x', 'connectionStatus' => 'close', 'ownerJid' => null]], 200);
+            }
+
+            if (str_contains($url, '/instance/delete/')) {
+                // الجسرُ يُمسك الحذفَ حتى تنقضي المهلةُ الممنوحة له
+                $deletes++;
+                $p->now += end($p->timeouts);
+
+                throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out');
+            }
+
+            return Http::response($this->qrCreated(), 201);
+        });
+
+        $result = $p->pair();
+
+        $this->assertSame('connecting', $result['state']);
+        $this->assertSame(2, $deletes);
+        // الحذفُ الثاني أُمهل ما يُبقي للإنشاء نافذتَه (٤ ث)، والإنشاءُ ما بقي (٩)
+        $this->assertSame([6, 12, 10, 4, 9], $p->timeouts);
+        $this->assertLessThanOrEqual(30, $result['took']);
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/instance/create'));
+    }
+
+    /** ونسخةٌ طواها المكتبُ نفسُه للتوّ لا يُنتظر غيابُها دقيقةً ونصفاً: تُنشأ فوراً. */
+    public function test_an_instance_we_deleted_ourselves_is_recreated_without_the_boot_wait(): void
+    {
+        \App\Models\Setting::set(WhatsAppSettings::KEY_CONNECTED_AT, now()->subDay()->toIso8601String(), 'whatsapp');
+        \Illuminate\Support\Facades\Cache::put('wa:pair:deleted:' . WhatsAppSettings::evolutionInstance(), time() - 10, 300);
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/instance/create')) {
+                return Http::response($this->qrCreated(), 201);
+            }
+
+            return Http::response(['status' => 404, 'error' => 'Not Found'], 404);
+        });
+
+        $result = (new EvolutionProvider())->pair();
+
+        $this->assertSame('connecting', $result['state']);
+        $this->assertStringNotContainsString('انتظر دقيقتين', (string) $result['message']);
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/instance/create'));
+    }
+
+    /**
+     * إنشاءٌ قطعته مهلتُنا والجسرُ كان قد فتح الجلسةَ (يُمسك الردَّ خمسَ ثوانٍ): لا يُقال
+     * «تعذّر» عن جلسةٍ حيّة — وإلا طوتها الضغطةُ التالية وأُنشئت أخرى تُقطع مثلَها.
+     */
+    public function test_a_create_cut_by_our_timeout_is_recognised_as_a_live_session(): void
+    {
+        $p = new ClockedProvider();
+        $opened = false;
+        $creates = 0;
+
+        Http::fake(function ($request) use ($p, &$opened, &$creates) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => $opened ? 'connecting' : 'close']], 200);
+            }
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                return Http::response([['name' => 'x', 'connectionStatus' => 'close', 'ownerJid' => null]], 200);
+            }
+
+            if (str_contains($url, '/instance/delete/')) {
+                return Http::response(['status' => 'SUCCESS', 'error' => false], 200);
+            }
+
+            $creates++;
+            $opened = true;
+            $p->now += end($p->timeouts);
+
+            throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out after 20000 milliseconds');
+        });
+
+        $result = $p->pair();
+
+        $this->assertSame('connecting', $result['state']);
+        $this->assertStringContainsString('فُتحت الجلسةُ', (string) $result['message']);
+        $this->assertSame(1, $creates);
+        $this->assertSame('connecting', WhatsAppSettings::evolutionState());
+    }
+
+    /**
+     * نسخةٌ مقترنةٌ سقط اتصالُها وجسرٌ لا يجيب عن الحالة في مهلته: لا تُطوى ولا يُنشأ
+     * بديلٌ، وكلُّ نداءٍ محدودٌ بما بقي من الموعد — فيردّ الطلبُ في ثلاثين ثانية.
+     */
+    public function test_a_paired_row_on_a_silent_bridge_is_neither_deleted_nor_waited_for_past_the_budget(): void
+    {
+        $p = new ClockedProvider();
+
+        Http::fake(function ($request) use ($p) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                return Http::response([['name' => 'x', 'connectionStatus' => 'open', 'ownerJid' => '96891234567@s.whatsapp.net']], 200);
+            }
+
+            if (str_contains($url, '/instance/delete/') || str_contains($url, '/instance/create')) {
+                return Http::response(['status' => 'SUCCESS'], 200);
+            }
+
+            // الحالةُ وطرقُ الوصل: بلا ردٍّ حتى تنقضي المهلةُ الممنوحة
+            $p->now += end($p->timeouts);
+
+            throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out');
+        });
+
+        $result = $p->pair();
+
+        $this->assertSame('connecting', $result['state']);
+        $this->assertStringContainsString('الرقمُ مقترنٌ من قبل', (string) $result['message']);
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/instance/delete/') || str_contains($r->url(), '/instance/create'));
+        // ‏٦ + ٢ + ٦ + ١٠ + ٣ + ٣ = ٣٠: آخرُ سؤالٍ عن الحالة أُمهل ما بقي (٣) لا ستّاً
+        $this->assertSame([6, 12, 6, 10, 3], $p->timeouts);
+        $this->assertEqualsWithDelta(30, $result['took'], 0.1);
+    }
+
+    /** علامةُ «يعمل الآن» أقدمُ من أيّ طلبٍ ممكن (عاملٌ قُتل) لا تُصدَّق. */
+    public function test_a_stale_running_mark_from_a_killed_worker_is_ignored(): void
+    {
+        $key = 'wa:pair:running:' . WhatsAppSettings::evolutionInstance();
+
+        \Illuminate\Support\Facades\Cache::put($key, microtime(true) - 20, 90);
+        $this->assertSame(20, EvolutionProvider::pairingRunningFor());
+
+        \Illuminate\Support\Facades\Cache::put($key, microtime(true) - 70, 90);
+        $this->assertNull(EvolutionProvider::pairingRunningFor());
+    }
+
+
+    /**
+     * علامةُ «طواها المكتبُ بنفسه» غرضُها حذفٌ لم يتبعه إنشاء — فتُمحى متى تمّ الإنشاءُ أو
+     * فُتحت الجلسة. بقاؤها بعد اقترانٍ جديد كانت تُسقط مهلةَ إقلاع الجسر: ضغطةٌ أثناء
+     * إعادة تشغيله (النسخةُ «غائبة» من ذاكرته) تنشئ فوق صفّها المقترن فيمحوه الجسر.
+     */
+    public function test_the_self_delete_mark_dies_with_the_create_or_the_open_that_follows(): void
+    {
+        $instance = WhatsAppSettings::evolutionInstance();
+        $key = 'wa:pair:deleted:' . $instance;
+        \App\Models\Setting::set(WhatsAppSettings::KEY_CONNECTED_AT, now()->subDay()->toIso8601String(), 'whatsapp');
+
+        // حذفٌ ثمّ إنشاءٌ ناجح: لا علامةَ تبقى. (مزيّفٌ واحدٌ يُبدَّل طورُه: Http::fake الثانية
+        // تُضاف بعد الأولى ولا تحلّ محلَّها، فأوّلُ من يجيب هو الأوّل)
+        $restarting = false;
+        $createsWhileRestarting = 0;
+
+        Http::fake(function ($request) use (&$restarting, &$createsWhileRestarting) {
+            $url = $request->url();
+
+            if ($restarting) {
+                $createsWhileRestarting += str_contains($url, '/instance/create') ? 1 : 0;
+
+                return Http::response(['status' => 404, 'error' => 'Not Found'], 404);
+            }
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                return Http::response([['name' => 'x', 'connectionStatus' => 'close', 'ownerJid' => null]], 200);
+            }
+
+            if (str_contains($url, '/instance/delete/')) {
+                return Http::response(['status' => 'SUCCESS', 'error' => false], 200);
+            }
+
+            return Http::response($this->qrCreated(), 201);
+        });
+
+        $this->assertSame('connecting', (new EvolutionProvider())->pair()['state']);
+        $this->assertNull(\Illuminate\Support\Facades\Cache::get($key), 'الإنشاءُ تمّ فلا علامةَ حذفٍ معلّق');
+
+        // وحذفٌ لم يتبعه إنشاء ثمّ فُتحت الجلسةُ (ويبهوك): العلامةُ تُمحى مع سائر الآثار
+        \Illuminate\Support\Facades\Cache::put($key, time(), 300);
+        WhatsAppSettings::setEvolutionState('open');
+        $this->assertNull(\Illuminate\Support\Facades\Cache::get($key));
+
+        // فضغطةٌ أثناء إقلاع الجسر (٤٠٤ في كلّ شيء) تنتظر كما كانت — لا تنشئ فوق الصفّ المقترن
+        $restarting = true;
+
+        $result = (new EvolutionProvider())->pair();
+
+        $this->assertStringContainsString('انتظر دقيقتين', (string) $result['message']);
+        // (المزيّفُ يحفظ إنشاءَ الطور الأوّل أيضاً — فيُعدّ إنشاءُ الإقلاع وحده)
+        $this->assertSame(0, $createsWhileRestarting);
+    }
+
+    /** الجسرُ البطيء يفتح المقبسَ بعد ثوانٍ من قطع الإنشاء: يُنظر ثلاثاً لا مرّة. */
+    public function test_a_session_that_opens_seconds_after_the_cut_create_is_still_recognised(): void
+    {
+        $p = new ClockedProvider();
+        $states = 0;
+        $cutAt = null;
+
+        Http::fake(function ($request) use ($p, &$states, &$cutAt) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                // بعد القطع: «close» في النظرتين الأوليين، ثمّ «connecting» بعد أربع ثوانٍ
+                $late = $cutAt !== null && $p->now - $cutAt >= 4;
+                $states++;
+
+                return Http::response(['instance' => ['state' => $late ? 'connecting' : 'close']], 200);
+            }
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                return Http::response([['name' => 'x', 'connectionStatus' => 'close', 'ownerJid' => null]], 200);
+            }
+
+            if (str_contains($url, '/instance/delete/')) {
+                return Http::response(['status' => 'SUCCESS', 'error' => false], 200);
+            }
+
+            $p->now += end($p->timeouts);
+            $cutAt = $p->now;
+
+            throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out after 20000 milliseconds');
+        });
+
+        $result = $p->pair();
+
+        $this->assertSame('connecting', $result['state']);
+        $this->assertStringContainsString('فُتحت الجلسةُ', (string) $result['message']);
+        $this->assertLessThanOrEqual(31, $result['took']);
+        // سؤالٌ قبل الإنشاء وثلاثُ نظراتٍ بعده (الإنشاءُ المقطوع لا يُسجّله المزيّف)
+        $this->assertSame(4, $states);
+    }
+
+    /**
+     * والجسرُ الأبطأ: بعد قطع الإنشاء تبقى الحالةُ «close» (٢٠٠ — النسخةُ في ذاكرته والمقبسُ
+     * لم يقم؛ يجلب إصدارَ واتساب بلا مهلة عنده). كان يُقال «تعذّر» فتطوي الضغطةُ التالية
+     * جلسةً على وشك أن تُصدر رمزَها — فتُقطع الثانيةُ مثلَها ولا يرى المكتبُ رمزاً أبداً.
+     */
+    public function test_a_create_still_opening_after_the_cut_is_reported_as_pending_not_failed(): void
+    {
+        $p = new ClockedProvider();
+        // (مزيّفٌ واحدٌ يُبدَّل طورُه: Http::fake الثانية تُضاف ولا تحلّ محلَّ الأولى)
+        $gone = false;
+
+        Http::fake(function ($request) use ($p, &$gone) {
+            $url = $request->url();
+
+            if (str_contains($url, '/instance/connectionState/')) {
+                return $gone
+                    ? Http::response(['status' => 404, 'error' => 'Not Found'], 404)
+                    : Http::response(['instance' => ['state' => 'close']], 200);
+            }
+
+            if (str_contains($url, '/instance/fetchInstances')) {
+                return $gone
+                    ? Http::response(['status' => 404], 404)
+                    : Http::response([['name' => 'x', 'connectionStatus' => 'close', 'ownerJid' => null]], 200);
+            }
+
+            if (str_contains($url, '/instance/delete/')) {
+                return Http::response(['status' => 'SUCCESS', 'error' => false], $gone ? 404 : 200);
+            }
+
+            $p->now += end($p->timeouts);
+
+            throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out after 20000 milliseconds');
+        });
+
+        $result = $p->pair();
+
+        $this->assertSame('connecting', $result['state']);
+        $this->assertStringContainsString('ما زال يفتح الجلسةَ', (string) $result['message']);
+        $this->assertSame(0, EvolutionProvider::createPendingFor());
+        $this->assertSame('connecting', WhatsAppSettings::evolutionState());
+
+        // وجسرٌ لا يعرف النسخةَ أصلاً (٤٠٤ بعد القطع): لا جلسةَ تُنتظر — يُقال «تعذّر»
+        $gone = true;
+        $again = $p->pair();
+
+        $this->assertSame('close', $again['state']);
+        $this->assertStringContainsString('تعذّر الاتصال بخادم الجسر لإنشاء', (string) $again['message']);
+        $this->assertNull(EvolutionProvider::createPendingFor());
+    }
+
+}
+
+/** مزوّدٌ بساعةٍ تُحرَّك باليد: الثواني تمضي بلا انتظار، والمهلُ المحسوبة تُسجَّل. */
+class ClockedProvider extends EvolutionProvider
+{
+    public float $now = 1_000_000.0;
+
+    /** @var list<int> */
+    public array $timeouts = [];
+
+    protected function clock(): float
+    {
+        return $this->now;
+    }
+
+    protected function sleep(int $ms): void
+    {
+        $this->now += $ms / 1000;
+    }
+
+    protected function within(int $nominalS): int
+    {
+        return $this->timeouts[] = parent::within($nominalS);
+    }
 }
