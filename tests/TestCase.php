@@ -25,4 +25,22 @@ abstract class TestCase extends BaseTestCase
             \App\Models\Setting::set(\App\Support\ClientEvents::KEY_MASTER, '0', \App\Support\ClientEvents::GROUP);
         }
     }
+
+    /**
+     * دخولُ موكّلٍ إلى بوابته في الاختبارات.
+     *
+     * الدخولُ الحقيقيُّ برمز واتساب يتطلّب جسراً متّصلاً يُرسل الرمز، وهو
+     * خارج نطاق اختبارات بقيّة البوابة (العزل، الفواتير، CSP…). فتُفتح
+     * الجلسةُ مباشرةً بمفاتيحها نفسِها التي يكتبها ClientAuthenticator::establish.
+     */
+    protected function portalLogin(\App\Models\Client $client): static
+    {
+        $this->withSession([
+            \App\Services\ClientPortal\ClientAuthenticator::SESSION_CLIENT => $client->id,
+            \App\Services\ClientPortal\ClientAuthenticator::SESSION_NAME => $client->name,
+            \App\Services\ClientPortal\ClientAuthenticator::SESSION_AT => now()->timestamp,
+        ]);
+
+        return $this;
+    }
 }

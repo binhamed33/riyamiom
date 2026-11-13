@@ -145,9 +145,7 @@ class FinanceFixesTest extends TestCase
         Setting::set(ClientPortal::KEY_SHOW_ACCOUNTING, '1', 'client_portal');
         $this->invoice(['status' => 'cancelled', 'client_visible' => true]);
 
-        $this->post(route('client.access.lookup'), ['national_id' => '4444444444']);
-        $this->post(route('client.access.verify'), ['digits' => '308']);
-        $this->assertSame($this->client->id, session('client_access_id'));
+        $this->portalLogin($this->client);
 
         $html = $this->get(route('client.portal.case', $this->case->id))->assertOk()->getContent();
         $this->assertMatchesRegularExpression('/p-badge mute">\s*' . preg_quote(__('portal.accounting.cancelled_badge'), '/') . '/u', $html);

@@ -1,11 +1,6 @@
 @extends('client-portal.layout')
 @section('title', __('portal.login.welcome'))
 
-@php
-    $step = $challenge ? 2 : 1;
-    $welcome = \App\Support\ClientPortal::welcome();
-@endphp
-
 @push('styles')
 <style>
     .lg-grid { display: grid; gap: 1.6rem; align-items: center; }
@@ -48,25 +43,8 @@
     .lg-panel { padding: 1.8rem 1.4rem 1.6rem; }
     @media (min-width: 560px) { .lg-panel { padding: 2.4rem 2.2rem 2rem; } }
 
-    .lg-steps { display: flex; align-items: center; gap: .5rem; margin-bottom: 1.4rem; }
-    .lg-pip { height: 3px; border-radius: 2px; background: var(--line-2); flex: 1; transition: background .35s; }
-    .lg-pip.is-on { background: var(--gold); }
-    .lg-step-label { font-size: .68rem; color: var(--fg-3); font-weight: 600; white-space: nowrap; }
-
-    /* حقول آخر ٣ أرقام */
-    .lg-digits { display: flex; gap: .6rem; direction: ltr; justify-content: center; margin: .3rem 0 .2rem; }
-    .lg-digit {
-        width: 60px; height: 68px; text-align: center; font-size: 1.6rem; font-weight: 700;
-        border-radius: 15px; background: var(--surface-2); border: 1px solid var(--line);
-        color: var(--fg); transition: border-color .18s, box-shadow .18s, transform .18s;
-    }
-    .lg-digit:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 4px var(--gold-soft); transform: translateY(-2px); }
-    .lg-digit.is-bad { border-color: var(--bad); animation: lgShake .32s; }
-    @keyframes lgShake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-
     .lg-spin { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: lgSpin .7s linear infinite; }
     @keyframes lgSpin { to { transform: rotate(360deg); } }
-    @media (prefers-reduced-motion: reduce) { .lg-digit.is-bad { animation: none; } }
 </style>
 @endpush
 
@@ -87,137 +65,66 @@
     </section>
 
     <section class="p-card lg-panel p-in">
-        <div class="lg-steps">
-            <span class="lg-pip is-on"></span>
-            <span class="lg-pip @if($step === 2) is-on @endif"></span>
-            <span class="lg-step-label">{{ __('portal.login.step_of', ['current' => $step, 'total' => 2]) }}</span>
-        </div>
-
         @php
-            // الدخول برمز واتساب: الهاتفُ محفوظٌ في الجلسة بعد الطلب —
-            // فوجودُه يعني «أدخل الرمزَ الذي وصلك»
+            // الدخولُ برمز واتساب وحدَه. الهاتفُ محفوظٌ في الجلسة بعد طلب الرمز —
+            // فوجودُه يعني «أدخل الرمزَ الذي وصلك»، وغيابُه «اكتب رقمَك ليصلك الرمز».
             $otpPhone = session('portal_otp_phone');
-
-            // طلبُ الهويّة الصريح يغلب رقمَ الجلسة: الرقمُ يبقى محفوظاً
-            // حتى ينجح التحقّق، فكان رابطُ «برقم الهويّة بدلاً من ذلك»
-            // يعيد الزائرَ إلى تبويب الرمز نفسِه — محبوسٌ لا رجوعَ له
-            $forceId = request()->boolean('id');
-            $otpTab = !$forceId && ($otpPhone || session('portal_otp_tab') || request()->boolean('otp'));
             $otpWaitLeft = $otpPhone
                 ? max(0, \App\Services\ClientPortal\PortalOtp::RESEND_SECONDS - (now()->timestamp - (int) session('portal_otp_at', 0)))
                 : 0;
         @endphp
 
-        @if ($step === 1 && $otpTab)
-            <h1 class="p-h1">{{ __('portal.login.welcome') }}</h1>
+        <h1 class="p-h1">{{ __('portal.login.welcome') }}</h1>
 
-            @if (session('portal_notice'))
-                <p class="p-hint" style="margin-bottom:.7rem">{{ session('portal_notice') }}</p>
-            @endif
+        @if (session('portal_notice'))
+            <p class="p-hint" style="margin-bottom:.7rem">{{ session('portal_notice') }}</p>
+        @endif
 
-            @if (!$otpPhone)
-                <p class="p-lede" style="margin-bottom:1.5rem">أدخل رقم هاتفك المسجَّل لدى المكتب — يصلك رمزُ الدخول على واتساب.</p>
+        @if (!$otpPhone)
+            <p class="p-lede" style="margin-bottom:1.5rem">أدخل رقم هاتفك المسجَّل لدى المكتب — يصلك رمزُ الدخول على واتساب.</p>
 
-                <form method="POST" action="{{ route('client.access.otp') }}" data-portal-form novalidate>
-                    @csrf
-                    <label class="p-label" for="otp-phone">رقم الهاتف</label>
-                    <input id="otp-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
-                           class="p-field" required autofocus maxlength="20" dir="ltr" style="text-align:start"
-                           placeholder="9xxxxxxx">
-                    <p class="p-hint">الرقم نفسُه المسجَّل في ملفّك لدى المكتب.</p>
-
-                    <button class="p-btn" style="width:100%;margin-top:1.3rem" data-submit>
-                        <span data-label>أرسل الرمز</span>
-                    </button>
-                </form>
-            @else
-                <p class="p-lede" style="margin-bottom:1rem">أدخل الرمزَ المكوَّن من ستّة أرقامٍ الذي وصلك على واتساب.</p>
-
-                <form method="POST" action="{{ route('client.access.otp.verify') }}" data-portal-form novalidate>
-                    @csrf
-                    <label class="p-label" for="otp-code">رمز التحقّق</label>
-                    <input id="otp-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
-                           class="p-field" required autofocus maxlength="6" pattern="[0-9]{6}" dir="ltr"
-                           style="text-align:center;letter-spacing:.5em;font-size:1.3rem">
-
-                    <button class="p-btn" style="width:100%;margin-top:1.3rem" data-submit>
-                        <span data-label>دخول</span>
-                    </button>
-                </form>
-
-                <form method="POST" action="{{ route('client.access.otp') }}" style="margin-top:.7rem">
-                    @csrf
-                    <input type="hidden" name="phone" value="{{ $otpPhone }}">
-                    <button class="p-btn p-btn-ghost" style="width:100%" data-otp-resend
-                            @if($otpWaitLeft > 0) disabled data-wait="{{ $otpWaitLeft }}" @endif>
-                        <span data-resend-label>@if($otpWaitLeft > 0)رمزٌ جديد بعد {{ $otpWaitLeft }} ث@else أرسل رمزاً جديداً @endif</span>
-                    </button>
-                </form>
-
-                {{-- رقمٌ أُدخل خطأً كان يحبس صاحبَه أمام «رمزٍ» لن يصل --}}
-                <form method="POST" action="{{ route('client.access.otp.reset') }}" style="margin-top:.4rem">
-                    @csrf
-                    <button class="p-hint" style="width:100%;background:none;border:0;cursor:pointer;text-align:center">
-                        تغيير الرقم
-                    </button>
-                </form>
-            @endif
-
-            <a href="{{ route('client.access', ['id' => 1]) }}" class="p-hint" style="display:block;text-align:center;margin-top:1.1rem">
-                الدخول برقم الهويّة بدلاً من ذلك
-            </a>
-        @elseif ($step === 1)
-            <h1 class="p-h1">{{ __('portal.login.welcome') }}</h1>
-            <p class="p-lede" style="margin-bottom:1.5rem">{{ $welcome ?? __('portal.login.intro') }}</p>
-
-            <form method="POST" action="{{ route('client.access.lookup') }}" data-portal-form novalidate>
+            <form method="POST" action="{{ route('client.access.otp') }}" data-portal-form novalidate>
                 @csrf
-                <label class="p-label" for="nid">{{ __('portal.login.national_id') }}</label>
-                <input id="nid" name="national_id" type="text" inputmode="numeric" autocomplete="off"
-                       class="p-field" required autofocus maxlength="40"
-                       value="{{ old('national_id') }}" dir="ltr" style="text-align:start">
-                <p class="p-hint">{{ __('portal.login.national_id_hint') }}</p>
+                <label class="p-label" for="otp-phone">رقم الهاتف</label>
+                <input id="otp-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
+                       class="p-field" required autofocus maxlength="20" dir="ltr" style="text-align:start"
+                       placeholder="9xxxxxxx">
+                <p class="p-hint">الرقم نفسُه المسجَّل في ملفّك لدى المكتب.</p>
 
                 <button class="p-btn" style="width:100%;margin-top:1.3rem" data-submit>
-                    <span data-label>{{ __('portal.login.continue') }}</span>
+                    <span data-label>أرسل الرمز</span>
                 </button>
             </form>
-
-            <a href="{{ route('client.access', ['otp' => 1]) }}" class="p-hint" style="display:block;text-align:center;margin-top:1.1rem">
-                الدخول برقم الهاتف — يصلك رمزٌ على واتساب
-            </a>
         @else
-            <h1 class="p-h1">{{ __('portal.login.verify_title') }}</h1>
-            <p class="p-lede">{{ __('portal.login.verify_intro') }}</p>
+            <p class="p-lede" style="margin-bottom:1rem">أدخل الرمزَ المكوَّن من ستّة أرقامٍ الذي وصلك على واتساب.</p>
 
-            @if (!empty($challenge['hint']))
-                <p class="p-hint" style="margin-top:.7rem">
-                    <span class="p-badge mute" dir="ltr"
-                          aria-label="{{ __(($challenge['count'] ?? 1) > 1 ? 'portal.login.verify_hint_many' : 'portal.login.verify_hint', ['digits' => $challenge['hint']]) }}">{{ $challenge['hint'] }}</span>
-                </p>
-            @endif
-
-            <form method="POST" action="{{ route('client.access.verify') }}" data-portal-form data-digits novalidate style="margin-top:1.5rem">
+            <form method="POST" action="{{ route('client.access.otp.verify') }}" data-portal-form novalidate>
                 @csrf
-                <label class="p-label" for="d1" style="text-align:center">{{ __('portal.login.digits_label') }}</label>
+                <label class="p-label" for="otp-code">رمز التحقّق</label>
+                <input id="otp-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+                       class="p-field" required autofocus maxlength="6" pattern="[0-9]{6}" dir="ltr"
+                       style="text-align:center;letter-spacing:.5em;font-size:1.3rem">
 
-                <div class="lg-digits">
-                    <input id="d1" class="lg-digit" type="text" inputmode="numeric" autocomplete="one-time-code"
-                           maxlength="1" pattern="[0-9]" aria-label="1" autofocus>
-                    <input id="d2" class="lg-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="2">
-                    <input id="d3" class="lg-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="3">
-                </div>
-
-                <input type="hidden" name="digits" data-digits-value>
-
-                <button class="p-btn" style="width:100%;margin-top:1.3rem" data-submit disabled>
-                    <span data-label>{{ __('portal.login.verify_action') }}</span>
+                <button class="p-btn" style="width:100%;margin-top:1.3rem" data-submit>
+                    <span data-label>دخول</span>
                 </button>
             </form>
 
-            <form method="POST" action="{{ route('client.access.logout') }}" style="margin-top:.7rem">
+            <form method="POST" action="{{ route('client.access.otp') }}" style="margin-top:.7rem">
                 @csrf
-                <button class="p-btn p-btn-ghost" style="width:100%">{{ __('portal.login.back') }}</button>
+                <input type="hidden" name="phone" value="{{ $otpPhone }}">
+                <button class="p-btn p-btn-ghost" style="width:100%" data-otp-resend
+                        @if($otpWaitLeft > 0) disabled data-wait="{{ $otpWaitLeft }}" @endif>
+                    <span data-resend-label>@if($otpWaitLeft > 0)رمزٌ جديد بعد {{ $otpWaitLeft }} ث@else أرسل رمزاً جديداً @endif</span>
+                </button>
+            </form>
+
+            {{-- رقمٌ أُدخل خطأً كان يحبس صاحبَه أمام «رمزٍ» لن يصل --}}
+            <form method="POST" action="{{ route('client.access.otp.reset') }}" style="margin-top:.4rem">
+                @csrf
+                <button class="p-hint" style="width:100%;background:none;border:0;cursor:pointer;text-align:center">
+                    تغيير الرقم
+                </button>
             </form>
         @endif
     </section>
@@ -255,61 +162,6 @@
             if (label) label.innerHTML = '<span class="lg-spin"></span>';
         });
     });
-
-    // ---- حقول الأرقام الثلاثة
-    var form = document.querySelector('[data-digits]');
-    if (!form) return;
-
-    var boxes = Array.prototype.slice.call(form.querySelectorAll('.lg-digit'));
-    var hidden = form.querySelector('[data-digits-value]');
-    var submit = form.querySelector('[data-submit]');
-
-    function value() { return boxes.map(function (b) { return b.value; }).join(''); }
-
-    function sync() {
-        var v = value();
-        hidden.value = v;
-        submit.disabled = v.length !== 3;
-    }
-
-    function fill(text) {
-        var digits = (text || '').replace(/\D/g, '').slice(0, 3).split('');
-        boxes.forEach(function (b, i) { b.value = digits[i] || ''; });
-        sync();
-        var next = boxes[Math.min(digits.length, 2)];
-        if (next) next.focus();
-    }
-
-    boxes.forEach(function (box, i) {
-        box.addEventListener('input', function () {
-            box.value = box.value.replace(/\D/g, '').slice(0, 1);
-            box.classList.remove('is-bad');
-            if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
-            sync();
-            // اكتمل الإدخال: نُرسل من غير ضغطة ثانية
-            if (value().length === 3) form.requestSubmit();
-        });
-
-        box.addEventListener('keydown', function (e) {
-            if (e.key === 'Backspace' && !box.value && i > 0) { boxes[i - 1].focus(); }
-            if (e.key === 'ArrowLeft' && i > 0) { boxes[i - 1].focus(); }
-            if (e.key === 'ArrowRight' && i < boxes.length - 1) { boxes[i + 1].focus(); }
-        });
-
-        box.addEventListener('paste', function (e) {
-            e.preventDefault();
-            fill((e.clipboardData || window.clipboardData).getData('text'));
-        });
-
-        box.addEventListener('focus', function () { box.select(); });
-    });
-
-    // بعد إخفاق التحقق تُمسح الخانات ويعود التركيز — لا يُعاد الإدخال يدوياً
-    @if (session('portal_error'))
-        boxes.forEach(function (b) { b.value = ''; b.classList.add('is-bad'); });
-        setTimeout(function () { boxes[0].focus(); }, 60);
-        sync();
-    @endif
 })();
 </script>
 @endpush

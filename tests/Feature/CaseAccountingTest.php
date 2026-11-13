@@ -45,9 +45,7 @@ class CaseAccountingTest extends TestCase
     private function signInAsClient(): void
     {
         Setting::set(ClientPortal::KEY_ENABLED, '1', 'client_portal');
-        $this->post(route('client.access.lookup'), ['national_id' => '3333333333']);
-        $this->post(route('client.access.verify'), ['digits' => '333']);
-        $this->assertSame($this->client->id, session('client_access_id'));
+        $this->portalLogin($this->client);
     }
 
     private function fee(array $attrs = []): FinanceFee

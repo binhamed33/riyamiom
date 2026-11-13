@@ -59,9 +59,7 @@ class ClientPortalIsolationTest extends TestCase
 
     private function signInAsMe(): void
     {
-        $this->post(route('client.access.lookup'), ['national_id' => '1111111111']);
-        $this->post(route('client.access.verify'), ['digits' => '111']);
-        $this->assertSame($this->me->id, session('client_access_id'));
+        $this->portalLogin($this->me);
     }
 
     public function test_a_client_only_sees_their_own_cases(): void

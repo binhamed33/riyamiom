@@ -55,8 +55,7 @@ class ClientPortalCspTest extends TestCase
         $client = Client::factory()->create(['national_id' => '5555555555', 'phone' => '+968 99887766']);
         LegalCase::factory()->create(['client_id' => $client->id]);
 
-        $this->post(route('client.access.lookup'), ['national_id' => '5555555555']);
-        $this->post(route('client.access.verify'), ['digits' => '766']);
+        $this->portalLogin($client);
 
         foreach ([
             route('client.portal.home'),
@@ -77,8 +76,7 @@ class ClientPortalCspTest extends TestCase
         $client = Client::factory()->create(['national_id' => '6666666666', 'phone' => '+968 91112233']);
         $case = LegalCase::factory()->create(['client_id' => $client->id]);
 
-        $this->post(route('client.access.lookup'), ['national_id' => '6666666666']);
-        $this->post(route('client.access.verify'), ['digits' => '233']);
+        $this->portalLogin($client);
 
         $html = $this->get(route('client.portal.case', $case->id))->assertOk()->getContent();
 

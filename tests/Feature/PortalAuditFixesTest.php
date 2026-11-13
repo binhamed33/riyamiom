@@ -57,9 +57,7 @@ class PortalAuditFixesTest extends TestCase
 
     private function signIn(): void
     {
-        $this->post(route('client.access.lookup'), ['national_id' => '4444444444']);
-        $this->post(route('client.access.verify'), ['digits' => '444']);
-        $this->assertSame($this->client->id, session('client_access_id'));
+        $this->portalLogin($this->client);
     }
 
     // ══════════ A8 ══════════

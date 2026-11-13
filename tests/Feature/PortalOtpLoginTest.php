@@ -230,36 +230,28 @@ class PortalOtpLoginTest extends TestCase
         $this->assertSame('open', WhatsAppSettings::evolutionState(), 'الذاكرةُ لم تُشفَ بجواب الجسر');
     }
 
-    /** والواجهةُ تعرض البابين. */
-    public function test_the_login_page_offers_both_doors(): void
+    /** والواجهةُ تعرض بابَ الرمز وحدَه — لا دخولَ برقم الهويّة. */
+    public function test_the_login_page_offers_only_the_whatsapp_door(): void
     {
         $html = $this->get(route('client.access'))->assertOk()->getContent();
-        $this->assertStringContainsString('الدخول برقم الهاتف', $html);
 
-        $otp = $this->get(route('client.access', ['otp' => 1]))->assertOk()->getContent();
-        $this->assertStringContainsString('أرسل الرمز', $otp);
-        $this->assertStringContainsString('الدخول برقم الهويّة', $otp);
+        // بابُ الرمز: حقلُ الهاتف وزرُّ الإرسال
+        $this->assertStringContainsString('أرسل الرمز', $html);
+        $this->assertStringContainsString('رقم الهاتف', $html);
+
+        // ولا أثرَ لبابِ الهويّة: لا حقلٌ ولا رابطٌ إليه
+        $this->assertStringNotContainsString('national_id', $html);
+        $this->assertStringNotContainsString('الدخول برقم الهويّة', $html);
     }
 
-    /**
-     * رابطُ الهويّة يفكّ أسرَ تبويب الرمز.
-     *
-     * الهاتفُ يبقى في الجلسة حتى ينجح التحقّق — فكان الرابطُ يعيد
-     * إلى تبويب الرمز نفسِه: محبوسٌ في طريقةٍ اختار غيرَها.
-     */
-    public function test_the_id_link_escapes_the_code_step(): void
+    /** وطلبُ الرمز يُبقي الجلسةَ على خطوة إدخاله. */
+    public function test_requesting_a_code_moves_to_the_code_step(): void
     {
         $this->fakeBridge();
         $this->post(route('client.access.otp'), ['phone' => '91234567']);
 
-        // بلا طلبٍ صريح: الجلسةُ تُبقي تبويبَ الرمز — وهذا صحيح
-        $trapped = $this->get(route('client.access'))->assertOk()->getContent();
-        $this->assertStringContainsString('رمز التحقّق', $trapped);
-
-        // ومع الطلب الصريح: الهويّةُ تظهر مهما قالت الجلسة
-        $html = $this->get(route('client.access', ['id' => 1]))->assertOk()->getContent();
-        $this->assertStringContainsString('national_id', $html);
-        $this->assertStringNotContainsString('رمز التحقّق', $html);
+        $html = $this->get(route('client.access'))->assertOk()->getContent();
+        $this->assertStringContainsString('رمز التحقّق', $html);
     }
 
     /** «تغيير الرقم» يعيد إلى حقل الهاتف — رقمٌ خاطئٌ لم يعد سجناً. */

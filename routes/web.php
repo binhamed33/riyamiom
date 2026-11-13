@@ -75,7 +75,8 @@ Route::get('/', fn () => redirect()->route('dashboard'));
 | بوابة العملاء
 |--------------------------------------------------------------------------
 | ‏/client-access يبقى مدخل البوابة كما كان — الروابط القديمة لا تُكسر.
-| الدخول بخطوتين: رقم الهوية، ثم آخر ٣ أرقام من الهاتف المسجَّل.
+| الدخولُ برمزٍ يصل على واتساب: يكتب الموكّل رقمَه فيصله رمزٌ يُدخله.
+| لا دخولَ برقم الهويّة: ليس سرّاً يُبنى عليه، وآخرُ أرقام الهاتف يُخمَّن.
 | كل صفحة داخل البوابة خلف حارس يتحقّق من الجلسة ومن تفعيل المكتب لها.
 */
 Route::get('/client-access', [App\Http\Controllers\ClientAccessController::class, 'showLogin'])->name('client.access');
@@ -88,10 +89,6 @@ Route::get('/client-access', [App\Http\Controllers\ClientAccessController::class
 | مهلتُه دقيقةٌ كان يحوّل «٢٠ محاولةً في عشر دقائق» إلى «٢٠ في
 | دقيقة» لبقيّة الأبواب. الوسيطُ الخامس هو البادئة.
 */
-Route::post('/client-access', [App\Http\Controllers\ClientAccessController::class, 'lookup'])
-    ->middleware('throttle:20,10,portal-lookup')->name('client.access.lookup');
-Route::post('/client-access/verify', [App\Http\Controllers\ClientAccessController::class, 'verify'])
-    ->middleware('throttle:20,10,portal-verify')->name('client.access.verify');
 
 // الدخول برمز واتساب: طلبُ الرمز محدودٌ بشدّة — الإرسالُ رسالةٌ حقيقية
 Route::post('/client-access/otp', [App\Http\Controllers\ClientAccessController::class, 'otpSend'])

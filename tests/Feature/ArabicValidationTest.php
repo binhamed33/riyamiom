@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Support\ClientPortal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
@@ -136,11 +135,11 @@ class ArabicValidationTest extends TestCase
     public function test_the_portal_login_error_is_arabic(): void
     {
         Setting::set(ClientPortal::KEY_ENABLED, '1', 'client_portal');
-        RateLimiter::clear('client-portal:lookup:127.0.0.1');
         // الزائرُ بلا حساب: لغتُه لغةُ المكتب (config/app.php ‏'ar')
         config(['app.locale' => 'ar']);
 
-        $this->from(route('client.access'))->post(route('client.access'), ['national_id' => ''])
-            ->assertSessionHasErrors(['national_id' => 'حقل رقم الهوية مطلوب.']);
+        // الدخولُ برمز واتساب: حقلُ الهاتف فارغٌ — الخطأُ بالعربيّة
+        $this->from(route('client.access'))->post(route('client.access.otp'), ['phone' => ''])
+            ->assertSessionHasErrors(['phone' => 'حقل رقم الهاتف مطلوب.']);
     }
 }

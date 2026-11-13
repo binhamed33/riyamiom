@@ -8,7 +8,6 @@ use App\Models\LegalCase;
 use App\Models\Setting;
 use App\Support\ClientPortal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 /**
@@ -21,12 +20,6 @@ use Tests\TestCase;
 class ClientPortalNewOfficeTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        RateLimiter::clear('client-portal:lookup:127.0.0.1');
-    }
 
     /** بلا أي صفّ إعدادات: البوابة تعمل، والمستندات مغلقة */
     public function test_a_brand_new_office_gets_a_working_portal_with_safe_defaults(): void
@@ -46,6 +39,7 @@ class ClientPortalNewOfficeTest extends TestCase
         $this->assertFalse(ClientPortal::showsDocuments(), 'المستندات يجب أن تبدأ مغلقة.');
         $this->assertFalse(ClientPortal::showsOpponent(), 'بيانات الخصم يجب أن تبدأ مغلقة.');
 
+        // صفحةُ الدخول (برمز واتساب) تعمل من اللحظة الأولى
         $this->get(route('client.access'))->assertOk();
     }
 
@@ -55,17 +49,16 @@ class ClientPortalNewOfficeTest extends TestCase
         $this->assertSame(0, LegalCase::count());
         $this->assertSame(0, Document::count());
 
-        // ولا يدخل أحد لأنه لا يوجد أحد. والخطوةُ الأولى لا تقول ذلك:
-        // ردُّها واحدٌ عرف المكتبُ الهويّةَ أم لم يعرفها — السقوطُ عند
-        // التحقّق (انظر ClientPortalAuthTest).
-        $this->post(route('client.access.lookup'), ['national_id' => '1234567890']);
-        $this->post(route('client.access.verify'), ['digits' => '123'])
-            ->assertSessionHas('portal_error', __('portal.login.failed'));
-
+        // ولا جلسةَ موكّلٍ مفتوحةً في مكتبٍ بلا موكّلين
         $this->assertNull(session('client_access_id'));
     }
 
-    /** أول عميل يسجّله المكتب يستطيع الدخول فوراً — البصمة تُحسب عند الحفظ */
+    /**
+     * أول عميل يسجّله المكتب يستطيع الدخول فوراً.
+     *
+     * الدخولُ برمز واتساب يصل على هاتفه؛ وهنا نفتح جلستَه مباشرةً
+     * (portalLogin) ونتأكّد أنّ بوابته تعمل من اللحظة الأولى.
+     */
     public function test_the_first_client_the_office_creates_can_sign_in_at_once(): void
     {
         $client = Client::create([
@@ -75,17 +68,15 @@ class ClientPortalNewOfficeTest extends TestCase
             'phone' => '+968 95556677',
         ]);
 
+        // البصمةُ تُحسب لحظة الحفظ — يستعملها زرعُ المكتب التجريبي والردم
         $this->assertNotNull($client->fresh()->national_id_hash, 'البصمة تُحسب لحظة الحفظ.');
 
-        $this->post(route('client.access.lookup'), ['national_id' => '7788990011']);
-        $this->post(route('client.access.verify'), ['digits' => '677'])
-            ->assertRedirect(route('client.portal.home'));
-
+        $this->portalLogin($client);
         $this->get(route('client.portal.home'))->assertOk()->assertSee('أول عميل');
     }
 
-    /** تعديل رقم الهوية يُحدّث البصمة فلا يبقى الدخول على الرقم القديم */
-    public function test_changing_a_national_id_moves_the_login_with_it(): void
+    /** تعديل رقم الهوية يُحدّث البصمة التي يعتمدها زرعُ المكتب التجريبي والردم */
+    public function test_changing_a_national_id_recomputes_its_hash(): void
     {
         $client = Client::create([
             'name' => 'عميل',
@@ -100,13 +91,6 @@ class ClientPortalNewOfficeTest extends TestCase
 
         $this->assertNotSame($oldHash, $newHash);
         $this->assertSame(Client::hashNationalId('2222000022'), $newHash);
-
-        // الرقم القديم لم يعد يفتح شيئاً — يمضي كأيّ مجهولٍ ويسقط
-        $this->post(route('client.access.lookup'), ['national_id' => '1111000011']);
-        $this->post(route('client.access.verify'), ['digits' => '567'])
-            ->assertSessionHas('portal_error', __('portal.login.failed'));
-
-        $this->assertNull(session('client_access_id'));
     }
 
     /** حفظ العميل مراراً لا يُفسد البصمة رغم إعادة التشفير في كل حفظ */
@@ -125,9 +109,5 @@ class ClientPortalNewOfficeTest extends TestCase
         }
 
         $this->assertSame($expected, $client->fresh()->national_id_hash);
-
-        $this->post(route('client.access.lookup'), ['national_id' => '3333000033']);
-        $this->post(route('client.access.verify'), ['digits' => '000'])
-            ->assertRedirect(route('client.portal.home'));
     }
 }

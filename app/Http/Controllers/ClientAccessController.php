@@ -36,58 +36,7 @@ class ClientAccessController extends Controller
             return redirect()->route('client.portal.home');
         }
 
-        return view('client-portal.login', [
-            'challenge' => $this->auth->pendingChallenge($request),
-        ]);
-    }
-
-    /** الخطوة الأولى: رقم الهوية */
-    public function lookup(Request $request): RedirectResponse
-    {
-        abort_unless(ClientPortal::enabled(), 404);
-
-        $request->validate(['national_id' => 'required|string|max:40']);
-
-        $result = $this->auth->beginLookup($request, $request->input('national_id'));
-
-        if ($result['locked']) {
-            return back()->with('portal_error', __('portal.login.locked', [
-                'minutes' => max(1, (int) ceil(($result['retry_after'] ?? 60) / 60)),
-            ]));
-        }
-
-        if (!$result['ok']) {
-            // رسالة واحدة: لا يُعرف من الرد أوُجد رقم الهوية أم لا
-            return back()->with('portal_error', __('portal.login.failed'));
-        }
-
-        return redirect()->route('client.access')->with('portal_step', 2);
-    }
-
-    /** الخطوة الثانية: آخر ٣ أرقام من الهاتف */
-    public function verify(Request $request): RedirectResponse
-    {
-        abort_unless(ClientPortal::enabled(), 404);
-
-        $request->validate(['digits' => 'required|string|max:10']);
-
-        $result = $this->auth->verify($request, $request->input('digits'));
-
-        if ($result['ok']) {
-            return redirect()->route('client.portal.home')->with('portal_welcome', true);
-        }
-
-        if ($result['locked']) {
-            return redirect()->route('client.access')->with('portal_error', __('portal.login.locked', [
-                'minutes' => max(1, (int) ceil(($result['retry_after'] ?? 60) / 60)),
-            ]));
-        }
-
-        if ($result['expired']) {
-            return redirect()->route('client.access')->with('portal_error', __('portal.login.expired'));
-        }
-
-        return back()->with('portal_error', __('portal.login.failed'));
+        return view('client-portal.login');
     }
 
     /**
