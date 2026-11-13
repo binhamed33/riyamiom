@@ -1569,7 +1569,25 @@ class EvolutionProvider implements WhatsAppProviderInterface
             ?? '';
 
         if (is_array($message)) {
-            $message = implode(' — ', array_map(static fn ($m): string => (string) $m, $message));
+            // ═══ «الرقم ليس على واتساب» يأتي كائناً لا نصّاً ═══
+            //
+            //   {"status":400,"response":{"message":[{"exists":false,"jid":"…","number":"…"}]}}
+            //
+            // وتحويلُ الكائن إلى نصٍّ كان يرمي «Array to string conversion» من داخل
+            // قارئ الخطأ نفسِه: فلا يُكتب سببٌ، وتبقى الرسالةُ «في الطابور» أبداً —
+            // رمزُ دخول الموكّل لا يصل والمكتبُ لا يعرف أنّ الرقمَ ليس على واتساب.
+            $notOnWhatsApp = false;
+
+            foreach ($message as $part) {
+                $notOnWhatsApp = $notOnWhatsApp || (is_array($part) && ($part['exists'] ?? null) === false);
+            }
+
+            $message = $notOnWhatsApp
+                ? 'هذا الرقمُ ليس على واتساب — راجع رقمَ الموكّل في ملفّه.'
+                : implode(' — ', array_map(
+                    static fn ($m): string => is_scalar($m) ? (string) $m : (string) json_encode($m, JSON_UNESCAPED_UNICODE),
+                    $message,
+                ));
         }
 
         $message = trim((string) $message);

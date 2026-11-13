@@ -78,7 +78,7 @@ class PortalOtp
         if (!self::connectedNow()) {
             return [
                 'ok' => false,
-                'message' => 'الدخول برقم الهاتف غير متاحٍ حالياً — استخدم رقم الهويّة.',
+                'message' => 'الدخولُ غير متاحٍ الآن — واتساب المكتب غيرُ موصول. حاول بعد قليل أو راجع المكتب.',
             ];
         }
 
@@ -115,7 +115,7 @@ class PortalOtp
         if ($today >= self::DAILY_LIMIT) {
             return [
                 'ok' => false,
-                'message' => 'طُلب هذا الرقمُ مرّاتٍ كثيرةً اليوم — جرّب غداً أو ادخل برقم الهويّة.',
+                'message' => 'طُلب هذا الرقمُ مرّاتٍ كثيرةً اليوم — جرّب غداً أو راجع المكتب.',
             ];
         }
 
@@ -148,7 +148,16 @@ class PortalOtp
             //
             // فبقي هنا، والسقفُ اليوميُّ أعلاه يحدّ الاستقصاء بخمس
             // محاولاتٍ للرقم الواحد في اليوم.
-            self::deliver($client, $code);
+            self::deliver($client, $code, $rawPhone);
+        } else {
+            // ═══ الزائرُ لا يُقال له، والمكتبُ يجب أن يعرف ═══
+            //
+            // الردُّ المحايد يُخفي عن الزائر أهو موكّلٌ أم لا — لكنّه كان يُخفيه عن
+            // المكتب أيضاً: «شبكنا واتساب والرمزُ لا يصل» والسببُ رقمٌ غيرُ مسجَّلٍ
+            // في ملفّ الموكّل أو مسجَّلٌ لموكّلَين. فيُكتب في سجلّ المكتب عددُ
+            // المطابقين وحدَه — بلا رقمٍ ولا اسم.
+            Log::info('Portal OTP: no code sent — the requested number matches '
+                . Client::countByPhone($rawPhone) . ' client record(s); exactly 1 is required');
         }
 
         return [
@@ -200,10 +209,12 @@ class PortalOtp
      * مطلوبٌ من صاحبه الآن). والصفُّ يُكتب ليُحسب في أعداد اليوم
      * وليبقى أثرُ الإرسال في دفتر المكتب.
      */
-    private static function deliver(Client $client, string $code): void
+    private static function deliver(Client $client, string $code, string $rawPhone = ''): void
     {
+        $message = null;
+
         try {
-            $waId = WhatsAppContact::normalizeWaId((string) $client->phone);
+            $waId = self::destination($client, $rawPhone);
 
             $contact = WhatsAppContact::firstOrCreate(['wa_id' => $waId], ['client_id' => $client->id]);
             $conversation = WhatsAppConversation::firstOrCreate(
@@ -232,7 +243,7 @@ class PortalOtp
                 'conversation_id' => $conversation->id,
                 'direction' => WhatsAppMessage::OUT,
                 'type' => 'text',
-                'body' => 'رمزُ دخولٍ إلى بوابة الموكّلين — لا يُعرض هنا.',
+                'body' => self::LEDGER_BODY,
                 'status' => WhatsAppMessage::STATUS_QUEUED,
             ]);
 
@@ -244,18 +255,60 @@ class PortalOtp
                     'status' => WhatsAppMessage::STATUS_SENT,
                     'sent_at' => now(),
                 ])->save();
+
+                Log::info('Portal OTP: code handed to WhatsApp for client #' . $client->id);
             } else {
                 $message->forceFill([
                     'status' => WhatsAppMessage::STATUS_FAILED,
                     'error_title' => mb_substr((string) ($result->errorTitle ?? 'تعذّر الإرسال'), 0, 190),
                 ])->save();
+
+                // إخفاقُ الإرسال كان يُكتب في صفّ الرسالة وحدَه — وصندوقُ الوارد مخفيٌّ
+                // افتراضاً، فلا يراه أحد. يُكتب سببُه في السجلّ لمن يشخّص
+                Log::warning('Portal OTP: WhatsApp refused the code for client #' . $client->id
+                    . ' — ' . (string) ($result->errorTitle ?? 'no provider'));
             }
         } catch (\Throwable $e) {
             // فشلُ التسليم لا يكشف شيئاً للزائر — الردُّ المحايد نفسُه،
             // والأثرُ في السجلّ لمن يشخّص
             Log::warning('Portal OTP delivery failed: ' . $e->getMessage());
+
+            // وصفُّ الرسالة لا يُترك «في الطابور»: لا طابورَ سيرسله، ومن يشخّص
+            // يقرأ «ينتظر» فيظنّ أنّه في الطريق
+            try {
+                $message?->forceFill([
+                    'status' => WhatsAppMessage::STATUS_FAILED,
+                    'error_title' => 'عطلٌ أثناء الإرسال — راجع سجلَّ المكتب.',
+                ])->save();
+            } catch (\Throwable) {
+                // القاعدةُ نفسُها عليلة: السجلُّ أعلاه يكفي
+            }
         }
     }
+
+    /**
+     * إلى أيّ رقمٍ يُرسَل الرمز: الرقمُ الذي طلبه الموكّل من أرقام ملفّه.
+     *
+     * حقلُ الهاتف قد يحمل أكثرَ من رقمٍ بفاصلة. وكان يُحوَّل كلُّه إلى معرّف
+     * واتساب واحد — أرقامُ الرقمين ملتصقةً — فيُرسَل الرمزُ إلى رقمٍ لا وجودَ
+     * له ويُكتب «أخفق» بلا أن يعرف أحدٌ لماذا.
+     */
+    public static function destination(Client $client, string $rawPhone): string
+    {
+        $typed = Client::normalizePhone($rawPhone);
+        $numbers = array_values(array_filter(array_map('trim', preg_split('/[,،;\/|]+/u', (string) $client->phone) ?: [])));
+
+        foreach ($numbers as $candidate) {
+            if ($typed !== '' && Client::normalizePhone($candidate) === $typed) {
+                return WhatsAppContact::normalizeWaId($candidate);
+            }
+        }
+
+        return WhatsAppContact::normalizeWaId($numbers !== [] ? end($numbers) : (string) $client->phone);
+    }
+
+    /** نصُّ بديل الرمز في دفتر الرسائل — يُعرف به صفُّ الرمز عند التشخيص. */
+    public const LEDGER_BODY = 'رمزُ دخولٍ إلى بوابة الموكّلين — لا يُعرض هنا.';
 
     private static function stateKey(string $normalized): string
     {

@@ -140,6 +140,19 @@ class Client extends Model
         return $matches->count() === 1 ? $matches->first() : null;
     }
 
+    /**
+     * كم موكّلاً يحمل هذا الرقم.
+     *
+     * للتشخيص: findByPhone تردّ «لا أحد» للغائب وللمشترك سواءً — والمكتبُ
+     * يحتاج أن يعرف أيَّهما ليصلح ملفَّ الموكّل.
+     */
+    public static function countByPhone(?string $raw): int
+    {
+        $hash = self::hashPhone($raw);
+
+        return $hash === null ? 0 : static::where('phone_hash', $hash)->count();
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

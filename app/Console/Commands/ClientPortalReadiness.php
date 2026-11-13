@@ -42,24 +42,30 @@ class ClientPortalReadiness extends Command
      */
     private function gather(): array
     {
-        $noId = 0;
+        // ═══ الدخولُ برمز واتساب: الجاهزُ من له رقمٌ لا يشاركه فيه موكّلٌ آخر ═══
+        //
+        // كان الفحصُ يسأل عن رقم الهويّة — بابٍ أُلغي. والرمزُ يُرسَل لمن يطابق
+        // رقمُه موكّلاً واحداً بالضبط (PortalOtp): بلا هاتفٍ لا رمز، ورقمٌ مشتركٌ
+        // بين موكّلَين لا يُراسَل (قد يدخل أحدُهما ملفَّ الآخر).
         $noPhone = 0;
+        $shared = 0;
         $blocked = [];
 
-        Client::chunkById(200, function ($clients) use (&$noId, &$noPhone, &$blocked) {
-            foreach ($clients as $client) {
-                $hasId = Client::hashNationalId($client->national_id) !== null;
-                $digits = preg_replace('/\D+/', '', (string) $client->phone) ?? '';
-                $hasPhone = strlen($digits) >= 3;
+        $sharedHashes = Client::query()->whereNotNull('phone_hash')
+            ->select('phone_hash')->groupBy('phone_hash')->havingRaw('COUNT(*) > 1')
+            ->pluck('phone_hash')->flip();
 
-                if (!$hasId) {
-                    $noId++;
-                }
+        Client::chunkById(200, function ($clients) use (&$noPhone, &$shared, &$blocked, $sharedHashes) {
+            foreach ($clients as $client) {
+                $hasPhone = $client->phone_hash !== null && mb_strlen(Client::normalizePhone($client->phone)) >= 8;
+                $isShared = $hasPhone && $sharedHashes->has($client->phone_hash);
+
                 if (!$hasPhone) {
                     $noPhone++;
-                }
-                if (!$hasId || !$hasPhone) {
-                    $blocked[] = [$client->name, $hasId ? '✓' : '—', $hasPhone ? '✓' : '—'];
+                    $blocked[] = [$client->name, 'بلا رقم هاتفٍ صالح'];
+                } elseif ($isShared) {
+                    $shared++;
+                    $blocked[] = [$client->name, 'رقمُه مسجَّلٌ لموكّلٍ آخر أيضاً'];
                 }
             }
         });
@@ -76,8 +82,10 @@ class ClientPortalReadiness extends Command
                 'clients_total' => $total,
                 'clients_ready' => $total - count($blocked),
                 'clients_blocked' => count($blocked),
-                'missing_national_id' => $noId,
+                // المفتاحُ باقٍ للوحةٍ تقرؤه — والهويّةُ لم تعد شرطَ دخول
+                'missing_national_id' => 0,
                 'missing_phone' => $noPhone,
+                'shared_phone' => $shared,
                 'documents_shared' => ClientPortal::showsDocuments()
                     ? Document::where('client_visible', true)->count()
                     : 0,
@@ -112,14 +120,14 @@ class ClientPortalReadiness extends Command
 
         if ($blocked) {
             $this->line('  لا يستطيعون: <fg=yellow>' . $s['clients_blocked'] . '</>');
-            $this->line("    بلا رقم هوية: {$s['missing_national_id']}");
             $this->line("    بلا رقم هاتف: {$s['missing_phone']}");
+            $this->line("    رقمٌ مشترك بين موكّلَين: {$s['shared_phone']}");
             $this->newLine();
-            $this->warn('هؤلاء لن يدخلوا حتى يُستكمل لهم رقم الهوية والهاتف من صفحة العملاء.');
+            $this->warn('هؤلاء لا يصلهم رمزُ الدخول على واتساب حتى يكون لكلٍّ منهم رقمُ هاتفٍ يخصّه في صفحة العملاء.');
 
             if ($this->option('list')) {
                 $this->newLine();
-                $this->table(['العميل', 'هوية', 'هاتف'], $blocked);
+                $this->table(['العميل', 'السبب'], $blocked);
             } else {
                 $this->line('  (‏--list لعرض أسمائهم)');
             }
