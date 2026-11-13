@@ -64,6 +64,8 @@ class ClientLinkController extends Controller
             'used_ip' => $request->ip(),
         ])->save();
 
+        // رابطٌ لملفٍّ بعينه: اختياراتُ رقمٍ تحقّق سابقاً في الجلسة نفسِها لا تبقى معه
+        $request->session()->forget(\App\Http\Controllers\ClientAccessController::CHOICES);
         $this->auth->establish($request, $client);
         $this->audit($client, $link->target);
 

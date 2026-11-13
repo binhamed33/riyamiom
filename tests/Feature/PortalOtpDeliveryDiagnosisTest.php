@@ -82,6 +82,26 @@ class PortalOtpDeliveryDiagnosisTest extends TestCase
         $this->assertSame(['971506233112'], $this->destinations());
     }
 
+    /**
+     * رقمان لشخصين يشتركان في آخر ثمانية أرقام (عُمانيّ وسعوديّ): كلٌّ يصله رمزُه
+     * على هاتفه هو، ولا يرى ملفَّ الآخر. البصمةُ آخرُ ثمانية — والمطابقةُ بالرقم كاملاً.
+     */
+    public function test_two_phones_sharing_the_last_eight_digits_stay_apart(): void
+    {
+        $saudi = $this->client('موكّلٌ سعوديّ', '+966 591234567');
+        $omani = $this->client('موكّلٌ عُمانيّ', '91234567');
+
+        $this->assertSame([$omani->id], PortalOtp::resolve('91234567')['clients']->pluck('id')->all());
+        $this->assertSame([$saudi->id], PortalOtp::resolve('+966591234567')['clients']->pluck('id')->all());
+        $this->assertSame([$saudi->id], PortalOtp::resolve('0591234567')['clients']->pluck('id')->all(), 'الصيغةُ المحلّيّة السعوديّة');
+
+        PortalOtp::request('91234567');
+        $this->travel(3)->minutes();
+        PortalOtp::request('+966591234567');
+
+        $this->assertSame(['96891234567', '966591234567'], $this->destinations());
+    }
+
     /** رقمٌ لا يطابق أحداً: لا رمز — ويُكتب السببُ للمكتب بلا رقمٍ ولا اسم. */
     public function test_an_unregistered_number_leaves_a_reason_in_the_office_log(): void
     {
@@ -93,21 +113,62 @@ class PortalOtpDeliveryDiagnosisTest extends TestCase
         $this->assertSame('unregistered', $result['reason']);
         $this->assertSame([], $this->destinations());
         Log::shouldHaveReceived('info')->once()->withArgs(
-            fn ($m) => str_contains($m, 'matches 0 client record(s)') && !str_contains($m, '95550000')
+            fn ($m) => str_contains($m, 'matches no client record') && !str_contains($m, '95550000')
         );
     }
 
-    /** ورقمٌ مسجَّلٌ لموكّلَين: لا رمز — والسجلُّ يقول إنّهما اثنان. */
-    public function test_a_shared_number_is_named_as_shared(): void
+    /**
+     * رقمٌ على ملفَّين (أبٌ وشركتُه): يصله الرمزُ مرّةً واحدة، والتحقّقُ يُعيد الملفَّين
+     * ليختار — بقرار المكتب. كان يُردّ فيقف خارجَ البوابة كلُّ من سُجّل على ملفَّين.
+     */
+    public function test_a_shared_number_gets_one_code_that_opens_both_files(): void
     {
-        $this->client('الأب', '91234567');
-        $this->client('شركةُ الأب', '+968 9123 4567');
-        Log::spy();
+        $father = $this->client('الأب', '91234567');
+        $company = $this->client('شركةُ الأب', '+968 9123 4567');
+        $code = null;
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::fake(function ($request) use (&$code) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'open']], 200);
+            }
+
+            preg_match('/(\d{6})/', (string) $request['text'], $m);
+            $code = $m[1] ?? null;
+
+            return Http::response(['key' => ['id' => 'OTP-' . uniqid()]], 201);
+        });
+
+        $this->assertTrue(PortalOtp::request('91234567')['ok']);
+        $this->assertSame(['96891234567'], $this->destinations());
+
+        $verified = PortalOtp::verify('91234567', (string) $code);
+
+        $this->assertTrue($verified['ok']);
+        $this->assertSame([$father->id, $company->id], $verified['clients']->pluck('id')->all());
+    }
+
+    /** وملفٌّ نُقل عنه الرقمُ بين الإرسال والتحقّق لا يُفتح بذلك الرمز. */
+    public function test_a_file_whose_number_changed_meanwhile_is_not_offered(): void
+    {
+        $father = $this->client('الأب', '91234567');
+        $company = $this->client('شركةُ الأب', '91234567');
+        $code = null;
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::fake(function ($request) use (&$code) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'open']], 200);
+            }
+
+            preg_match('/(\d{6})/', (string) $request['text'], $m);
+            $code = $m[1] ?? null;
+
+            return Http::response(['key' => ['id' => 'OTP-' . uniqid()]], 201);
+        });
 
         PortalOtp::request('91234567');
+        $company->update(['phone' => '95550000']);
 
-        $this->assertSame([], $this->destinations());
-        Log::shouldHaveReceived('info')->once()->withArgs(fn ($m) => str_contains($m, 'matches 2 client record(s)'));
+        $this->assertSame([$father->id], PortalOtp::verify('91234567', (string) $code)['clients']->pluck('id')->all());
     }
 
     /** وإخفاقُ واتساب يُكتب بسببه — صفُّ الرسالة وحده لا يراه أحد (الواردُ مخفيٌّ افتراضاً). */
@@ -311,8 +372,8 @@ class PortalOtpDeliveryDiagnosisTest extends TestCase
             ->assertExitCode(1);
 
         $this->artisan('portal:otp-check', ['phone' => '92223333'])
-            ->expectsOutputToContain('مسجَّلٌ لـ2 موكّلين')
-            ->assertExitCode(1);
+            ->expectsOutputToContain('مسجَّلٌ على 2 ملفّات')
+            ->assertExitCode(0);
 
         $this->assertSame([], $this->destinations());
         $this->assertSame(0, WhatsAppMessage::count());
@@ -343,7 +404,7 @@ class PortalOtpDeliveryDiagnosisTest extends TestCase
 
     // ───────────────────────── portal:readiness
 
-    /** الجاهزيّةُ تُحسب بالهاتف لا بالهويّة: بلا هاتفٍ أو برقمٍ مشترك = لا يصله رمز. */
+    /** الجاهزيّةُ تُحسب بالهاتف لا بالهويّة: بلا هاتفٍ = لا يصله رمز. */
     public function test_readiness_counts_who_can_actually_receive_a_code(): void
     {
         $this->client('جاهز', '91234567');
@@ -354,9 +415,10 @@ class PortalOtpDeliveryDiagnosisTest extends TestCase
         \Illuminate\Support\Facades\Artisan::call('portal:readiness', ['--json' => true]);
         $summary = json_decode(trim(\Illuminate\Support\Facades\Artisan::output()), true);
 
+        // الرقمُ المشترك لا يمنع الدخول (يختار صاحبُه ملفَّه) — يُعدّ للمكتب وحسب
         $this->assertSame(4, $summary['clients_total']);
-        $this->assertSame(1, $summary['clients_ready']);
-        $this->assertSame(3, $summary['clients_blocked']);
+        $this->assertSame(3, $summary['clients_ready']);
+        $this->assertSame(1, $summary['clients_blocked']);
         $this->assertSame(1, $summary['missing_phone']);
         $this->assertSame(2, $summary['shared_phone']);
         $this->assertSame(0, $summary['missing_national_id']);

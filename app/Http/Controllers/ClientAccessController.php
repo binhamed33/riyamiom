@@ -126,9 +126,106 @@ class ClientAccessController extends Controller
         }
 
         $request->session()->forget(['portal_otp_phone', 'portal_otp_at']);
-        $this->auth->establish($request, $result['client']);
+
+        // ملفٌّ واحد على الرقم: يُفتح مباشرةً. وأكثر: يختار صاحبُ الهاتف أيَّها.
+        // واختياراتُ تحقّقٍ سابقٍ في الجلسة نفسِها تُمحى: هذا دخولٌ آخر برقمٍ آخر
+        $request->session()->forget(self::CHOICES);
+
+        if ($result['clients']->count() === 1) {
+            $this->auth->establish($request, $result['client']);
+
+            return redirect()->route('client.portal.home')->with('portal_welcome', true);
+        }
+
+        // الاختياراتُ في الجلسة لا في الرابط: لا يُفتح ملفٌّ لم يثبت الرمزُ أنّه على
+        // رقم صاحبه. وتُبدَّل الجلسةُ هنا كما عند الدخول (Session Fixation)
+        $request->session()->regenerate();
+        $request->session()->put(self::CHOICES, [
+            'wa_id' => $result['wa_id'],
+            'ids' => $result['clients']->pluck('id')->all(),
+        ]);
+
+        return redirect()->route('client.access.choose');
+    }
+
+    /** مفتاحُ ملفّات الرقم الذي ثبت بالرمز — ليختار صاحبُه بينها ويبدّل لاحقاً. */
+    public const CHOICES = 'portal_choices';
+
+    /** ملفّاتُ رقمٍ ثبت بالرمز: يختار صاحبُه أيَّها يفتح. */
+    public function chooseFile(Request $request): View|RedirectResponse
+    {
+        abort_unless(ClientPortal::enabled(), 404);
+
+        $clients = $this->choices($request);
+        $current = $this->auth->current($request);
+
+        if ($clients->isEmpty()) {
+            return redirect()->route('client.access')->with('portal_error', 'انتهت الجلسة — اطلب رمزاً جديداً.');
+        }
+
+        // لم يبقَ على الرقم إلا ملفٌّ واحد (نقل المكتبُ رقمَ الآخر): يُفتح — صاحبُ
+        // الهاتف أثبت ملكيّتَه، ولا يُطلب منه رمزٌ جديدٌ قد تحجزه الدقيقتان
+        if ($clients->count() === 1) {
+            if (!$current || $current->id !== $clients->first()->id) {
+                $choices = $request->session()->get(self::CHOICES);
+                $this->auth->establish($request, $clients->first());
+                $request->session()->put(self::CHOICES, $choices);
+            }
+
+            return redirect()->route('client.portal.home');
+        }
+
+        // ‏client للتخطيط: من دخل ثمّ فتح «تبديل الملفّ» يرى رأسَ البوابة وزرَّ الخروج
+        return view('client-portal.choose', [
+            'clients' => $clients,
+            'current' => $current,
+            'client' => $current,
+        ]);
+    }
+
+    public function choose(Request $request): RedirectResponse
+    {
+        abort_unless(ClientPortal::enabled(), 404);
+
+        $request->validate(['client_id' => 'required|integer']);
+
+        $client = $this->choices($request)->firstWhere('id', (int) $request->input('client_id'));
+
+        // ملفٌّ ليس بين ملفّات الرقم الذي ثبت: لا يُفتح ولو عُرف رقمُه
+        if (!$client) {
+            return redirect()->route('client.access')->with('portal_error', 'انتهت الجلسة — اطلب رمزاً جديداً.');
+        }
+
+        $choices = $request->session()->get(self::CHOICES);
+        $this->auth->establish($request, $client);
+        // تبقى الاختياراتُ في الجلسة ليبدّل صاحبُها بين ملفّاته دون رمزٍ جديد
+        $request->session()->put(self::CHOICES, $choices);
 
         return redirect()->route('client.portal.home')->with('portal_welcome', true);
+    }
+
+    /**
+     * ملفّاتُ الرقم الذي ثبت — وما زالت عليه الآن.
+     *
+     * ملفٌّ نقل المكتبُ عنه الرقمَ أو حذفه بعد التحقّق لا يُعرض ولا يُفتح ولو بقي
+     * معرّفُه في الجلسة: الصلاحيةُ ملكيّةُ الهاتف، والهاتفُ لم يعد عليه.
+     *
+     * @return \Illuminate\Support\Collection<int, Client>
+     */
+    private function choices(Request $request): \Illuminate\Support\Collection
+    {
+        $choices = $request->session()->get(self::CHOICES);
+
+        return \App\Services\ClientPortal\PortalOtp::filesOn(
+            array_map('intval', (array) ($choices['ids'] ?? [])),
+            (string) ($choices['wa_id'] ?? ''),
+        );
+    }
+
+    /** أيُبدَّل الملفّ؟ — رقمٌ ثبت وعليه الآن أكثرُ من ملفّ. */
+    public function canSwitch(Request $request): bool
+    {
+        return $this->choices($request)->count() > 1;
     }
 
     public function logout(Request $request): RedirectResponse

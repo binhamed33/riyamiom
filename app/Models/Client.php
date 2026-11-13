@@ -141,6 +141,24 @@ class Client extends Model
     }
 
     /**
+     * كلُّ ملفّات الموكّلين المسجَّل عليها هذا الرقم — لدخول البوابة.
+     *
+     * رقمٌ واحدٌ لأكثر من ملفّ شائع: أبٌ وشركتُه، أفرادُ أسرةٍ بهاتفٍ واحد، أو
+     * ملفٌّ مكرَّر. وصاحبُ الهاتف — بعد أن يثبت ملكيّتَه برمزٍ وصل إليه — يختار
+     * أيَّها يفتح: سجّلها المكتبُ كلَّها على رقمه.
+     *
+     * @return \Illuminate\Support\Collection<int, self>
+     */
+    public static function allByPhone(?string $raw, int $limit = 20): \Illuminate\Support\Collection
+    {
+        $hash = self::hashPhone($raw);
+
+        return $hash === null
+            ? collect()
+            : static::where('phone_hash', $hash)->orderBy('id')->limit($limit)->get();
+    }
+
+    /**
      * كم موكّلاً يحمل هذا الرقم.
      *
      * للتشخيص: findByPhone تردّ «لا أحد» للغائب وللمشترك سواءً — والمكتبُ

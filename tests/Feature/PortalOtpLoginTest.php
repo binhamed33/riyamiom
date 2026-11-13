@@ -238,23 +238,151 @@ class PortalOtpLoginTest extends TestCase
             ->assertSessionHas('portal_error');
     }
 
-    /** رقمٌ يتشاركه موكّلان لا يُراسَل — ويُقال لهما أن يراجعا المكتب. */
-    public function test_a_shared_phone_gets_no_code(): void
+    /**
+     * رقمٌ يتشاركه ملفّان: يصله الرمز، ثمّ يختار ملفَّه — ويبدّل بينهما لاحقاً.
+     * ولا يُفتح بالاختيار ملفٌّ ليس على رقمه ولو عُرف معرّفُه.
+     */
+    public function test_a_shared_phone_chooses_its_file_after_the_code(): void
     {
-        Client::create([
-            'name' => 'موكّل ثانٍ بنفس الرقم',
+        $second = Client::create([
+            'name' => 'شركةُ سالم الريامي',
             'phone' => '91234567',
-            'national_id' => '86427531',
-            'type' => 'individual',
+            'type' => 'company',
         ]);
+        $stranger = Client::create(['name' => 'موكّلٌ آخر', 'phone' => '95550000', 'type' => 'individual']);
 
         $this->fakeBridge();
 
         $this->post(route('client.access.otp'), ['phone' => '91234567'])
-            ->assertSessionHas('portal_error', fn ($m) => str_contains($m, 'مسجَّلٌ لأكثر من ملفٍّ'))
-            ->assertSessionMissing('portal_otp_phone');
+            ->assertSessionHas('portal_otp_phone', '91234567');
 
-        $this->assertSame(0, WhatsAppMessage::count(), 'رقمٌ ملتبسٌ رُوسل');
+        $this->post(route('client.access.otp.verify'), ['code' => $this->code()])
+            ->assertRedirect(route('client.access.choose'));
+
+        $this->assertNull(session('client_access_id'), 'فُتح ملفٌّ قبل أن يختار');
+
+        $page = $this->get(route('client.access.choose'))->assertOk()->getContent();
+        $this->assertStringContainsString('سالم بن علي الريامي', $page);
+        $this->assertStringContainsString('شركةُ سالم الريامي', $page);
+        $this->assertStringNotContainsString('موكّلٌ آخر', $page);
+
+        // ملفٌّ ليس على الرقم: لا يُفتح
+        $this->post(route('client.access.choose.store'), ['client_id' => $stranger->id])
+            ->assertRedirect(route('client.access'));
+        $this->assertNull(session('client_access_id'));
+
+        $this->post(route('client.access.choose.store'), ['client_id' => $second->id])
+            ->assertRedirect(route('client.portal.home'));
+        $this->assertSame($second->id, session('client_access_id'));
+
+        // ويبدّل إلى ملفّه الآخر دون رمزٍ جديد
+        $this->assertStringContainsString('تبديل الملفّ', $this->get(route('client.portal.home'))->getContent());
+
+        $this->post(route('client.access.choose.store'), ['client_id' => $this->client->id])
+            ->assertRedirect(route('client.portal.home'));
+        $this->assertSame($this->client->id, session('client_access_id'));
+    }
+
+    /**
+     * ملفٌّ نقل المكتبُ عنه الرقمَ بعد التحقّق: يختفي من الاختيار ولا يُفتح —
+     * الصلاحيةُ ملكيّةُ الهاتف، والهاتفُ لم يعد عليه.
+     */
+    public function test_a_file_moved_off_the_number_after_verification_cannot_be_chosen(): void
+    {
+        $second = Client::create(['name' => 'شركةُ سالم الريامي', 'phone' => '91234567', 'type' => 'company']);
+        $third = Client::create(['name' => 'ابنُ سالم', 'phone' => '91234567', 'type' => 'individual']);
+
+        $this->fakeBridge();
+        $this->post(route('client.access.otp'), ['phone' => '91234567']);
+        $this->post(route('client.access.otp.verify'), ['code' => $this->code()])
+            ->assertRedirect(route('client.access.choose'));
+
+        $third->update(['phone' => '95550000']);
+
+        $this->assertStringNotContainsString('ابنُ سالم', $this->get(route('client.access.choose'))->getContent());
+
+        $this->post(route('client.access.choose.store'), ['client_id' => $third->id])
+            ->assertRedirect(route('client.access'));
+        $this->assertNull(session('client_access_id'));
+
+        $this->post(route('client.access.choose.store'), ['client_id' => $second->id])
+            ->assertRedirect(route('client.portal.home'));
+    }
+
+    /** ودخولٌ بملفٍّ واحدٍ بعد اختياراتِ رقمٍ آخر في الجلسة نفسِها لا يرث تلك الاختيارات. */
+    public function test_a_later_single_file_login_does_not_inherit_old_choices(): void
+    {
+        Client::create(['name' => 'شركةُ سالم الريامي', 'phone' => '91234567', 'type' => 'company']);
+        $other = Client::create(['name' => 'موكّلٌ آخر', 'phone' => '95550000', 'type' => 'individual']);
+
+        $this->fakeBridge();
+        $this->post(route('client.access.otp'), ['phone' => '91234567']);
+        $this->post(route('client.access.otp.verify'), ['code' => $this->code()]);
+
+        $this->travel(3)->minutes();
+        $this->post(route('client.access.otp'), ['phone' => '95550000']);
+        $this->post(route('client.access.otp.verify'), ['code' => $this->code()])
+            ->assertRedirect(route('client.portal.home'));
+
+        $this->assertSame($other->id, session('client_access_id'));
+        $this->assertStringNotContainsString('تبديل الملفّ', $this->get(route('client.portal.home'))->getContent());
+        $this->post(route('client.access.choose.store'), ['client_id' => $this->client->id])
+            ->assertRedirect(route('client.access'));
+        $this->assertSame($other->id, session('client_access_id'));
+    }
+
+    /** لم يبقَ على الرقم إلا ملفٌّ واحد قبل أن يختار: يُفتح مباشرةً — لا «اطلب رمزاً جديداً». */
+    public function test_the_picker_opens_the_last_remaining_file_directly(): void
+    {
+        $second = Client::create(['name' => 'شركةُ سالم الريامي', 'phone' => '91234567', 'type' => 'company']);
+
+        $this->fakeBridge();
+        $this->post(route('client.access.otp'), ['phone' => '91234567']);
+        $this->post(route('client.access.otp.verify'), ['code' => $this->code()])
+            ->assertRedirect(route('client.access.choose'));
+
+        $second->update(['phone' => '95550000']);
+
+        $this->get(route('client.access.choose'))->assertRedirect(route('client.portal.home'));
+        $this->assertSame($this->client->id, session('client_access_id'));
+    }
+
+    /** ومن دخل ثمّ فتح «تبديل الملفّ» يرى زرَّ الخروج — هاتفٌ مشتركٌ لا تبقى عليه جلسةٌ مفتوحة. */
+    public function test_the_switch_page_offers_logout(): void
+    {
+        Client::create(['name' => 'شركةُ سالم الريامي', 'phone' => '91234567', 'type' => 'company']);
+
+        $this->fakeBridge();
+        $this->post(route('client.access.otp'), ['phone' => '91234567']);
+        $this->post(route('client.access.otp.verify'), ['code' => $this->code()]);
+        $this->post(route('client.access.choose.store'), ['client_id' => $this->client->id]);
+
+        $html = $this->get(route('client.access.choose'))->assertOk()->getContent();
+        $this->assertStringContainsString('تسجيل الخروج', $html);
+        $this->assertStringContainsString(route('client.access.logout'), $html);
+    }
+
+    /** وصفحةُ الاختيار لا تُفتح بلا رمزٍ ثبت. */
+    public function test_the_file_picker_needs_a_verified_code(): void
+    {
+        $this->get(route('client.access.choose'))->assertRedirect(route('client.access'));
+
+        $this->post(route('client.access.choose.store'), ['client_id' => $this->client->id])
+            ->assertRedirect(route('client.access'));
+        $this->assertNull(session('client_access_id'));
+    }
+
+    /** ورقمٌ على ملفٍّ واحد يدخل مباشرةً بلا صفحة اختيار. */
+    public function test_a_single_file_number_skips_the_picker(): void
+    {
+        $this->fakeBridge();
+        $this->post(route('client.access.otp'), ['phone' => '91234567']);
+
+        $this->post(route('client.access.otp.verify'), ['code' => $this->code()])
+            ->assertRedirect(route('client.portal.home'));
+
+        $this->assertSame($this->client->id, session('client_access_id'));
+        $this->assertStringNotContainsString('تبديل الملفّ', $this->get(route('client.portal.home'))->getContent());
     }
 
     /** ومكتبٌ غيرُ مربوطٍ يقولها صراحةً بدل صمتٍ محيّر. */

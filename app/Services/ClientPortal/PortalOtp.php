@@ -95,35 +95,33 @@ class PortalOtp
             return ['ok' => false, 'reason' => 'invalid', 'message' => 'أدخل رقم هاتفٍ صحيحاً.'];
         }
 
-        // ═══ أوّلاً: أهذا الرقمُ لموكّلٍ واحدٍ عندنا؟ ═══
+        // ═══ أوّلاً: أهذا الرقمُ مسجَّلٌ عندنا؟ ═══
         //
-        // رقمٌ يشترك فيه ملفّان لا يُراسَل: دخولُ أحدهما بملفّ الآخر أخطرُ من
-        // ردّه إلى المكتب. ويُكتب العددُ وحدَه في السجلّ — بلا رقمٍ ولا اسم.
-        $matches = Client::countByPhone($rawPhone);
-        $client = $matches === 1 ? Client::findByPhone($rawPhone) : null;
+        // ورقمٌ على أكثر من ملفّ يُراسَل كغيره — بقرار المكتب: كان يُردّ فوقف كلُّ
+        // من سجّله المكتبُ على ملفَّين (أبٌ وشركتُه، أسرةٌ بهاتفٍ واحد) خارجَ البوابة.
+        // الرمزُ يثبت ملكيّةَ الهاتف، ثمّ يختار صاحبُه أيَّ ملفّاته يفتح.
+        //
+        // والبصمةُ آخرُ ثمانية أرقام: رقمٌ عُمانيٌّ وآخرُ سعوديٌّ يشتركان فيها وهما
+        // هاتفان لشخصين. فلا يُعدّ ملفّاً على الرقم إلا ما كان رقمُه كاملاً هو الرقمَ
+        // الذي سيصله الرمز — وإلا ذهب رمزُ أحدهما إلى الآخر وفتح ملفَّه.
+        ['wa_id' => $waId, 'clients' => $clients] = self::resolve($rawPhone);
+        $client = $clients->first();
 
         if (!$client) {
-            Log::info('Portal OTP: no code sent — the requested number matches '
-                . $matches . ' client record(s); exactly 1 is required');
+            Log::info('Portal OTP: no code sent — the requested number matches no client record');
 
-            return $matches > 1
-                ? [
-                    'ok' => false,
-                    'reason' => 'shared',
-                    'message' => 'هذا الرقمُ مسجَّلٌ لأكثر من ملفٍّ لدى المكتب، فلا يُرسَل إليه رمز. راجع المكتب ليُصحَّح رقمُك.',
-                ]
-                : [
-                    'ok' => false,
-                    'reason' => 'unregistered',
-                    'message' => 'هذا الرقمُ غيرُ مسجَّلٍ لدى المكتب. تأكّد أنّه الرقمُ الذي أعطيتَه للمكتب، أو راجع المكتب ليُسجَّل في ملفّك.',
-                ];
+            return [
+                'ok' => false,
+                'reason' => 'unregistered',
+                'message' => 'هذا الرقمُ غيرُ مسجَّلٍ لدى المكتب. تأكّد أنّه الرقمُ الذي أعطيتَه للمكتب، أو راجع المكتب ليُسجَّل في ملفّك.',
+            ];
         }
 
         // ═══ رقمُ واتساب المكتب نفسُه ═══
         //
         // رسالةٌ من الرقم المقترن إليه تقع في محادثة «أنت» على الهاتف نفسِه، صادرةً
         // بلا تنبيه — فيظنّ من يجرّب البوابةَ برقم المكتب أنّ الرمزَ لم يُرسَل أصلاً.
-        $destination = self::destination($client, $rawPhone);
+        $destination = $waId;
         $own = WhatsAppContact::normalizeWaId((string) WhatsAppSettings::displayPhone());
 
         if ($own !== '' && $destination === $own) {
@@ -181,7 +179,7 @@ class PortalOtp
         //
         // الرمزُ يُرسل هنا لا في طابور: صاحبُه ينتظره الآن. ولأنّه هنا فنتيجتُه
         // بين أيدينا: يُقال للموكّل أخرج الرمزُ إلى واتساب أم لا.
-        $sent = self::deliver($client, $code, $rawPhone);
+        $sent = self::deliver($client, $code, $waId);
 
         if ($sent['outcome'] === 'refused') {
             // رفضٌ يقينيّ: لا رسالةَ خرجت — فلا تُحسب ولا تحجز الدقيقتين. ورمزٌ سابقٌ
@@ -204,6 +202,9 @@ class PortalOtp
         Cache::put(self::stateKey($normalized), [
             'hash' => hash_hmac('sha256', $code, (string) config('app.key')),
             'client_id' => $client->id,
+            // كلُّ الملفّات على الرقم ساعةَ الإرسال — يختار منها بعد التحقّق
+            'client_ids' => $clients->pluck('id')->all(),
+            'wa_id' => $waId,
             'attempts' => 0,
         ], self::TTL_SECONDS);
 
@@ -224,7 +225,7 @@ class PortalOtp
         return $normalized !== '' && Cache::has(self::stateKey($normalized));
     }
 
-    /** @return array{ok: bool, client?: Client, message: string} */
+    /** @return array{ok: bool, client?: Client, clients?: \Illuminate\Support\Collection<int, Client>, message: string} */
     public static function verify(string $rawPhone, string $code): array
     {
         $normalized = Client::normalizePhone($rawPhone);
@@ -251,13 +252,17 @@ class PortalOtp
         // استعمالٌ واحد: يُحرق قبل فتح الجلسة كرابط البوابة سواءً بسواء
         Cache::forget($key);
 
-        $client = Client::find((int) $state['client_id']);
+        // الملفّاتُ التي كانت على الرقم ساعةَ الإرسال، وما زالت عليه الآن: ملفٌّ نُقل
+        // عنه الرقمُ أو حُذف في الدقائق الخمس لا يُفتح بهذا الرمز
+        $ids = array_map('intval', (array) ($state['client_ids'] ?? [$state['client_id']]));
+        $waId = (string) ($state['wa_id'] ?? WhatsAppContact::normalizeWaId($rawPhone));
+        $clients = self::filesOn($ids, $waId);
 
-        if (!$client) {
+        if ($clients->isEmpty()) {
             return ['ok' => false, 'message' => 'تعذّر الدخول — راجع المكتب.'];
         }
 
-        return ['ok' => true, 'client' => $client, 'message' => ''];
+        return ['ok' => true, 'client' => $clients->first(), 'clients' => $clients, 'wa_id' => $waId, 'message' => ''];
     }
 
     /**
@@ -273,12 +278,11 @@ class PortalOtp
      * ‏sent: خرج بمعرّف. unconfirmed: قبله الجسرُ بلا معرّف، أو انقطع الطريقُ قبل
      * الردّ (مهلة) — قد يكون وصل. refused: ردّ الجسرُ برفضٍ صريح — لم يخرج شيء.
      */
-    private static function deliver(Client $client, string $code, string $rawPhone = ''): array
+    private static function deliver(Client $client, string $code, string $waId): array
     {
         $message = null;
 
         try {
-            $waId = self::destination($client, $rawPhone);
 
             $contact = WhatsAppContact::firstOrCreate(['wa_id' => $waId], ['client_id' => $client->id]);
             $conversation = WhatsAppConversation::firstOrCreate(
@@ -380,24 +384,82 @@ class PortalOtp
     }
 
     /**
-     * إلى أيّ رقمٍ يُرسَل الرمز: الرقمُ الذي طلبه الموكّل من أرقام ملفّه.
+     * الرقمُ الذي كتبه الزائر: إلى أيّ رقم واتساب كاملٍ يُرسَل، وأيُّ الملفّات عليه.
      *
-     * حقلُ الهاتف قد يحمل أكثرَ من رقمٍ بفاصلة. وكان يُحوَّل كلُّه إلى معرّف
-     * واتساب واحد — أرقامُ الرقمين ملتصقةً — فيُرسَل الرمزُ إلى رقمٍ لا وجودَ
-     * له ويُكتب «أخفق» بلا أن يعرف أحدٌ لماذا.
+     * يُطابَق بالرقم كاملاً. ورقمٌ كُتب محلّياً بصفرٍ في أوّله (٠٥٠٦٢٣٣١١٢ لرقمٍ
+     * إماراتيّ) يُعرف بأنّه ذيلُ رقمٍ كاملٍ في ملفّ — إن كان ذيلَ رقمٍ واحدٍ لا أكثر.
+     *
+     * @return array{wa_id: string, clients: \Illuminate\Support\Collection<int, Client>}
      */
-    public static function destination(Client $client, string $rawPhone): string
+    public static function resolve(string $rawPhone): array
     {
-        $typed = Client::normalizePhone($rawPhone);
-        $numbers = array_values(array_filter(array_map('trim', preg_split('/[,،;\/|]+/u', (string) $client->phone) ?: [])));
+        $typed = WhatsAppContact::normalizeWaId($rawPhone);
+        $digits = preg_replace('/\D+/', '', strtr($rawPhone, [
+            '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
+            '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+        ])) ?? '';
+        $local = (str_starts_with($digits, '0') && !str_starts_with($digits, '00')) ? ltrim($digits, '0') : '';
 
-        foreach ($numbers as $candidate) {
-            if ($typed !== '' && Client::normalizePhone($candidate) === $typed) {
-                return WhatsAppContact::normalizeWaId($candidate);
+        $byNumber = [];
+
+        foreach (Client::allByPhone($rawPhone) as $client) {
+            foreach (preg_split('/[,،;\/|]+/u', (string) $client->phone) ?: [] as $candidate) {
+                $full = WhatsAppContact::normalizeWaId(trim($candidate));
+
+                if ($full !== '' && ($full === $typed || ($local !== '' && strlen($local) >= 8 && str_ends_with($full, $local)))) {
+                    $byNumber[$full][$client->id] = $client;
+                }
             }
         }
 
-        return WhatsAppContact::normalizeWaId($numbers !== [] ? end($numbers) : (string) $client->phone);
+        // ذيلٌ محلّيٌّ يطابق رقمين كاملين مختلفين (بلدان مختلفان): لا يُخمَّن أيُّهما
+        if (count($byNumber) !== 1) {
+            return ['wa_id' => $typed, 'clients' => collect($byNumber[$typed] ?? [])->values()];
+        }
+
+        // ‏(string): PHP يحوّل مفتاحَ المصفوفة الرقميّ «96891234567» إلى عددٍ صحيح —
+        // فكانت مقارنتُه الصارمةُ برقم المكتب تسقط دائماً
+        $waId = (string) array_key_first($byNumber);
+
+        return ['wa_id' => $waId, 'clients' => collect($byNumber[$waId])->sortKeys()->values()];
+    }
+
+    /**
+     * أعلى ملفِّ هذا الموكّل رقمُ واتساب هذا بعينه؟ — الرقمُ كاملاً لا آخرُ ثمانية.
+     */
+    public static function holds(Client $client, string $waId): bool
+    {
+        if ($waId === '') {
+            return false;
+        }
+
+        foreach (preg_split('/[,،;\/|]+/u', (string) $client->phone) ?: [] as $candidate) {
+            if (trim($candidate) !== '' && WhatsAppContact::normalizeWaId(trim($candidate)) === $waId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * من هذه الملفّات: ما عليه هذا الرقمُ الآن.
+     *
+     * ملفٌّ نقل المكتبُ عنه الرقمَ أو حذفه بعد الإرسال لا يُفتح بالرمز.
+     *
+     * @param list<int> $ids
+     * @return \Illuminate\Support\Collection<int, Client>
+     */
+    public static function filesOn(array $ids, string $waId): \Illuminate\Support\Collection
+    {
+        if ($ids === [] || $waId === '') {
+            return collect();
+        }
+
+        return Client::whereIn('id', $ids)
+            ->where('phone_hash', Client::hashPhone($waId))
+            ->orderBy('id')->get()
+            ->filter(fn (Client $c) => self::holds($c, $waId))->values();
     }
 
     /** نصُّ بديل الرمز في دفتر الرسائل — يُعرف به صفُّ الرمز عند التشخيص. */

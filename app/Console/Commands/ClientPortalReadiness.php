@@ -42,11 +42,11 @@ class ClientPortalReadiness extends Command
      */
     private function gather(): array
     {
-        // ═══ الدخولُ برمز واتساب: الجاهزُ من له رقمٌ لا يشاركه فيه موكّلٌ آخر ═══
+        // ═══ الدخولُ برمز واتساب: الجاهزُ من له رقمُ هاتف ═══
         //
-        // كان الفحصُ يسأل عن رقم الهويّة — بابٍ أُلغي. والرمزُ يُرسَل لمن يطابق
-        // رقمُه موكّلاً واحداً بالضبط (PortalOtp): بلا هاتفٍ لا رمز، ورقمٌ مشتركٌ
-        // بين موكّلَين لا يُراسَل (قد يدخل أحدُهما ملفَّ الآخر).
+        // كان الفحصُ يسأل عن رقم الهويّة — بابٍ أُلغي. والرقمُ المشتركُ بين ملفّين
+        // لا يمنع الدخول (يختار صاحبُه ملفَّه بعد الرمز) — يُعدّ لينظر المكتبُ أهي
+        // ملفّاتٌ مكرَّرةٌ تُدمج، أم أسرةٌ أو شركةٌ بهاتفٍ واحد.
         $noPhone = 0;
         $shared = 0;
         $blocked = [];
@@ -65,7 +65,6 @@ class ClientPortalReadiness extends Command
                     $blocked[] = [$client->name, 'بلا رقم هاتفٍ صالح'];
                 } elseif ($isShared) {
                     $shared++;
-                    $blocked[] = [$client->name, 'رقمُه مسجَّلٌ لموكّلٍ آخر أيضاً'];
                 }
             }
         });
@@ -121,9 +120,8 @@ class ClientPortalReadiness extends Command
         if ($blocked) {
             $this->line('  لا يستطيعون: <fg=yellow>' . $s['clients_blocked'] . '</>');
             $this->line("    بلا رقم هاتف: {$s['missing_phone']}");
-            $this->line("    رقمٌ مشترك بين موكّلَين: {$s['shared_phone']}");
             $this->newLine();
-            $this->warn('هؤلاء لا يصلهم رمزُ الدخول على واتساب حتى يكون لكلٍّ منهم رقمُ هاتفٍ يخصّه في صفحة العملاء.');
+            $this->warn('هؤلاء لا يصلهم رمزُ الدخول على واتساب حتى يُكتب لهم رقمُ هاتف في صفحة العملاء.');
 
             if ($this->option('list')) {
                 $this->newLine();
@@ -131,6 +129,12 @@ class ClientPortalReadiness extends Command
             } else {
                 $this->line('  (‏--list لعرض أسمائهم)');
             }
+        }
+
+        if ($s['shared_phone'] > 0) {
+            $this->newLine();
+            $this->line("ملفّاتٌ تتشارك رقماً: <options=bold>{$s['shared_phone']}</> — يدخل صاحبُ الرقم ويختار ملفَّه.");
+            $this->line('  <fg=gray>إن كانت ملفّاتٍ مكرَّرةً للشخص نفسِه فادمجها من صفحة العملاء.</>');
         }
 
         if ($s['shows_documents']) {

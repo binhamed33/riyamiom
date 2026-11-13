@@ -98,6 +98,10 @@ Route::post('/client-access/otp/verify', [App\Http\Controllers\ClientAccessContr
 Route::post('/client-access/otp/reset', [App\Http\Controllers\ClientAccessController::class, 'otpReset'])
     ->middleware('throttle:20,10,portal-otp-reset')->name('client.access.otp.reset');
 Route::post('/client-access/logout', [App\Http\Controllers\ClientAccessController::class, 'logout'])->name('client.access.logout');
+// رقمٌ على أكثر من ملفّ: بعد الرمز يختار صاحبُه أيَّها يفتح
+Route::get('/client-access/choose', [App\Http\Controllers\ClientAccessController::class, 'chooseFile'])->name('client.access.choose');
+Route::post('/client-access/choose', [App\Http\Controllers\ClientAccessController::class, 'choose'])
+    ->middleware('throttle:20,10,portal-choose')->name('client.access.choose.store');
 
 Route::middleware('client.portal')->prefix('client-access')->group(function () {
     Route::get('/home', [App\Http\Controllers\ClientAccessController::class, 'home'])->name('client.portal.home');

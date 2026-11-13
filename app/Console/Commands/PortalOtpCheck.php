@@ -74,21 +74,31 @@ class PortalOtpCheck extends Command
             return self::FAILURE;
         }
 
-        $matches = Client::countByPhone($raw);
-        $client = Client::findByPhone($raw);
+        // كما يعدّها طلبُ الرمز: الملفّاتُ التي رقمُها كاملاً هو هذا الرقم
+        ['wa_id' => $waId, 'clients' => $files] = PortalOtp::resolve($raw);
+        $matches = $files->count();
+        $client = $files->first();
 
         if ($matches === 0) {
             $this->line('الرقم: <fg=red>غيرُ مسجَّلٍ لأيّ موكّل</> — لا يُرسل رمز.');
             $this->line('  ← افتح ملفَّ الموكّل وتأكّد أنّ هذا الرقمَ نفسَه مكتوبٌ في خانة الهاتف، ثم احفظ.');
             $ok = false;
-        } elseif ($matches > 1) {
-            $this->line("الرقم: <fg=red>مسجَّلٌ لـ{$matches} موكّلين</> — لا يُرسل رمزٌ لرقمٍ مشترك (قد يدخل أحدُهما ملفَّ الآخر).");
-            $this->line('  ← اجعل لكلّ موكّلٍ رقمَه، أو ادمج السجلَّين المكرَّرين.');
-            $ok = false;
         } else {
-            $to = PortalOtp::destination($client, $raw);
+            if ($matches > 1) {
+                // يُرسَل الرمز، ثمّ يختار صاحبُ الرقم ملفَّه — والقائمةُ هنا للمكتب
+                // ليعرف أهي ملفّاتٌ مكرَّرةٌ تُدمج
+                $this->line("الرقم: <fg=green>مسجَّلٌ على {$matches} ملفّات</> — يصله الرمز ثمّ يختار ملفَّه:");
+
+                foreach ($files as $c) {
+                    $this->line("  #{$c->id}  {$c->name}");
+                }
+            }
+
+            $to = $waId;
             $masked = strlen($to) > 4 ? '+' . substr($to, 0, 3) . str_repeat('•', max(0, strlen($to) - 7)) . substr($to, -4) : $to;
-            $this->line("الرقم: <fg=green>موكّلٌ واحد</> (#{$client->id}) — يُرسل الرمزُ إلى واتساب {$masked}");
+            $this->line($matches > 1
+                ? "يُرسل الرمزُ إلى واتساب {$masked}"
+                : "الرقم: <fg=green>موكّلٌ واحد</> (#{$client->id}) — يُرسل الرمزُ إلى واتساب {$masked}");
 
             $own = \App\Models\WhatsAppContact::normalizeWaId((string) WhatsAppSettings::displayPhone());
 

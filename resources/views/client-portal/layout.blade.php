@@ -300,6 +300,11 @@
                 {{ app()->getLocale() === 'ar' ? 'EN' : 'ع' }}
             </a>
 
+            @if ($client && app(\App\Http\Controllers\ClientAccessController::class)->canSwitch(request()))
+                {{-- رقمٌ عليه أكثر من ملفّ: يبدّل صاحبُه بينها دون رمزٍ جديد --}}
+                <a href="{{ route('client.access.choose') }}" class="p-icon-btn" style="width:auto;padding:0 .7rem;font-size:.72rem;font-weight:700">تبديل الملفّ</a>
+            @endif
+
             @if ($client)
                 <form method="POST" action="{{ route('client.access.logout') }}">
                     @csrf
