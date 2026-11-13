@@ -1547,7 +1547,13 @@ class EvolutionProvider implements WhatsAppProviderInterface
 
         $id = $response->json('key.id') ?? $response->json('messageId');
 
-        return SendResult::sent(is_string($id) ? $id : ('evo.' . uniqid()));
+        // ‏2xx بلا معرّف: قبلها الجسرُ ولا تأكيد. كان يُخترع لها معرّف («evo.…»)؛
+        // وعدُّها إخفاقاً يُعاد يُرسلها مرّتين إلى الموكّل. فهي «مقبولةٌ بلا تأكيد»
+        if (!is_string($id) || $id === '') {
+            return SendResult::accepted();
+        }
+
+        return SendResult::sent($id);
     }
 
     protected function failureFrom(Response $response): void

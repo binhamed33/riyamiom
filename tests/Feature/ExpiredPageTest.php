@@ -39,6 +39,16 @@ class ExpiredPageTest extends TestCase
         $this->assertStringContainsString('انتهت صلاحية الصفحة', (string) session('login_error'));
     }
 
+    /** وزائرُ بوابة الموكّلين يعود إلى بوابته — لا إلى دخول الموظّفين، صفحةٍ لا يعرفها. */
+    public function test_a_portal_visitor_returns_to_the_portal(): void
+    {
+        $this->probe('/client-access/__expiry');
+
+        $this->post('/client-access/__expiry', ['phone' => '91234567'])
+            ->assertRedirect(route('client.access'))
+            ->assertSessionHas('portal_error', fn ($m) => str_contains($m, 'انتهت صلاحية الصفحة'));
+    }
+
     /** ومستخدمٌ مسجَّل يعود إلى صفحته نفسِها ونموذجُه محفوظ. */
     public function test_a_signed_in_user_returns_to_the_same_page_with_input(): void
     {

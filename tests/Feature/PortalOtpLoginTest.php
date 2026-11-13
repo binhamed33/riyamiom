@@ -133,20 +133,74 @@ class PortalOtpLoginTest extends TestCase
         $this->assertSame(2, WhatsAppMessage::count());
     }
 
-    /** المسجَّلُ وغيرُ المسجَّل يسمعان الجملةَ نفسَها — ولا رسالةَ للغريب. */
-    public function test_an_unknown_phone_hears_the_same_sentence_and_gets_nothing(): void
+    /**
+     * رقمٌ غيرُ مسجَّل: يُقال له ذلك، ويبقى عند حقل الرقم، ولا يُرسَل شيء.
+     *
+     * (بقرار المكتب: كان الردُّ واحداً للمسجَّل وغيره، فوقف موكّلٌ كتب رقماً غيرَ
+     * الذي في ملفّه أمام «أدخل الرمز» ينتظر ما لن يصل.)
+     */
+    public function test_an_unknown_phone_is_told_it_is_not_registered(): void
     {
         $this->fakeBridge();
-        $known = $this->post(route('client.access.otp'), ['phone' => '91234567']);
-        $this->travel(121)->seconds();
-        $unknown = $this->post(route('client.access.otp'), ['phone' => '99887766']);
 
-        $this->assertSame(
-            session()->get('portal_notice'),
-            $unknown->getSession()->get('portal_notice') ?? session('portal_notice'),
-        );
+        $this->post(route('client.access.otp'), ['phone' => '99887766'])
+            ->assertRedirect(route('client.access'))
+            ->assertSessionHas('portal_error', fn ($m) => str_contains($m, 'غيرُ مسجَّلٍ لدى المكتب'))
+            ->assertSessionMissing('portal_otp_phone');
 
-        $this->assertSame(1, WhatsAppMessage::count(), 'أُرسل شيءٌ لرقمٍ غير مسجَّل');
+        $this->assertSame(0, WhatsAppMessage::count(), 'أُرسل شيءٌ لرقمٍ غير مسجَّل');
+
+        // والصفحةُ تعرض السببَ فوق حقل الرقم — لا خطوةَ «أدخل الرمز»
+        $html = $this->get(route('client.access'))->getContent();
+        $this->assertStringContainsString('أرسل الرمز', $html);
+        $this->assertStringNotContainsString('رمز التحقّق', $html);
+    }
+
+    /** والمسجَّلُ يُقال له إنّ الرمزَ خرج إلى واتساب رقمه. */
+    public function test_a_registered_phone_is_told_the_code_was_sent(): void
+    {
+        $this->fakeBridge();
+
+        $this->post(route('client.access.otp'), ['phone' => '91234567'])
+            ->assertSessionHas('portal_notice', 'أرسلنا رمزَ الدخول إلى واتساب رقمك.')
+            ->assertSessionHas('portal_otp_phone', '91234567');
+
+        $this->assertSame(1, WhatsAppMessage::count());
+    }
+
+    /**
+     * واتساب رفض الإرسال: يُقال السببُ، ويبقى الموكّلُ عند حقل الرقم، والمحاولةُ
+     * التالية فوريّة — رمزٌ لم يخرج لا يحجز الدقيقتين.
+     */
+    public function test_a_refused_send_is_shown_with_its_reason_and_can_be_retried_at_once(): void
+    {
+        $refuse = true;
+
+        Http::fake(function ($request) use (&$refuse) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'open']], 200);
+            }
+
+            return $refuse
+                ? Http::response(['status' => 400, 'response' => ['message' => [['exists' => false, 'number' => 'x']]]], 400)
+                : Http::response(['key' => ['id' => 'OTP-' . uniqid()]], 200);
+        });
+
+        $this->post(route('client.access.otp'), ['phone' => '91234567'])
+            ->assertSessionHas('portal_error', fn ($m) => str_contains($m, 'ليس على واتساب'))
+            ->assertSessionMissing('portal_otp_phone');
+
+        // رفضٌ يقينيّ لا يُحسب في سقف اليوم
+        $dayKey = 'portal_otp_day:' . hash_hmac('sha256', Client::normalizePhone('91234567'), (string) config('app.key'));
+        $this->assertSame(0, (int) \Illuminate\Support\Facades\Cache::get($dayKey, 0));
+
+        $refuse = false;
+
+        $this->post(route('client.access.otp'), ['phone' => '91234567'])
+            ->assertSessionHas('portal_notice')
+            ->assertSessionHas('portal_otp_phone', '91234567');
+
+        $this->assertSame(1, (int) \Illuminate\Support\Facades\Cache::get($dayKey, 0));
     }
 
     /** خمسُ محاولاتٍ خاطئة تقفل الرمز — والصحيحُ بعدها لا يمرّ. */
@@ -184,7 +238,7 @@ class PortalOtpLoginTest extends TestCase
             ->assertSessionHas('portal_error');
     }
 
-    /** رقمٌ يتشاركه موكّلان لا يُراسَل — بابُ الهويّة لهما. */
+    /** رقمٌ يتشاركه موكّلان لا يُراسَل — ويُقال لهما أن يراجعا المكتب. */
     public function test_a_shared_phone_gets_no_code(): void
     {
         Client::create([
@@ -197,7 +251,8 @@ class PortalOtpLoginTest extends TestCase
         $this->fakeBridge();
 
         $this->post(route('client.access.otp'), ['phone' => '91234567'])
-            ->assertSessionHas('portal_notice');
+            ->assertSessionHas('portal_error', fn ($m) => str_contains($m, 'مسجَّلٌ لأكثر من ملفٍّ'))
+            ->assertSessionMissing('portal_otp_phone');
 
         $this->assertSame(0, WhatsAppMessage::count(), 'رقمٌ ملتبسٌ رُوسل');
     }
@@ -267,4 +322,54 @@ class PortalOtpLoginTest extends TestCase
         $html = $this->get(route('client.access', ['otp' => 1]))->assertOk()->getContent();
         $this->assertStringContainsString('أرسل الرمز', $html, 'بقي محبوساً أمام حقل الرمز');
     }
+
+    /**
+     * رقمٌ طُلب له رمزٌ قبل ساعات: الصفحةُ تعود إلى حقل الرقم لا إلى «أدخل الرمز».
+     *
+     * الجلسةُ تعيش ساعات والرمزُ خمسَ دقائق؛ فكان من عاد بعدها يقف أمام حقل رمزٍ
+     * لم يُرسَل في زيارته شيء.
+     */
+    public function test_an_old_code_request_does_not_reopen_the_code_step(): void
+    {
+        $this->fakeBridge();
+        $this->post(route('client.access.otp'), ['phone' => '91234567']);
+        $this->assertStringContainsString('رمز التحقّق', $this->get(route('client.access'))->getContent());
+
+        $this->travel(6)->minutes();
+
+        $html = $this->get(route('client.access'))->getContent();
+        $this->assertStringContainsString('أرسل الرمز', $html);
+        $this->assertStringNotContainsString('رمز التحقّق', $html);
+    }
+
+    /** وتجاوزُ حدّ الطلبات يعيد الزائرَ إلى بوابته برسالة — لا إلى دخول الموظّفين. */
+    public function test_a_throttled_visitor_stays_on_the_portal(): void
+    {
+        $this->withMiddleware();
+        \Illuminate\Support\Facades\RateLimiter::clear('portal-otp');
+
+        $this->fakeBridge();
+        $last = null;
+
+        for ($i = 0; $i < 7; $i++) {
+            $last = $this->post(route('client.access.otp'), ['phone' => '9555000' . $i]);
+        }
+
+        $last->assertRedirect(route('client.access'))
+            ->assertSessionHas('portal_error', fn ($m) => str_contains($m, 'طلباتٌ كثيرة'));
+    }
+
+    /** طلبٌ ثانٍ قبل الدقيقتين لرقمه نفسِه: يبقى عند خطوة الرمز ليُدخل ما وصله. */
+    public function test_an_early_resend_keeps_the_code_step(): void
+    {
+        $this->fakeBridge();
+        $this->post(route('client.access.otp'), ['phone' => '91234567']);
+
+        $this->post(route('client.access.otp'), ['phone' => '91234567'])
+            ->assertSessionHas('portal_error', fn ($m) => str_contains($m, 'انتظر دقيقتين'))
+            ->assertSessionHas('portal_otp_phone', '91234567');
+
+        $this->assertStringContainsString('رمز التحقّق', $this->get(route('client.access'))->getContent());
+    }
 }
+

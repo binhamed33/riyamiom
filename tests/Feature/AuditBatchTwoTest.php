@@ -56,7 +56,7 @@ class AuditBatchTwoTest extends TestCase
 
         Http::fake(fn ($r) => str_contains($r->url(), '/instance/connectionState/')
             ? Http::response(['instance' => ['state' => 'open']], 200)
-            : Http::response(['key' => ['id' => 'X']], 200));
+            : Http::response(['key' => ['id' => 'X-' . uniqid()]], 200));
 
         $this->client(phone: '96891234567');
 
@@ -74,8 +74,13 @@ class AuditBatchTwoTest extends TestCase
         $this->assertSame(5, (int) Cache::get($key, 0), 'العدّادُ تجاوز السقف');
     }
 
-    /** والسقفُ يُعدّ للأرقام غيرِ المسجَّلة أيضاً — وإلا فُرّق بينها. */
-    public function test_the_daily_cap_counts_unknown_numbers_too(): void
+    /**
+     * رقمٌ غيرُ مسجَّل يُقال له ذلك صراحةً — بقرار المكتب — ولا يُعدّ ولا يُراسَل.
+     *
+     * كان يسمع الجملةَ نفسَها التي يسمعها المسجَّل، فيقف موكّلٌ كتب رقماً غيرَ
+     * الذي في ملفّه ينتظر رمزاً لن يصل، والمكتبُ نفسُه لا يعرف لماذا.
+     */
+    public function test_an_unknown_number_is_told_so_and_never_counted(): void
     {
         config()->set('whatsapp.default', 'evolution');
         config()->set('whatsapp.evolution.base_url', 'http://127.0.0.1:18080');
@@ -84,16 +89,15 @@ class AuditBatchTwoTest extends TestCase
 
         Http::fake(fn ($r) => Http::response(['instance' => ['state' => 'open']], 200));
 
-        for ($i = 0; $i < 5; $i++) {
-            $this->post(route('client.access.otp'), ['phone' => '96899887766']);
-            $this->travel(121)->seconds();
-        }
+        $this->post(route('client.access.otp'), ['phone' => '96899887766'])
+            ->assertSessionHas('portal_error', fn ($m) => str_contains($m, 'غيرُ مسجَّلٍ لدى المكتب'))
+            ->assertSessionMissing('portal_otp_phone');
+
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/message/sendText/'));
 
         $key = 'portal_otp_day:' . hash_hmac('sha256', Client::normalizePhone('96899887766'), (string) config('app.key'));
-        $this->assertSame(5, (int) Cache::get($key, 0), 'الرقمُ غيرُ المسجَّل لا يُعدّ — فرقٌ يُستدلّ به');
+        $this->assertSame(0, (int) Cache::get($key, 0));
     }
-
-    // ───────────────────────── بوّابة /my
 
     /**
      * الموكّلُ يرى ما وُسم له صراحةً لا كلَّ ما وُسم «للجميع».

@@ -132,6 +132,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 && $e->getStatusCode() === 419) {
                 $message = 'انتهت صلاحية الصفحة لطول بقائها مفتوحة — أعد المحاولة الآن.';
 
+                // زائرُ بوابة الموكّلين يعود إلى بوابته لا إلى دخول الموظّفين —
+                // صفحةٌ لا يعرفها، ثمّ «رجوع» يعيده إلى خطوة الرمز بلا رسالة
+                if (!auth()->check() && $request->is('client-access*')) {
+                    return redirect()->route('client.access')->with('portal_error', $message);
+                }
+
                 // كلمةُ المرور لا تُعاد إلى النموذج ولا تُحفظ في الجلسة
                 return auth()->check()
                     ? redirect()->to($request->fullUrl())
@@ -153,6 +159,11 @@ return Application::configure(basePath: dirname(__DIR__))
             // تجاوز حد المحاولات لزائر غير مسجّل: يعود لصفحة الدخول برسالة واضحة
             // بدل إرساله إلى لوحة التحكم حيث لا يرى التنبيه أصلاً
             if ($e instanceof \Illuminate\Http\Exceptions\ThrottleRequestsException) {
+                if (!auth()->check() && $request->is('client-access*')) {
+                    return redirect()->route('client.access')
+                        ->with('portal_error', 'طلباتٌ كثيرة خلال وقتٍ قصير — انتظر عشرَ دقائق ثم أعد المحاولة.');
+                }
+
                 if (!auth()->check()) {
                     return redirect()->route('login')
                         ->with('login_error', 'محاولات كثيرة خلال وقت قصير. انتظر دقيقة ثم أعد المحاولة.');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Client;
 use App\Services\ClientPortal\CaseTimeline;
 use App\Services\ClientPortal\ClientAuthenticator;
 use App\Services\ClientPortal\ClientCaseGateway;
@@ -36,6 +37,17 @@ class ClientAccessController extends Controller
             return redirect()->route('client.portal.home');
         }
 
+        // ═══ رقمٌ قديمٌ في الجلسة لا يفتح خطوةَ الرمز ═══
+        //
+        // الجلسةُ تعيش ساعات والرمزُ خمسَ دقائق. فمن طلب رمزاً صباحاً وعاد مساءً
+        // وجد «أدخل الرمزَ الذي وصلك» ولم يُرسَل في زيارته شيء — فينتظر ما لن يصل.
+        $at = (int) $request->session()->get('portal_otp_at', 0);
+
+        if ($request->session()->has('portal_otp_phone')
+            && now()->timestamp - $at > \App\Services\ClientPortal\PortalOtp::TTL_SECONDS) {
+            $request->session()->forget(['portal_otp_phone', 'portal_otp_at']);
+        }
+
         return view('client-portal.login');
     }
 
@@ -61,9 +73,18 @@ class ClientAccessController extends Controller
             return redirect()->route('client.access')->with('portal_notice', $result['message']);
         }
 
-        return redirect()->route('client.access')
-            ->with('portal_error', $result['message'])
-            ->with('portal_otp_tab', true);
+        // لم يخرج رمز (غيرُ مسجَّل، مشترك، تعذّر الإرسال…): يعود الموكّلُ إلى حقل
+        // الرقم ومعه السبب — لا يقف عند «أدخل الرمز» ينتظر ما لن يصل. إلا إن كان
+        // في يد رقمه نفسِه رمزٌ سابقٌ صالح (طلب غيرَه قبل الدقيقتين، أو أخفق الثاني):
+        // فيبقى عند خطوة الرمز ليُدخل ما وصله
+        $samePhone = Client::normalizePhone((string) $request->session()->get('portal_otp_phone', ''))
+            === Client::normalizePhone((string) $request->input('phone'));
+
+        if (!($samePhone && \App\Services\ClientPortal\PortalOtp::hasLiveCode((string) $request->input('phone')))) {
+            $request->session()->forget(['portal_otp_phone', 'portal_otp_at']);
+        }
+
+        return redirect()->route('client.access')->with('portal_error', $result['message']);
     }
 
     /**
@@ -94,16 +115,14 @@ class ClientAccessController extends Controller
 
         if ($phone === '') {
             return redirect()->route('client.access')
-                ->with('portal_error', 'ابدأ بطلب الرمز أولاً.')
-                ->with('portal_otp_tab', true);
+                ->with('portal_error', 'ابدأ بطلب الرمز أولاً.');
         }
 
         $result = \App\Services\ClientPortal\PortalOtp::verify($phone, (string) $request->input('code'));
 
         if (!$result['ok']) {
             return redirect()->route('client.access')
-                ->with('portal_error', $result['message'])
-                ->with('portal_otp_tab', true);
+                ->with('portal_error', $result['message']);
         }
 
         $request->session()->forget(['portal_otp_phone', 'portal_otp_at']);

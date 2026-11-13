@@ -89,7 +89,8 @@ class PortalOtpDeliveryDiagnosisTest extends TestCase
 
         $result = PortalOtp::request('95550000');
 
-        $this->assertTrue($result['ok'], 'الردُّ للزائر محايدٌ كما كان');
+        $this->assertFalse($result['ok']);
+        $this->assertSame('unregistered', $result['reason']);
         $this->assertSame([], $this->destinations());
         Log::shouldHaveReceived('info')->once()->withArgs(
             fn ($m) => str_contains($m, 'matches 0 client record(s)') && !str_contains($m, '95550000')
@@ -130,9 +131,164 @@ class PortalOtpDeliveryDiagnosisTest extends TestCase
         $row = WhatsAppMessage::latest('id')->first();
         $this->assertSame(WhatsAppMessage::STATUS_FAILED, $row->status);
         $this->assertStringContainsString('ليس على واتساب', (string) $row->error_title);
-        Log::shouldHaveReceived('warning')->withArgs(
-            fn ($m) => str_contains($m, 'WhatsApp refused the code for client #' . $client->id)
+        // ‏error: الإنتاجُ يكتب السجلَّ من مستوى error فما فوق — warning كان يُسقط
+        Log::shouldHaveReceived('error')->withArgs(
+            fn ($m) => str_contains($m, 'WhatsApp did not take the code for client #' . $client->id)
                 && str_contains($m, 'ليس على واتساب')
+        );
+    }
+
+    /**
+     * رقمُ واتساب المكتب نفسُه: الرسالةُ منه إليه تقع في «أنت» بلا تنبيه، فيظنّ من
+     * يجرّب أنّ الرمزَ لم يُرسَل. يُقال ذلك ولا يُرسَل شيء.
+     */
+    public function test_the_office_own_number_is_named_not_messaged(): void
+    {
+        WhatsAppSettings::rememberIdentity('+968 9123 4567', 'مكتب');
+        $this->client('المحامي نفسُه', '91234567');
+
+        $result = PortalOtp::request('91234567');
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('own_number', $result['reason']);
+        $this->assertSame([], $this->destinations());
+    }
+
+    /** ردٌّ عابرٌ من الجسر («Connection Closed»): محاولةٌ ثانية تُنقذ الرمز. */
+    public function test_a_transient_refusal_is_retried_once(): void
+    {
+        $this->client('سالم', '91234567');
+        $calls = 0;
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::fake(function ($request) use (&$calls) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'open']], 200);
+            }
+
+            return ++$calls === 1
+                ? Http::response(['status' => 400, 'response' => ['message' => ['Error: Connection Closed']]], 400)
+                : Http::response(['key' => ['id' => 'OTP-OK']], 201);
+        });
+
+        $result = PortalOtp::request('91234567');
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(2, $calls);
+        $this->assertSame(WhatsAppMessage::STATUS_SENT, WhatsAppMessage::latest('id')->value('status'));
+    }
+
+    /** ورقمٌ مكتوبٌ بالأرقام الهنديّة في ملفّ الموكّل يُراسَل — لا يصير فارغاً. */
+    public function test_arabic_indic_digits_in_the_client_file_reach_whatsapp(): void
+    {
+        $this->client('سالم', '٩١٢٣٤٥٦٧');
+
+        $this->assertTrue(PortalOtp::request('91234567')['ok']);
+        $this->assertSame(['96891234567'], $this->destinations());
+    }
+
+    /**
+     * و2xx بلا معرّف: قبلها الجسرُ ولا تأكيد — تُحسب مرّةً ولا تُعاد. عدُّها إخفاقاً
+     * كان يُرسل الرمزَ مرّتين ويُسقط السقفَ والدقيقتين (مضايقةٌ بلا حدّ).
+     */
+    public function test_an_accepted_send_without_id_is_sent_once_and_counted(): void
+    {
+        $this->client('سالم', '91234567');
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::fake(fn ($request) => str_contains($request->url(), '/instance/connectionState/')
+            ? Http::response(['instance' => ['state' => 'open']], 200)
+            : Http::response(['status' => 'PENDING'], 201));
+
+        $result = PortalOtp::request('91234567');
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame('unconfirmed', $result['reason']);
+        $this->assertCount(1, $this->destinations(), 'أُرسل الرمزُ مرّتين');
+        $this->assertSame(1, $this->dayCount('91234567'));
+        $this->assertSame('cooldown', PortalOtp::request('91234567')['reason'], 'الدقيقتان سقطتا');
+    }
+
+    /** ومهلةٌ بلا ردّ (قد تكون خرجت): لا تُعاد، وتُحسب، وتحجز الدقيقتين. */
+    public function test_a_timed_out_send_is_not_resent_and_still_counts(): void
+    {
+        $this->client('سالم', '91234567');
+        $sends = 0;
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::fake(function ($request) use (&$sends) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'open']], 200);
+            }
+
+            $sends++;
+
+            throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out after 30000 milliseconds');
+        });
+
+        $result = PortalOtp::request('91234567');
+
+        $this->assertTrue($result['ok'], 'الرمزُ قد يكون وصل — الصفحةُ تبقى عند خطوة إدخاله');
+        $this->assertSame('unconfirmed', $result['reason']);
+        $this->assertSame(1, $sends, 'مهلةٌ بلا ردّ أُعيدت — قد يصل الرمزُ مرّتين');
+        $this->assertSame(1, $this->dayCount('91234567'));
+        $this->assertSame('cooldown', PortalOtp::request('91234567')['reason']);
+    }
+
+    /** وسببُ الجسر الخامُ لا يُعرض لزائرٍ مجهول — يبقى في السجلّ وصفّ الدفتر. */
+    public function test_raw_bridge_errors_never_reach_the_visitor(): void
+    {
+        $this->client('سالم', '91234567');
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::fake(fn ($request) => str_contains($request->url(), '/instance/connectionState/')
+            ? Http::response(['instance' => ['state' => 'open']], 200)
+            : Http::response(['status' => 500, 'response' => ['message' => 'Invalid `this.prismaRepository.contact.findMany()` invocation in /evolution/dist/main.js']], 500));
+
+        $result = PortalOtp::request('91234567');
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringNotContainsString('prisma', mb_strtolower($result['message']));
+        $this->assertStringNotContainsString('/evolution', $result['message']);
+        $this->assertStringContainsString('prisma', mb_strtolower((string) WhatsAppMessage::latest('id')->value('error_title')));
+    }
+
+    /**
+     * رفضٌ يقينيّ عند الطلب الثاني لا يُبطل الرمزَ الأوّل الذي في يد الموكّل.
+     *
+     * كان الرمزُ الجديدُ يُكتب قبل الإرسال ثمّ يُمحى عند الإخفاق — فيمحو معه الرمزَ
+     * السابقَ الصالح، فيكتبه الموكّلُ فيُقال «انتهت صلاحيته».
+     */
+    public function test_a_refused_resend_keeps_the_code_already_delivered(): void
+    {
+        $this->client('سالم', '91234567');
+        $refuse = false;
+        $first = null;
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::fake(function ($request) use (&$refuse, &$first) {
+            if (str_contains($request->url(), '/instance/connectionState/')) {
+                return Http::response(['instance' => ['state' => 'open']], 200);
+            }
+
+            if ($refuse) {
+                return Http::response(['status' => 400, 'response' => ['message' => [['exists' => false]]]], 400);
+            }
+
+            preg_match('/(\d{6})/', (string) $request['text'], $m);
+            $first = $m[1] ?? null;
+
+            return Http::response(['key' => ['id' => 'OTP-1']], 201);
+        });
+
+        $this->assertTrue(PortalOtp::request('91234567')['ok']);
+        $this->travel(130)->seconds();
+        $refuse = true;
+
+        $this->assertSame('send_failed', PortalOtp::request('91234567')['reason']);
+        $this->assertTrue(PortalOtp::hasLiveCode('91234567'));
+        $this->assertTrue(PortalOtp::verify('91234567', (string) $first)['ok'], 'الرمزُ الأوّل أُبطل برفض الثاني');
+    }
+
+    private function dayCount(string $phone): int
+    {
+        return (int) \Illuminate\Support\Facades\Cache::get(
+            'portal_otp_day:' . hash_hmac('sha256', Client::normalizePhone($phone), (string) config('app.key')), 0
         );
     }
 

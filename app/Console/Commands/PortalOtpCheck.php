@@ -89,6 +89,16 @@ class PortalOtpCheck extends Command
             $to = PortalOtp::destination($client, $raw);
             $masked = strlen($to) > 4 ? '+' . substr($to, 0, 3) . str_repeat('•', max(0, strlen($to) - 7)) . substr($to, -4) : $to;
             $this->line("الرقم: <fg=green>موكّلٌ واحد</> (#{$client->id}) — يُرسل الرمزُ إلى واتساب {$masked}");
+
+            $own = \App\Models\WhatsAppContact::normalizeWaId((string) WhatsAppSettings::displayPhone());
+
+            if ($own !== '' && $own === $to) {
+                $this->line('  <fg=red>وهذا رقمُ واتساب المكتب نفسُه</> — الرسالةُ منه إليه تقع في «أنت» بلا تنبيه. جرّب برقمٍ آخر.');
+                $ok = false;
+            } elseif (!\App\Models\WhatsAppContact::isSendable($to)) {
+                $this->line('  <fg=red>والرقمُ في ملفّ الموكّل ناقص</> — صحّحه في صفحة العملاء.');
+                $ok = false;
+            }
         }
 
         // ٤) آخرُ ما جرى لرموز البوابة — الحالةُ والسببُ وحدهما، بلا رقمٍ ولا رمز

@@ -73,7 +73,7 @@ class ClientLinkController extends Controller
     private function refuse(): RedirectResponse
     {
         return redirect()->route('client.access')
-            ->with('portal_error', 'انتهت صلاحية الرابط أو سبق استعماله. ادخل برقم هويّتك للاطّلاع على قضاياك.');
+            ->with('portal_error', 'انتهت صلاحية الرابط أو سبق استعماله. اكتب رقمَ هاتفك ليصلك رمزُ الدخول على واتساب.');
     }
 
     /** وجهةٌ مفكّكة ⇐ عنوانٌ يُبنى الآن بالنطاق الحالي. */
