@@ -129,12 +129,15 @@ class AuditBatchThreeTest extends TestCase
         CourtSession::create([
             'case_id' => $case->id, 'date' => now()->addDays(3), 'location' => 'قاعة 1', 'status' => 'upcoming',
             'notes' => 'القاضي يميل إلى الخصم — نحتاج شاهداً آخر',
-            'report' => 'أُجّلت الجلسة إلى موعدٍ لاحق',
+            // «القرار» داخليٌّ كالملاحظات؛ وما يُكتب للموكّل خانتُه client_summary
+            'report' => 'نطلب ندبَ خبيرٍ في الجلسة القادمة',
+            'client_summary' => 'أُجّلت الجلسة إلى موعدٍ لاحق',
         ]);
 
         $html = $this->actingAs($user)->get(route('client.sessions'))->assertOk()->getContent();
 
         $this->assertStringNotContainsString('يميل إلى الخصم', $html, 'ملاحظةُ المحامي الداخليّة وصلت الموكّل');
         $this->assertStringContainsString('أُجّلت الجلسة', $html, 'ضاع الملخّصُ المكتوبُ للموكّل');
+        $this->assertStringNotContainsString('ندبَ خبير', $html, 'القرارُ الداخليُّ وصل الموكّل');
     }
 }

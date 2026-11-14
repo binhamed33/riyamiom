@@ -189,7 +189,8 @@
                         <input type="hidden" name="client_visible" value="0">
                         <label class="mt-3 flex items-start gap-2 cursor-pointer" :class="!shareable[access] ? 'opacity-50 cursor-not-allowed' : ''">
                             <input type="checkbox" name="client_visible" value="1" data-client-visible
-                                   {{ old('client_visible') ? 'checked' : '' }}
+                                   {{-- مؤشَّرةٌ افتراضاً (وتُطفأ وحدها إن لم يُتَح المستوى) --}}
+                                   {{ old('client_visible', '1') ? 'checked' : '' }}
                                    :disabled="!shareable[access]"
                                    x-effect="if (!shareable[access]) $el.checked = false"
                                    class="mt-0.5 w-4 h-4 rounded border-gray-300 text-gold focus:ring-gold">

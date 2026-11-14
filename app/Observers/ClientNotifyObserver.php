@@ -72,6 +72,11 @@ class ClientNotifyObserver
             return;
         }
 
+        // جلسةٌ تُقيَّد بعد انعقادها ومعها ما جرى فيها: رسالةٌ واحدة تكفي
+        if ($this->sessionResult($session)) {
+            return;
+        }
+
         ClientNotifications::record(ClientEvents::SESSION_NEW, $case->client, $case, [
             'key' => (string) $session->id,
             'title' => 'حُدِّد موعدُ جلسةٍ في قضيتكم.',
@@ -81,9 +86,44 @@ class ClientNotifyObserver
         ]);
     }
 
+    /**
+     * المحامي كتب للموكّل ما جرى في الجلسة.
+     *
+     * المفتاحُ الجلسةُ وموعدُها: تصحيحُ كلمةٍ في النصّ لا يُرسل ثانيةً،
+     * وجلسةٌ أُجّلت ثمّ كُتب ما جرى في موعدها الجديد خبرٌ جديد. والنصُّ
+     * نفسُه لا يُرسل في واتساب — يُقرأ في البوابة بعد الدخول.
+     *
+     * ويُرجع «أُبلغ» ليغني عن خبر الموعد في الحفظة نفسها: سطرُه يحمل الموعد،
+     * ورسالتان لفعلٍ واحد («حُدّد موعد» و«أضاف ما جرى») ضجيجٌ يُتجاهَل.
+     */
+    public function sessionResult(Session $session): bool
+    {
+        if (trim((string) $session->client_summary) === '') {
+            return false;
+        }
+
+        $case = $session->case;
+        $case?->loadMissing('client');
+
+        if (!$case) {
+            return false;
+        }
+
+        return null !== ClientNotifications::record(ClientEvents::SESSION_RESULT, $case->client, $case, [
+            'key' => $session->id . ':' . optional($session->date)->format('YmdHi'),
+            'title' => 'أضاف المكتبُ ما جرى في جلسة قضيتكم.',
+            'body' => self::sessionLine($session, $case),
+            'target' => 'sessions',
+            'target_id' => $case->id,
+        ]);
+    }
+
     public function sessionUpdated(Session $session): void
     {
-        if (!$session->wasChanged('date')) {
+        // تأجيلٌ كُتب معه ما جرى: خبرُ «ما جرى» يحمل الموعدَ الجديد — رسالةٌ لا اثنتان
+        $told = $session->wasChanged('client_summary') && $this->sessionResult($session);
+
+        if ($told || !$session->wasChanged('date')) {
             return;
         }
 

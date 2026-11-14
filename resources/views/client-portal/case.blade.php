@@ -34,6 +34,11 @@
     .cd-item-body { flex: 1; min-width: 0; }
     .cd-item-title { font-size: .85rem; font-weight: 600; margin: 0; }
     .cd-item-meta { font-size: .72rem; color: var(--fg-3); margin: .12rem 0 0; }
+    .cd-item.has-summary { align-items: flex-start; }
+    /* ما جرى في الجلسة: نصٌّ يُقرأ لا وسم — يلتفّ ولا يُقصّ */
+    .cd-summary { margin-top: .55rem; padding: .6rem .75rem; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+    .cd-summary-label { display: block; font-size: .68rem; font-weight: 700; color: var(--gold); margin-bottom: .2rem; }
+    .cd-summary p { margin: 0; font-size: .82rem; line-height: 1.7; color: var(--fg); white-space: pre-line; overflow-wrap: anywhere; }
 
     /* المسار الزمني */
     .cd-tl { position: relative; padding-inline-start: 1.4rem; }
@@ -107,10 +112,17 @@
         <div class="cd-body" id="sec-sessions">
             @forelse ($sessions as $s)
                 @php $when = $s->date ? \Illuminate\Support\Carbon::parse($s->date) : null; @endphp
-                <div class="cd-item">
+                <div @class(['cd-item', 'has-summary' => filled($s->client_summary)])>
                     <div class="cd-item-body">
                         <p class="cd-item-title">{{ $when?->translatedFormat('l، j F Y') ?? '—' }}</p>
                         <p class="cd-item-meta">{{ $when?->translatedFormat('h:i A') }}@if ($s->location) · {{ $s->location }}@endif</p>
+                        {{-- ما كتبه المحامي للموكّل وحده — «القرار» و«الملاحظات» داخليّان لا يُعرضان --}}
+                        @if (filled($s->client_summary))
+                            <div class="cd-summary">
+                                <span class="cd-summary-label">{{ __('portal.sessions.summary') }}</span>
+                                <p>{{ $s->client_summary }}</p>
+                            </div>
+                        @endif
                     </div>
                     <span class="p-badge {{ $s->status === 'completed' ? 'ok' : ($s->status === 'cancelled' ? 'mute' : ($s->status === 'postponed' ? 'warn' : 'info')) }}">
                         {{ __('portal.sessions.' . ($s->status ?: 'upcoming')) }}

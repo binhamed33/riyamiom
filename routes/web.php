@@ -340,6 +340,8 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
         Route::get('/cases/trashed', [CaseController::class, 'trashed'])->name('cases.trashed');
         Route::post('/cases/{id}/restore', [CaseController::class, 'restore'])->name('cases.restore');
         Route::resource('cases', CaseController::class);
+        Route::post('/cases/{case}/share-with-client', [CaseController::class, 'shareAllWithClient'])
+            ->middleware('throttle:20,1,case-share-all')->name('cases.share-with-client');
         Route::get('/cases/{case}/summarize', [CaseController::class, 'summarize'])->name('cases.summarize');
         Route::get('/cases/{case}/file', [CaseFileController::class, 'download'])->name('cases.file');
         Route::post('/cases/detect-overdue', [CaseController::class, 'autoDetectOverdue'])->name('cases.detectOverdue');

@@ -299,6 +299,8 @@ class ClientNotificationsTest extends TestCase
         $on = [
             ClientEvents::CASE_CREATED, ClientEvents::CASE_STATUS, ClientEvents::CASE_UPDATE,
             ClientEvents::SESSION_NEW, ClientEvents::SESSION_MOVED, ClientEvents::SESSION_REMINDER,
+            // «ايش صار بالجلسات»: ما يكتبه المحامي للموكّل يصله خبرُه
+            ClientEvents::SESSION_RESULT,
             ClientEvents::INVOICE_NEW,
 
             // والرسمُ كالفاتورة: يُضاف من صفحة القضية مرئيّاً للموكّل افتراضاً،

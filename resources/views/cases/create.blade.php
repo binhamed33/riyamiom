@@ -531,6 +531,13 @@
                         </div>
                     </div>
                     <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.session_client_summary') }}</label>
+                        <textarea :name="'sessions['+i+'][client_summary]'" x-model="s.client_summary" rows="2" maxlength="5000"
+                            class="w-full rounded-lg bg-white border border-gold/25 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 resize-y"
+                            placeholder="{{ __('app.session_client_summary_placeholder') }}"></textarea>
+                        <p class="mt-1 text-[11px] text-gray-400">{{ __('app.session_client_summary_hint') }}</p>
+                    </div>
+                    <div>
                         <label class="block text-xs font-medium text-gray-400 mb-1">{{ __('app.table_notes') }}</label>
                         <textarea :name="'sessions['+i+'][notes]'" x-model="s.notes" rows="2"
                             class="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 resize-y"
@@ -547,7 +554,7 @@
             return {
                 sessions: [],
                 addSession() {
-                    this.sessions.push({ date: '', location: '', status: 'upcoming', report: '', notes: '' });
+                    this.sessions.push({ date: '', location: '', status: 'upcoming', report: '', client_summary: '', notes: '' });
                 },
                 removeSession(i) {
                     this.sessions.splice(i, 1);

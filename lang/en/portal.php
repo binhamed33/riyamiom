@@ -91,6 +91,7 @@ return [
         'completed' => 'Held',
         'postponed' => 'Postponed',
         'cancelled' => 'Cancelled',
+        'summary' => 'What happened',
     ],
 
     'timeline' => [

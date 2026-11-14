@@ -93,6 +93,7 @@ return [
         'completed' => 'منعقدة',
         'postponed' => 'مؤجَّلة',
         'cancelled' => 'ملغاة',
+        'summary' => 'ما جرى في الجلسة',
     ],
 
     'timeline' => [

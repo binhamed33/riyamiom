@@ -18,7 +18,7 @@
                         <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.location') }}</th>
                         <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.case') }}</th>
                         <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.status') }}</th>
-                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('app.notes') }}</th>
+                        <th class="px-4 py-3 text-gold-dark font-bold whitespace-nowrap">{{ __('portal.sessions.summary') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,12 +47,10 @@
                                     @endif
                                 </span>
                             </td>
-                            {{-- ‏report لا notes: الأولى ملخّصٌ يُكتب للموكّل،
-                                 والثانية ملاحظةُ المحامي لنفسه — «القاضي
-                                 يميل إلى الخصم»، «الموكّل غير متعاون».
-                                 وبوّابةُ الرابط لا تعرض أيّهما، فكانت
-                                 البوّابتان تختلفان في الشيء نفسِه. --}}
-                            <td class="px-4 py-3 text-gray-400 text-xs max-w-[200px] truncate">{{ $session->report ?: '—' }}</td>
+                            {{-- ‏client_summary وحده: هو ما يُكتب للموكّل. و«القرار» (report)
+                                 و«الملاحظات» (notes) داخليّان — خطّةٌ وتقدير — وصار نموذجُ الجلسة
+                                 يقول للمحامي ذلك صراحةً، فعرضُ أيّهما هنا يكشف ما وُعد بكتمانه. --}}
+                            <td class="px-4 py-3 text-gray-400 text-xs max-w-[200px] truncate">{{ $session->client_summary ?: '—' }}</td>
                         </tr>
                     @empty
                         <tr>

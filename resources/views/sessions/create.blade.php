@@ -107,6 +107,18 @@
                 @enderror
             </div>
 
+            {{-- للموكّل لا للمكتب: يظهر في بوابته ويصله إشعارٌ به — والقرارُ فوقه يبقى داخلياً --}}
+            <div>
+                <label for="client_summary" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.session_client_summary') }}</label>
+                <textarea id="client_summary" name="client_summary" rows="3" maxlength="5000"
+                          class="w-full rounded-lg bg-white border border-gray-200 text-gray-900 px-3 py-2.5 focus:ring-2 focus:ring-gold-dark focus:border-gold/40 @error('client_summary') border-red-500 @enderror"
+                          placeholder="{{ __('app.session_client_summary_placeholder') }}">{{ old('client_summary') }}</textarea>
+                <p class="mt-1 text-[11px] text-gray-400">{{ __('app.session_client_summary_hint') }}</p>
+                @error('client_summary')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
             <div class="flex items-center gap-3 pt-4">
                 <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm">
                     {{ __('app.save') }}

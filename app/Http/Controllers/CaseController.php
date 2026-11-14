@@ -263,6 +263,7 @@ class CaseController extends Controller
                         'status'   => $sessionData['status'] ?? 'upcoming',
                         'notes'    => $sessionData['notes'] ?? '',
                         'report'   => $sessionData['report'] ?? '',
+                        'client_summary' => $sessionData['client_summary'] ?? null,
                     ]);
                 }
             }
@@ -523,6 +524,7 @@ class CaseController extends Controller
             'status' => $s->status,
             'notes' => $s->notes,
             'report' => $s->report,
+            'client_summary' => $s->client_summary,
         ])->values();
 
         $aiMessagesData = $case->aiMessages->sortBy('created_at')->take(-40)->map(fn($m) => [
@@ -560,6 +562,7 @@ class CaseController extends Controller
             'case_type' => 'النوع', 'title' => 'العنوان', 'lawyer_id' => 'المحامي',
             'date' => 'الموعد', 'location' => 'المكان', 'due_date' => 'الاستحقاق',
             'assigned_to' => 'المسؤول', 'notes' => 'الملاحظات', 'report' => 'القرار',
+            'client_summary' => 'ما يراه الموكّل',
         ];
         // القيمةُ بحسب حقلها: كانت خريطةُ الحالات وحدَها تُطبَّق على كلّ
         // حقل، فتظهر «الأولوية: high ← medium» والتاريخُ بـ«T00:00:00Z»
@@ -632,6 +635,119 @@ class CaseController extends Controller
         $users = User::where('is_active', true)->orderBy('name')->get();
 
         return view('cases.edit', compact('case', 'clients', 'users'));
+    }
+
+    /**
+     * ما في القضية من بنودٍ مخفيّةٍ عن الموكّل يملك هذا المستخدمُ إتاحتَها.
+     *
+     * الزرُّ لمدير المكتب أو محامي القضية. وكلُّ بندٍ بقاعدته التي يسألها
+     * مكانُه الأصليّ، فلا يكون الزرُّ بابَ صلاحيةٍ أوسع:
+     *  • المالُ: كلُّه للمدير، وللمحامي ما أنشأه هو فقط — كما يحكم
+     *    FinanceController::updateFee/updateInvoice. كان الزرُّ يُتيح رسماً
+     *    داخلياً سجّله المديرُ على قضية المحامي، وهو ممنوعٌ منه هناك.
+     *  • والفاتورةُ المعلَّقةُ على القضية باسم موكّلٍ آخر (شريكٍ أو كفيل) لا
+     *    تُتاح لموكّل القضية: كانت أرقامُها تُضاف إلى «ما عليه».
+     *  • ومستندُ «الفريق» لا يُتيحه الموظّف (Document::canBeSharedBy)، والخاصُّ
+     *    لا يُتاح أبداً.
+     *  • وقسمٌ أطفأه المكتبُ في إعدادات البوابة لا يُعدّ: لا يُوعَد الموكّلُ بما
+     *    لن يراه.
+     * فالعدُّ على الزرّ هو ما سيظهر فعلاً لا أكثر.
+     *
+     * @return array{documents: \Illuminate\Support\Collection<int,int>, finance: bool, money: bool, count: int, fees: \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\HasMany|null, invoices: \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\HasMany|null}
+     */
+    public static function hiddenFromClient(LegalCase $case, ?User $user): array
+    {
+        $none = ['documents' => collect(), 'finance' => false, 'money' => false, 'count' => 0, 'fees' => null, 'invoices' => null];
+
+        if (!$user || !$case->client_id) {
+            return $none;
+        }
+
+        $admin = in_array($user->role, ['developer', 'admin'], true);
+
+        if (!$admin && (int) $case->lawyer_id !== (int) $user->id) {
+            return $none;
+        }
+
+        $documents = \App\Support\ClientPortal::showsDocuments()
+            ? $case->documents()
+                ->where('client_visible', false)
+                ->get(['id', 'access_level'])
+                ->filter(fn ($d) => Document::canBeSharedBy($user, $d->access_level))
+                ->pluck('id')
+            : collect();
+
+        $money = \App\Support\ClientPortal::showsAccounting();
+        $own = fn ($q) => $admin ? $q : $q->where('user_id', $user->id);
+        $fees = $own($case->fees()->where('client_visible', false));
+        $invoices = $own($case->invoices()->where('client_visible', false)
+            ->where(fn ($q) => $q->whereNull('client_id')->orWhere('client_id', $case->client_id)));
+
+        $count = $documents->count() + ($money ? (clone $fees)->count() + (clone $invoices)->count() : 0);
+
+        return ['documents' => $documents, 'finance' => true, 'money' => $money, 'count' => $count,
+            'fees' => $money ? $fees : null, 'invoices' => $money ? $invoices : null];
+    }
+
+    /**
+     * ═══ «إظهار الكل للموكّل» ═══
+     *
+     * كانت البنودُ تُرفع مخفيّةً افتراضاً، والمكتبُ لا يعرف أنّ عليه تعليمَ
+     * كلٍّ منها — فبقيت البوابةُ فارغةً والموكّلُ يقول «كأنّ وجودها عدمها».
+     * والزرُّ يُتيح ما سبق بضغطةٍ واحدة.
+     *
+     * بالاستعلام لا بالنموذج عمداً: عشرون مستنداً لا تصير عشرين رسالةَ واتساب.
+     * بل إشعارٌ واحدٌ يقول للموكّل إنّ في بوابته جديداً.
+     */
+    public function shareAllWithClient(LegalCase $case): RedirectResponse
+    {
+        $this->authorizeCaseAccess($case);
+
+        $user = auth()->user();
+        $hidden = self::hiddenFromClient($case, $user);
+        abort_unless($hidden['finance'], 403);
+
+        if ($hidden['count'] === 0) {
+            return redirect()->route('cases.show', $case)->with('success', __('app.portal_share_all_none'));
+        }
+
+        // الاستعلاماتُ نفسُها التي عُدّت على الزرّ — لا قاعدةَ ثانيةً تختلف عنها
+        $shared = DB::transaction(function () use ($hidden) {
+            $n = Document::whereIn('id', $hidden['documents'])
+                ->where('client_visible', false)
+                ->where('access_level', '!=', Document::ACCESS_PRIVATE)
+                ->update(['client_visible' => true]);
+
+            if ($hidden['money']) {
+                $n += $hidden['fees']->update(['client_visible' => true]);
+                $n += $hidden['invoices']->update(['client_visible' => true]);
+            }
+
+            return $n;
+        });
+
+        $this->logAudit(
+            AuditLog::ACTION_UPDATE,
+            LegalCase::class,
+            $case->id,
+            ['client_visible' => 'hidden'],
+            ['client_visible' => 'shared', 'items' => $shared]
+        );
+
+        $case->loadMissing('client');
+        \App\Services\ClientPortal\ClientNotifications::record(\App\Support\ClientEvents::CASE_UPDATE, $case->client, $case, [
+            // مرّةً في اليوم للقضية: ضغطتان متتاليتان لا تُرسلان رسالتين. ورقمُ
+            // القضية في المفتاح — المفتاحُ فريدٌ في الجدول كلّه، وبدونه لا يُبلَّغ
+            // إلا أوّلُ موكّلٍ في المكتب يومَها
+            'key' => 'shared:' . $case->id . ':' . now()->format('Ymd'),
+            'title' => 'أُتيحت لكم في البوابة مستنداتٌ وبنودٌ من ملفّ قضيتكم.',
+            'body' => ($case->case_number ?: $case->office_case_number) ? 'رقم القضية: ' . ($case->case_number ?: $case->office_case_number) : null,
+            'target' => 'case',
+            'target_id' => $case->id,
+        ]);
+
+        return redirect()->route('cases.show', $case)
+            ->with('success', __('app.portal_share_all_done', ['count' => $shared]));
     }
 
     public function update(Request $request, LegalCase $case): RedirectResponse
@@ -760,6 +876,11 @@ class CaseController extends Controller
                         'notes'    => $sessionData['notes'] ?? '',
                         'report'   => $sessionData['report'] ?? '',
                     ];
+
+                    // يُكتب إن أُرسل فقط: نموذجٌ لا يحمل الخانة لا يمحو ما كتبه المحامي للموكّل
+                    if (array_key_exists('client_summary', $sessionData)) {
+                        $sessionFields['client_summary'] = $sessionData['client_summary'] ?: null;
+                    }
 
                     if (!empty($sessionData['id'])) {
                         Session::where('id', $sessionData['id'])->where('case_id', $case->id)->first()?->update($sessionFields);

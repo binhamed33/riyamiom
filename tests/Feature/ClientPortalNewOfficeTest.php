@@ -35,8 +35,13 @@ class ClientPortalNewOfficeTest extends TestCase
         $this->assertTrue(ClientPortal::showsSessions());
         $this->assertTrue(ClientPortal::showsTimeline());
 
-        // الخصوصية تبدأ مغلقة
-        $this->assertFalse(ClientPortal::showsDocuments(), 'المستندات يجب أن تبدأ مغلقة.');
+        // قسما المستندات والحسابات ظاهران: كانا مطفأين والبنودُ مخفيّةً معاً، فبدت
+        // البوابةُ فارغةً («كأنّ وجودها عدمها»). والحاجزُ في البند نفسه — مستندٌ
+        // غيرُ معلَّمٍ أو خاصٌّ لا يظهر (ClientPortalDefaultsVisibilityTest)
+        $this->assertTrue(ClientPortal::showsDocuments(), 'قسمُ المستندات يبدأ ظاهراً.');
+        $this->assertTrue(ClientPortal::showsAccounting(), 'قسمُ الحسابات يبدأ ظاهراً.');
+
+        // وبيانات الخصم تبقى مغلقة
         $this->assertFalse(ClientPortal::showsOpponent(), 'بيانات الخصم يجب أن تبدأ مغلقة.');
 
         // صفحةُ الدخول (برمز واتساب) تعمل من اللحظة الأولى

@@ -1269,4 +1269,15 @@ return [
     'audit_field_duration' => 'Duration',
     'audit_field_start_at' => 'Starts',
     'audit_field_end_at' => 'Ends',
+
+    // What the client is told about a session — shown in the portal; the decision stays internal
+    'session_client_summary' => 'For the client',
+    'session_client_summary_hint' => 'Shown to the client in the portal, and the client is notified. Write what they should be told — the decision and notes stay internal.',
+    'session_client_summary_placeholder' => 'e.g. We attended and filed our brief; adjourned for the other side to respond.',
+    'session_client_summary_badge' => 'Written for the client',
+    'portal_share_all' => 'Show all to the client',
+    'portal_share_all_hint' => 'Shows every hidden document, fee and invoice of this case in the client portal — except private documents.',
+    'portal_share_all_confirm' => 'The client will see :count currently hidden items (documents, fees, invoices) in the portal — except private documents. Continue?',
+    'portal_share_all_done' => ':count items are now visible to the client in the portal.',
+    'portal_share_all_none' => 'Nothing in this case is hidden from the client.',
 ];

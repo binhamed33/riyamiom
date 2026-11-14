@@ -30,10 +30,13 @@ class ClientPortal
         self::KEY_ENABLED => '1',
         self::KEY_SHOW_SESSIONS => '1',
         self::KEY_SHOW_TIMELINE => '1',
-        self::KEY_SHOW_DOCUMENTS => '0',   // لا مستند إلا بقرار صريح
+        // القسمُ ظاهرٌ والبندُ يُعلَّم: كان القسمان مطفأين والبنودُ مخفيّةً معاً،
+        // فبدت البوابةُ فارغةً حتى بعد أن يعلّم المكتبُ ما يريد. والحاجزُ باقٍ في
+        // البند نفسه (client_visible، والخاصُّ لا يظهر أبداً)
+        self::KEY_SHOW_DOCUMENTS => '1',
         self::KEY_SHOW_OPPONENT => '0',    // بيانات الخصم ليست للعرض افتراضاً
         self::KEY_SHOW_LAWYER => '1',
-        self::KEY_SHOW_ACCOUNTING => '0',  // المال لا يُعرض إلا بقرار صريح
+        self::KEY_SHOW_ACCOUNTING => '1',
     ];
 
     public static function enabled(): bool

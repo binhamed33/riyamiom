@@ -69,6 +69,13 @@
                 <div class="bg-gray-100 rounded-lg p-4 text-gray-700 leading-relaxed whitespace-pre-wrap">{{ $session->report }}</div>
             </div>
         @endif
+
+        @if ($session->client_summary)
+            <div class="mt-6">
+                <h4 class="text-sm text-gray-500 mb-2">{{ __('app.session_client_summary') }} <span class="text-[11px] text-gold-dark">· {{ __('app.session_client_summary_badge') }}</span></h4>
+                <div class="bg-gold/5 border border-gold/20 rounded-lg p-4 text-gray-700 leading-relaxed whitespace-pre-wrap">{{ $session->client_summary }}</div>
+            </div>
+        @endif
     </div>
 
     <div class="bg-white rounded-xl border border-gray-200 p-6">

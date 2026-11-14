@@ -37,6 +37,7 @@ class ClientEvents
     public const SESSION_NEW = 'session_new';
     public const SESSION_MOVED = 'session_moved';
     public const SESSION_REMINDER = 'session_reminder';
+    public const SESSION_RESULT = 'session_result';
     public const APPOINTMENT_NEW = 'appointment_new';
     public const APPOINTMENT_MOVED = 'appointment_moved';
     public const APPOINTMENT_CANCELLED = 'appointment_cancelled';
@@ -108,6 +109,12 @@ class ClientEvents
             self::SESSION_REMINDER => [
                 'label' => 'تذكير قبل الجلسة',
                 'hint' => 'قبل الموعد بالمدّة المضبوطة',
+                'target' => 'sessions',
+                'default' => true,
+            ],
+            self::SESSION_RESULT => [
+                'label' => 'ما جرى في الجلسة',
+                'hint' => 'حين يكتب المحامي خانةَ «ما يراه الموكّل» في الجلسة',
                 'target' => 'sessions',
                 'default' => true,
             ],

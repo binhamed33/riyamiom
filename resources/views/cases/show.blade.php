@@ -25,7 +25,9 @@ document.addEventListener('alpine:init', () => {
         quickErr: null,
         activityForm: { type: 'note', title: '', content: '' },
         taskForm: { title: '', description: '', priority: 'medium', due_date: '' },
-        docForm: { title: '', file: null, client_visible: false },
+        // مرئيٌّ افتراضاً لمن يملك الإتاحة: المستندُ يُرفع ليراه الموكّل غالباً،
+        // وإخفاؤه هو الاستثناء — وكان العكسُ يترك البوابةَ فارغة
+        docForm: { title: '', file: null, client_visible: @json(\App\Models\Document::canBeSharedBy(auth()->user(), \App\Models\Document::ACCESS_TEAM)) },
         async quickSubmit() {
             if (this.quickBusy) return;
             this.quickBusy = true;
@@ -66,7 +68,7 @@ document.addEventListener('alpine:init', () => {
                         body: fd
                     });
                     if (!res.ok) { this.quickErr = 'تعذر رفع المستند'; return; }
-                    this.docForm = { title: '', file: null, client_visible: false };
+                    this.docForm = { title: '', file: null, client_visible: @json(\App\Models\Document::canBeSharedBy(auth()->user(), \App\Models\Document::ACCESS_TEAM)) };
                 }
                 this.quickMsg = 'تم الحفظ بنجاح';
                 this.$nextTick(() => setTimeout(() => { this.quickMsg = null; }, 4000));
@@ -79,6 +81,7 @@ document.addEventListener('alpine:init', () => {
         reportModal: false,
         reportSessionId: null,
         reportText: '',
+        clientText: '',
         reportSaving: false,
         analyzing: false,
         init() {
@@ -221,6 +224,7 @@ document.addEventListener('alpine:init', () => {
             this.reportSessionId = id;
             const s = this.reportSession;
             this.reportText = s ? s.report || '' : '';
+            this.clientText = s ? s.client_summary || '' : '';
             this.reportModal = true;
         },
         async saveReport() {
@@ -237,12 +241,14 @@ document.addEventListener('alpine:init', () => {
                         location: s.location,
                         status: s.status,
                         notes: s.notes || '',
-                        report: this.reportText
+                        report: this.reportText,
+                        client_summary: this.clientText
                     })
                 });
                 this.reportSaving = false;
                 if (res.ok) {
                     s.report = this.reportText;
+                    s.client_summary = this.clientText;
                     this.reportModal = false;
                     this.reportSessionId = null;
                 } else {
@@ -474,6 +480,22 @@ document.addEventListener('alpine:init', () => {
                     <div x-show="portalResult" x-cloak class="text-xs font-medium mt-0.5" :class="portalResult?.ok ? 'text-green-600' : 'text-red-600'" x-text="portalResult?.text"></div>
                     @endif
                 </div>
+                {{-- ما زال في القضية ما لا يراه الموكّل: زرٌّ واحدٌ يُتيحه كلَّه (عدا الخاصّ) --}}
+                @php $__hidden = \App\Http\Controllers\CaseController::hiddenFromClient($case, auth()->user()); @endphp
+                @if($__hidden['count'] > 0)
+                {{-- التأكيدُ بـdata-confirm وحده: يقرؤه معالجُ التخطيط المفوَّض (layouts/app). كان معه
+                     ‏@submit يسأل ثانيةً — سؤالان لضغطةٍ واحدة، ورفضُ الثاني يُلغي ما قُبل في الأوّل --}}
+                <form method="POST" action="{{ route('cases.share-with-client', $case) }}" class="mt-2" data-share-all
+                      data-confirm="{{ __('app.portal_share_all_confirm', ['count' => $__hidden['count']]) }}">
+                    @csrf
+                    <button type="submit" title="{{ __('app.portal_share_all_hint') }}"
+                            class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gold/10 text-gold-dark border border-gold/25 hover:bg-gold/20 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        {{ __('app.portal_share_all') }}
+                        <span class="px-1.5 rounded bg-white/70 text-gold-dark">{{ $__hidden['count'] }}</span>
+                    </button>
+                </form>
+                @endif
             </div>
             <div>
                 <p class="text-gray-400 text-xs mb-1">{{ __('app.case_lawyer') }}</p>
@@ -754,7 +776,8 @@ document.addEventListener('alpine:init', () => {
                                     <td class="px-3 py-2.5">
                                         <button @click="openReport(s.id)" class="text-xs"
                                             :class="reportSession && reportSession.id === s.id && reportText ? 'text-gold-dark' : 'text-gray-400 hover:text-gold-dark'"
-                                            x-text="s.report ? '{{ __('app.view_decision') }}' : '{{ __('app.add_decision') }}'"></button>
+                                            x-text="s.report || s.client_summary ? '{{ __('app.view_decision') }}' : '{{ __('app.add_decision') }}'"></button>
+                                        <span x-show="s.client_summary" x-cloak class="block text-[10px] text-gold-dark mt-0.5">{{ __('app.session_client_summary_badge') }}</span>
                                     </td>
                                 </tr>
                             </template>
@@ -1148,9 +1171,16 @@ document.addEventListener('alpine:init', () => {
                 </button>
             </div>
             <div class="px-6 py-5 overflow-y-auto flex-1">
-                <textarea x-model="reportText" rows="8"
+                <textarea x-model="reportText" rows="6"
                     class="w-full rounded-lg bg-white border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 resize-y"
                     placeholder="{{ __('app.session_decision_placeholder') }}"></textarea>
+
+                {{-- القرارُ أعلاه للمكتب؛ وهذه للموكّل — تظهر في بوابته ويصله إشعارٌ بها --}}
+                <label class="block text-sm font-bold text-gold-dark mt-4 mb-1.5">{{ __('app.session_client_summary') }}</label>
+                <textarea x-model="clientText" rows="4" maxlength="5000" data-client-summary
+                    class="w-full rounded-lg bg-white border border-gold/30 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-gold-dark focus:border-gold/40 resize-y"
+                    placeholder="{{ __('app.session_client_summary_placeholder') }}"></textarea>
+                <p class="mt-1 text-[11px] text-gray-400">{{ __('app.session_client_summary_hint') }}</p>
             </div>
             <div class="px-6 py-3 border-t border-gray-200 flex justify-end gap-3">
                 <button @click="reportModal = false" aria-label="{{ __('app.close') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">

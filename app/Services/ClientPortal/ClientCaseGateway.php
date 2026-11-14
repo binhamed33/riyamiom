@@ -113,7 +113,11 @@ class ClientCaseGateway
         }
 
         $fees = $case->fees()->visibleToClient()->get();
-        $invoices = $case->invoices()->visibleToClient()->get();
+        // فاتورةُ موكّلٍ آخر معلَّقةٌ على القضية (شريكٌ أو كفيل) ليست على هذا الموكّل:
+        // كانت أرقامُها تظهر له وتُضاف إلى «ما عليه»
+        $invoices = $case->invoices()->visibleToClient()
+            ->where(fn ($q) => $q->whereNull('client_id')->orWhere('client_id', $this->client->id))
+            ->get();
 
         if ($fees->isEmpty() && $invoices->isEmpty()) {
             return $empty;

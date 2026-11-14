@@ -200,6 +200,7 @@ class CourtSessionController extends Controller
             'status'   => 'required|in:upcoming,completed,postponed,cancelled',
             'notes'    => 'nullable|string',
             'report'   => 'nullable|string',
+            'client_summary' => 'nullable|string|max:5000',
         ]);
 
         $case = LegalCase::findOrFail($validated['case_id']);
@@ -243,6 +244,7 @@ class CourtSessionController extends Controller
             'status'   => 'required|in:upcoming,completed,postponed,cancelled',
             'notes'    => 'nullable|string',
             'report'   => 'nullable|string',
+            'client_summary' => 'nullable|string|max:5000',
         ]);
 
         $case = LegalCase::findOrFail($validated['case_id']);
@@ -283,6 +285,7 @@ class CourtSessionController extends Controller
                 'status'   => $session->status,
                 'notes'    => $session->notes,
                 'report'   => $session->report,
+                'client_summary' => $session->client_summary,
             ],
         ]);
     }
@@ -305,18 +308,23 @@ class CourtSessionController extends Controller
         return view('sessions.edit', compact('session', 'cases'));
     }
 
-    public function update(Request $request, Session $session): RedirectResponse
+    public function update(Request $request, Session $session): RedirectResponse|JsonResponse
     {
         $this->authorizeSessionAccess($session);
 
         $validated = $request->validate([
             'case_id'  => 'required|exists:cases,id',
             'date'     => 'required|date',
-            'location' => 'required|string|max:255',
+            'location' => 'nullable|string|max:255',
             'status'   => 'required|in:upcoming,completed,postponed,cancelled',
             'notes'    => 'nullable|string',
             'report'   => 'nullable|string',
+            'client_summary' => 'nullable|string|max:5000',
         ]);
+
+        // جلسةُ «الإضافة السريعة» بلا مكان (quickStore يقبله فارغاً): كان الحقلُ
+        // إلزامياً هنا فترفض نافذةُ «القرار» حفظَها بـ422 — فلا يُكتب للموكّل شيء
+        $validated['location'] = $validated['location'] ?? ($session->location ?? '');
 
         $oldValues = $session->toArray();
         $session->update($validated);
@@ -332,6 +340,18 @@ class CourtSessionController extends Controller
         $case = LegalCase::find($session->case_id);
         if ($case) {
             \App\Services\ClientNotifier::notifyCaseUpdate($case);
+        }
+
+        // نافذةُ «القرار» في صفحة القضية تحفظ بـfetch ‏(PUT): كان الردُّ تحويلاً 302،
+        // والمتصفّحُ يعيد PUT على التحويل (لا يحوّله GET إلا لـPOST) — فيُحدَّث
+        // الصفُّ مرّتين ويُسجَّل في السجلّ مرّتين، وخلف وكيلٍ يقلب الرابطَ https
+        // تفشل الإعادةُ فتبقى النافذةُ مفتوحةً كأنّ الحفظ لم يتمّ
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'session' => [
+                'id' => $session->id,
+                'report' => $session->report,
+                'client_summary' => $session->client_summary,
+            ]]);
         }
 
         return redirect()->route('sessions.show', $session)

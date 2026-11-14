@@ -20,6 +20,8 @@ class Session extends Model
         'status',
         'notes',
         'report',
+        // ما يُقال للموكّل عن الجلسة — يظهر في بوابته؛ «report» يبقى داخلياً
+        'client_summary',
     ];
 
     protected function casts(): array
