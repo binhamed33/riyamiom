@@ -108,20 +108,55 @@ class WhatsAppSweep extends Command
             return;
         }
 
-        $due = \App\Models\WhatsAppMessage::query()
-            ->where('status', \App\Models\WhatsAppMessage::STATUS_QUEUED)
-            ->whereNotNull('hold_until')
-            ->where('hold_until', '<=', now())
+        $released = \App\Jobs\SendWhatsAppMessage::releaseDue(self::REDISPATCH_CAP);
+
+        if ($released > 0) {
+            $this->line('  أُفرج عن ' . $released . ' رسالة حان موعدها');
+        }
+
+        // ═══ شبكةُ أمانٍ لما ضاع في الطريق ═══
+        //
+        // إشعارٌ لم تُعالَج مهمّتُه (سقطت، أو مُحي الطابور، أو أخفق دفعُها) يبقى
+        // «معلّقاً» أبداً، ورسالةٌ «في الطابور» بلا موعدِ حجزٍ لا يدفعها أحد. فما
+        // مضى عليه عشرُ دقائق يُعاد دفعُه — والمهمّتان تتحقّقان قبل أن تُرسلا،
+        // فلا يصل شيءٌ مرّتين.
+        $lostNotifications = \App\Models\ClientNotification::query()
+            ->where('channel_state', \App\Models\ClientNotification::PENDING)
+            ->whereNull('notified_at')
+            // صمتُ عشر دقائق منذ آخر محاولة (أطولُ مهلةٍ خمس) — لا منذ الإنشاء
+            ->where('updated_at', '<=', now()->subMinutes(10))
+            // ستُّ ساعاتٍ = retryUntil المهمّة: ما بعدها خبرٌ فات (تذكيرُ جلسةٍ
+            // انعقدت) — وكلُّ دفعٍ جديدٍ يبدأ مهلتَها من الصفر فلا شيءَ آخرَ يحدّه
+            ->where('created_at', '>=', now()->subHours(6))
             ->orderBy('id')
             ->limit(self::REDISPATCH_CAP)
             ->pluck('id');
 
-        foreach ($due as $id) {
+        foreach ($lostNotifications as $id) {
+            \App\Jobs\SendClientNotification::dispatch((int) $id);
+        }
+
+        $lostMessages = \App\Models\WhatsAppMessage::query()
+            ->where('status', \App\Models\WhatsAppMessage::STATUS_QUEUED)
+            ->where('direction', \App\Models\WhatsAppMessage::OUT)
+            ->where('is_internal', false)
+            // صفُّ رمز البوابة بديلٌ لا يحمل الرمز — إرسالُه يبعث للموكّل نصَّ «لا يُعرض هنا»
+            ->where(fn ($q) => $q->whereNull('body')->orWhere('body', '!=', \App\Services\ClientPortal\PortalOtp::LEDGER_BODY))
+            ->whereNull('hold_until')
+            // الصمتُ من آخر لمسة لا من الإنشاء: مهمّةٌ في مهلة إعادة المحاولة
+            // (أطولُها عشر دقائق) تلمس صفَّها — فلا تُدفع نسخةٌ ثانيةٌ موازية
+            ->where('updated_at', '<=', now()->subMinutes(15))
+            ->where('created_at', '>=', now()->subHours(6))
+            ->orderBy('id')
+            ->limit(self::REDISPATCH_CAP)
+            ->pluck('id');
+
+        foreach ($lostMessages as $id) {
             \App\Jobs\SendWhatsAppMessage::dispatch((int) $id);
         }
 
-        if ($due->isNotEmpty()) {
-            $this->line('  أُفرج عن ' . $due->count() . ' رسالة حان موعدها');
+        if ($lostNotifications->isNotEmpty() || $lostMessages->isNotEmpty()) {
+            $this->line('  أُعيد دفعُ ' . $lostNotifications->count() . ' إشعار و' . $lostMessages->count() . ' رسالة ضاعت مهمّتُها');
         }
 
         // إحياءُ ما أسقطته دورةُ التأجيل القديمة

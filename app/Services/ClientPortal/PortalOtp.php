@@ -403,9 +403,7 @@ class PortalOtp
         $byNumber = [];
 
         foreach (Client::allByPhone($rawPhone) as $client) {
-            foreach (preg_split('/[,،;\/|]+/u', (string) $client->phone) ?: [] as $candidate) {
-                $full = WhatsAppContact::normalizeWaId(trim($candidate));
-
+            foreach (WhatsAppContact::waIdsOf((string) $client->phone) as $full) {
                 if ($full !== '' && ($full === $typed || ($local !== '' && strlen($local) >= 8 && str_ends_with($full, $local)))) {
                     $byNumber[$full][$client->id] = $client;
                 }
@@ -433,13 +431,7 @@ class PortalOtp
             return false;
         }
 
-        foreach (preg_split('/[,،;\/|]+/u', (string) $client->phone) ?: [] as $candidate) {
-            if (trim($candidate) !== '' && WhatsAppContact::normalizeWaId(trim($candidate)) === $waId) {
-                return true;
-            }
-        }
-
-        return false;
+        return in_array($waId, WhatsAppContact::waIdsOf((string) $client->phone), true);
     }
 
     /**

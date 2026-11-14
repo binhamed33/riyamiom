@@ -301,6 +301,10 @@ class ClientNotificationsTest extends TestCase
             ClientEvents::SESSION_NEW, ClientEvents::SESSION_MOVED, ClientEvents::SESSION_REMINDER,
             ClientEvents::INVOICE_NEW,
 
+            // والرسمُ كالفاتورة: يُضاف من صفحة القضية مرئيّاً للموكّل افتراضاً،
+            // وصريحُ ما طُلب: «لما تصير إضافة رسوم … ما توصل له رسالة بالواتس»
+            ClientEvents::FEE_NEW,
+
             // المواعيدُ الأربعة مشغّلةٌ افتراضاً: من يحجز موعداً في
             // المكتب إنّما يحجزه ليحضر صاحبُه — وموعدٌ لا يعلم به
             // صاحبُه ليس موعداً. وهو صريحُ ما طُلب: «لما يسوي موعد

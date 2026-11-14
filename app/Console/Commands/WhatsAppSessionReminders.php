@@ -159,7 +159,7 @@ class WhatsAppSessionReminders extends Command
                 continue;
             }
 
-            $waId = WhatsAppContact::normalizeWaId((string) $client->phone);
+            $waId = WhatsAppContact::primaryWaId((string) $client->phone);
 
             // رقمٌ ناقص يُرسَل إلى Meta فيُرفض بخطأ 131026 ويُكتب «أخفق»
             // في خيط الموكّل — والعلّةُ في سجلّه لا في واتساب
@@ -326,7 +326,7 @@ class WhatsAppSessionReminders extends Command
                 continue;
             }
 
-            $waId = WhatsAppContact::normalizeWaId((string) $client->phone);
+            $waId = WhatsAppContact::primaryWaId((string) $client->phone);
 
             if (mb_strlen($waId) < 9) {
                 $this->skip($skipped, 'موكّل بلا رقم صالح');

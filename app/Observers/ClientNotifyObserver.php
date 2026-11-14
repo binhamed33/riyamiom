@@ -151,6 +151,53 @@ class ClientNotifyObserver
         ]);
     }
 
+    /** رسمٌ مرئيٌّ للموكّل أُضيف على قضيّته — ولا مبلغَ في الرسالة. */
+    public function feeCreated(\App\Models\FinanceFee $fee): void
+    {
+        if (!$fee->client_visible) {
+            return;
+        }
+
+        $case = $fee->case;
+        $client = $case?->client;
+
+        if (!$case || !$client) {
+            return;
+        }
+
+        ClientNotifications::record(ClientEvents::FEE_NEW, $client, $case, [
+            'key' => (string) $fee->id,
+            'title' => 'أُضيف رسمٌ جديد على قضيتكم.',
+            'body' => self::caseLine($case),
+            'target' => 'billing',
+            'target_id' => $case->id,
+        ]);
+    }
+
+    /**
+     * دفعةٌ قُيّدت على فاتورةٍ مرئيّةٍ للموكّل: زاد المدفوع.
+     *
+     * المفتاحُ رقمُ الفاتورة والمدفوعُ قبل الدفعة وبعدها — فدفعتان على الفاتورة
+     * نفسِها إشعاران، وحفظُ الفاتورة بلا دفعةٍ جديدةٍ لا يكرّر شيئاً.
+     */
+    public function paymentRecorded(FinanceInvoice $invoice): void
+    {
+        if (!$invoice->client_visible || !$invoice->client) {
+            return;
+        }
+
+        ClientNotifications::record(ClientEvents::PAYMENT_NEW, $invoice->client, $invoice->case, [
+            // الانتقالُ لا المجموعُ وحده: ١٠٠ ← ٦٠ تصحيحاً ثمّ دفعةُ ٤٠ تعود إلى ١٠٠
+            // — بمفتاح المجموع كانت تُطابق إشعارَ الدفعة الأولى فتُبتلع
+            'key' => $invoice->id . ':' . number_format((float) $invoice->getOriginal('paid_amount'), 3, '.', '')
+                . '>' . number_format((float) $invoice->paid_amount, 3, '.', ''),
+            'title' => 'قُيّدت دفعةٌ على فاتورتكم.',
+            'body' => $invoice->invoice_number ? 'رقم الفاتورة: ' . $invoice->invoice_number : null,
+            'target' => 'billing',
+            'target_id' => $invoice->id,
+        ]);
+    }
+
     // ── نصوصٌ قصيرة ─────────────────────────────────────────────
 
     private static function caseLine(LegalCase $case): ?string

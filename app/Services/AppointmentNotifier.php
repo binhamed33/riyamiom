@@ -71,7 +71,7 @@ class AppointmentNotifier
             return;
         }
 
-        $waId = \App\Models\WhatsAppContact::normalizeWaId($phone);
+        $waId = \App\Models\WhatsAppContact::primaryWaId($phone);
 
         if (!\App\Models\WhatsAppContact::isSendable($waId)) {
             return;

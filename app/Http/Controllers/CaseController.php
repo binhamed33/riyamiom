@@ -743,8 +743,11 @@ class CaseController extends Controller
             $processedIds = [];
             if (is_array($sessionsData)) {
                 foreach ($sessionsData as $sessionData) {
+                    // بالنموذج لا بالاستعلام، ومقيَّدةً بالقضية: الاستعلامُ لا يُطلق مراقبَ
+                    // الجلسة (فتأجيلٌ من هنا لا يصل الموكّلَ عنه شيء ولا يُكتب في مسارها)،
+                    // ومعرّفٌ مُعدَّلٌ في النموذج كان يكتب على جلسةِ قضيّةٍ أخرى
                     if (!empty($sessionData['delete'])) {
-                        Session::where('id', $sessionData['id'])->delete();
+                        Session::where('id', $sessionData['id'] ?? 0)->where('case_id', $case->id)->first()?->delete();
                         continue;
                     }
                     if (empty($sessionData['date'])) continue;
@@ -759,7 +762,7 @@ class CaseController extends Controller
                     ];
 
                     if (!empty($sessionData['id'])) {
-                        Session::where('id', $sessionData['id'])->update($sessionFields);
+                        Session::where('id', $sessionData['id'])->where('case_id', $case->id)->first()?->update($sessionFields);
                         $processedIds[] = $sessionData['id'];
                     } else {
                         $newSession = Session::create($sessionFields);

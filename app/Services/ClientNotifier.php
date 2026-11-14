@@ -126,7 +126,7 @@ class ClientNotifier
     private static function hasOptedOut(string $phone): bool
     {
         try {
-            $waId = \App\Models\WhatsAppContact::normalizeWaId($phone);
+            $waId = \App\Models\WhatsAppContact::primaryWaId($phone);
 
             if ($waId === '') {
                 return false;
@@ -150,7 +150,7 @@ class ClientNotifier
     private static function queueThroughInbox(string $phone, LegalCase $case): ?bool
     {
         try {
-            $waId = \App\Models\WhatsAppContact::normalizeWaId($phone);
+            $waId = \App\Models\WhatsAppContact::primaryWaId($phone);
 
             if ($waId === '') {
                 return null;
@@ -202,7 +202,13 @@ class ClientNotifier
                 return null;
             }
 
-            \App\Jobs\SendWhatsAppMessage::dispatch($message->id);
+            // الصفُّ قائمٌ الآن: إن سقط الدفعُ أرسله كنسُ الضائع — والرجوعُ
+            // للمسار القديم هنا كان يُرسل الرسالةَ مرّتين
+            try {
+                \App\Jobs\SendWhatsAppMessage::dispatch($message->id);
+            } catch (\Throwable $e) {
+                Log::warning('WhatsApp inbox dispatch failed, sweep will retry: ' . $e->getMessage());
+            }
 
             return true;
         } catch (\Throwable $e) {

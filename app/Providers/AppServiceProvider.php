@@ -37,8 +37,9 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\Document::observe(\App\Observers\DocumentObserver::class);
         \App\Models\LegalCase::observe(\App\Observers\LegalCaseObserver::class);
 
-        // الفاتورة وحدها بلا مراقبٍ قائم — تُراقَب هنا لإشعار الموكّل
+        // الفاتورةُ والرسمُ بلا مراقبٍ قائم — يُراقَبان هنا لإشعار الموكّل
         \App\Models\FinanceInvoice::observe(\App\Observers\FinanceInvoiceObserver::class);
+        \App\Models\FinanceFee::observe(\App\Observers\FinanceFeeObserver::class);
 
         // حضورُ اليوم عند كلّ دخول — بالنموذج أو بكعكة «تذكّرني» التي لا
         // تمرّ على LoginController: App\Listeners\RecordAttendanceOnLogin،

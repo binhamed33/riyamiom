@@ -43,6 +43,7 @@ class ClientEvents
     public const APPOINTMENT_REMINDER = 'appointment_reminder';
     public const DOCUMENT_NEW = 'document_new';
     public const INVOICE_NEW = 'invoice_new';
+    public const FEE_NEW = 'fee_new';
     public const PAYMENT_NEW = 'payment_new';
     public const ANNOUNCEMENT = 'announcement';
 
@@ -143,6 +144,14 @@ class ClientEvents
             self::INVOICE_NEW => [
                 'label' => 'فاتورة جديدة',
                 'hint' => 'الفواتير المعلَّمة مرئيةً للموكّل',
+                'target' => 'billing',
+                'default' => true,
+            ],
+            // الرسمُ (رسومُ محكمة، أتعاب، مصاريف) يُضاف من صفحة القضية مرئيّاً للموكّل
+            // افتراضاً — وكان بلا حدثٍ أصلاً: يظهر في البوابة ولا يصل عنه تنبيه
+            self::FEE_NEW => [
+                'label' => 'رسمٌ جديد',
+                'hint' => 'الرسوم المعلَّمة مرئيةً للموكّل',
                 'target' => 'billing',
                 'default' => true,
             ],

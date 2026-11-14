@@ -90,7 +90,10 @@ Schedule::command('suggestions:sync-replies')->everyFifteenMinutes()->withoutOve
 // و‎withoutOverlapping‎ يمنع عاملَين معاً.
 Schedule::command('queue:work --queue=mail,default --tries=3 --max-time=55 --sleep=1')
     ->everyMinute()
-    ->withoutOverlapping()
+    // قفلٌ يسقط بعد دقيقتين لا بعد يوم: عاملٌ قُتل (إعادةُ تشغيلٍ للخادم، نفادُ
+    // ذاكرة) لا يمحو قفلَه، فكان كلُّ إرسالٍ يتوقّف أربعاً وعشرين ساعة بلا أثر.
+    // والعاملُ يخرج وحدَه بعد ٥٥ ثانية، فدقيقتان لا تسمحان بعاملَين معاً
+    ->withoutOverlapping(2)
     ->runInBackground();
 
 // الرسائل التي أخفقت محاولاتها الثلاث تبقى في failed_jobs. تُنظَّف
@@ -106,7 +109,11 @@ Schedule::command('queue:prune-failed --hours=168')->weekly();
 | الأمرُ يلتقط ما مضى عليه خمسُ دقائق ولم يُعالَج — فرسالةُ موكّلٍ لا
 | تضيع لأنّ عاملاً تعثّر، ثمّ يقلّم السجلّ القديم كي لا يكبر بلا حدّ.
 */
-Schedule::command('whatsapp:sweep')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('whatsapp:sweep')->everyFiveMinutes()->withoutOverlapping(10);
+
+// المحجوزُ يُفرَج عنه كلَّ دقيقة لا كلَّ خمس: إشعاراتٌ صدرت معاً تفصل بينها مهلةُ
+// ثوانٍ، فكانت تصل بفارق خمس دقائق بين كلّ واحدةٍ والتي تليها
+Schedule::command('whatsapp:release-held')->everyMinute()->withoutOverlapping(2);
 
 // تذكيرُ المواعيد — كلَّ ساعة، ونافذتُه من الآن إلى حدّ التذكير
 // المضبوط، و`reminded_at` يمنع تكرارَ الرسالة على الموعد نفسِه.

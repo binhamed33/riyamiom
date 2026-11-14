@@ -24,5 +24,18 @@ class FinanceInvoiceObserver
         if ($invoice->wasChanged('client_visible') && $invoice->client_visible) {
             app(ClientNotifyObserver::class)->invoiceCreated($invoice);
         }
+
+        // «تسجيل دفعة» كان مفتاحاً في الإعدادات بلا طريقٍ يُطلقه.
+        // وتصحيحُ مبلغِ فاتورةٍ مدفوعةٍ ليس دفعة: نموذجُ التعديل يعيد حسابَ
+        // المدفوع = المبلغ، فكان رفعُ ١٠٠ إلى ١١٠ يُخبر الموكّلَ بدفعةٍ لم تكن
+        $correctingPaid = $invoice->getOriginal('status') === 'paid'
+            && $invoice->status === 'paid'
+            && $invoice->wasChanged('amount');
+
+        if (!$correctingPaid
+            && $invoice->wasChanged('paid_amount')
+            && (float) $invoice->paid_amount > (float) $invoice->getOriginal('paid_amount')) {
+            app(ClientNotifyObserver::class)->paymentRecorded($invoice);
+        }
     }
 }

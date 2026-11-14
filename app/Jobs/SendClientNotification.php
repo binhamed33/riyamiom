@@ -11,6 +11,7 @@ use App\Services\WhatsApp\WhatsAppManager;
 use App\Support\OfficeBrand;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -55,6 +56,11 @@ class SendClientNotification implements ShouldQueue
             return; // عولج من قبل — إعادةُ مهمّةٍ لا تُرسل ثانيةً
         }
 
+        // نبضُ حياةٍ خارج المعاملة فيبقى إن رُميَ استثناء: الكنسُ لا يدفع نسخةً
+        // لمهمّةٍ حيّةٍ تُعاد كلَّ خمس دقائق — وكانت كلُّ نسخةٍ تبدأ ستَّ ساعاتٍ
+        // جديدة، فيتراكم عشراتُ السلاسل للإشعار الواحد
+        $notification->touch();
+
         $client = $notification->client;
 
         if (!$client) {
@@ -69,7 +75,7 @@ class SendClientNotification implements ShouldQueue
             return;
         }
 
-        $waId = WhatsAppContact::normalizeWaId((string) $client->phone);
+        $waId = WhatsAppContact::primaryWaId((string) $client->phone);
 
         // تسعُ خاناتٍ ليست رقماً دولياً: هي رقمٌ محلّيٌّ زادت فيه خانة،
         // وواتساب يقرأ أوّلَ ثلاثٍ منه مفتاحَ دولة — فتذهب الرسالةُ إلى
@@ -115,15 +121,24 @@ class SendClientNotification implements ShouldQueue
             $notification,
         );
 
-        $message = $inbox->queueOutgoing($conversation, 'text', $this->compose($notification, $link));
+        // الصفُّ وختمُ الإشعار معاً أو لا شيء: كانت مهمّةٌ تسقط بينهما (عاملٌ
+        // أُعيد تشغيله، أو خطأٌ في الدفع) تُعاد فتُنشئ صفّاً ثانياً — والأوّلُ
+        // اليتيم يلتقطه كنسُ الضائع فيصل الموكّلَ الإشعارُ مرّتين. والدفعُ بعد
+        // الالتزام: إن سقط بقي الصفُّ «في الطابور» والإشعارُ مختوماً، فيرسله
+        // الكنسُ مرّةً واحدة.
+        $message = DB::transaction(function () use ($inbox, $conversation, $notification, $link) {
+            $message = $inbox->queueOutgoing($conversation, 'text', $this->compose($notification, $link));
+
+            $notification->forceFill([
+                'notified_at' => now(),
+                'channel_state' => ClientNotification::QUEUED,
+                'channel_reason' => null,
+            ])->save();
+
+            return $message;
+        });
 
         SendWhatsAppMessage::dispatch($message->id);
-
-        $notification->forceFill([
-            'notified_at' => now(),
-            'channel_state' => ClientNotification::QUEUED,
-            'channel_reason' => null,
-        ])->save();
     }
 
     /**

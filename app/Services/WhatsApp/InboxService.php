@@ -296,7 +296,7 @@ class InboxService
         if ($contact->client_id === null) {
             $client = Client::findByPhone($waId);
 
-            if ($client && WhatsAppContact::normalizeWaId((string) $client->phone) === $waId) {
+            if ($client && in_array($waId, WhatsAppContact::waIdsOf((string) $client->phone), true)) {
                 $changes['client_id'] = $client->id;
             }
         }

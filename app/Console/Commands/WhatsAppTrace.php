@@ -99,7 +99,7 @@ class WhatsAppTrace extends Command
         }
 
         // ── ٣) رقمُ الموكّل ────────────────────────────────────
-        $waId = WhatsAppContact::normalizeWaId((string) $client->phone);
+        $waId = WhatsAppContact::primaryWaId((string) $client->phone);
         $hasPhone = WhatsAppContact::isSendable($waId);
 
         $this->step('للموكّل رقمٌ صالح', $hasPhone, $waId === ''

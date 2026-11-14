@@ -311,9 +311,13 @@ class SendingGuard
 
     private static function sentSince(Carbon $since): int
     {
+        // رموزُ دخول البوابة لا تمرّ بهذا الحارس (صاحبُها ينتظرها الآن) — فلا تأكل
+        // ميزانيّتَه: كان اختبارُ المكتب للبوابة بضعةَ رموزٍ في أسبوع الإحماء يملأ
+        // سقفَ الساعة (ثلاث)، فتُحجز إشعاراتُ الموكّلين بعدها بلا سببٍ يُرى
         return WhatsAppMessage::where('direction', WhatsAppMessage::OUT)
             ->whereNotNull('sent_at')
             ->where('sent_at', '>=', $since)
+            ->where(fn ($q) => $q->whereNull('body')->orWhere('body', '!=', \App\Services\ClientPortal\PortalOtp::LEDGER_BODY))
             ->count();
     }
 

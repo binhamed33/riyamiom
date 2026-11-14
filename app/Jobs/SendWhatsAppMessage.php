@@ -67,11 +67,25 @@ class SendWhatsAppMessage implements ShouldQueue
             return;
         }
 
+        // نبضُ حياةٍ على الصفّ في كلّ محاولة: كنسُ الضائع يعدّ الصمتَ من آخر
+        // لمسة — فمهمّةٌ في مهلة إعادة المحاولة (أطولُها عشر دقائق)، أو تُعاد بعد
+        // استثناء، لا تُدفع لها نسخةٌ موازيةٌ بمهلةٍ جديدة كلَّ خمس دقائق
+        $message->touch();
+
         $conversation = $message->conversation;
         $contact = $conversation?->contact;
 
         if (!$conversation || !$contact) {
             $this->fail($message, 'المحادثة غير موجودة.');
+
+            return;
+        }
+
+        // الرفضُ يُفحص عند الإرسال لا عند القيد وحده: رسالةٌ محجوزةٌ لليل أو
+        // أعاد الكنسُ دفعَها تخرج بعد ساعات — وقد كتب الموكّلُ «إيقاف» بينهما
+        if (!$contact->acceptsNotifications()) {
+            // قرارُ الموكّل لا عطلٌ في الخدمة: لا يُكتب خطأً في حالة واتساب
+            $this->fail($message, 'الموكّل طلب إيقاف المراسلة.', 'opted_out', serviceError: false);
 
             return;
         }
@@ -184,8 +198,32 @@ class SendWhatsAppMessage implements ShouldQueue
         $this->fail($message, (string) $result->errorTitle, $result->errorCode);
     }
 
+    /**
+     * دفعُ الرسائل المحجوزة التي حان موعدُها — كلَّ دقيقة.
+     *
+     * المهلةُ بين رسالتين خمسَ عشرةَ ثانية، وكان لا يُفرج عن المحجوز إلا الكنسُ
+     * كلَّ خمس دقائق: إشعاراتٌ صدرت معاً (رسمٌ ثمّ فاتورة) تصل بفارق خمس دقائق
+     * بين كلّ واحدةٍ والتي تليها.
+     */
+    public static function releaseDue(int $cap = 200): int
+    {
+        $due = WhatsAppMessage::query()
+            ->where('status', WhatsAppMessage::STATUS_QUEUED)
+            ->whereNotNull('hold_until')
+            ->where('hold_until', '<=', now())
+            ->orderBy('id')
+            ->limit($cap)
+            ->pluck('id');
+
+        foreach ($due as $id) {
+            self::dispatch((int) $id);
+        }
+
+        return $due->count();
+    }
+
     /** فشلٌ نهائي — يُكتب في الرسالة ويُسجَّل في حالة الخدمة. */
-    protected function fail(WhatsAppMessage $message, string $reason, ?string $code = null): void
+    protected function fail(WhatsAppMessage $message, string $reason, ?string $code = null, bool $serviceError = true): void
     {
         $message->forceFill([
             'status' => WhatsAppMessage::STATUS_FAILED,
@@ -193,7 +231,9 @@ class SendWhatsAppMessage implements ShouldQueue
             'error_title' => mb_substr($reason, 0, 190),
         ])->save();
 
-        WhatsAppSettings::recordError($reason);
+        if ($serviceError) {
+            WhatsAppSettings::recordError($reason);
+        }
 
         if ($message->sent_by !== null) {
             \App\Support\Notify::send(
