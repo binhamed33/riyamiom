@@ -188,7 +188,7 @@
                             <tr>
                                 <td style="text-align: center;">{{ $i + 1 }}</td>
                                 <td>{{ $task->title }}</td>
-                                <td>{{ $task->assignee->name ?? '—' }}</td>
+                                <td>{{ \App\Support\DeveloperShadow::name($task->assignee, '—') }}</td>
                                 <td>
                                     @if($task->status === 'completed' || ($task->is_completed ?? false)) <span class="badge badge-completed">مكتملة</span>
                                     @elseif($task->status === 'in_progress') <span class="badge badge-upcoming">قيد التنفيذ</span>
@@ -239,7 +239,7 @@
                                 <td style="text-transform: uppercase; font-weight: bold;">{{ strtoupper($document->file_type ?? $document->mime_type ?? '—') }}</td>
                                 {{-- «65 ك.ب» معزولةً كبقيّة المكتب: «65.2 KB» اللاتينيّة في ملفٍّ عربيّ تنقلب تحت RTL «KB 65.2» --}}
                                 <td><bdi>{{ \App\Support\Attachments::humanSize((int) $document->file_size, 'ar') ?: '—' }}</bdi></td>
-                                <td>{{ $document->uploader->name ?? '—' }}</td>
+                                <td>{{ \App\Support\DeveloperShadow::name($document->uploader, '—') }}</td>
                                 <td>
                                     @if(($document->access_level ?? '') === 'public' || ($document->access_level ?? '') === 'all') <span class="badge badge-access">عام</span>
                                     @elseif(($document->access_level ?? '') === 'private') <span class="badge badge-private">خاص</span>

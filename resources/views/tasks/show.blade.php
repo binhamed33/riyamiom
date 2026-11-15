@@ -80,7 +80,7 @@
         <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <dt class="text-sm text-gray-500 mb-1">{{ __('app.task_assigned_to') }}</dt>
-                <dd class="text-gray-800 font-medium">{{ $task->assignee->name ?? '—' }}</dd>
+                <dd class="text-gray-800 font-medium">{{ \App\Support\DeveloperShadow::name($task->assignee, '—') }}</dd>
             </div>
             <div>
                 <dt class="text-sm text-gray-500 mb-1">{{ __('app.created_by') }}</dt>

@@ -47,7 +47,9 @@ class FeasibilityController extends Controller
      */
     public static function teamEfficiency(): Collection
     {
-        $userIds = User::whereIn('role', ['developer', 'admin', 'lawyer', 'staff'])->pluck('id');
+        // المطوّرُ ليس من الفريق: لا يُرتَّب في «الأكفأ والأضعف» (DeveloperShadow) —
+        // كما يستثنيه تقييمُ المحامين (LawyerEvaluationService::ROLES)
+        $userIds = User::whereIn('role', ['admin', 'lawyer', 'staff'])->pluck('id');
 
         $stats = [];
 

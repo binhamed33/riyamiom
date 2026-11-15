@@ -168,7 +168,7 @@ class CommandController extends Controller
             }
         }
 
-        $activities = CaseActivity::with(['case', 'user'])
+        $activities = CaseActivity::with(['case', 'user'])->visibleTo($user)
             ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)))
             ->where(function ($q) use ($query) {
                 $q->where('title', 'like', "%{$query}%")

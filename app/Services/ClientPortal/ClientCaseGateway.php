@@ -247,7 +247,9 @@ class ClientCaseGateway
             return new Collection();
         }
 
+        // الموكّلُ ليس مطوّراً أبداً: ما سجّله المطوّرُ لا يصل مسارَه
         return \App\Models\CaseActivity::query()
+            ->visibleTo(null)
             ->where('case_id', $case->id)
             ->whereIn('type', ClientPortal::clientVisibleActivityTypes())
             ->orderByDesc('occurred_at')

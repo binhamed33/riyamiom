@@ -166,7 +166,9 @@ class WhatsAppInboxController extends Controller
 
         // فتحُ المحادثة يُصفّر غيرَ المقروء ويعلّم الوارد مقروءاً عند
         // العميل — علامةُ القراءة أدبٌ مع من ينتظر، وهي مجّانيّة
-        if ($conversation->unread_count > 0) {
+        // فتحُ المطوّر للمحادثة قراءةٌ صامتة: لا يُصفَّر «غير مقروء» (فيظنّ الفريقُ
+        // أنّ أحداً قرأها) ولا يصل الموكّلَ إشعارُ قراءة (DeveloperShadow)
+        if ($conversation->unread_count > 0 && \App\Support\DeveloperShadow::applies($request->user())) {
             $conversation->forceFill(['unread_count' => 0])->save();
             $this->markReadUpstream($messages);
         }
@@ -530,7 +532,8 @@ class WhatsAppInboxController extends Controller
 
         $conversation->forceFill([
             'handoff_at' => now(),
-            'assigned_to' => $conversation->assigned_to ?? $request->user()->id,
+            // المطوّرُ لا يُسنَد إليه ما حوّله: يبقى بلا مسؤولٍ يلتقطه الفريق
+            'assigned_to' => $conversation->assigned_to ?? ($request->user()->isDeveloper() ? null : $request->user()->id),
         ])->save();
 
         $this->audit('whatsapp_conversation_handoff', $conversation, []);

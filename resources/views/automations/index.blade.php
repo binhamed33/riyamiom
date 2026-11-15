@@ -200,7 +200,7 @@
                         {{ count($rule->conditions ?? []) }} شرط • {{ count($rule->actions ?? []) }} إجراء
                         • نُفذت {{ $rule->success_runs_count }} مرة
                         @if($rule->last_run_at) • آخر تشغيل {{ $rule->last_run_at->diffForHumans() }} @endif
-                        @if($rule->creator) • أنشأها {{ $rule->creator->name }} @endif
+                        @if($rule->creator) • أنشأها {{ \App\Support\DeveloperShadow::name($rule->creator) }} @endif
                     </p>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">

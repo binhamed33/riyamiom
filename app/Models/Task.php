@@ -97,7 +97,7 @@ class Task extends Model
             return 'نظام مُداوَلة';
         }
 
-        return $this->creator->name ?? '—';
+        return \App\Support\DeveloperShadow::name($this->creator, '—');
     }
 
     public function creator(): BelongsTo

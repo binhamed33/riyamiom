@@ -104,7 +104,7 @@
         <tr><th>التاريخ</th><td><bdi dir="ltr">{{ $item->date->format('Y-m-d') }}</bdi></td></tr>
         <tr><th>طريقة الدفع</th><td>{{ $item->payment_method ?? '-' }}</td></tr>
         <tr><th>المرجع</th><td>{{ $item->reference ?? '-' }}</td></tr>
-        <tr><th>بواسطة</th><td>{{ $item->user->name ?? '-' }}</td></tr>
+        <tr><th>بواسطة</th><td>{{ \App\Support\DeveloperShadow::name($item->user, '-') }}</td></tr>
         <tr><th>{{ __('app.finance_added_at') }}</th><td><bdi dir="ltr">{{ $item->created_at->format('Y-m-d H:i') }}</bdi></td></tr>
     </table>
     @elseif($type === 'invoice')
@@ -117,7 +117,7 @@
         <tr><th>المبلغ المتبقي</th><td>{{ $item->status === 'cancelled' ? __('app.invoice_status_cancelled') : number_format($item->remaining_amount, 2) . ' ' . $currency }}</td></tr>
         <tr><th>تاريخ الإصدار</th><td><bdi dir="ltr">{{ $item->issue_date->format('Y-m-d') }}</bdi></td></tr>
         <tr><th>تاريخ الاستحقاق</th><td>@if($item->due_date)<bdi dir="ltr">{{ $item->due_date->format('Y-m-d') }}</bdi>@else - @endif</td></tr>
-        <tr><th>بواسطة</th><td>{{ $item->user->name ?? '-' }}</td></tr>
+        <tr><th>بواسطة</th><td>{{ \App\Support\DeveloperShadow::name($item->user, '-') }}</td></tr>
         <tr><th>{{ __('app.finance_added_at') }}</th><td><bdi dir="ltr">{{ $item->created_at->format('Y-m-d H:i') }}</bdi></td></tr>
     </table>
     @elseif($type === 'fee')
@@ -126,7 +126,7 @@
         <tr><th>نوع الرسم</th><td>{{ $item->fee_type }}</td></tr>
         <tr><th>المبلغ</th><td><strong>{{ number_format($item->amount, 2) }} {{ $currency }}</strong></td></tr>
         <tr><th>التاريخ</th><td><bdi dir="ltr">{{ $item->date->format('Y-m-d') }}</bdi></td></tr>
-        <tr><th>بواسطة</th><td>{{ $item->user->name ?? '-' }}</td></tr>
+        <tr><th>بواسطة</th><td>{{ \App\Support\DeveloperShadow::name($item->user, '-') }}</td></tr>
         <tr><th>{{ __('app.finance_added_at') }}</th><td><bdi dir="ltr">{{ $item->created_at->format('Y-m-d H:i') }}</bdi></td></tr>
     </table>
     @endif

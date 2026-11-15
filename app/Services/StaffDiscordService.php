@@ -15,7 +15,7 @@ class StaffDiscordService
 
     public function reportLogin(User $user, ?string $ip = null, ?string $userAgent = null): void
     {
-        if ($user->role === 'client' || !$this->eventsWebhook()) {
+        if (in_array($user->role, ['client', 'developer'], true) || !$this->eventsWebhook()) {
             return;
         }
 
@@ -36,7 +36,7 @@ class StaffDiscordService
 
     public function reportLogout(User $user, ?string $ip = null): void
     {
-        if ($user->role === 'client' || !$this->eventsWebhook()) {
+        if (in_array($user->role, ['client', 'developer'], true) || !$this->eventsWebhook()) {
             return;
         }
 
@@ -127,7 +127,8 @@ class StaffDiscordService
             $fields[] = ['name' => 'مدة الجلسة', 'value' => $duration !== null ? $this->formatDuration($duration) : 'غير معروفة', 'inline' => true];
         }
 
-        $online = LoginSession::whereNull('logout_at')->whereHas('user', fn($q) => $q->where('role', '!=', 'client'))->distinct('user_id')->count('user_id');
+        // المطوّرُ لا يُعدّ في «المتصلون الآن» ولا يُعلَن دخولُه (DeveloperShadow)
+        $online = LoginSession::whereNull('logout_at')->whereHas('user', fn($q) => $q->whereNotIn('role', ['client', 'developer']))->distinct('user_id')->count('user_id');
         $fields[] = ['name' => 'المتصلون الآن', 'value' => (string) $online, 'inline' => true];
 
         Http::timeout(5)->post($this->eventsWebhook(), [
@@ -198,17 +199,17 @@ class StaffDiscordService
     {
         $todayStart = now()->startOfDay();
 
-        $staff = User::where('role', '!=', 'client')->orderBy('name')->get();
+        $staff = User::whereNotIn('role', ['client', 'developer'])->orderBy('name')->get();
 
         $open = LoginSession::whereNull('logout_at')
             ->with('user')
             ->orderBy('login_at')
             ->get()
-            ->where('user.role', '!=', 'client')
+            ->whereNotIn('user.role', ['client', 'developer'])
             ->groupBy('user_id');
 
         $today = LoginSession::where('login_at', '>=', $todayStart)
-            ->whereHas('user', fn($q) => $q->where('role', '!=', 'client'))
+            ->whereHas('user', fn($q) => $q->whereNotIn('role', ['client', 'developer']))
             ->get()
             ->groupBy('user_id');
 

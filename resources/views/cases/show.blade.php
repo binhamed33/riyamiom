@@ -709,7 +709,7 @@ document.addEventListener('alpine:init', () => {
                         </button>
                         <span class="flex-1 text-sm {{ $item->is_done ? 'text-gray-400 line-through' : 'text-gray-800' }}">{{ $item->title }}</span>
                         @if($item->is_done && $item->doneBy)
-                            <span class="text-[10px] text-gray-400 whitespace-nowrap">✓ {{ $item->doneBy->name }} • {{ $item->done_at?->format('m/d') }}</span>
+                            <span class="text-[10px] text-gray-400 whitespace-nowrap">✓ {{ \App\Support\DeveloperShadow::name($item->doneBy) }} • {{ $item->done_at?->format('m/d') }}</span>
                         @endif
                     </form>
                 @endforeach

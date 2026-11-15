@@ -54,7 +54,8 @@ class TrackUserActivity
     {
         $user = $request->user();
 
-        if ($user && $user->role !== 'client') {
+        // المطوّرُ لا يُختم حضورُه: «متصلٌ الآن» و«آخر ظهور» نشاطٌ يراه المكتب (DeveloperShadow)
+        if ($user && !in_array($user->role, ['client', 'developer'], true)) {
             $key = 'staff_active_' . $user->id;
             $last = Cache::get($key);
 

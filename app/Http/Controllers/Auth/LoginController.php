@@ -86,7 +86,8 @@ class LoginController extends Controller
                     'model_type' => null,
                     'model_id'   => null,
                     'old_values' => null,
-                    'new_values' => ['email' => $email, 'attempts' => $attempts],
+                    // بحروفٍ صغيرة: يُقارَن ببريد المطوّر عند الإخفاء (AuditLog::scopeVisibleTo)
+                    'new_values' => ['email' => mb_strtolower(trim((string) $email)), 'attempts' => $attempts],
                     'ip_address' => $request->ip(),
                     'user_agent' => $request->userAgent(),
                 ]);

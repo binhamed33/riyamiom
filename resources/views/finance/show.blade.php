@@ -63,7 +63,7 @@
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">بواسطة</dt>
-                    <dd class="text-gray-800 font-medium">{{ $item->user->name ?? '-' }}</dd>
+                    <dd class="text-gray-800 font-medium">{{ \App\Support\DeveloperShadow::name($item->user, '-') }}</dd>
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">تاريخ الإضافة</dt>
@@ -117,7 +117,7 @@
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">بواسطة</dt>
-                    <dd class="text-gray-800 font-medium">{{ $item->user->name ?? '-' }}</dd>
+                    <dd class="text-gray-800 font-medium">{{ \App\Support\DeveloperShadow::name($item->user, '-') }}</dd>
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">تاريخ الإضافة</dt>
@@ -145,7 +145,7 @@
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">بواسطة</dt>
-                    <dd class="text-gray-800 font-medium">{{ $item->user->name ?? '-' }}</dd>
+                    <dd class="text-gray-800 font-medium">{{ \App\Support\DeveloperShadow::name($item->user, '-') }}</dd>
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 mb-1">تاريخ الإضافة</dt>

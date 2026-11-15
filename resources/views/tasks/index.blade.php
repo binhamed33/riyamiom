@@ -148,7 +148,7 @@
                     @endif
                 </x-slot:badges>
                 <x-slot:meta>
-                    <x-list-meta :label="__('app.task_assigned_to')">{{ $task->assignee->name ?? '—' }}</x-list-meta>
+                    <x-list-meta :label="__('app.task_assigned_to')">{{ \App\Support\DeveloperShadow::name($task->assignee, '—') }}</x-list-meta>
                     <x-list-meta :label="__('app.due_date')">{{ $task->due_date?->format('Y-m-d') ?? '—' }}</x-list-meta>
                 </x-slot:meta>
             </x-list-card>
@@ -184,7 +184,7 @@
                             {{ $task->case->title ?? '—' }}
                         </td>
                         <td class="px-6 py-4 text-gray-600">
-                            {{ $task->assignee->name ?? '—' }}
+                            {{ \App\Support\DeveloperShadow::name($task->assignee, '—') }}
                         </td>
                         <td class="px-6 py-4">
                             @switch($task->status)

@@ -100,7 +100,8 @@
                              بقيّة البوابة: مكتبٌ أطفأه ليمرّ الموكّلون
                              بالاستقبال كان يُقرأ اسمُ محاميه هنا وحدَه. --}}
                         @if ($appointment->user && \App\Support\ClientPortal::showsLawyer())
-                            <br>مع: {{ $appointment->user->name }}
+                            {{-- المطوّرُ لا يُسمّى للموكّل (DeveloperShadow) --}}
+                            @unless($appointment->user?->isDeveloper())<br>مع: {{ $appointment->user->name }}@endunless
                         @endif
                     </p>
                 </div>

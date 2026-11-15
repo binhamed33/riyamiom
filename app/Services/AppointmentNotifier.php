@@ -116,7 +116,8 @@ class AppointmentNotifier
                 'الموضوع: ' . $appointment->title,
                 'الموعد: ' . $appointment->whenText(),
                 $appointment->location ? 'المكان: ' . $appointment->location : null,
-                $appointment->user ? 'مع: ' . $appointment->user->name : null,
+                // المطوّرُ لا يُسمّى للموكّل في رسالةٍ ولا بريد (DeveloperShadow)
+                $appointment->user && !$appointment->user->isDeveloper() ? 'مع: ' . $appointment->user->name : null,
                 $appointment->case?->case_number ? 'بخصوص القضية: ' . $appointment->case->case_number : null,
             ]);
 

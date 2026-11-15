@@ -443,7 +443,8 @@ class CaseController extends Controller
         $events = collect();
 
         try {
-            $case->load('activities.user');
+            // نشاطُ المطوّر على القضية لا يُعرض لغير المطوّرين (DeveloperShadow)
+            $case->load(['activities' => fn ($q) => $q->visibleTo(auth()->user()), 'activities.user']);
             $case->activities->each(function ($a) use ($events) {
             $typeLabel = [
                 'note' => 'ملاحظة',
@@ -502,7 +503,7 @@ class CaseController extends Controller
         });
 
         // سجل التدقيق الحقيقي: من فعل ماذا، والقيمة القديمة → الجديدة
-        $case->auditLogs()->with('user')->latest('id')->limit(100)->get()
+        $case->auditLogs()->visibleTo(auth()->user())->with('user')->latest('id')->limit(100)->get()
             ->each(function ($log) use ($events) {
                 $entry = $this->describeAuditForTimeline($log);
                 if ($entry) {
@@ -1211,11 +1212,17 @@ PROMPT;
 
         $userMessage = trim($request->input('message'));
 
+        // محادثةُ المطوّر مع مساعد القضية لا تُحفظ في القضية: تظهر للفريق كأنّها
+        // من أحدهم (DeveloperShadow). تعمل كاملةً، وتُنسى بإغلاق الصفحة
+        $ephemeral = (bool) auth()->user()?->isDeveloper();
+
         try {
-            $case->aiMessages()->create([
-                'role' => 'user',
-                'content' => $userMessage,
-            ]);
+            if (!$ephemeral) {
+                $case->aiMessages()->create([
+                    'role' => 'user',
+                    'content' => $userMessage,
+                ]);
+            }
 
             $case->load(['client', 'lawyer', 'sessions', 'tasks']);
 
@@ -1226,6 +1233,13 @@ PROMPT;
             ->map(fn($m) => ['role' => $m->role, 'content' => $m->content])
             ->values()
             ->toArray();
+
+        // ذاكرةُ المطوّر في جلسته لا في القضية: كان كلُّ سؤالٍ يُرسَل بلا ما قبله
+        // فيجيب الذكاءُ عن «وماذا عن الجلسة الثانية؟» بلا سياق
+        $devKey = 'dev_case_ai.' . $case->id;
+        if ($ephemeral) {
+            $history = array_merge($history, session($devKey, []), [['role' => 'user', 'content' => $userMessage]]);
+        }
 
         $systemPrompt = <<<SYSTEM
 أنت مساعد قانوني ذكي مدمج في نظام إدارة مكتب محاماة عماني. أنت محامٍ خبير في القوانين السارية في سلطنة عمان (قانون المعاملات المدنية، قانون الإجراءات المدنية والتجارية، قانون الإثبات، قانون العمل، قانون الشركات التجارية، قانون التجارة، قانون الجزاء، قانون الإجراءات الجزائية، قانون المرافعات الشرعية، قوانين التنفيذ، نظام المحاماة، وأحكام المحكمة العليا العمانية).
@@ -1266,10 +1280,18 @@ SYSTEM;
                 ], 502);
             }
 
-            $case->aiMessages()->create([
-                'role' => 'assistant',
-                'content' => $reply,
-            ]);
+            if (!$ephemeral) {
+                $case->aiMessages()->create([
+                    'role' => 'assistant',
+                    'content' => $reply,
+                ]);
+            } else {
+                // آخرُ عشرين دوراً تكفي سياقاً ولا تُثقل الجلسة
+                session([$devKey => array_slice(array_merge(session($devKey, []), [
+                    ['role' => 'user', 'content' => $userMessage],
+                    ['role' => 'assistant', 'content' => $reply],
+                ]), -20)]);
+            }
 
             return response()->json([
                 'reply' => $reply,

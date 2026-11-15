@@ -21,7 +21,7 @@
 
     /* اسم المُرسِل يُقرأ من العلاقة المحمَّلة وحدها: خيطٌ فيه مئتا
        رسالة كان يعني مئتي استعلامٍ لأسماء أربعة موظّفين. */
-    $waSender = $message->relationLoaded('sender') ? $message->sender?->name : null;
+    $waSender = $message->relationLoaded('sender') ? \App\Support\DeveloperShadow::name($message->sender) : null;
 
     $waTypeLabel = match ($message->type) {
         'image' => __('app.wa_media_image'),

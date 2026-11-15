@@ -244,7 +244,7 @@ class DashboardController extends Controller
                 'type' => 'task',
                 'icon' => 'task',
                 'title' => $item->title,
-                'subtitle' => ($item->assignee?->name ?? '') . ' — ' . $statusLabel($item->status),
+                'subtitle' => (\App\Support\DeveloperShadow::name($item->assignee) ?? '') . ' — ' . $statusLabel($item->status),
                 'time' => $item->created_at,
                 'url' => route('tasks.show', $item),
             ]);
@@ -283,7 +283,9 @@ class DashboardController extends Controller
         // وما فعله زملاؤه في قضاياهم. فمن لا يرى سجلَّ التدقيق يرى ما فعله
         // هو، وما جرى على قضايا يراها.
         $seesAudit = $user->isAdmin() || $user->isDeveloper() || $user->hasPermission('audit_log.view');
-        AuditLog::with('user')
+        // ونشاطُ المطوّر لا يُعرض لغير المطوّرين — في SQL لا بعد الجلب، فتمتلئ
+        // الخاناتُ الخمس بما يُعرض فعلاً
+        AuditLog::with('user')->visibleTo($user)
             ->when(!$seesAudit, fn ($q) => $q->where(fn ($w) => $w->where('user_id', $user->id)
                 ->orWhereIn('case_id', (clone $caseBase)->select('cases.id'))))
             ->latest()->limit(5)->get()
@@ -370,7 +372,7 @@ class DashboardController extends Controller
                 ]);
             });
 
-            $upcomingAppointments = \App\Models\CaseActivity::with('case')
+            $upcomingAppointments = \App\Models\CaseActivity::with('case')->visibleTo($user)
                 ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)))
                 ->where('type', 'appointment')
                 ->where('occurred_at', '>=', $now)
@@ -414,7 +416,7 @@ class DashboardController extends Controller
                 ]);
             });
 
-            $todayCalls = \App\Models\CaseActivity::where('type', 'call')
+            $todayCalls = \App\Models\CaseActivity::visibleTo($user)->where('type', 'call')
                 ->when($isLawyer, fn ($q) => $q->whereHas('case', fn ($cq) => $cq->where('lawyer_id', $user->id)))
                 ->whereDate('occurred_at', $now->toDateString())
                 ->count();

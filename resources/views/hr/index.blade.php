@@ -227,7 +227,7 @@
                                 <td class="px-4 py-3 text-gray-900 text-start">{{ $p->employee->name }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $p->review_date->format('Y-m-d') }}</td>
                                 <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $p->rating >= 4 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ($p->rating >= 3 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-red-100 text-red-700 border-red-200') }}">{{ $p->rating }}/5</span></td>
-                                <td class="px-4 py-3 text-gray-500">{{ $p->reviewer->name }}</td>
+                                <td class="px-4 py-3 text-gray-500">{{ \App\Support\DeveloperShadow::name($p->reviewer, '—') }}</td>
                                 @if($isAdmin)
                                 <td class="px-4 py-3 text-center">
                                     <form method="POST" action="{{ route('hr.performance.destroy', $p) }}" data-confirm="حذف التقييم؟" class="inline">@csrf @method('DELETE')<button aria-label="{{ __('app.delete') }}" class="w-8 h-8 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors flex items-center justify-center mx-auto"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></form>
@@ -262,7 +262,7 @@
                                 <td class="px-4 py-3 font-bold text-green-700">{{ number_format($b->amount, 2) }}</td>
                                 <td class="px-4 py-3 text-gray-500 text-start">{{ $b->reason }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $b->date->format('Y-m-d') }}</td>
-                                <td class="px-4 py-3 text-gray-500">{{ $b->giver->name }}</td>
+                                <td class="px-4 py-3 text-gray-500">{{ \App\Support\DeveloperShadow::name($b->giver, '—') }}</td>
                                 @if($isAdmin)
                                 <td class="px-4 py-3 text-center">
                                     <form method="POST" action="{{ route('hr.bonuses.destroy', $b) }}" data-confirm="حذف المكافأة؟" class="inline">@csrf @method('DELETE')<button aria-label="{{ __('app.delete') }}" class="w-8 h-8 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors flex items-center justify-center mx-auto"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></form>
@@ -296,7 +296,7 @@
                                 <td class="px-4 py-3 font-bold {{ $p->amount ? 'text-red-700' : 'text-gray-400' }}">{{ $p->amount ? number_format($p->amount, 2) : '-' }}</td>
                                 <td class="px-4 py-3 text-gray-500 text-start">{{ $p->reason }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $p->date->format('Y-m-d') }}</td>
-                                <td class="px-4 py-3 text-gray-500">{{ $p->giver->name }}</td>
+                                <td class="px-4 py-3 text-gray-500">{{ \App\Support\DeveloperShadow::name($p->giver, '—') }}</td>
                                 @if($isAdmin)
                                 <td class="px-4 py-3 text-center">
                                     <form method="POST" action="{{ route('hr.penalties.destroy', $p) }}" data-confirm="حذف الجزاء؟" class="inline">@csrf @method('DELETE')<button aria-label="{{ __('app.delete') }}" class="w-8 h-8 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors flex items-center justify-center mx-auto"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></form>

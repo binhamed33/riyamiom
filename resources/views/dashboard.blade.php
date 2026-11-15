@@ -404,7 +404,7 @@
                         <div class="w-2 h-2 rounded-full bg-red-700 flex-shrink-0"></div>
                         <div class="flex-1 min-w-0">
                             <p class="text-gray-900 text-xs font-medium truncate">{{ $task->title }}</p>
-                            <p class="text-red-700/60 text-[11px]">{{ $task->assignee?->name ?? '' }} — {{ $task->due_date?->format('Y/m/d') ?? '' }}</p>
+                            <p class="text-red-700/60 text-[11px]">{{ \App\Support\DeveloperShadow::name($task->assignee, '') }} — {{ $task->due_date?->format('Y/m/d') ?? '' }}</p>
                         </div>
                     </div>
                 @empty
@@ -468,7 +468,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-gray-900 text-xs font-medium truncate">{{ $task->title }}</p>
-                            <p class="text-gray-400 text-[11px]">{{ $task->assignee?->name ?? '' }} — {{ $task->due_date?->format('Y/m/d') ?? __('app.no_due_date') }}</p>
+                            <p class="text-gray-400 text-[11px]">{{ \App\Support\DeveloperShadow::name($task->assignee, '') }} — {{ $task->due_date?->format('Y/m/d') ?? __('app.no_due_date') }}</p>
                         </div>
                     </div>
                 @empty

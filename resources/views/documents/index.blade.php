@@ -570,7 +570,7 @@
                             </div>
                         </td>
                         <td class="px-3 py-4 text-gray-600"><p class="max-w-[9rem] truncate" title="{{ $document->case->title ?? '' }}">{{ $document->case->title ?? '—' }}</p></td>
-                        <td class="px-3 py-4 text-gray-600"><p class="max-w-[7rem] truncate" title="{{ $document->uploader->name ?? '' }}">{{ $document->uploader->name ?? '—' }}</p></td>
+                        <td class="px-3 py-4 text-gray-600"><p class="max-w-[7rem] truncate" title="{{ \App\Support\DeveloperShadow::name($document->uploader, '') }}">{{ \App\Support\DeveloperShadow::name($document->uploader, '—') }}</p></td>
                         <td class="px-3 py-4">
                             <span class="uppercase text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ strtoupper($document->file_type ?? '') }}</span>
                         </td>

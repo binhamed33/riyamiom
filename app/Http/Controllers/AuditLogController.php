@@ -11,7 +11,8 @@ class AuditLogController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = AuditLog::with('user');
+        // نشاطُ المطوّر لا يُعرض لغير المطوّرين (DeveloperShadow) — والصفوفُ باقيةٌ في القاعدة
+        $query = AuditLog::with('user')->visibleTo($request->user());
 
         if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
@@ -62,7 +63,9 @@ class AuditLogController extends Controller
         $logs = $query->orderBy($sortMap[$sort], $dir)->orderBy('id', 'desc')->paginate(25)->withQueryString();
         // أسماءُ موكّلي «فتح رابط البوابة» باستعلامٍ واحد — لا واحدٍ لكلّ صفّ
         AuditLog::primeActorNames($logs->getCollection());
-        $users = User::orderBy('name')->get();
+        // ولا اسمُه في قائمة الترشيح: وجودُه وحده يقول إنّ له نشاطاً مخفيّاً
+        $users = User::when(\App\Support\DeveloperShadow::applies($request->user()), fn ($q) => $q->where('role', '!=', 'developer'))
+            ->orderBy('name')->get();
 
         return view('audit-log.index', compact('logs', 'users', 'models'));
     }
@@ -74,7 +77,7 @@ class AuditLogController extends Controller
      */
     private function modelOptions(): array
     {
-        return AuditLog::query()
+        return AuditLog::query()->visibleTo(auth()->user())
             ->whereNotNull('model_type')->where('model_type', '!=', '')
             ->distinct()->pluck('model_type')
             ->mapWithKeys(fn ($class) => [$class => (new AuditLog(['model_type' => $class]))->modelNoun()])

@@ -188,6 +188,8 @@ class AttentionService
         $update = \App\Models\CaseActivity::where('case_id', $s->case_id)
             ->whereIn('type', [\App\Models\CaseActivity::TYPE_NOTE, \App\Models\CaseActivity::TYPE_CALL, \App\Models\CaseActivity::TYPE_APPOINTMENT, \App\Models\CaseActivity::TYPE_OTHER])
             ->whereNotNull('user_id')
+            // ملاحظةُ المطوّر (دعمٌ أو فحص) ليست تحضيراً للجلسة — لأيّ قارئٍ كان
+            ->whereNotIn('user_id', \App\Models\User::query()->where('role', 'developer')->select('id'))
             ->where('created_at', '>=', $since)
             ->latest('id')
             ->first();

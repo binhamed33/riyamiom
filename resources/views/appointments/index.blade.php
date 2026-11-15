@@ -170,7 +170,7 @@
                                 @if($appointment->isGuest() && $appointment->guest_phone)
                                     <a href="tel:{{ $appointment->guest_phone }}" class="text-gray-400 hover:text-gold-dark" dir="ltr">{{ $appointment->guest_phone }}</a>
                                 @endif
-                                @if($appointment->user)<span class="text-gray-300">·</span><span>مع {{ $appointment->user->name }}</span>@endif
+                                @if($appointment->user)<span class="text-gray-300">·</span><span>مع {{ \App\Support\DeveloperShadow::name($appointment->user) }}</span>@endif
                                 @if($appointment->case)<span class="text-gray-300">·</span><span>{{ $appointment->case->case_number }}</span>@endif
                                 @if($appointment->location)<span class="text-gray-300">·</span><span>{{ $appointment->location }}</span>@endif
                             </div>

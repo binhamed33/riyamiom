@@ -96,7 +96,7 @@
                             <td class="px-4 py-3">
                                 <p class="font-bold text-gray-900 text-sm">{{ $t->name }}</p>
                                 @if($t->description)<p class="text-[11px] text-gray-400">{{ $t->description }}</p>@endif
-                                @if($t->creator)<p class="text-[10px] text-gray-300 mt-0.5">أنشأه {{ $t->creator->name }}</p>@endif
+                                @if($t->creator)<p class="text-[10px] text-gray-300 mt-0.5">أنشأه {{ \App\Support\DeveloperShadow::name($t->creator) }}</p>@endif
                             </td>
                             <td class="px-4 py-3 text-[11px] text-gray-500 whitespace-nowrap">
                                 ✅ {{ $s['tasks'] }} مهام • ☑️ {{ $s['checklist'] }} بنود<br>

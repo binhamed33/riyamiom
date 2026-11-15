@@ -117,6 +117,34 @@ class AuditLog extends Model
     }
 
     /**
+     * ما يراه القارئ من السجلّ: صفوفُ المطوّر مخفيّةٌ عن غير المطوّرين
+     * ‏(DeveloperShadow) — ومعها محاولاتُ الدخول الفاشلة على بريده (صفٌّ بلا
+     * فاعلٍ يحمل البريد في قيمه).
+     */
+    public function scopeVisibleTo($query, ?User $viewer = null)
+    {
+        if (!\App\Support\DeveloperShadow::applies($viewer)) {
+            return $query;
+        }
+
+        \App\Support\DeveloperShadow::hide($query, 'user_id', $viewer);
+
+        $emails = \App\Support\DeveloperShadow::emails();
+
+        if ($emails !== []) {
+            // بحروفٍ صغيرةٍ على الجانبين: «Dev@…» من لوحة مفاتيح الهاتف كان يمرّ —
+            // ‏JSON_UNQUOTE في MySQL ثنائيُّ المقارنة، فلا يطابق «dev@…»
+            $expr = $query->getQuery()->getGrammar()->wrap('new_values->email');
+            $marks = implode(',', array_fill(0, count($emails), '?'));
+            $query->where(fn ($q) => $q->whereNotNull('user_id')
+                ->orWhereRaw("{$expr} IS NULL")
+                ->orWhereRaw("LOWER({$expr}) NOT IN ({$marks})", $emails));
+        }
+
+        return $query;
+    }
+
+    /**
      * مرشّحُ «الإجراء» بالمعنى الذي تعرضه الشارة (actionKey) لا بالعمود الخام.
      *
      * كان المرشّحُ ‎where('action', …)‎ والشارةُ actionKey(): «إنشاء» يُرجع صفوفاً
@@ -164,7 +192,7 @@ class AuditLog extends Model
     public function actorName(): string
     {
         if ($this->user) {
-            return $this->user->name;
+            return \App\Support\DeveloperShadow::name($this->user);
         }
 
         if ($this->isPortalLinkRow()) {
@@ -364,7 +392,9 @@ class AuditLog extends Model
 
         // «المحامي: 3 ← 5» لا يقول شيئاً: الرقمُ يُقرأ باسم صاحبه
         if (in_array($field, ['lawyer_id', 'assigned_to', 'employee_id', 'user_id'], true) && ctype_digit($value)) {
-            return User::query()->whereKey((int) $value)->value('name') ?? $value;
+            $person = User::query()->whereKey((int) $value)->first(['id', 'name', 'role']);
+
+            return $person ? (string) \App\Support\DeveloperShadow::name($person) : $value;
         }
 
         // ‎toArray()‎ يكتب التاريخ بتوقيت UTC، فيُعاد إلى توقيت المكتب قبل العرض
@@ -441,7 +471,7 @@ class AuditLog extends Model
     private function employeeName(): string
     {
         $id = $this->old_values['employee_id'] ?? null;
-        $name = $id ? \App\Models\User::query()->find($id)?->name : null;
+        $name = $id ? \App\Support\DeveloperShadow::name(\App\Models\User::query()->find($id)) : null;
 
         return $name ?: __('app.audit_employee');
     }

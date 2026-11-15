@@ -1295,4 +1295,6 @@ return [
     'wa_erase_all_word_mismatch' => 'Nothing was deleted: type “:word” exactly to confirm.',
     'wa_erase_done' => 'Conversations deleted from the site (count: :count).',
     'wa_conversation_erased' => 'This conversation was deleted from the site — it returns to the inbox if a new message arrives.',
+    // What the developer did is attributed to the platform, not a person (DeveloperShadow)
+    'developer_shadow_name' => 'Mudawala system',
 ];

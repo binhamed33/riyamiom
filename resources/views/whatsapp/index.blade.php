@@ -276,7 +276,7 @@
                                 ? $conversation->case?->case_number
                                 : null;
                             $waAssignee = $conversation->relationLoaded('assignee')
-                                ? $conversation->assignee?->name
+                                ? \App\Support\DeveloperShadow::name($conversation->assignee)
                                 : null;
                         @endphp
 

@@ -64,6 +64,7 @@ class CaseActivityController extends Controller
         // عنوانَه — و«طلب طلاق» أو «تقرير طبّي» في قضيةِ زميلٍ يكفي
         // وحدَه: يُعرَف الموضوعُ من الاسم بلا فتح.
         $case->load([
+            'activities' => fn ($q) => $q->visibleTo(auth()->user()),
             'activities.user', 'sessions', 'tasks',
             'documents' => fn ($q) => $q->visibleTo(auth()->user()),
         ]);
