@@ -154,6 +154,15 @@ class SendWhatsAppMessage implements ShouldQueue
             $message->forceFill(['hold_until' => null])->save();
         }
 
+        // سؤالٌ أخيرٌ للقاعدة قبل المزوّد: مسحَ المديرُ المحادثةَ بعد أن حُمّلت
+        // الرسالة (ConversationEraser يجعلها «فاشلة» أثراً بلا نصّ) — فلا تخرج
+        if (! WhatsAppMessage::whereKey($message->id)
+            ->where('status', WhatsAppMessage::STATUS_QUEUED)
+            ->where('type', '!=', WhatsAppMessage::TYPE_CLEARED)
+            ->exists()) {
+            return;
+        }
+
         $to = $contact->wa_id;
 
         $result = match ($message->type) {

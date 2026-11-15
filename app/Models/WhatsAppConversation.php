@@ -19,6 +19,15 @@ class WhatsAppConversation extends Model
     public const STATUS_OPEN = 'open';
     public const STATUS_CLOSED = 'closed';
 
+    /**
+     * مسحها المدير من الموقع (ConversationEraser): لا تظهر في الصندوق،
+     * وتعود «مفتوحة» بأوّل رسالةٍ جديدة فيها — واردةً أو صادرة.
+     *
+     * حالةٌ لا حذفُ صفّ: الصفُّ يحمل رفضَ الموكّل للمراسلة عبر جهة
+     * الاتصال، ونافذةَ الردّ، وأثرَ ما أُرسل حديثاً (انظر المِمحاة).
+     */
+    public const STATUS_CLEARED = 'cleared';
+
     protected $fillable = [
         'contact_id',
         'case_id',
@@ -52,6 +61,12 @@ class WhatsAppConversation extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /** ما يظهر في صندوق الوارد: كلُّ محادثةٍ إلا الممسوحة. */
+    public function scopeListed($query)
+    {
+        return $query->where('status', '!=', self::STATUS_CLEARED);
     }
 
     public function messages(): HasMany

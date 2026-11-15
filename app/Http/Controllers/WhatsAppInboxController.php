@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\WhatsAppConversation;
 use App\Models\WhatsAppMessage;
 use App\Models\WhatsAppTemplate;
+use App\Services\WhatsApp\ConversationEraser;
 use App\Services\WhatsApp\InboxService;
 use App\Services\WhatsApp\WhatsAppManager;
 use App\Support\WhatsAppSettings;
@@ -44,7 +45,8 @@ class WhatsAppInboxController extends Controller
         $filter = (string) $request->query('filter', 'all');
         $search = trim((string) $request->query('q', ''));
 
-        $query = WhatsAppConversation::query()
+        // الممسوحةُ لا تُعرض — وتعود بأوّل رسالةٍ جديدة (WhatsAppMessage::booted)
+        $query = WhatsAppConversation::query()->listed()
             ->with(['contact.client', 'assignee', 'case']);
 
         // الترشيح بالبحث: الاسمُ والرقمُ ونصُّ الرسائل. الرقمُ يُطبَّع
@@ -112,6 +114,7 @@ class WhatsAppInboxController extends Controller
         // وحدها. ويعمل على MySQL وSQLite معاً.
         $lastIds = WhatsAppMessage::query()
             ->whereIn('conversation_id', $conversations->pluck('id'))
+            ->where('type', '!=', WhatsAppMessage::TYPE_CLEARED)
             ->groupBy('conversation_id')
             ->pluck(DB::raw('MAX(id)'));
 
@@ -127,16 +130,24 @@ class WhatsAppInboxController extends Controller
             'search' => $search,
             'snapshot' => WhatsAppSettings::snapshot(),
             'counts' => [
-                'all' => WhatsAppConversation::count(),
-                'unread' => WhatsAppConversation::where('unread_count', '>', 0)->count(),
-                'mine' => WhatsAppConversation::where('assigned_to', $userId)->count(),
-                'unassigned' => WhatsAppConversation::whereNull('assigned_to')->count(),
+                'all' => WhatsAppConversation::listed()->count(),
+                'unread' => WhatsAppConversation::listed()->where('unread_count', '>', 0)->count(),
+                'mine' => WhatsAppConversation::listed()->where('assigned_to', $userId)->count(),
+                'unassigned' => WhatsAppConversation::listed()->whereNull('assigned_to')->count(),
             ],
+            'canErase' => $this->canErase($request),
+            'eraseWord' => ConversationEraser::CONFIRM_WORD,
         ]);
     }
 
-    public function show(Request $request, WhatsAppConversation $conversation): View
+    public function show(Request $request, WhatsAppConversation $conversation): View|RedirectResponse
     {
+        // ممسوحةٌ فُتحت من تبويبٍ قديمٍ أو رابطٍ محفوظ: لا تُعرض فارغةً بأزرارها —
+        // «إغلاق» منها كان يُعيدها إلى الصندوق بلا رسالةٍ جديدة
+        if ($cleared = $this->clearedRedirect($conversation)) {
+            return $cleared;
+        }
+
         $conversation->load(['contact.client', 'assignee', 'case']);
 
         // أحدثُ ثلاثمئة ثمّ تُقلَب للعرض — لا أقدمُ ثلاثمئة.
@@ -144,6 +155,8 @@ class WhatsAppInboxController extends Controller
         // ‏orderBy('id')->limit(300) يعني أنّ خيطاً تجاوز ثلاثمئة رسالة
         // يعرض أوائلَها إلى الأبد ولا يرى المحامي رسالةَ اليوم أصلاً.
         $messages = $conversation->messages()
+            // أثرُ المسح بلا محتوى — لحرّاس الإرسال لا للعرض
+            ->where('type', '!=', WhatsAppMessage::TYPE_CLEARED)
             ->with(['sender', 'document'])
             ->orderByDesc('id')
             ->limit(300)
@@ -175,6 +188,105 @@ class WhatsAppInboxController extends Controller
                 ->whereIn('role', ['admin', 'lawyer', 'staff'])
                 ->orderBy('name')->get(['id', 'name']),
             'snapshot' => WhatsAppSettings::snapshot(),
+            'canErase' => $this->canErase($request),
+        ]);
+    }
+
+    // ── المسح من الموقع — لمدير المكتب وحده ─────────────────────────
+    //
+    // الصلاحيةُ في المسار (role:developer,admin) وتُسأل هنا ثانيةً لرسم الزرّ:
+    // القراءةُ والردُّ يُمنحان لموظّف الاستقبال، أمّا محوُ سجلّ المراسلات
+    // فقرارُ من يُسأل عن المكتب. والمسحُ لا يمسّ هاتفَ المكتب.
+
+    /** المحادثةُ الممسوحة لا تُدار من تبويبٍ قديم — تعود فقط برسالةٍ جديدة. */
+    private function clearedRedirect(WhatsAppConversation $conversation): ?RedirectResponse
+    {
+        return $conversation->status === WhatsAppConversation::STATUS_CLEARED
+            ? redirect()->route('whatsapp.index')->with('error', __('app.wa_conversation_erased'))
+            : null;
+    }
+
+    private function canErase(Request $request): bool
+    {
+        return in_array($request->user()?->role, ['developer', 'admin'], true);
+    }
+
+    public function destroy(Request $request, WhatsAppConversation $conversation, ConversationEraser $eraser): RedirectResponse
+    {
+        $result = $eraser->erase($conversation);
+        $this->auditErase([$conversation->id], $result);
+
+        return redirect()->route('whatsapp.index')
+            ->with('success', __('app.wa_erase_done', ['count' => 1]));
+    }
+
+    public function destroyMany(Request $request, ConversationEraser $eraser): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids' => 'required|array|min:1|max:500',
+            'ids.*' => 'integer',
+        ]);
+
+        return $this->eraseAll(WhatsAppConversation::listed()->whereIn('id', $data['ids']), $eraser);
+    }
+
+    public function destroyAll(Request $request, ConversationEraser $eraser): RedirectResponse
+    {
+        // كلمةٌ تُكتب لا زرٌّ يُضغط: صندوقٌ كاملٌ لا يُمحى بنقرةٍ طائشة
+        $request->validate(['confirm' => 'required|string']);
+
+        if (trim((string) $request->input('confirm')) !== ConversationEraser::CONFIRM_WORD) {
+            return back()->with('error', __('app.wa_erase_all_word_mismatch', ['word' => ConversationEraser::CONFIRM_WORD]));
+        }
+
+        return $this->eraseAll(WhatsAppConversation::listed(), $eraser);
+    }
+
+    /**
+     * مسحٌ على دفعات: كلُّ دفعةٍ تُسجَّل في السجلّ حين تنتهي.
+     *
+     * مكتبٌ فيه آلافُ المحادثات: كان الطلبُ يُقطع عند حدّ وقت PHP في منتصفها،
+     * وما مُسح قبله ضاع بلا سطرٍ في السجلّ يقول من مسح. الآن لا حدَّ للوقت،
+     * والإغلاقُ لا يوقفه، وكلُّ مئتين سطرٌ في السجلّ.
+     */
+    private function eraseAll(\Illuminate\Database\Eloquent\Builder $query, ConversationEraser $eraser): RedirectResponse
+    {
+        @set_time_limit(0);
+        ignore_user_abort(true);
+
+        $count = 0;
+
+        $query->select('id')->chunkById(200, function ($chunk) use ($eraser, &$count) {
+            $ids = [];
+            $totals = ['removed' => 0, 'kept' => 0];
+
+            foreach ($chunk as $conversation) {
+                $result = $eraser->erase($conversation);
+                $ids[] = $conversation->id;
+                $totals['removed'] += $result['removed'];
+                $totals['kept'] += $result['kept'];
+            }
+
+            $this->auditErase($ids, $totals);
+            $count += count($ids);
+        });
+
+        return redirect()->route('whatsapp.index')
+            ->with('success', __('app.wa_erase_done', ['count' => $count]));
+    }
+
+    /** في السجلّ: من مسح، وأيُّ محادثات، وكم — بلا شيءٍ من المحتوى الممسوح. */
+    private function auditErase(array $ids, array $result): void
+    {
+        \App\Models\AuditLog::create([
+            'user_id' => auth()->id(),
+            'action' => \App\Models\AuditLog::ACTION_DELETE,
+            'model_type' => WhatsAppConversation::class,
+            'model_id' => count($ids) === 1 ? $ids[0] : null,
+            'old_values' => ['conversations' => count($ids), 'ids' => array_slice($ids, 0, 200)],
+            'new_values' => ['messages_removed' => $result['removed'], 'traces_kept' => $result['kept']],
+            'ip_address' => request()->ip(),
+            'user_agent' => mb_substr((string) request()->userAgent(), 0, 255),
         ]);
     }
 
@@ -260,6 +372,10 @@ class WhatsAppInboxController extends Controller
 
     public function assign(Request $request, WhatsAppConversation $conversation): RedirectResponse
     {
+        if ($cleared = $this->clearedRedirect($conversation)) {
+            return $cleared;
+        }
+
         $validated = $request->validate([
             'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
         ]);
@@ -282,6 +398,10 @@ class WhatsAppInboxController extends Controller
 
     public function linkClient(Request $request, WhatsAppConversation $conversation): RedirectResponse
     {
+        if ($cleared = $this->clearedRedirect($conversation)) {
+            return $cleared;
+        }
+
         $validated = $request->validate([
             'client_id' => ['nullable', 'integer', 'exists:clients,id'],
         ]);
@@ -316,6 +436,10 @@ class WhatsAppInboxController extends Controller
      */
     public function linkCase(Request $request, WhatsAppConversation $conversation): RedirectResponse
     {
+        if ($cleared = $this->clearedRedirect($conversation)) {
+            return $cleared;
+        }
+
         $validated = $request->validate([
             'case_id' => ['nullable', 'integer', 'exists:cases,id'],
         ]);
@@ -400,6 +524,10 @@ class WhatsAppInboxController extends Controller
     /** تحويلٌ إلى موظّف — يوقف الردّ الآلي على هذه المحادثة. */
     public function handoff(Request $request, WhatsAppConversation $conversation): RedirectResponse
     {
+        if ($cleared = $this->clearedRedirect($conversation)) {
+            return $cleared;
+        }
+
         $conversation->forceFill([
             'handoff_at' => now(),
             'assigned_to' => $conversation->assigned_to ?? $request->user()->id,
@@ -412,6 +540,10 @@ class WhatsAppInboxController extends Controller
 
     public function close(Request $request, WhatsAppConversation $conversation): RedirectResponse
     {
+        if ($cleared = $this->clearedRedirect($conversation)) {
+            return $cleared;
+        }
+
         $open = $conversation->status === WhatsAppConversation::STATUS_CLOSED;
 
         $conversation->forceFill([

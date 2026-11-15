@@ -199,7 +199,49 @@
              يزاحم القائمةَ في مساحةٍ ضيّقة. --}}
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
-            <div class="lg:col-span-7 xl:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="lg:col-span-7 xl:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden"
+                 x-data="{ selected: [], all: @js($conversations->pluck('id')->map(fn ($id) => (string) $id)->values()) }">
+
+                {{-- ══ الحذف من الموقع — مديرُ المكتب وحده ══
+                     المحدَّدُ يُرسل من نموذجٍ منفصل (لا خاناتٌ داخل روابط الصفوف:
+                     النقرةُ على الخانة كانت ستفتح المحادثة). ومسحُ الكلّ بكلمةٍ
+                     تُكتب. وهاتفُ المكتب لا يُمسّ. --}}
+                @if(($canErase ?? false) && $conversations->count() > 0)
+                    <div class="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-2.5 border-b border-gray-100 bg-gray-50/60" data-wa-erase-bar>
+                        <label class="inline-flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-gold focus:ring-gold"
+                                   :checked="selected.length && selected.length === all.length"
+                                   @change="selected = $event.target.checked ? [...all] : []">
+                            {{ __('app.wa_select_all') }}
+                        </label>
+
+                        <form method="POST" action="{{ route('whatsapp.erase-many') }}" data-wa-erase-many
+                              data-confirm="{{ __('app.wa_erase_selected_confirm') }}">
+                            @csrf
+                            <template x-for="id in selected" :key="id"><input type="hidden" name="ids[]" :value="id"></template>
+                            <button type="submit" :disabled="selected.length === 0"
+                                    class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-200 text-red-600 bg-white hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                                {{ __('app.wa_erase_selected') }}
+                                <span x-show="selected.length" x-text="'(' + selected.length + ')'"></span>
+                            </button>
+                        </form>
+
+                        <details class="ms-auto text-xs" data-wa-erase-all>
+                            <summary class="cursor-pointer select-none text-gray-400 hover:text-red-600 transition-colors">{{ __('app.wa_erase_all') }}</summary>
+                            <form method="POST" action="{{ route('whatsapp.erase-all') }}" class="mt-2 p-3 rounded-lg border border-red-200 bg-red-50/60 space-y-2 max-w-sm">
+                                @csrf
+                                <p class="text-[11px] text-red-700 leading-relaxed">{{ __('app.wa_erase_all_hint', ['word' => $eraseWord]) }}</p>
+                                <div class="flex items-center gap-2">
+                                    <input type="text" name="confirm" required autocomplete="off" placeholder="{{ $eraseWord }}"
+                                           class="form-input flex-1 min-w-0 rounded-lg border border-red-200 bg-white text-gray-900 px-3 py-1.5 text-sm">
+                                    <button type="submit" class="whitespace-nowrap text-xs font-bold px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors">{{ __('app.wa_erase_all_button') }}</button>
+                                </div>
+                            </form>
+                        </details>
+                    </div>
+                @endif
+
                 <div class="md-zebra">
                     @forelse($conversations as $conversation)
                         @php
@@ -238,8 +280,17 @@
                                 : null;
                         @endphp
 
+                        <div class="flex items-stretch">
+                        @if($canErase ?? false)
+                            {{-- الخانةُ خارج الرابط: داخلَه كانت النقرةُ تفتح المحادثة --}}
+                            <label class="flex items-center ps-4 sm:ps-5 pe-1 cursor-pointer">
+                                <input type="checkbox" value="{{ $conversation->id }}" x-model="selected"
+                                       aria-label="{{ __('app.wa_select_conversation') }}"
+                                       class="w-4 h-4 rounded border-gray-300 text-gold focus:ring-gold">
+                            </label>
+                        @endif
                         <a href="{{ route('whatsapp.show', $conversation) }}"
-                           class="block px-4 sm:px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                           class="block flex-1 min-w-0 px-4 sm:px-5 py-3.5 hover:bg-gray-50 transition-colors">
                             <div class="flex items-start gap-3">
 
                                 {{-- حرفُ الاسم بدل صورة الملف: صورةُ واتساب
@@ -348,6 +399,7 @@
                                 </div>
                             </div>
                         </a>
+                        </div>
                     @empty
                         <x-empty-state
                             :title="__('app.wa_no_conversations')"

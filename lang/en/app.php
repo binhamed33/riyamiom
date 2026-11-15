@@ -1280,4 +1280,19 @@ return [
     'portal_share_all_confirm' => 'The client will see :count currently hidden items (documents, fees, invoices) in the portal — except private documents. Continue?',
     'portal_share_all_done' => ':count items are now visible to the client in the portal.',
     'portal_share_all_none' => 'Nothing in this case is hidden from the client.',
+
+    // Erasing WhatsApp conversations from the site — office admins only
+    'wa_erase' => 'Delete conversation',
+    'wa_erase_confirm' => 'This conversation, its messages and attachments will be permanently deleted from the site and cannot be recovered. The copy on the office phone is not affected. Continue?',
+    'wa_erase_hint' => 'Deleted from the site only — the office phone keeps its copy.',
+    'wa_erase_selected' => 'Delete selected',
+    'wa_erase_selected_confirm' => 'The selected conversations, their messages and attachments will be permanently deleted from the site and cannot be recovered. The copy on the office phone is not affected. Continue?',
+    'wa_select_all' => 'Select all',
+    'wa_select_conversation' => 'Select conversation',
+    'wa_erase_all' => 'Delete all conversations',
+    'wa_erase_all_hint' => 'Permanently deletes every conversation, message and attachment from the site — the office phone is not affected. To confirm, type “:word” and press the button.',
+    'wa_erase_all_button' => 'Delete everything permanently',
+    'wa_erase_all_word_mismatch' => 'Nothing was deleted: type “:word” exactly to confirm.',
+    'wa_erase_done' => 'Conversations deleted from the site (count: :count).',
+    'wa_conversation_erased' => 'This conversation was deleted from the site — it returns to the inbox if a new message arrives.',
 ];

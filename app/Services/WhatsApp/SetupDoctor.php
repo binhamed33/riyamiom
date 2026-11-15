@@ -316,9 +316,13 @@ class SetupDoctor
     private function firstMessage(): array
     {
         $count = 0;
+        $seen = false;
 
         try {
             $count = WhatsAppMessage::where('direction', WhatsAppMessage::IN)->count();
+            // مسحُ المحادثات يحذف الوارد ويُبقي last_inbound_at: الخطوةُ تمّت وإن
+            // مُسح أثرُها — وإلا عادت «لم تصل رسالةٌ واردة» على ربطٍ سليم
+            $seen = $count > 0 || \App\Models\WhatsAppConversation::whereNotNull('last_inbound_at')->exists();
         } catch (\Throwable) {
             // جدولٌ غير مهاجَر بعد — تُعدّ صفراً ولا تُسقط الصفحة
         }
@@ -327,10 +331,10 @@ class SetupDoctor
             key: 'first_message',
             title: 'أوّل رسالةٍ واردة',
             where: 'من هاتفك إلى رقم المكتب',
-            done: $count > 0,
+            done: $seen,
             reason: $count > 0
                 ? 'وصلت ' . $count . ' رسالة واردة.'
-                : 'لم تصل رسالةٌ واردة بعد.',
+                : ($seen ? 'وصلت رسائلُ واردة من قبل (مُسحت من الموقع).' : 'لم تصل رسالةٌ واردة بعد.'),
             action: 'أرسل «مرحبا» من هاتفك الشخصي إلى رقم المكتب، ثمّ افحص ثانيةً — تظهر خلال ثوانٍ في صفحة واتساب.',
         );
     }

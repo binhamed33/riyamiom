@@ -22,6 +22,14 @@ class WhatsAppMessage extends Model
     public const IN = 'in';
     public const OUT = 'out';
 
+    /**
+     * أثرٌ بلا محتوى بعد مسح المحادثة: النصُّ والمرفقُ ذهبا، وبقي الاتجاهُ
+     * والحالةُ ووقتُ الإرسال واسمُ القالب والجلسة — لأنّ سقفَ الإرسال
+     * ‏(SendingGuard) يعدّ ما خرج حديثاً، وحارسَ تذكير الجلسات يسأل «هل
+     * ذُكِّر من قبل؟». لا يُعرض في أيّ شاشة.
+     */
+    public const TYPE_CLEARED = 'cleared';
+
     public const STATUS_QUEUED = 'queued';
     public const STATUS_SENT = 'sent';
     public const STATUS_DELIVERED = 'delivered';
@@ -51,6 +59,20 @@ class WhatsAppMessage extends Model
         'delivered_at',
         'read_at',
     ];
+
+    protected static function booted(): void
+    {
+        // رسالةٌ جديدةٌ في محادثةٍ ممسوحة تُعيدها إلى الصندوق — من أيّ طريق
+        // جاءت (واردٌ، إشعارٌ آليّ، تذكير، ردٌّ آليّ). الواردُ يفتحها أصلاً،
+        // لكنّ الصادرَ الآليَّ لا يمسّ الحالة فكانت تبقى مخفيّةً بما فيها
+        static::created(function (self $message) {
+            if ($message->type !== self::TYPE_CLEARED) {
+                WhatsAppConversation::whereKey($message->conversation_id)
+                    ->where('status', WhatsAppConversation::STATUS_CLEARED)
+                    ->update(['status' => WhatsAppConversation::STATUS_OPEN]);
+            }
+        });
+    }
 
     protected function casts(): array
     {

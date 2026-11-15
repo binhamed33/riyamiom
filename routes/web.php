@@ -517,6 +517,14 @@ Route::middleware(['auth', 'active', 'subscription'])->group(function () {
             ->middleware('role:developer,admin,permission:whatsapp.manage')->name('whatsapp.close');
         Route::post('/message/{message}/document', [App\Http\Controllers\WhatsAppInboxController::class, 'saveDocument'])
             ->middleware('role:developer,admin,permission:whatsapp.manage')->name('whatsapp.save-document');
+
+        // المسحُ من الموقع: لمدير المكتب وحده — لا تمنحه صلاحيةٌ فرعيّة
+        Route::post('/erase-selected', [App\Http\Controllers\WhatsAppInboxController::class, 'destroyMany'])
+            ->middleware(['role:developer,admin', 'throttle:20,1,whatsapp-erase'])->name('whatsapp.erase-many');
+        Route::post('/erase-all', [App\Http\Controllers\WhatsAppInboxController::class, 'destroyAll'])
+            ->middleware(['role:developer,admin', 'throttle:5,1,whatsapp-erase-all'])->name('whatsapp.erase-all');
+        Route::post('/{conversation}/erase', [App\Http\Controllers\WhatsAppInboxController::class, 'destroy'])
+            ->middleware(['role:developer,admin', 'throttle:30,1,whatsapp-erase-one'])->name('whatsapp.erase');
     });
 
     // ربطُ الرقم — مع إعدادات المكتب، لمن يدير الإعدادات وحده
